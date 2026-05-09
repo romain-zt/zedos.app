@@ -4,9 +4,9 @@ Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc`
 
 | ID | Type | Parent | Status | Priority | NEED_HUMAN | NEED_UPDATE | Blocked By | Next Action |
 |---|---|---|---|:---:|:---:|:---:|---|---|
-| FA-account-session | Feature Area | | ready | P0 | false | false | | `/feature-area check` on Scope Slices; `/feature-area refine-slice` per exploratory slice |
-| SS-account-session--signup-to-signed-in-dashboard | Scope Slice | FA-account-session | exploratory | P0 | false | false | | `/feature-area refine-slice docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md` |
-| SS-account-session--returning-owner-sign-in | Scope Slice | FA-account-session | exploratory | P0 | false | false | | `/feature-area refine-slice docs/product/scope-slices/account-session--returning-owner-sign-in.md` |
+| FA-account-session | Feature Area | | ready | P0 | false | false | | Both account-session Scope Slices `ready-for-user-stories`; next band work: `/feature-area validate dashboard-shell` |
+| SS-account-session--signup-to-signed-in-dashboard | Scope Slice | FA-account-session | ready | P0 | false | false | | User stories when story phase opened |
+| SS-account-session--returning-owner-sign-in | Scope Slice | FA-account-session | ready | P0 | false | false | | User stories when story phase opened |
 | FA-dashboard-shell | Feature Area | | exploratory | P0 | false | false | | `/feature-area validate dashboard-shell` |
 | FA-project-workspace | Feature Area | | exploratory | P1 | false | false | | `/feature-area validate project-workspace` |
 | FA-prd-versioning | Feature Area | | exploratory | P1 | false | false | | `/feature-area validate prd-versioning` |

@@ -10,7 +10,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -45,7 +45,12 @@ A new founder can complete open self-serve signup and land in the signed-in prod
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Empty / first visit | Founder opens the public signup entry from the buyer path | Prompt to begin signup with **English-first** v0 copy (FR later per PRD); **web app** surface only |
+| In progress | Founder submits signup details or confirms the flow step | **Loading** indicator on the continue/create affordance; inputs disabled or clearly busy per in-app pattern |
+| Success | Account creation and session handoff complete | **Signed-in** landing at the post-auth entry (dashboard shell) with an **obvious path toward PRD work**; non-PRD areas may show **under construction** framing only (`docs/prd/PRD.md` Journey 1) |
+| Recoverable error | Validation fails (missing fields, mismatch rules, “already registered” product message, rate/abuse limit) | Inline or summarized errors tied to the form; **retry** without losing safe entered context where the product allows |
+| System / connectivity error | Network or service outage during signup | Clear **failure** state with retry; no silent hang |
+| Edge / blocked | Product blocks signup (abuse, unknown configuration, or policy gate beyond this slice) | Explains **cannot continue** and offers support or alternate path **without** claiming credit purchase or share features |
 
 ---
 
@@ -53,7 +58,8 @@ A new founder can complete open self-serve signup and land in the signed-in prod
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| User account | Create | **Single-owner** identity created through **public self-serve signup** (`docs/prd/PRD.md` Buyer entry / Operating Model) |
+| Signed-in session | Establish | Session ties the browser to the **owner** so downstream PRD workspace assumes **solo** accountability |
 
 ---
 
@@ -81,7 +87,7 @@ None — PRD-aligned **owner feedback** milestones (e.g. first PRD version gener
 |------------|------|--------|-------|
 | [Account & session](../feature-areas/account-session.md) | Feature Area | ready | Parent boundaries and solo-owner stance |
 | `docs/prd/PRD.md` — Buyer entry point, Journey 1, Operating Model | PRD constraint | ready | Public signup default; dashboard landing |
-| Signed-in dashboard / shell entry UX | Slice / sibling area | unknown | Landing “next step” copy and layout **TBD** at product-detail level |
+| Signed-in dashboard / shell entry UX | Slice / sibling area | pending | Landing “next step” copy and layout **TBD** at product-detail level; coordinates with **Dashboard shell** Feature Area |
 
 ---
 
@@ -103,18 +109,18 @@ A founder without an existing account can use **default public signup**, complet
 
 <!-- Fill before marking ready-for-user-stories -->
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -122,4 +128,4 @@ A founder without an existing account can use **default public signup**, complet
 
 | Date | Change | Author |
 |------|--------|--------|
-| 2026-05-09 | Scaffolded from approved `/feature-area slice account-session` via `/feature-area scaffold-slices` | — |
+| 2026-05-09 | Promoted to ready-for-user-stories after CLEAR readiness check (`/feature-area promote-slice`) | — |
