@@ -409,6 +409,172 @@ v0 sells **three fixed pack sizes**—**100**, **200**, and **1000 credits**—a
 
 ---
 
+## 2026-05-09 14:46 — Guided clarification UX model defined (Q-017)
+
+### Raw user input
+> Hybrid.
+>
+> The guided clarification loop should use structured questions inside a conversational wrapper.
+>
+> The founder experiences the flow as a guided AI conversation, but each step has a clear question, a focused answer field, and explicit actions such as:
+> - answer
+> - skip / not sure
+> - approve
+> - refine
+> - generate PRD version
+>
+> This is not a free-form chatbot where the user can drift endlessly, and not a rigid questionnaire that feels like paperwork.
+>
+> Question history stores the structured question, founder answer, AI interpretation, and resulting PRD impact.
+
+### Interpreted product insight
+The clarification loop is a **structured-conversational hybrid**: the AI drives a guided sequence of focused questions; the founder sees one question at a time with a dedicated answer field and explicit step-level actions (answer, skip/not sure, approve, refine, generate PRD version). The conversational wrapper creates a guided feel without free-form drift. Question history is a structured log — not a raw chat transcript — storing: structured question, founder answer, AI interpretation, and PRD impact per step.
+
+### PRD implication
+- **Guided clarification loop** sub-component of FG-PRD-V0 is now explicitly defined: structured questions + conversational wrapper + per-step explicit actions.
+- **Question history** business object gains 4 required fields: structured question, founder answer, AI interpretation, PRD impact.
+- The "approve" and "generate PRD version" actions confirm that the loop has explicit **advancement gates** — not passive auto-progression.
+- "Skip / not sure" confirms the loop must handle **incomplete answers** gracefully (question not required to advance).
+- This is a significant product design anchor; must be reflected in FG-PRD-V0 definition before `/prd update`.
+
+### New / updated questions
+- Q-017 opened and answered. Active queue remains empty post-capture.
+
+---
+
+## 2026-05-09 14:49 — Q-017 refined: chat-driven dynamic decision UI
+
+### Raw user input
+> Approved, with one wording adjustment.
+>
+> The clarification loop should be defined as: Chat-driven dynamic decision UI.
+>
+> The chat remains the guidance and reasoning layer, but when a product decision is better captured through constrained input, Zedos generates a contextual mini-form on the fly.
+>
+> Examples: modal with 2 select fields + optional comment, single-choice decision card, multi-choice checklist, ranked options, "not sure / ask me differently" action.
+>
+> This is not a free-form chatbot and not a static questionnaire.
+>
+> Each dynamic UI block must map to a PRD decision: structured question, available options, founder answer, optional comment, AI interpretation, PRD impact.
+
+### Interpreted product insight
+The clarification loop is a **chat-driven dynamic decision UI**: chat is the persistent guidance and reasoning layer; when a decision benefits from constrained input, Zedos **generates a contextual mini-form on the fly** (modal, decision card, checklist, ranked options). The founder is never in a free-form chat drift, never filling a static form — they're in a guided conversation where the interface adapts to the decision type. Question history is a **structured log** with 6 fields per decision: structured question, available options, founder answer, optional comment, AI interpretation, PRD impact.
+
+### PRD implication
+- **Guided clarification loop** → rename/reframe as **chat-driven dynamic decision UI** throughout FG-PRD-V0 definition.
+- **Question history** business object gains a 6th field: **available options** (the constrained choices offered by the mini-form).
+- **"Not sure / ask me differently"** is a named action — must be supported in the loop design.
+- This is approved for persistence via `/prd update` in the same turn.
+
+### New / updated questions
+- Q-017 answer refined. Governing product text: `docs/prd/PRD.md` after approved `/prd update`.
+
+---
+
+## 2026-05-09 15:02 — Credit burn model (directional, v0)
+
+### Raw user input
+> Credit burn model for v0:
+>
+> Use a simple directional model first:
+>
+> - Lightweight clarification step: 1 credit
+> - Standard decision / clarification step: 3 credits
+> - Dynamic mini-form decision step: 5 credits
+> - PRD version generation or major PRD update: 10 credits
+> - PRD challenge / convergence pass: 15 credits
+>
+> This is a product assumption for v0, not final pricing.
+>
+> The goal is only to make 100 / 200 / 1000 credit packs understandable:
+> - 100 credits = enough to meaningfully create and iterate a first PRD
+> - 200 credits = enough for deeper iteration
+> - 1000 credits = power-user / repeated project usage
+>
+> Prices and starter X stay operator-configurable.
+
+### Interpreted product insight
+The credit system now has a **directional burn model**: five operation tiers (1 / 3 / 5 / 10 / 15 credits) calibrated so that **100 credits maps to a complete meaningful first PRD**, **200 to deeper iteration**, and **1000 to power/multi-project usage**. This is explicitly a **product assumption for v0, not final pricing** — the goal is to make pack sizes legible to founders, not to commit to implementation costs. Prices and starter grant X remain operator-configurable.
+
+### PRD implication
+- **Credit system sub-component** of FG-PRD-V0 can now reference a directional burn table to justify the 100/200/1000 pack denominations as meaningful founder-value anchors.
+- **Business Objects:** credit ledger / consumption semantics gains a tier model (5 operation types with credit weights).
+- **Configuration Matrix:** burn rates are a product assumption (labeled as such), not hardcoded; prices and X remain TBD/operator-config.
+- **Credit economics gap** flagged in the `/prd challenge` is now partially answered — addresses Q-018 (raised by challenge).
+- Answers the challenge report question: "directional credit consumption range per AI operation."
+
+### New / updated questions
+- Q-018 answered: directional credit burn model defined (see above).
+
+---
+
+## 2026-05-09 15:04 — First-circuit grace cap (fixed ceiling, v0)
+
+### Raw user input
+> First-circuit grace cap:
+>
+> Use a fixed credit ceiling, not a percentage.
+>
+> For v0:
+> - First PRD circuit grace can cover at most 20 extra credits.
+> - It applies only once, only during the first PRD circuit.
+> - It only lets the current in-flight AI response finish.
+> - After that response, the user sees the overage message + recharge modal.
+> - If the projected overage is above 20 credits, the app should not start the paid AI operation unless the user has enough credits or auto-reload succeeds.
+> - After the first circuit, no grace applies: paid AI generation is blocked at zero credits unless auto-reload succeeds.
+>
+> Reason: 20 credits is enough to avoid a bad first-use interruption, but small enough to avoid turning grace into an exploitable free tier.
+
+### Interpreted product insight
+The first-circuit grace is now precisely bounded: **20-credit fixed ceiling**, single-use, single-circuit, applied only to let an in-flight response finish — not to start new operations. There's a pre-check gate: if the projected cost of the next AI operation exceeds the remaining balance + 20 credits, the operation does not start at all. The grace only absorbs an overage that occurs mid-response for an operation that was already projected to fit (or nearly fit). After the grace fires, the recharge modal appears immediately. Post-first-circuit: zero tolerance — block at zero.
+
+### PRD implication
+- **Credit system** flow gains a precise grace rule: `if balance ≥ 0 AND projected_cost ≤ remaining + 20 AND first_circuit_active → allow completion`. If `projected_cost > remaining + 20`, block before starting.
+- **"Slightly exceeds"** language in PRD.md should be replaced with the explicit 20-credit ceiling.
+- The pre-check gate (do not start if overage would exceed 20 credits) is a new product behavior not yet in PRD.md.
+- Reason is product-level: anti-abuse, not implementation detail — worth noting in Risks & Assumptions.
+- Answers Q-019 (raised by challenge).
+
+### New / updated questions
+- Q-019 answered: first-circuit grace defined as 20-credit fixed ceiling with pre-check gate.
+
+---
+
+## 2026-05-09 15:08 — Auto-reload v0 product rule (best-effort, SCA-aware)
+
+### Raw user input
+> Auto-reload remains in v0, but only as an opt-in convenience layer.
+>
+> Product rule:
+> - Manual top-up is the primary v0 payment path.
+> - Auto-reload is in v0, but it must never be required to complete the first PRD flow.
+> - Auto-reload is opt-in only.
+> - Auto-reload buys one prepaid credit pack via saved payment method.
+> - Auto-reload is not a subscription.
+> - If auto-reload succeeds, credits are added and generation can continue.
+> - If auto-reload fails or requires authentication, Zedos must fall back to manual recharge UX.
+> - The user should see a clear message and be asked to confirm/authenticate payment manually.
+> - Paid AI generation remains blocked until the recharge succeeds.
+> - No hidden debt, no silent retry loop, no negative balance except first-circuit grace.
+>
+> Reason: Auto-reload is valuable for conversion and continuity, but EU/SCA can interrupt off-session payments. So v0 should include it as best-effort convenience, not as a guaranteed background refill.
+
+### Interpreted product insight
+Auto-reload in v0 is **best-effort convenience, not guaranteed background refill**. The product explicitly acknowledges EU/SCA as a runtime reality: when off-session charge fails or requires authentication, the fallback is **manual recharge UX** — clear message, manual confirm/authenticate, generation stays blocked until resolved. This resolves the FALSE CONVERGENCE RISK flagged in the challenge. Manual top-up remains the **primary** path; auto-reload is the secondary, opt-in, convenience layer. Hard invariants: no hidden debt, no silent retry loop, no negative balance except the one defined first-circuit grace.
+
+### PRD implication
+- **Auto-reload** description in PRD.md must change from implied silent background refill → **best-effort convenience with explicit SCA fallback**.
+- New product behavior: if auto-reload fails or requires authentication → show clear message → present manual recharge UX → block generation until resolved.
+- The EU/SCA constraint previously flagged as a FALSE CONVERGENCE RISK is now explicitly acknowledged and handled at product level.
+- **Risks & Assumptions** should note: auto-reload is best-effort; SCA may require manual intervention; the product UX handles this gracefully rather than treating it as an error.
+- Hard invariants ("no hidden debt, no silent retry, no negative balance except grace") are product-level constraints, worth persisting.
+- Answers Q-020 (raised by challenge: should auto-reload be deferred given EU SCA?).
+
+### New / updated questions
+- Q-020 answered: auto-reload stays v0 as best-effort opt-in with defined SCA fallback to manual recharge UX.
+
+---
+
 Rules:
 - Append only.
 - Do not edit past entries unless correcting a clear interpretation error.

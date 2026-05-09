@@ -7,7 +7,7 @@ date: 2026-05-09
 
 # Why This Version Exists
 
-Establish a single narrative PRD for **Zedos**: a web product that moves the current Cursor-style PRD workflow online for **solo founders**, with a deliberate **v0** cut (PRD-only slice) and **deferred** product areas shown as under construction. This version aligns product language with discovery (**Q-001–Q-016** and `2026-05-09-zedos-discovery-note.md`) before deeper feature-group work.
+Establish a single narrative PRD for **Zedos**: a web product that moves the current Cursor-style PRD workflow online for **solo founders**, with a deliberate **v0** cut (PRD-only slice) and **deferred** product areas shown as under construction. This version aligns product language with discovery (**Q-001–Q-020** and `2026-05-09-zedos-discovery-note.md`) before deeper feature-group work.
 
 # Product Overview
 
@@ -31,9 +31,9 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 - Payment model (**v0**):
   - **Free to start** with a **configurable starter credit grant (X)** (**numeric X** stays **operator-TBD** per discovery).
   - Credits are **prepaid quantities** (packs are **100 / 200 / 1000 credits**), **never** sold as “N PRDs.” **Zedos** maintains an **internal credit ledger**; credits deduct **per AI operation**.
-  - **First PRD circuit (one-time grace):** if the owner **slightly exceeds** the starter balance during this circuit, the **current AI response still completes** (no mid-stream cut). Afterward, show clear copy that they **exceeded included starter credits** and that Zedos **covered that completion once** so the first flow was not interrupted; then present a **recharge** path. **After** that circuit, **paid AI generation** is **blocked at zero credits** unless **auto-reload** succeeds for the operation.
-  - **Purchases:** **Stripe** **one-time payments** for manual top-ups; **launch payments** support **France/EU + US** (product scope for v0).
-  - **Auto-reload:** **Opt-in only**; uses a **saved payment method** to **automatically buy one of the same three prepaid packs** when rules trigger. **Auto-reload is a prepaid refill behavior, not a subscription plan** and **must not** be hidden or implied as a subscription.
+  - **First PRD circuit (one-time grace):** **pre-check gate** — if the projected cost of the next AI operation exceeds the owner's remaining balance by more than **20 credits**, the operation does **not** start; present the recharge path immediately. If the operation was already in flight and the owner's balance runs out mid-response with an overage of **at most 20 credits**, the **current AI response still completes** (no mid-stream cut). Afterward, show clear copy that they **exceeded included starter credits** and that Zedos **covered that completion once** so the first flow was not interrupted; then present a **recharge** path. This grace applies **once, during the first PRD circuit only**. **After** that circuit, **paid AI generation** is **blocked at zero credits** unless **auto-reload** succeeds. **No hidden debt, no silent retry loop, no negative balance except this first-circuit grace.**
+  - **Purchases:** **Stripe** **one-time payments** for manual top-ups (**primary v0 payment path**); **launch payments** support **France/EU + US** (product scope for v0).
+  - **Auto-reload:** **Opt-in only; best-effort convenience layer** — uses a **saved payment method** to buy one of the same three prepaid packs when rules trigger. **If auto-reload succeeds**, credits are added and generation continues. **If auto-reload fails or requires authentication (e.g. EU/SCA)**, Zedos falls back to **manual recharge UX**: show a clear message, ask the owner to confirm or authenticate payment manually; **paid AI generation remains blocked** until recharge succeeds. **Auto-reload is a prepaid refill behavior, not a subscription plan** and **must not** be hidden or implied as a subscription. Auto-reload must **never** be required to complete the first PRD flow.
   - **Tax / compliance (product intent):** **Clear VAT/tax handling** for **digital AI credits** in supported markets (**not** implementation detail here).
   - **No subscription in v0.** **No BYOK in v0.** **No unlimited free AI.**
 - Hard v0 exclusions:
@@ -66,10 +66,10 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 
 1. **Sign up** → land in dashboard (non-PRD areas may show **under construction**).
 2. **Create or select a project** → open the PRD / clarification flow for that project.
-3. **Clarify and iterate** using **in-app** controls; **question history** is visible/available to the owner in the private workspace.
+3. **Clarify and iterate** using the **chat-driven dynamic decision UI**: chat guides and reasons throughout; when a product decision benefits from constrained input, Zedos generates a **contextual mini-form on the fly** (single-choice decision card, multi-choice checklist, ranked options, modal with select fields + optional comment, "not sure / ask me differently"); **question history** (structured log) is visible/available to the owner in the private workspace.
 4. **Version the PRD** and move between **versions** within a project.
 5. **Switch projects** to work on another PRD lineage.
-6. **Credits:** see balance; **per-operation** consumption against the **internal ledger**; **first PRD circuit** may **complete one in-flight response** if the owner **slightly exceeds** starter credits, then **recharge UX** (**buy pack**, **opt-in auto-reload**, or defer with **paid AI blocked** until purchase); **after** that circuit, **block at zero** unless **auto-reload** covers the next paid generation attempt.
+6. **Credits:** see balance; **per-operation** consumption against the **internal ledger**; **first PRD circuit** — **pre-check gate**: if projected overage exceeds **20 credits**, block before starting and show recharge path; if in-flight response runs over by **at most 20 credits**, allow completion (one-time grace); afterward show overage message + **recharge UX** (**buy pack**, **opt-in auto-reload**, or defer with **paid AI blocked**); if **auto-reload** is enabled and succeeds, credits are added and generation continues; if auto-reload fails or requires authentication, fall back to **manual recharge UX** (clear message, manual confirm/authenticate, generation blocked until resolved); **after** the first circuit, **block at zero** with no further grace.
 7. **Feedback (owner):** after **owner milestones** — **first PRD version created**; **PRD version updated after clarification**; **PRD shared** (link flow); **PRD reopened / viewed by owner after generation** — show a **lightweight** prompt (**1–5 stars** or **like/dislike**, **optional** comment), **skippable**; **no** prompts on the **anonymous share** surface in v0.
 8. **Share:** owner creates a **read-only public link**; anonymous viewer reads **only** the shared PRD content; owner can **disable** the link; page is **not** intended for search indexing.
 9. **Not in v0:** invited editors, comments on share page as collaboration, passworded or expiring links, Markdown/PDF export as mandatory “done” criteria.
@@ -80,7 +80,7 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 |------|-----|
 | Sign up / sign in | Yes |
 | Create / list / open **projects** | Yes |
-| Clarification loop (guided) + **question history** | Yes |
+| **Chat-driven dynamic decision UI** (clarification loop + contextual mini-forms on the fly) + **question history** structured log | Yes |
 | Persist and browse **PRD versions** per project | Yes |
 | **Credit** ledger, **per-operation** consumption, **first-circuit grace**, **block at zero** (post-grace) unless **auto-reload** | Yes (**Stripe** FR/EU+US) |
 | **Stripe** one-time purchase of **100 / 200 / 1000** credit packs | Yes |
@@ -96,8 +96,8 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 - **User account** (solo v0).
 - **Project** (container for a product line / idea).
 - **PRD version** (versioned document state in-app).
-- **Clarification / question history** (owner-private workspace context; not exposed on anonymous share).
-- **AI credit balance** and **credit ledger** / consumption semantics (**per operation**; Zedos-owned ledger).
+- **Clarification / question history** (owner-private; structured log per decision — structured question, available options, founder answer, optional comment, AI interpretation, PRD impact; not a raw chat transcript; not exposed on anonymous share).
+- **AI credit balance** and **credit ledger** / consumption semantics (**per operation**; Zedos-owned ledger; directional burn tier model: lightweight clarification step = 1 credit, standard decision / clarification step = 3, dynamic mini-form decision step = 5, PRD version generation / major update = 10, PRD challenge / convergence pass = 15; **product assumption for v0, not final pricing**).
 - **Credit pack purchase** (Stripe one-time; **100 / 200 / 1000** credits) and **auto-reload preference** / saved instrument (**product-level** intent; not implementation).
 - **Milestone feedback** (owner-only; tied to **project**, **PRD version**, **milestone type**, **timestamp**).
 - **Share link** (read-only public surface; revocable; noindex intent).
@@ -113,6 +113,8 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 | Payments provider | **Stripe** |
 | Credit pack denominations | **100 / 200 / 1000 credits** (fixed; **not** “N PRDs”) |
 | Pack list prices | **Operator-config**; may vary by **currency/region** |
+| Credit burn rates | **Directional product assumption** (not implementation-hardcoded): 1 / 3 / 5 / 10 / 15 credits per operation type; pack legibility anchors: 100 = meaningful first PRD, 200 = deeper iteration, 1000 = power / multi-project |
+| First-circuit grace ceiling | **20 credits** (fixed; anti-abuse; pre-check gate enforced before operation start) |
 | Share link | Simple public read-only; disable by owner; noindex |
 
 # Integration Boundaries
@@ -142,6 +144,21 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 |----|------|--------|--------|
 | FG-PRD-V0 | PRD workspace (web): projects, versions, clarification, credits, share | `exploratory` | Sole v0 delivery slice |
 | FG-FUTURE | Services/feature split, tech alignment, Cursor packaging, user stories, delivery loop | `deferred` | Names only; not v0 |
+
+## FG-PRD-V0 Sub-components
+
+| Sub-component | v0 scope anchor |
+|---|---|
+| **Auth shell** | Public signup, signed-in owner session; no invite/team auth |
+| **Project workspace** | Create / list / open projects; multi-project navigation |
+| **PRD versioning** | Persist versioned PRD state in-app; browse version history per project; "done" ≠ export |
+| **Guided clarification loop** | **Chat-driven dynamic decision UI**: chat is the guidance and reasoning layer; when a product decision benefits from constrained input, Zedos generates a **contextual mini-form on the fly** (modal with select fields, single-choice decision card, multi-choice checklist, ranked options, "not sure / ask me differently"); not a free-form chatbot; not a static questionnaire |
+| **Question history** | Structured log (owner-private, not exposed on share); per decision: structured question, available options, founder answer, optional comment, AI interpretation, PRD impact |
+| **Credit system** | Internal ledger; per-operation deduction; directional burn tiers (1 / 3 / 5 / 10 / 15 credits — product assumption, not final pricing); pack legibility anchors: 100 = first PRD, 200 = deeper iteration, 1000 = power use; first-circuit grace: pre-check gate (block if projected overage > 20 credits), allow in-flight completion up to 20-credit ceiling (once only), then recharge UX; post-grace block at zero; Stripe one-time packs (100 / 200 / 1000), primary payment path = manual top-up; opt-in auto-reload (best-effort, SCA fallback to manual recharge UX, not subscription); FR/EU + US |
+| **Owner milestone feedback** | Skippable prompts after 4 milestones; 1–5 stars or like/dislike + optional comment; stored with project / version / milestone / timestamp |
+| **Share** | Mint read-only public URL; anonymous read (no edit/comment/workspace access); owner revoke; noindex |
+
+Dashboard shell (under-construction sections for non-PRD areas) is a v0 prerequisite outside this group's scope boundary.
 
 # Build Sequence
 
@@ -181,3 +198,6 @@ Not defined in this document. Requires separate feature-group convergence and ex
 - **Credit economics:** starter **X** and regional **price points** are **config**; wrong defaults could starve first value or create unsustainable cost — tuned outside this PRD.
 - **Payments & tax:** **Stripe** + **FR/EU/US** + **digital VAT/tax** posture must remain **legible to users**; operational correctness is **outside** this PRD’s implementation detail.
 - **North-star confusion:** stakeholders may read long-term pipeline as v0; assumption is **clear labeling** in-product and in this PRD keeps v0 narrow.
+- **AI mini-form generation reliability:** the guided clarification loop depends on a managed AI model reliably generating appropriate constrained mini-forms (decision cards, checklists, ranked options) on the fly. If output quality degrades or is inconsistent, the clarification loop degrades with it. No static-questionnaire fallback is defined for v0. This assumption must be validated via prototype before treating the mechanic as stable for production.
+- **Auto-reload / SCA:** off-session charges in EU/France may trigger SCA (Strong Customer Authentication); handled by design — auto-reload is best-effort, and failure falls back to manual recharge UX (not treated as an error, treated as a designed fallback path).
+- **First-circuit grace anti-abuse:** the 20-credit ceiling and pre-check gate are deliberate product constraints to prevent grace from becoming an exploitable free tier; the gate must be enforced before any AI operation starts, not after.
