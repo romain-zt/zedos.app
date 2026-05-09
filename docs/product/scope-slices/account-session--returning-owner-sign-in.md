@@ -10,7 +10,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -45,7 +45,12 @@ A returning founder can sign back in and reach the signed-in experience without 
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Empty / signed-out entry | Returning founder opens the **sign-in** entry (not signup) | **English-first** web app surface; path to authenticate as existing owner |
+| In progress | Founder submits credentials or completes the sign-in step | **Loading** on the primary continue/sign-in control; clear busy state |
+| Success | Authentication succeeds | **Signed-in** continuation at the **same** signed-in shell used after signup, with **solo ownership** preserved |
+| Recoverable error | Wrong credentials, locked account message, validation | Actionable error with **retry**; no silent failure |
+| Session expired / interrupted | Prior session no longer valid | Prompt to sign in again; **no** merge with signup or team flows |
+| System / connectivity error | Network or outage | Failure state with retry guidance |
 
 ---
 
@@ -53,7 +58,8 @@ A returning founder can sign back in and reach the signed-in experience without 
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| User account | Read / bind | Confirms the **returning owner** maps to an **existing** single-user account |
+| Signed-in session | Establish / refresh | Restores **private** signed-in access consistent with **one account owns** projects and PRDs |
 
 ---
 
@@ -81,8 +87,8 @@ None — milestone feedback attaches to PRD milestones (e.g. after generation/cl
 |------------|------|--------|-------|
 | [Account & session](../feature-areas/account-session.md) | Feature Area | ready | Parent scope |
 | Existing user account from signup lifecycle | Slice / precondition | pending | Depends on signup flow having created an account in product terms |
-| [Signup to signed-in dashboard](./account-session--signup-to-signed-in-dashboard.md) | Scope Slice | pending | Logical predecessor for “returning founder” cohort in product narrative |
-| Signed-in dashboard / shell continuity | Slice / sibling area | unknown | **TBD** — post-auth landing consistency with signup slice |
+| [Signup to signed-in dashboard](./account-session--signup-to-signed-in-dashboard.md) | Scope Slice | ready | Sibling promoted **ready-for-user-stories** — narrative predecessor for returning cohort |
+| Signed-in dashboard / shell continuity | Slice / sibling area | pending | Post-auth landing consistency with signup slice — coordinates with **Dashboard shell** Feature Area; UX detail **TBD** |
 
 ---
 
@@ -104,18 +110,18 @@ A founder who already has an account can **authenticate as returning owner**, ar
 
 <!-- Fill before marking ready-for-user-stories -->
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -123,4 +129,4 @@ A founder who already has an account can **authenticate as returning owner**, ar
 
 | Date | Change | Author |
 |------|--------|--------|
-| 2026-05-09 | Scaffolded from approved `/feature-area slice account-session` via `/feature-area scaffold-slices` | — |
+| 2026-05-09 | Promoted to ready-for-user-stories after CLEAR readiness check (`/feature-area promote-slice`) | — |
