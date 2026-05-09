@@ -1,6 +1,6 @@
 # WORK_QUEUE — Zedos execution backlog
 
-Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc` §3.
+Rebuild with **`/execute-prd scan`**. Last rebuilt: **2026-05-09** (post–`promote-slice` governance scan). Schema: `.cursor/rules/execution-loop.mdc` §3.
 
 | ID | Type | Parent | Status | Priority | NEED_HUMAN | NEED_UPDATE | Blocked By | Next Action |
 |---|---|---|---|:---:|:---:|:---:|---|---|
