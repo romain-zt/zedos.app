@@ -132,7 +132,7 @@ Cross-reference PRD `Hard v0 exclusions` section:
 
 Run when evaluating whether a Scope Slice is ready for user story writing.
 
-**After `/feature-area scaffold-slices`:** new Scope Slice files are expected to be **`exploratory`** and **not** story-ready. Part 2 will often return **BLOCKED** (e.g. SS-03) until product-level gaps are closed via **`/feature-area refine-slice`**. Advancement to **`ready-for-user-stories`** uses **`/feature-area promote-slice`** only after SS-01–SS-10 and CC-01–CC-05 are **CLEAR** (SS-11 is satisfied by that transition, not as a pre-write gate).
+**After `/feature-area scaffold-slices`:** new Scope Slice files are expected to be **`exploratory`** and **not** story-ready. Part 2 will often return **BLOCKED** (e.g. SS-03) until product-level gaps are closed via **`/feature-area refine-slice`**. Advancement to **`ready-for-user-stories`** uses **`/feature-area promote-slice`** after **`/feature-area check`** returns **`Advancement verdict: CLEAR`** (**SS-01–SS-10** and **CC-01–CC-05** **PASS**; **SS-11** **PENDING** while status is **`exploratory`** — see SS-11 evaluation note). **`promote-slice`** applies the narrow file edits that satisfy **SS-11**.
 
 ### SS-01 · Single user value
 
@@ -255,6 +255,8 @@ For Zedos v0 owner milestones:
 > Valid Scope Slice statuses are: `exploratory`, `blocked`, `deferred`, `ready-for-user-stories`. The status `validated` is not valid for Scope Slices.
 >
 > If the slice has passed SS-01–SS-10 and CC-01–CC-05 with no unresolved NEED_HUMAN flag, status must be `ready-for-user-stories` (set via **`/feature-area promote-slice`** after a **CLEAR** checker run, or equivalent manual edits). User stories may not be written until this status is set.
+
+**Evaluation note (`/feature-area check`):** While **Status** is **`exploratory`** and SS-01–SS-10 plus CC-01–CC-05 are **PASS** with **`NEED_HUMAN` / `NEED_UPDATE` false**, treat SS-11 as **PENDING** (not a **FAIL** that blocks **Advancement verdict: CLEAR**) — **`/feature-area promote-slice`** applies the narrow file edits that satisfy SS-11. After **`ready-for-user-stories`**, SS-11 must **PASS**.
 
 **FAIL signals:**
 - Status is `validated` (not a valid Scope Slice status — `validated` belongs to Feature Areas only; use `ready-for-user-stories` instead)

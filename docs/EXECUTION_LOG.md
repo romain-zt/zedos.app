@@ -12,3 +12,5 @@
 | 2026-05-09 | run-one | SS-account-session--returning-owner-sign-in | `/feature-area promote-slice` | ok | Narrow transition after CLEAR |
 | 2026-05-09 | run-one | FA-dashboard-shell | `/feature-area validate dashboard-shell` | ok | FA-01–FA-09 + CC-02–CC-05 CLEAR; `/feature-area promote dashboard-shell` next |
 | 2026-05-09 | loop | — | `/execute-prd loop` cap | ok | 9 run-one equivalents logged; stop before User Story files — recommend `/execute-prd scan` |
+| 2026-05-09 | system | — | `promote-slice` governance reconciliation | ok | Formal Mode: promote-slice (SS-01–SS-11 + CC; pre-write gate; check-before-promote in execution-loop §12 + execute-prd loop); SS-11 **PENDING** note in scope-readiness-checker |
+| 2026-05-09 | scan | — | rebuild WORK_QUEUE | ok | 10 FA, 2 SS |

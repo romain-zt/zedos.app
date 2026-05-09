@@ -1,6 +1,6 @@
 ---
 name: feature-area-builder
-description: Drives Feature Area decomposition — maps PRD Feature Groups to Feature Areas, runs readiness checks, and proposes Scope Slices. `scaffold` writes initial Feature Area markdown from an approved map (only mode that may create Feature Area files). `scaffold-slices` writes Scope Slice markdown from an approved slice proposal (only mode that may create or initially fill `docs/product/scope-slices/*.md`). `refine-slice` edits product-level sections of one Scope Slice. `promote-slice` applies the narrow ready-for-user-stories transition after CLEAR (SS-01–SS-10, CC-01–CC-05). `promote` applies the narrow validated transition on a Feature Area file after CLEAR. Map, validate, slice, and check are proposal or checker-only. Never writes user stories, specs, tasks, or architecture.
+description: Drives Feature Area decomposition — maps PRD Feature Groups to Feature Areas, runs readiness checks, and proposes Scope Slices. `scaffold` writes initial Feature Area markdown from an approved map (only mode that may create Feature Area files). `scaffold-slices` writes Scope Slice markdown from an approved slice proposal (only mode that may create or initially fill `docs/product/scope-slices/*.md`). `refine-slice` edits product-level sections of one Scope Slice. `promote-slice` applies the narrow ready-for-user-stories transition after **`/feature-area check`** **CLEAR** and **pre-write CLEAR** (SS-01–SS-10 + CC-01–CC-05; SS-01–SS-11 + CC-01–CC-05 run per checker — SS-11 **PENDING** until transition when still `exploratory`, per checker). `promote` applies the narrow validated transition on a Feature Area file after CLEAR. Map, validate, slice, and check are proposal or checker-only. Never writes user stories, specs, tasks, or architecture.
 disable-model-invocation: true
 ---
 
@@ -274,15 +274,15 @@ Use the result format in `.cursor/commands/feature-area.md`.
 
 ## 10.2 Mode: promote-slice
 
-Apply the narrow **ready-for-user-stories** transition after **CLEAR** (SS-01–SS-10, CC-01–CC-05). Governed by `.cursor/commands/feature-area.md` Mode: promote-slice.
+Apply the narrow **ready-for-user-stories** transition after **`/feature-area check`** **CLEAR** and **`promote-slice` pre-write CLEAR** (SS-01–SS-10 + CC-01–CC-05 **PASS**; full SS-01–SS-11 + CC-01–CC-05 run per checker). Governed by `.cursor/commands/feature-area.md` Mode: promote-slice.
 
 ### Behavior
 
 1. Complete standard reads (§2).
 2. Read the Scope Slice and `docs/prd/questions/open-questions.md`.
-3. **Gate before write:** file under `docs/product/scope-slices/`; parent Feature Area exists and `validated`; `Status` is `exploratory` (if already `ready-for-user-stories`, **no-op**; if `blocked`/`deferred`, stop); `NEED_HUMAN` / `NEED_UPDATE` false; blockers consistent with SS-09.
-4. Run SS-01–SS-10 and CC-01–CC-05. Verdict must be **CLEAR**; otherwise output checker table / failure summary and **do not write**.
-5. **Only if CLEAR**, apply **only** the four edits defined in `.cursor/commands/feature-area.md` Mode: promote-slice (Status, Readiness checklist all `[x]`, Verdict line, Changelog row).
+3. **Gate before write:** file under `docs/product/scope-slices/`; parent Feature Area exists and `validated`; `Status` is `exploratory` for a promoting write (if already `ready-for-user-stories`, **no-op**; if `blocked`/`deferred`, stop); `NEED_HUMAN` / `NEED_UPDATE` false; blockers consistent with SS-09; **`/feature-area check`** on the same path returned **CLEAR** in this episode before write (required for **`/execute-prd`** — §12 of `.cursor/rules/execution-loop.mdc`).
+4. Run SS-01–SS-11 and CC-01–CC-05. **Pre-write** verdict must be **CLEAR** per command doc (SS-01–SS-10 + CC-01–CC-05 **PASS**; SS-11 per checker exploratory note).
+5. **Only if pre-write CLEAR**, apply **only** the four edits defined in `.cursor/commands/feature-area.md` Mode: promote-slice (Status, Readiness checklist all `[x]`, Verdict line, Changelog row).
 
 No other sections or files.
 
@@ -302,7 +302,7 @@ Do not replicate the agents' work — invoke them and incorporate their output.
 
 ## 12. Handoff to User Story authoring
 
-Materialized Scope Slices are **`exploratory`** until product-level gaps are closed with **`/feature-area refine-slice`**, **`/feature-area check`** passes SS-01–SS-10 and CC-01–CC-05, and **`/feature-area promote-slice`** applies (or manual equivalent). User story authoring is out of scope for this skill.
+Materialized Scope Slices are **`exploratory`** until product-level gaps are closed with **`/feature-area refine-slice`**, **`/feature-area check`** returns **CLEAR** (SS-01–SS-11 + CC-01–CC-05 per checker; see SS-11 **PENDING** note for `exploratory`), and **`/feature-area promote-slice`** applies after that **CLEAR** check (same episode) — **pre-write** gate on **`promote-slice`**: SS-01–SS-10 + CC-01–CC-05 **PASS**. User story authoring is out of scope for this skill.
 
 When a Scope Slice file exists with `Status: ready-for-user-stories` and `NEED_HUMAN: false`, the next step is user story authoring. That layer is governed by a separate workflow — this skill does not drive it.
 

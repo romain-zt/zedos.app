@@ -17,7 +17,7 @@
 | `slice <feature-area-name>` | Propose candidate Scope Slices for a validated Feature Area — no file writes |
 | `scaffold-slices <feature-area-name>` | After an approved Scope Slice proposal from `slice`, create or fill Scope Slice files from template — Scope Slice markdown only |
 | `refine-slice <artifact-path>` | Fill or update **product-level** sections of **one** existing Scope Slice file — no user stories, specs, tasks, or architecture |
-| `promote-slice <artifact-path>` | After SS-01–SS-10 and CC-01–CC-05 are CLEAR, apply the narrow transition to `ready-for-user-stories` on **one** Scope Slice file |
+| `promote-slice <scope-slice-path>` | After **`/feature-area check`** on the same path returns **CLEAR** (SS-01–SS-11 + CC-01–CC-05 per checker; write gate excludes blocking on SS-11 while status is still `exploratory` — see Mode: promote-slice), apply the narrow transition to `ready-for-user-stories` on **one** Scope Slice file |
 | `check <artifact-path>` | Run the scope-readiness checker against any Feature Area or Scope Slice file |
 
 **Safety — Feature Area files:** `/feature-area scaffold` is the only mode that may **create** Feature Area markdown under `docs/product/feature-areas/`. `/feature-area promote` is the only mode that may **apply the automated validated transition** (status, readiness checklist, verdict line, changelog row) on an existing file. All other modes remain proposal/check-only for those files.
@@ -320,7 +320,7 @@ Deferred (v0 exclusion):
 
 Next step:
 - Run `/feature-area scaffold-slices <feature-area-name>` to create Scope Slice files from `.cursor/templates/product/scope-slice.template.md` under `docs/product/scope-slices/<feature-area-kebab>--<slice-kebab>.md`
-- Then run `/feature-area refine-slice <artifact-path>` on each **exploratory** file to complete product-level sections; use `/feature-area check` and `/feature-area promote-slice` when SS-01–SS-10 and CC checks are CLEAR
+- Then run `/feature-area refine-slice <artifact-path>` on each **exploratory** file to complete product-level sections; run `/feature-area check` until **CLEAR**, then `/feature-area promote-slice` when pre-write checks pass (SS-01–SS-10 + CC-01–CC-05; SS-11 — see Mode: promote-slice)
 ```
 
 **Scope Critic review:** After the builder produces the slice proposal, the Scope Critic reviews it before it is presented to the user. If the Scope Critic returns a REVISE verdict, revise the proposal before presenting.
@@ -392,7 +392,7 @@ Next recommended command:
 /feature-area check <artifact-path>   ← after refinement when verifying readiness; then /feature-area promote-slice when CLEAR
 ```
 
-**Expectation — post-scaffold Scope Slices:** Files created by `scaffold-slices` default to **`exploratory`**. They are **not** expected to be story-ready until product-level sections are completed via **`/feature-area refine-slice`** and the scope-readiness checker passes SS-01–SS-10 and CC-01–CC-05 (**`/feature-area promote-slice`** applies the status transition only after **CLEAR**).
+**Expectation — post-scaffold Scope Slices:** Files created by `scaffold-slices` default to **`exploratory`**. They are **not** expected to be story-ready until product-level sections are completed via **`/feature-area refine-slice`** and **`/feature-area check`** is **CLEAR** on SS-01–SS-11 + CC-01–CC-05 (advancement verdict). **`/feature-area promote-slice`** applies the status transition only after the **pre-write** gate in Mode: promote-slice (**CLEAR** on SS-01–SS-10 + CC-01–CC-05; SS-11 follows the transition — see Mode: promote-slice).
 
 **Hard rules for scaffold-slices mode:**
 
@@ -440,30 +440,33 @@ Next recommended command:
 
 ---
 
-## Mode: promote-slice `<artifact-path>`
+## Mode: promote-slice `<scope-slice-path>`
 
-Runs Scope Slice readiness checks, then **only if** SS-01–SS-10 and CC-01–CC-05 are **CLEAR**, applies a **narrow** update. **Does not** create files; **does not** change PRD, Feature Area files, or Scope Slice **body** sections (User Value, Boundary, UX States, etc.).
+Formal **`/feature-area`** mode for Scope Slice promotion — mirrors **`/feature-area promote`** (narrow file edits only; checker-gated).
+
+Runs Scope Slice readiness checks from `.cursor/checkers/scope-readiness-checker.md` Part 2 (**SS-01–SS-11**) + Part 3 (**CC-01–CC-05**), then **only if** the **pre-write** gate below is satisfied, applies a **narrow** update. **Does not** create files; **does not** change PRD, Feature Area files, other Scope Slices, User Stories, Specs, Tasks, architecture, or Scope Slice **body** sections (User Value, Boundary, UX States, etc.).
 
 ### Input
 
-- `<artifact-path>` → one file under `docs/product/scope-slices/` (resolve as for refine-slice).
+- `<scope-slice-path>` → one file under `docs/product/scope-slices/` (resolve as for `refine-slice` / `check`).
 
 ### Pre-conditions (all required before any write)
 
 1. Target file exists under `docs/product/scope-slices/` and is non-empty.
 2. Parent Feature Area linked from the slice exists and has `Status: validated`.
-3. Current **Status** is `exploratory` (if `blocked` or `deferred`, stop — promotion is not allowed until status is `exploratory`; if already `ready-for-user-stories`, **no-op** — do not rewrite; report only).
+3. Current slice **Status** is **`exploratory`** for a promoting write. If **`blocked`** or **`deferred`**, stop — promotion is not allowed. If already **`ready-for-user-stories`**, **no-op** — do not rewrite; report only (still **may** run checks for audit if requested).
 4. `NEED_HUMAN: false` and `NEED_UPDATE: false` in the slice file.
-5. **Blockers:** no unresolved blocker rows that violate SS-09 (cross-check `docs/prd/questions/open-questions.md`).
-6. Run SS-01 through SS-10 and CC-01 through CC-05 from `.cursor/checkers/scope-readiness-checker.md` against the slice and parent context. If any check does not **PASS**, **stop and do not write**. (Do **not** treat SS-11 as a pre-write gate — promotion sets the status SS-11 requires.)
+5. **`/feature-area check <scope-slice-path>`** has returned **`Advancement verdict: CLEAR`** for this path **in the same agent turn / execution episode** before any promotion write — autonomous loops must not call **`promote-slice`** without that prior **CLEAR** **`check`** (see `.cursor/rules/execution-loop.mdc` §12). Re-running **`check`** immediately before **`promote-slice`** satisfies this when the artifact is unchanged between runs.
+6. **Blockers:** no unresolved blocker rows that violate SS-09 (cross-check `docs/prd/questions/open-questions.md`).
+7. Run **SS-01 through SS-11** and **CC-01 through CC-05** from `.cursor/checkers/scope-readiness-checker.md` against the slice and parent context. **Pre-write gate (must all PASS for a promoting write):** **SS-01–SS-10** and **CC-01–CC-05**. **SS-11:** while status is still **`exploratory`**, do **not** block on SS-11 — the four allowed edits apply the status SS-11 requires (see checker Part 2 note). If status is already **`ready-for-user-stories`** (no-op path), SS-11 must **PASS** (consistency check).
 
 ### Behavior
 
 1. Complete mandatory pre-flight reads (same order as other modes).
 2. Read the Scope Slice file and `docs/prd/questions/open-questions.md`.
-3. Verify pre-conditions (status, flags, blockers, parent Feature Area).
-4. Run SS-01–SS-10 and CC-01–CC-05; require **CLEAR**.
-5. **Only if CLEAR:**
+3. Verify pre-conditions (status, flags, blockers, parent Feature Area, prior **CLEAR** **`check`** when invoked from **`/execute-prd`**).
+4. Run **SS-01–SS-11** and **CC-01–CC-05**; require **pre-write CLEAR** per pre-conditions (SS-01–SS-10 + CC-01–CC-05 **PASS**; SS-11 non-blocking until after transition when status was **`exploratory`**).
+5. **Only if pre-write CLEAR:**
    - Set `## Status` value to `ready-for-user-stories` (replace prior status only on the status line / backtick line per file convention).
    - In `## Readiness for User Stories`, set every checklist item to checked: `[x]`.
    - Set **`**Verdict:**`** to `READY FOR USER STORIES` (replace prior verdict text only on that line).
@@ -484,7 +487,7 @@ Promoted:
 - docs/product/scope-slices/<fa-kebab>--<slice-kebab>.md
 
 Validation:
-- SS-01–SS-10: CLEAR
+- SS-01–SS-11: reported (pre-write: SS-01–SS-10 + CC-01–CC-05 CLEAR; SS-11 satisfied by transition when promoting from `exploratory`)
 - CC-01–CC-05: CLEAR
 
 Not changed:
@@ -506,7 +509,7 @@ No-op: docs/product/scope-slices/<fa-kebab>--<slice-kebab>.md is already status 
 
 **Hard rules for promote-slice mode:**
 
-- **Only** the four edits above when CLEAR; no other file or section changes.
+- **Only** the four edits above when **pre-write CLEAR**; no other file or section changes.
 - No user stories, specs, tasks, or architecture.
 - If validation is **BLOCKED**, output the same style of summary table as `check` (or a concise failure summary) and do not write.
 
@@ -543,7 +546,7 @@ Runs the full scope-readiness checker against any Feature Area or Scope Slice fi
 
 Next recommended command:
 - Feature Area: /feature-area validate <name> | /feature-area promote <name> (after CLEAR) | /feature-area slice <name>
-- Scope Slice: /feature-area refine-slice <path> (when product sections need work) | /feature-area promote-slice <path> (after SS-01–SS-10 and CC-01–CC-05 CLEAR) | resolve blockers and re-run check
+- Scope Slice: /feature-area refine-slice <path> (when product sections need work) | /feature-area check <path> (must CLEAR before promote-slice) | /feature-area promote-slice <path> (after CLEAR check + pre-write gate in Mode: promote-slice) | resolve blockers and re-run check
 ```
 
 **Hard rules for check mode:**
@@ -563,7 +566,7 @@ Next recommended command:
 | `slice` | Context Brief (pre-flight) | Drives proposal | Reviews proposal |
 | `scaffold-slices` | Context Brief (reuse from `slice` when same-thread; else initial pre-flight) | Writes Scope Slice markdown from approved proposal | Not invoked |
 | `refine-slice` | Not invoked | Edits product-level Scope Slice sections on one file | Not invoked |
-| `promote-slice` | Not invoked | Runs SS-01–SS-10 + CC-01–CC-05; narrow ready transition if CLEAR | Not invoked |
+| `promote-slice` | Not invoked | Runs SS-01–SS-11 + CC-01–CC-05; **pre-write** gate per Mode: promote-slice; narrow ready transition if **pre-write CLEAR** | Not invoked |
 | `check` | Not invoked | Runs checker | Not invoked |
 
 Read `.cursor/agents/feature-area/README.md` for the full operating principle.

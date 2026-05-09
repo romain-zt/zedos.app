@@ -53,7 +53,7 @@ Use when the user invokes **`/execute-prd <mode>`** or references **`execution-l
    - **Parent:** `FA-<fa>` (first segment(s) before `--` matching FA kebab)
    - **Priority:** inherit from parent FA band
    - Flags from file; **Status** mapping per rule
-   - **Next Action:** **`/feature-area refine-slice <path>`** when UX States / Data Touched empty or verdict NOT READY; **`/feature-area check <path>`** when refined; **`/feature-area promote-slice <path>`** only after **CLEAR**
+   - **Next Action:** **`/feature-area refine-slice <path>`** when UX States / Data Touched empty or verdict NOT READY; **`/feature-area check <path>`** when refined; **`/feature-area promote-slice <path>`** only after **`check`** **CLEAR** on that path in the same episode (per `execution-loop` §12 + `feature-area` Mode: promote-slice)
 4. Rewrite **`WORK_QUEUE.md`** table (full replace of table body is OK; preserve title + intro if present).
 5. Log **`scan`**, note row counts.
 
@@ -85,7 +85,7 @@ Use when the user invokes **`/execute-prd <mode>`** or references **`execution-l
    - **`forbidden_files`:** `src/**`, `app/**`, `packages/**`, `lib/**` (adjust if repo differs — **default deny** implementation trees)
 3. Execute **one** step only:
    - **Feature Area exploratory** → usually **`/feature-area validate <name>`** (read-only) or user-approved **`promote`** after CLEAR
-   - **Scope Slice exploratory** → **`/feature-area refine-slice`** (one file) **or** **`check`** (read-only)
+   - **Scope Slice exploratory** → **`/feature-area refine-slice`** (one file) **or** **`check`** (read-only). **`/feature-area promote-slice`** only immediately after **`/feature-area check`** on **that path** returned **CLEAR** in the **same** run (same episode); do not promote without that **CLEAR** **`check`**.
    - **Never** create **User Story** files in **v0** loop
 4. Append **`EXECUTION_LOG`**
 5. **Unlock** if step finished; if checker **BLOCKED**, unlock and set **Next Action** in chat from checker **Reason**
@@ -119,7 +119,7 @@ When **`Scope: scope-slice`** on one slice only, **other slices** of same FA sta
 
 | Wrong | Right |
 |-------|--------|
-| Promoting FA/SS without checker output | Run **`/feature-area check`** or validate/promote pre-checks from command doc |
+| Promoting FA/SS without checker output | Run **`/feature-area check`** first; **`promote-slice`** only after **CLEAR** on that path in the same episode |
 | Clearing **NEED_HUMAN** in chat | Human edits artifact + **BLOCKERS.Resolution** |
 | Editing locked-out paths | Obey **allowed_files** |
 | Expanding loop to code | **Stop** at rule §11 implementation boundary |

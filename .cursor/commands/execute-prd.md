@@ -44,7 +44,7 @@ After an implicit **`scan`** (perform **`scan`** if sources changed since lock t
    - **`/feature-area validate`**, **`check`**, **`refine-slice`**, **`promote`**, **`promote-slice`**, **`slice`** (proposal-only), or **documentation-only** updates to **`WORK_QUEUE` / `BLOCKERS` / `POINTS_OF_ATTENTION`** driven by scan — **no** User Story / Spec / Task file creation (**v0 stop** per rule §11).
 3. If step requires **checker `CLEAR`** and it is not **CLEAR**, log **BLOCKED** and **do not** patch promotion fields.
 4. Append **`EXECUTION_LOG`**: mode **`run-one`**, item, action, outcome.
-5. Release lock if step complete; if multi-step action (e.g. checker then promote), keep lock **only** if skill says so **and** **`stale`** stays **false**.
+5. Release lock if step complete; if the step pairs **`check`** then **`promote-slice`**, both may complete in one lock only when **`check` CLEAR** precedes **`promote-slice`** on an unchanged file (**`execution-loop`** rule §12); otherwise one step per **`run-one`**.
 
 ### `loop`
 
@@ -52,6 +52,7 @@ Repeat **`next` → `run-one`** until a **stop condition** in **`execution-loop`
 
 - Max iterations: **10** per user invocation unless user specifies a lower cap in the same message.
 - On stop, print **stop reason** + **`EXECUTION_LOG`** reference + recommended **`/execute-prd scan`**.
+- **`/feature-area promote-slice`:** allowed in **`loop` / `run-one`** only after **`/feature-area check`** on the **same** scope-slice path returned **`Advancement verdict: CLEAR`** in that episode (**`execution-loop`** rule §12, **`feature-area` Mode: promote-slice**).
 
 ---
 

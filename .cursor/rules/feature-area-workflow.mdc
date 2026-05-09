@@ -148,7 +148,7 @@ The following are strictly forbidden at each layer:
 ### Scope Slice lifecycle
 
 - Formal Scope Slice documents (files under `docs/product/scope-slices/`) **may only be created** after the Feature Area is marked `validated`, via `/feature-area scaffold-slices <name>` after an approved `/feature-area slice` proposal, or by manually instantiating `.cursor/templates/product/scope-slice.template.md`. New files default to **`exploratory`** and are **not** story-ready until refined.
-- Scope Slice **product-level** sections not completed at scaffold (`UX States`, `Data Touched`, etc.) are completed with **`/feature-area refine-slice`**; **`/feature-area promote-slice`** applies the narrow **ready-for-user-stories** transition only after SS-01–SS-10 and CC-01–CC-05 are **CLEAR** per `.cursor/commands/feature-area.md`.
+- Scope Slice **product-level** sections not completed at scaffold (`UX States`, `Data Touched`, etc.) are completed with **`/feature-area refine-slice`**. **`/feature-area check`** on the slice must return **CLEAR** (SS-01–SS-11 + CC-01–CC-05 per `.cursor/checkers/scope-readiness-checker.md`, including SS-11 **PENDING** / post-transition per checker note) before **`/feature-area promote-slice <scope-slice-path>`** may write. **`promote-slice`** applies the narrow **ready-for-user-stories** transition only per **Mode: promote-slice** in `.cursor/commands/feature-area.md` (pre-write gate: SS-01–SS-10 + CC-01–CC-05 **PASS**).
 - User stories may only be written after a Scope Slice is marked `ready-for-user-stories`.
 
 ### Feature Area → Scope Slices
