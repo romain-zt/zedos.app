@@ -1,0 +1,146 @@
+---
+globs: docs/prd/**,.cursor/commands/prd.md,.cursor/skills/prd/**
+alwaysApply: false
+---
+
+# PRD Governance
+
+## Philosophy
+
+Product definition is an evolving conversation. Chat-first, structured persistence second.
+
+- Natural discussion and brainstorming are expected
+- Do not force rigid questionnaires
+- Do not collapse into technical implementation unless the user explicitly switches
+
+## Delta Principle
+
+PRDs are updated via **deltas**, not rewrites.
+
+Flow: conversation → discovery → PRD delta proposal → human validation → write (when warranted).
+
+## Surface Discipline
+
+A PRD that names *what* the product does without naming *where* it lives is not ready for implementation.
+
+Before any feature group is treated as implementation-ready, its **product surface** must be explicit: primary market/language, buyer entry point, buyer-facing surface, merchant operating surface, source of truth, confirmation channel, and (if money is involved) payment model. The full gate lives in `.cursor/skills/prd/prd-builder/SKILL.md` §3.0.5.
+
+- UNKNOWN is a valid answer during discovery. Silent inference is not.
+- A group with one or more UNKNOWN required surface fields persists as `validated-with-open-surface` (not `validated`), with explicit `Surface Blockers` listed.
+- ICE Confidence is capped at 4 when buyer entry point, buyer-facing surface, merchant operating surface, source of truth, or market/language is UNKNOWN.
+- Implementation specs, tickets, or architecture derived from a `validated-with-open-surface` group require an explicit, written user waiver of the specific blocker.
+
+The Challenger agent enforces these checks (`FALSE CONVERGENCE RISK` reports). `/prd update` refuses to persist `validated` / `committed` while required surface fields remain UNKNOWN.
+
+## Templates
+
+Canonical reusable document templates live under `.cursor/templates/prd/`. Project docs under `docs/prd/` and `docs/product-decisions/` are generated or edited project instances. Do not treat project docs as workflow templates. When initializing a missing PRD doc, question queue, note, history file, state file, or product decision, copy/adapt from `.cursor/templates/prd/` first.
+
+## Canonical Templates
+
+Canonical reusable document templates live under `.cursor/templates/prd/`.
+
+Project files under `docs/prd/` and `docs/product-decisions/` are generated or edited project instances, not template sources.
+
+Do not use `docs/prd/notes/README.md`, `docs/prd/questions/open-questions.md`, `docs/prd/PRD.md`, `docs/prd/state.md`, `docs/prd/history.md`, or `docs/product-decisions/*.md` as canonical templates.
+
+When creating or reinitializing a discovery note, use `.cursor/templates/prd/discovery-note.template.md`.
+
+When creating or reinitializing the open question queue, use `.cursor/templates/prd/open-questions.template.md`.
+
+When creating or reinitializing PRD/state/history/product-decision files, use the matching file under `.cursor/templates/prd/`.
+
+Existing files under `docs/` may be read as project context, but not copied as reusable templates.
+
+`docs/prd/notes/README.md` is allowed to explain the local notes folder for humans, but it is not the source of truth for the note entry format. If it conflicts with `.cursor/templates/prd/discovery-note.template.md`, the `.cursor/templates/` version wins.
+
+## PRD State
+
+Before proposing changes, read persisted state:
+
+- `docs/prd/PRD.md` — the active PRD (always current)
+- `docs/prd/state.md` — version, direction summary, last major change
+
+If missing or stale, offer to initialize from `.cursor/templates/prd/` — do not assume an unwritten PRD.
+
+## Bootstrap from templates
+
+`.cursor/**` must be sufficient to regenerate the PRD docs workspace.
+
+If `docs/**` is missing, incomplete, or empty:
+- do not infer project state
+- do not use stale memory
+- run or suggest `/prd init`
+- initialize from `.cursor/templates/prd/`
+- never copy from existing `docs/**` as template source
+
+Required bootstrap targets:
+- `docs/prd/PRD.md`
+- `docs/prd/state.md`
+- `docs/prd/history.md`
+- `docs/prd/archive/.gitkeep`
+- `docs/prd/notes/`
+- `docs/prd/questions/open-questions.md`
+- `docs/product-decisions/README.md`
+
+Non-empty project docs must not be overwritten.
+
+## Version Bumps
+
+Create a new version only when:
+
+- Target users or primary problem shifts
+- Business model changes
+- Product scope materially expands, cuts, or re-prioritizes
+- Core workflows or strategic direction change
+- Major assumptions are invalidated
+
+Do not bump for typo fixes, small clarifications, or minor refinements — patch in place.
+
+When bumping, follow this sequence:
+1. Add a row to `docs/prd/history.md` (version, date, why)
+2. Copy current `PRD.md` to `docs/prd/archive/PRD-v<N>.md`
+3. Update `PRD.md` with new content and increment frontmatter version
+4. Update `state.md`
+
+Old versions stay readable in `archive/`.
+
+## Convergence vs Persistence
+
+Discovery artifacts are **not** PRD persistence.
+
+| Artifact | Location | Allowed in |
+|---|---|---|
+| Raw captured input | `docs/prd/notes/` | `discover`, `note`, `questions` |
+| Question queue | `docs/prd/questions/` | `discover`, `note`, `questions` |
+| Synthesis proposal | chat only | `converge` |
+| PRD persistence | `docs/prd/PRD.md`, `state.md`, `history.md`, `archive/` | `update` only, after Patch Intent Summary or full PRD Delta Proposal approval |
+
+`/prd converge` must never write `PRD.md`, `state.md`, `history.md`, or `archive/`.
+
+`/prd update` must never discover new content. If new content appears during an update turn, stop and return to `/prd note` or `/prd converge`.
+
+**Patch behavior:**
+- `PRD.md` and `state.md` patches are allowed only after an approved Patch Intent Summary or full PRD Delta Proposal.
+- `history.md` and `archive/` updates are allowed only for approved version bumps, or explicitly approved scaffold archival.
+- Scaffold is **never** archived automatically.
+
+**Status precision.** Do not say "all groups validated" if any group status is `exploratory`, `validated-with-open-surface`, `unvalidated`, or `candidate`. Use exact status language at all times.
+
+## Real-time capture vs persisted PRD
+
+The workflow has two write speeds:
+
+**1. Real-time capture** (low risk — always allowed during discovery):
+- `docs/prd/notes/` — written immediately during `/prd discover`, `/prd note`, and `/prd questions`
+- `docs/prd/questions/open-questions.md` — updated immediately during discovery
+
+**2. Persisted PRD** (gated — only through `/prd update` after approval):
+- `docs/prd/PRD.md`
+- `docs/prd/state.md`
+- `docs/prd/history.md`
+- `docs/prd/archive/`
+
+For persisted PRD writes, prefer **Patch Intent Summary** for low-risk patches. Use full Before/After only for risky changes or when the user explicitly replies `preview`.
+
+**The assistant must avoid duplicating large PRD content in chat.** Chat carries intent, risks, and approval state. Files carry the full document content.

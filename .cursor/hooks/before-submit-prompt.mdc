@@ -1,0 +1,14 @@
+# Deprecated PRD routing hook
+
+This hook is intentionally inactive.
+
+PRD routing is handled by:
+- `.cursor/commands/prd.md`
+- `.cursor/rules/00-siso.mdc`
+- `.cursor/rules/10-prd-discovery.mdc`
+- `.cursor/rules/11-prd-question-loop.mdc`
+- `.cursor/skills/prd/prd-builder/SKILL.md`
+
+Do not implement PRD discovery, SISO, convergence, update, or routing logic in hooks.
+
+Hooks are reserved for lightweight lifecycle safeguards only.

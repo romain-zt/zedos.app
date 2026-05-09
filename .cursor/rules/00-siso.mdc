@@ -1,0 +1,91 @@
+---
+description: SISO — validate input quality before execution.
+alwaysApply: true
+---
+
+# SISO — Shit Input → Shit Output
+
+## Core Principle
+
+Low-quality input produces low-quality execution. Unclear, contradictory, or underspecified requests must never silently trigger planning, coding, refactoring, or architecture decisions.
+
+SISO is the highest-priority execution safety rule. It overrides speed bias, execution bias, and speculative implementation.
+
+## When SISO Applies
+
+SISO blocks **substantive execution only**: modifying files, creating architecture, scaffolding, refactoring, dependency installation, build/test execution, multi-step automation.
+
+SISO does NOT block: conversation, brainstorming, product discussion, clarification questions, lightweight inspection, or reading explicitly referenced files.
+
+## Failure Signals
+
+Block execution when any of these exist:
+
+- **Missing scope** — "fix it", "improve this", "make it scalable" without a target
+- **Missing success criteria** — no definition of "done"
+- **Hidden context dependency** — assumes undocumented rules, prior conversations, or invisible state
+- **Contradictory goals** — maximum flexibility + strict determinism, without tradeoff priority
+- **Undefined authority** — unclear whether changes to architecture, APIs, or contracts are allowed
+- **Dependency ambiguity** — unknown blockers, prerequisites, or external integrations
+- **Speculative language** — "maybe", "probably", "something like", "AI magic" in execution-critical areas
+
+## Response Strategy
+
+When input is insufficient:
+
+1. **Stop.** Do not invent requirements or silently choose tradeoffs.
+2. **Identify the gap.** State what is missing, why it matters, what decision is blocked.
+3. **Ask targeted questions.** Minimum required to safely proceed — scope, constraints, expected output, authority.
+4. **Optional: narrow assumptions.** Only when reversible, low-risk, explicitly declared. Never to bypass critical ambiguity.
+
+## Severity Levels
+
+- **GREEN** — Clear enough to proceed safely.
+- **YELLOW** — Some ambiguity. Clarification recommended before large execution.
+- **ORANGE** — High risk of incorrect implementation. Pause until clarified.
+- **RED** — Too ambiguous or contradictory to execute responsibly.
+
+## Waiver
+
+Ambiguity is accepted only when the user explicitly validates assumptions, answers clarification questions, or says "proceed anyway" / "use your judgment." Even then, avoid irreversible decisions under uncertainty.
+
+## Request Mode Classification
+
+Before applying SISO blocking, classify the request:
+
+**CHAT** — conversation, brainstorming, thinking aloud, exploring ideas. Do not block.
+
+**DISCOVERY** — clarifying product direction, PRD discussion, strategy, requirements exploration. Generating rules, skills, agents, or governance workflows counts as discovery. Do not block. Surface ambiguity as discussion points, not blockers.
+
+Architecture discussion, agent definition, PRD methodology, workflow design, governance rules, process deltas, and skill authoring are all **DISCOVERY** — unless the user explicitly requests direct file mutation, creation of execution specs, or commitment to an implementation plan.
+
+**EXECUTION** — concrete work: code changes, file edits, implementation, scaffolding, refactoring, dependency installation, spec generation for execution, architecture decisions to be acted on. Apply full SISO.
+
+SISO blocks only when `REQUEST_MODE = EXECUTION AND INPUT_QUALITY = ORANGE or RED`.
+
+The more autonomous the system, the stricter SISO must be — automation amplifies bad assumptions.
+
+## PRD Discovery Exception
+
+Any input during `/prd discover`, `/prd note`, `/prd questions`, or informal PRD discussion (product thinking, raw founder input, booking flow clarification, etc.) is always **DISCOVERY** regardless of how rough, incomplete, or ambiguous it is.
+
+- Do **not** block rough input.
+- Do **not** return `SISO_STATUS: ORANGE` or `RED`.
+- Treat the message as raw discovery material.
+- Append it to the active discovery note.
+- Update the question queue if relevant.
+- Ask one follow-up question maximum.
+
+`/prd update` is a structured PRD persistence workflow. It is not implementation, specs, tickets, architecture, dependency installation, terminal execution, or code mutation. SISO must not block `/prd update` as execution. However, `/prd update` still requires explicit persistence approval through a Patch Intent Summary + `approved`, or a full PRD Delta Proposal + `approved`. Never treat `ok` as persistence approval.
+
+SISO blocking applies in these PRD contexts **only** when the user explicitly requests:
+- implementation specs, tickets, or architecture intended for execution
+- code changes or dependency installation
+
+**UX flow and product surface statements are always DISCOVERY.** Descriptions of buyer journey, checkout interaction patterns, payment surface choices (iframe, redirect, modal), or product-level decisions stated during discovery are raw product direction — not implementation specs. Do not block them.
+
+**Discovery note and question queue writes** (`docs/prd/notes/`, `docs/prd/questions/open-questions.md`) are capture artifacts — they are always allowed during discovery and must never be blocked.
+
+## Anti-Patterns
+
+Never: simulate understanding, fake confidence, generate architecture from vague intent, infer business rules silently, confuse motion with progress, or explore repositories indefinitely instead of clarifying.
