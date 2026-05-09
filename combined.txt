@@ -1,0 +1,504 @@
+=== docs/prd/PRD.md ===
+---
+version: v1
+status: draft
+supersedes: null
+date: 2026-05-09
+---
+
+# Why This Version Exists
+
+Establish a single narrative PRD for **Zedos**: a web product that moves the current Cursor-style PRD workflow online for **solo founders**, with a deliberate **v0** cut (PRD-only slice) and **deferred** product areas shown as under construction. This version exists to align product language with discovery (Q-001–Q-012 and `2026-05-09-zedos-discovery-note.md`) before feature-group detail.
+
+# Product Overview
+
+**Zedos** helps founders who use AI to **ship and validate** a market idea when they only have a **vague concept**. In **v0**, the product delivers **guided clarification**, a **versioned in-app PRD**, **question history**, and **readable, shareable output** in the browser. Other capabilities implied by the long-term vision (services/feature split, technical and Cursor workspace alignment, user stories, test-first delivery) are **out of v0 scope** and are surfaced elsewhere in the dashboard as **under construction**.
+
+# Problem & Users
+
+**Primary users:** founders using AI to iterate on ideas and eventually ship.
+
+**Core problem:** they start fuzzy and need a **structured path** from **idea → clarified product framing → versioned PRD** without losing thread. **v0** focuses purely on that PRD path; downstream execution workflows are intentionally not shipped in v0.
+
+# Product Surface
+
+- Primary market / language: **English** for UI and AI in v0; **French** planned next; content and structure should be **i18n-ready** without requiring multi-language UI in v0.
+- Buyer entry point: **Public self-serve signup** (no waitlist/invite gate as the default for v0).
+- Buyer-facing surface: **Web application** (primary place to clarify, iterate, and version PRDs).
+- Merchant operating surface: **Same signed-in founder** in the web app (solo v0; no separate merchant role).
+- Source of truth: **In-app versioned PRD** (canonical state lives in the product, not in an exported file).
+- Confirmation channel: **In-app first** — obvious controls (buttons, inputs, or equivalent) to advance and approve steps; not email or external channels as the default for v0.
+- Payment model: **Free to start** with a **configurable starter credit grant (X)**; **AI usage consumes prepaid credits per AI operation**; at **zero credits**, **generation is blocked** until **more credits are purchased**. **No subscription in v0.** **No BYOK in v0.** **No unlimited free AI.** Positioning: start free with included credits; buy more when needed.
+- Hard v0 exclusions:
+  - **Subscriptions, BYOK, unlimited free AI** (see payment model).
+  - **Multi-user collaboration** (invites, roles, co-editing) in v0.
+  - **Markdown export** as a bar for “PRD complete” (export is useful but **not** required for done); **PDF export** not v0-critical.
+  - **Advanced share controls** in v0: **no** link password, **no** time-based expiry, **no** extra “private link” controls beyond **owner disable** and **noindex** (simple public read-only links only).
+
+## Surface Blockers
+
+- **Success metrics for v0 are not yet chosen** (discovery: explicit gap — Q-010). Until defined, treat impact and learning claims as **non-measured**.
+
+# Global Product Picture
+
+**v0** is a **solo** founder experience: **multiple projects**, each with **multiple PRD versions**, **guided clarification**, persisted **question history**, **credit-metered AI**, and **simple public read-only share links** (anonymous viewers, no workspace/history leakage, owner can disable, **not** search-indexed).
+
+**Beyond v0 (north star, not in scope for this release):** discovery described a longer arc — **product clarification → versioned PRD →** services/feature grouping **→** technical needs **→** architecture / Cursor setup **→** user stories **→** test-first delivery and iteration. That sequence informs direction but **must not** be mistaken for v0 deliverables; non-PRD surfaces appear as **under construction** in the customer dashboard.
+
+# Operating Model
+
+- **One account owns** projects and PRDs (**single-user v0**).
+- **Acquisition:** open signup.
+- **Work:** browser-first; owner advances the PRD through **in-app** actions and consumes **credits** on **AI operations**.
+- **Sharing:** owner generates **read-only** links for external viewers; viewers **cannot** edit, comment, duplicate, or see **private/workspace history** on the share surface.
+- **Differentiation of navigation:** users move between **projects** and between **PRD versions within a project** (two distinct navigation jobs).
+
+# Core User Journeys
+
+1. **Sign up** → land in dashboard (non-PRD areas may show **under construction**).
+2. **Create or select a project** → open the PRD / clarification flow for that project.
+3. **Clarify and iterate** using **in-app** controls; **question history** is visible/available to the owner in the private workspace.
+4. **Version the PRD** and move between **versions** within a project.
+5. **Switch projects** to work on another PRD lineage.
+6. **Credits:** see balance; **AI operations** consume credits; at **zero**, **generation is blocked** until **purchase/top-up** (exact purchase UX is product work, not prescribed here).
+7. **Share:** owner creates a **read-only public link**; anonymous viewer reads **only** the shared PRD content; owner can **disable** the link; page is **not** intended for search indexing.
+8. **Not in v0:** invited editors, comments on share page as collaboration, passworded or expiring links, Markdown/PDF export as mandatory “done” criteria.
+
+# Flow Inventory
+
+| Flow | v0 |
+|------|-----|
+| Sign up / sign in | Yes |
+| Create / list / open **projects** | Yes |
+| Clarification loop (guided) + **question history** | Yes |
+| Persist and browse **PRD versions** per project | Yes |
+| **Credit** balance, consumption, block at zero, **top-up path** | Yes (product requirement; provider-agnostic here) |
+| **Share:** mint read-only URL, anonymous read, revoke link, noindex | Yes |
+| Markdown / PDF export | No as MVP gate (MD may follow as fast / v0.1) |
+| Team / invites / roles | No |
+| Post-PRD pipeline (services split, Cursor artifacts, user stories, CI) | No (dashboard: under construction) |
+
+# Business Objects
+
+- **User account** (solo v0).
+- **Project** (container for a product line / idea).
+- **PRD version** (versioned document state in-app).
+- **Clarification / question history** (owner-private workspace context; not exposed on anonymous share).
+- **AI credit balance** and **credit ledger**/consumption semantics (per operation — product-level).
+- **Share link** (read-only public surface; revocable; noindex intent).
+
+# Configuration Matrix
+
+| Dimension | v0 stance |
+|-----------|-----------|
+| UI + AI language | EN |
+| Future locale | FR (after EN); i18n-ready |
+| Starter credits **X** | **TBD / operator-config** (not fixed in this PRD) |
+| Share link | Simple public read-only; disable by owner; noindex |
+| Credit packs / pricing | Product decision pending economics — **not fixed here** |
+
+# Integration Boundaries
+
+- **Payments:** credit **top-ups** imply an external **payment** path — **provider, regions, and compliance** are **not** locked in this PRD.
+- **AI inference:** credit burn implies **managed AI usage** — **model/provider** choices are **not** specified here (no BYOK in v0 per scope).
+- **Identity:** public signup and signed-in owner; **anonymous** read-only **share** viewers (no account).
+- **Search engines:** shared URLs treated as **non-indexable** by product intent (policy/robots level — not implementation).
+- **Export:** optional **Markdown** later for alignment outside the app; **PDF** deferred from v0 critical path.
+
+# MVP Completeness Checklist
+
+- [ ] Founder can **sign up** and reach the PRD workflow.
+- [ ] Founder can manage **multiple projects** and **multiple PRD versions** per project.
+- [ ] **Guided clarification** runs with **in-app** advance/approve affordances.
+- [ ] **Question history** is persisted for the owner workspace.
+- [ ] **Versioned PRD state** is authoritative **in-app**; “done” for a version **does not** depend on file export.
+- [ ] **Credit** balance, **per-operation** consumption, **block at zero**, and a **top-up** path exist.
+- [ ] **Read-only share link**: generate, anonymous read, **no** edit/comment/duplicate/share of private history on viewer surface; **disable** link; **noindex** behavior.
+- [ ] Non-PRD product areas show **under construction** where applicable.
+- [ ] **Explicit product gap:** **success metrics** for v0 remain **undefined** (see Success Metrics).
+
+# Feature Groups
+
+| Id | Name | Status | Notes |
+|----|------|--------|--------|
+| FG-PRD-V0 | PRD workspace (web): projects, versions, clarification, credits, share | `exploratory` | Sole v0 delivery slice |
+| FG-FUTURE | Services/feature split, tech alignment, Cursor packaging, user stories, delivery loop | `deferred` | Names only; not v0 |
+
+# Build Sequence
+
+Not defined in this document. Requires separate feature-group convergence and explicit ordering after global PRD is stable.
+
+# Out of Scope
+
+- **Everything beyond the PRD path** for v0 (shown as **under construction** in dashboard where relevant).
+- **Subscriptions, BYOK, unlimited free AI.**
+- **Collaboration** (multi-user, invites, co-editing).
+- **Password / expiry / extra private-link controls** for shares in v0; **advanced sharing** may be explored as a **later paid** layer if traction exists.
+- **PDF export** as v0-critical.
+- **Markdown export** as mandatory for “complete” (may land as fast follow / v0.1).
+- Defining **success metrics** (still open — see Success Metrics).
+- **Implementation** specs, stack, tickets, and architecture.
+
+# Success Metrics
+
+**Not yet chosen** (discovery Q-010). This is an explicit gap: do not infer adoption or revenue success without a later decision. ICE or prioritization that depends on measurable outcomes should treat confidence as **limited** until metrics are set.
+
+# Risks & Assumptions
+
+- **Metrics gap:** shipping without success criteria weakens learning and prioritization; assumption is metrics will be set later without rewriting scope silently.
+- **Public read-only links:** abuse, scraping, or unintended leakage of **private** workspace content if boundaries blur — product must keep **share surface** limited to agreed read-only PRD content.
+- **Credit economics:** starter **X** and price points are **config**; wrong defaults could either starve first value or invite unsustainable cost — must be tuned outside this PRD.
+- **North-star confusion:** stakeholders may read long-term pipeline as v0; assumption is **clear labeling** in-product and in this PRD keeps v0 narrow.
+
+=== docs/prd/archive/.gitkeep ===
+
+=== docs/prd/history.md ===
+# PRD Version History
+
+Lightweight log of version bumps and explicitly approved major patches.
+
+| Version | Date | Why | Archive |
+|---------|------|-----|---------|
+| v1 | 2026-05-09 | Initial scaffold | — |
+
+Rules:
+- Add rows only after explicit approval.
+- Version bumps require archive creation.
+- Patches do not require archive/history updates unless explicitly approved.
+
+=== docs/prd/state.md ===
+<!--
+  PRD State Tracker — agents read this before loading PRD.md.
+  This file is project-scoped and generated from `.cursor/templates/prd/state.template.md`.
+-->
+
+| Field | Value |
+|-------|-------|
+| `VERSION` | `v1` |
+| `DIRECTION` | `Zedos v0: web-first PRD workspace for solo founders — guided clarification, versioned in-app PRD, question history, credit-metered AI, simple public read-only share links; non-PRD surfaces under construction.` |
+| `LAST_MAJOR_CHANGE` | `Draft PRD narrative persisted from discovery (Q-001–Q-012, 2026-05-09 notes). Success metrics still open.` |
+
+**Active PRD:** always `docs/prd/PRD.md`.
+
+=== docs/prd/notes/2026-05-09-zedos-discovery-note.md ===
+# Zedos Discovery Note — 2026-05-09
+
+Source: PRD discovery session (`/prd discover`)
+
+Status: active
+
+---
+
+## 2026-05-09 — Discovery session opened
+
+### Raw user input
+> /prd discover
+
+### Interpreted product insight
+Discovery was started without additional narrative; `state.md` direction is still TBD and the PRD remains an initial scaffold.
+
+### PRD implication
+No persisted PRD facts change yet—the next inputs should establish problem, users, or a pilot so scaffold sections can be replaced via convergence and `/prd update`.
+
+### New / updated questions
+- Q-001 — replaced scaffold “TBD” with first orienting product question (see `open-questions.md`).
+
+---
+
+## 2026-05-09 — Founders using AI to ship/validate; v0 = PRD only
+
+### Raw user input
+> founder that use AI to ship/validate their market idea. They usually have a vague idea, and zedos.app wants to acompagny them.
+>
+> Vague idea
+> → Product clarification
+> → Versioned PRD
+> → Split into services / feature groups
+> → Technical needs analysis aligned with those groups
+> → Create initial architecture/setup to explore the v1 technical solution
+> → Update the Cursor setup with new agents/rules/skills for the chosen solution
+> → Split into user stories
+>
+> For each user story:
+>   → Functional spec
+>   → If approved: write integration tests for the user-story flow
+>   → If approved: split the spec into subtasks/tasks
+>   → Write tests for each subtask
+>   → Validate/merge test work into the active feature branch
+>   → Only then implement the green phase
+>   → Review / re-implement until approved
+>   → Merge / deploy
+>   → Define the next step
+>
+> Then loop back to:
+> → Iterate on the next user story
+>
+> ---
+> So far, all the other features/flows are going to be a "under construction" in the customer dashboard. We'll only focus on PRD for v0
+
+### Interpreted product insight
+Primary users are founders who use AI to validate and ship ideas; they start from a vague concept and want guided progression from clarification through a versioned PRD, then (later) services/feature groups, technical and architecture alignment, Cursor workspace setup, user stories, and a test-first delivery loop. For v0, scope is intentionally narrow: only the PRD slice of that journey; the rest of the product appears as “under construction” in the customer dashboard.
+
+### PRD implication
+`Problem & Users` and `Global Product Picture` can describe an accompaniment workflow from vague idea to versioned PRD as the v0 promise, with a staged long-term roadmap implied but explicitly out of scope for v0. `Feature Groups`, MVP checklist, and surface sections should treat non-PRD capabilities as deferred and reflect a dashboard that signals “under construction” outside the PRD path.
+
+### New / updated questions
+- Q-001 answered (moved to Answered in `open-questions.md`).
+- Q-002 opened — v0 product surface (where the PRD workflow runs vs dashboard shell).
+
+---
+
+## 2026-05-09 — Web app; multi-project and versioned PRDs
+
+### Raw user input
+> We need to "move" our current cursor flow into a web-app online.
+> Userr will manage it thrgouht a well-designed ux/ui.
+> He should be able to easily navigate between several PRDs for different project, but also several PRDs (versions) of a specific project.
+
+### Interpreted product insight
+V0 centers on bringing the existing Cursor-based PRD workflow into a **web application** with strong UX. Information architecture must support **switching between multiple projects** (each with its own PRD lineage) and **switching among multiple PRD versions within one project**, without conflating the two navigation modes.
+
+### PRD implication
+`Product Surface`, `Buyer-facing surface`, and `Core User Journeys` can state **browser/web** as the primary experience for v0 PRD work; **Business Objects** should name **Project** and **PRD version** as first-class entities; navigation patterns belong in journeys and the configuration/global picture. **Confirmation channel** for step/version approval remains unspecified until captured (Q-003).
+
+### New / updated questions
+- Q-002 answered (primary surface = web app; multi-project + per-project version navigation). **Partial:** default “approve” / advance gesture not yet defined.
+- Q-003 opened — confirmation / approval pattern in the web app.
+
+---
+
+## 2026-05-09 — Confirmation: in-app first
+
+### Raw user input
+> In-app as first (button/input/whatever easy to use in-app)
+
+### Interpreted product insight
+Advancing and approving the PRD/clarification flow is **in-product first**, using simple, obvious controls (buttons, inputs, or equivalent) rather than email or external tools as the default path for v0.
+
+### PRD implication
+`Confirmation channel` can default to **in-app actions**; out-of-app confirmation (email, etc.) is not required for v0 unless you add it later. **Core User Journeys** should show explicit approve/continue controls at each gated step.
+
+### New / updated questions
+- Q-003 answered; Q-004 opened — primary language/locale for v0.
+
+---
+
+## 2026-05-09 — Language: EN first, FR planned
+
+### Raw user input
+> EN only as first. Then FR will arrive so plan it accordingly.
+
+### Interpreted product insight
+The product should launch v0 **English-only** (UI + AI), with **French** as a near-term follow-on; design and content decisions should **assume localization later** without shipping FR in the first release.
+
+### PRD implication
+**Primary market / language** can be set to English-first with a stated FR phase; global/config sections should call out **i18n readiness** (copy structure, locale strategy) as a deliberate plan, not a v0 scope expansion. No need to implement FR strings in v0 if EN-only is explicit.
+
+### New / updated questions
+- Q-004 answered; Q-005 opened — how users first enter the product (buyer entry) for v0.
+
+---
+
+## 2026-05-09 — Buyer entry: public signup
+
+### Raw user input
+> public signup
+
+### Interpreted product insight
+New users reach Zedos through **public self-serve signup** (no invite-only or waitlist gate as the v0 default).
+
+### PRD implication
+**Buyer entry point** can be documented as open acquisition; onboarding and auth journeys assume self-serve registration. Compliance/abuse posture may still be layered later but is not the default gate in v0.
+
+### New / updated questions
+- Q-005 answered; Q-006 opened — canonical PRD / export vs in-app only (source of truth for v0).
+
+---
+
+## 2026-05-09 — Source of truth in-app; export optional
+
+### Raw user input
+> For v0, the in-app versioned PRD is the source of truth.
+>
+> Export is useful but not required for a PRD version to count as “done”. The first version should focus on guided clarification, versioned PRD state, question history, and shareable/readable in-app output.
+>
+> Markdown export can be a fast follow or lightweight v0.1, because PRDs are commonly used as alignment documents for teams and stakeholders, and many PRD tools/templates assume the document must be easy to share or reuse outside the app. PDF export is not v0-critical.
+
+### Interpreted product insight
+**Canonical state** lives in the product: the **in-app versioned PRD** is authoritative; “done” does not depend on export. v0 should **prioritize** guided clarification, persisted versioned PRD, question history, and an **in-app artifact** that is readable and shareable (view/link) without requiring file export. **Markdown export** is valuable for real-world alignment workflows and can land as a **fast follow** or thin **v0.1**; **PDF** is explicitly **out of v0 critical path**.
+
+### PRD implication
+**Source of truth** = in-app; **MVP Completeness** gates “PRD complete” on in-app readiness, not downloads. **Integration/export** belongs in roadmap as phased (MD optional soon, PDF later). Journeys should include **sharing/reading** the PRD **inside the product** as the alignment surface for v0.
+
+### New / updated questions
+- Q-006 answered; Q-007 opened — v0 monetization / pricing intent.
+
+---
+
+## 2026-05-09 — v0 monetization: free to start, prepaid AI credits
+
+### Raw user input
+> v0 Monetization Model
+>
+> Zedos is free to start, but AI usage is credit-based.
+>
+> - New users receive X free signup credits.
+> - Those credits let them create and iterate on their first PRD.
+> - When credits are exhausted, generation is blocked until they buy more credits.
+> - No subscription in v0.
+> - No BYOK in v0.
+> - No “unlimited free” AI usage.
+> - Credits are prepaid and consumed per AI operation.
+>
+> Default positioning:
+> “Start free with included credits. Buy more only when you need them.”
+
+### Interpreted product insight
+**GTM:** free onboarding with a **bundled starter credit (X)** sufficient to bootstrap a first PRD iteration. **AI is metered:** each AI operation **consumes prepaid credits**; at **zero balance**, **generation/interaction that spends credits is blocked** until **top-ups**. **Out of scope for v0:** subscriptions, **BYOK**, and **unlimited free** AI. **Positioning** emphasizes included credits then pay-as-you-go.
+
+### PRD implication
+**Payment model** = freemium entry + **prepaid credits** for AI; **hard exclusions** list subs/BYOK/unlimited-free. **MVP** must include **credit balance**, **consumption per operation**, **purchase/top-up path**, and **hard stop** when depleted. **X** remains a tunable parameter unless you fix a number in the PRD. **Success/revenue** metrics can anchor on credit attach rate and repeat purchases—not MRR from subs in v0.
+
+### New / updated questions
+- Q-007 answered; Q-008 opened — whether **X (free signup credits)** is fixed in the PRD vs TBD/tunable.
+
+---
+
+## 2026-05-09 — Signup credits (X): configuration, not a PRD-fixed number
+
+### Raw user input
+> stay TBD (that's just going to be configuration so no matters)
+
+### Interpreted product insight
+The **starter credit grant (X)** should remain **TBD in the PRD as a fixed value**—it will be handled as **runtime/configuration**, not as a named product commitment in documentation.
+
+### PRD implication
+**Configuration Matrix** can treat **free signup credits** as an **operator-tunable parameter**; the PRD states the **model** (included credits + top-ups) without locking **X**. Pilot economics and UX still assume a **non-zero starter balance**, without a canonical number in `PRD.md`.
+
+### New / updated questions
+- Q-008 answered; Q-009 opened — v0 **single-user vs multi-user/collaboration** on a project.
+
+---
+
+## 2026-05-09 — v0 single-user (no collaborators)
+
+### Raw user input
+> single-user for v0
+
+### Interpreted product insight
+Projects and PRDs are **owned and used by one account in v0**—no inviting teammates, shared workspaces, or role-based collaboration in scope for the first release.
+
+### PRD implication
+**Operating model** and **journeys** stay **solo-founder**; sharing remains **read/share via in-app links/views** (per prior intent), not co-editing. Collaboration can be a **later phase** without scoping v0 MVP. **Merchant operating surface** aligns with the **same person** as buyer for v0.
+
+### New / updated questions
+- Q-009 answered; Q-010 opened — **success metrics / v0 outcomes**.
+
+---
+
+## 2026-05-09 — Success metrics: not defined yet
+
+### Raw user input
+> i don't yet know
+
+### Interpreted product insight
+**v0 success metrics are not chosen yet**—this remains an explicit gap for prioritization, ICE confidence, and any pilot commitment language.
+
+### PRD implication
+**Success Metrics** stays **TBD in the PRD** until you decide; discovery records that **uncertainty is acknowledged** (not silently assumed). **ICE Confidence** for scope/prioritization should stay **capped** until measurable outcomes exist. Optional: pick metrics **before** calling a v0 pilot “successful.”
+
+### New / updated questions
+- Q-010 answered (metrics TBD); Q-011 opened — **viewer access for shared in-app PRD links** (auth vs public read-only).
+
+---
+
+## 2026-05-09 — Share links: unauthenticated read-only (v0)
+
+### Raw user input
+> Answer:
+> Unauthenticated read-only links are in scope for v0.
+>
+> A PRD owner can generate a share link that lets external viewers read the PRD without signing in. Viewers cannot edit, comment, duplicate, or access workspace/private history.
+>
+> Default:
+> - Owner/editor: signed in
+> - Viewer: unauthenticated read-only link
+> - Link can be disabled by the owner
+> - Public link is not indexed by search engines
+
+### Interpreted product insight
+v0 **includes** **public, read-only share URLs**: owners (signed-in) create links; **anonymous viewers** may **read the PRD only**—no edit, comment, fork, or access to **workspace/private history**. **Revocation:** owner can **disable** the link. **SEO:** shared pages must not be **search-indexed** (treat as **noindex** product requirement).
+
+### PRD implication
+**Core User Journeys** need **generate link → unauthenticated read → revoke**; **privacy** separates **shared PRD content** from **account/workspace history** and AI/clarification trails if those are private. **Integration/export** remains distinct (Q-006). **MVP** includes link governance (disable); viewer surface is **read-only**.
+
+### New / updated questions
+- Q-011 answered; Q-012 opened — optional **link controls** beyond disable (expiry, password) for v0 vs later.
+
+---
+
+## 2026-05-09 — Sharing controls: simple for v0; advanced maybe paid later
+
+### Raw user input
+> v0 sharing is intentionally simple: public read-only links only. No password, no expiry, no private-link controls. Advanced sharing can become a paid feature later if traction exists.
+
+### Interpreted product insight
+v0 scope is **minimal sharing**: **public read-only URLs** with the already-decided **owner disable** + **noindex** behavior only—**no** passwords, **no** expiring links, **no** extra “private link” controls. **Richer sharing controls** are explicitly **deferred** and may become a **future paid** line if the product gets traction.
+
+### PRD implication
+**MVP** and **journeys** avoid scope creep on link policy; **Out of scope / roadmap** can list password/expiry/private-link controls as **post-v0** or **monetized later**. **Payment model** already credit-based—**advanced sharing as add-on revenue** is a hypothesis, not v0 scope.
+
+### New / updated questions
+- Q-012 answered. *(No further items in the tactical queue from this thread.)*
+
+---
+
+Rules:
+- Append only.
+- Do not edit past entries unless correcting a clear interpretation error.
+- Notes are input material, not PRD persistence.
+- Content from notes reaches PRD.md only through `/prd converge` → approved delta → `/prd update`.
+
+=== docs/prd/questions/open-questions.md ===
+# PRD Open Questions
+
+## Active queue
+
+| ID | Status | Priority | Question | Source note | Blocks |
+|---|---|---:|---|---|---|
+
+## Answered
+
+| ID | Answered at | Question | Answer | PRD impact |
+|---|---|---|---|---|
+| Q-001 | 2026-05-09 | What core problem are you solving, and who is the first user or segment you want to serve? | **Users:** founders who use AI to ship and validate a market idea, often starting from a vague concept. **Problem:** need structured accompaniment from vague idea → product clarification → versioned PRD; long-term vision continues into services/feature groups, technical analysis, architecture/Cursor setup, user stories, and test-first delivery, but **v0 intentionally ships only the PRD slice**; other areas show as “under construction” in the customer dashboard. | Anchors Problem & Users and clarifies v0 scope cut (PRD path in scope; rest deferred in the product narrative). Persist via `/prd converge` → `/prd update`. |
+| Q-002 | 2026-05-09 | For v0 (PRD-only), where does the founder primarily work on clarification and the versioned PRD—browser/dashboard only, Cursor/IDE-integrated flow, or a defined hybrid—and what is the single default “approval” action in that experience (e.g. explicit approve button, structured chat command)? | **Primary work surface:** web app—migrate the current Cursor PRD flow into an online product with intentional UX/UI. **Navigation:** users must easily switch between **multiple PRDs across different projects** and between **multiple PRD versions within one project**. **Hybrid with Cursor:** not positioned as the v0 primary path here (may remain optional later). **Approval action:** not specified in this input; tracked under Q-003. | Buyer-facing surface = web; implies business objects for Project vs PRD version; informs Core User Journeys (project switcher + version/history navigation). Persist via `/prd converge` → `/prd update`. |
+| Q-003 | 2026-05-09 | How does a user move the PRD workflow forward in the web app—what is the default “approve” or “accept” interaction for a clarification step or PRD version (e.g. primary button + optional comment, review modal, async review link), and is any confirmation required outside the app (email, etc.)? | **In-app first:** use obvious in-product controls—buttons, inputs, or similarly easy interactions—to advance or approve; v0 does not rely on out-of-app confirmation as the default path. Exact control pattern (button vs inline input vs modal) can remain a UX detail. | Sets `Confirmation channel` to in-app-first; journeys should include explicit continue/approve affordances; external email/link confirmation not a v0 default. Persist via `/prd converge` → `/prd update`. |
+| Q-004 | 2026-05-09 | For v0, what **language/locale** should the PRD experience (UI + AI) optimize for first—single language only, or multiple from day one? | **English only** for the first release (UI + AI). **French** is expected next—plan product and UX so **localization can land** (i18n-ready content/strategy) without blocking v0 on multi-language UI. | Locks **Primary market / language** to EN-first; documents a phased roadmap to FR; informs Configuration Matrix / MVP (i18n readiness vs FR scope). Persist via `/prd converge` → `/prd update`. |
+| Q-005 | 2026-05-09 | For v0, how does a **new founder** first get into Zedos (buyer entry)—e.g. public signup, waitlist, invite-only beta, or another gate? | **Public signup** — open, self-serve registration as the v0 default (not waitlist- or invite-gated). | Sets **Buyer entry point** to public acquisition; onboarding/auth journeys assume standard signup. Persist via `/prd converge` → `/prd update`. |
+| Q-006 | 2026-05-09 | For v0, is the **in-app versioned PRD the single source of truth**, or must **export/download** (e.g. Markdown/PDF) be a must-have when a PRD version is considered “complete”? | **In-app versioned PRD is the source of truth.** Export is **not** required for a version to count as “done.” **v0 focus:** guided clarification, **versioned PRD state**, **question history**, and **shareable/readable output inside the app** (view/link semantics). **Markdown export:** planned as **fast follow** or lightweight **v0.1**—common need for stakeholder alignment outside the tool. **PDF export:** **not v0-critical** (defer). | Pins **Source of truth** to the product database/UI; separates MVP “complete” from file export; phases export MD vs PDF; informs MVP checklist and sharing journeys. Persist via `/prd converge` → `/prd update`. |
+| Q-007 | 2026-05-09 | For v0 (PRD-only), what is the **monetization intent**—free while iterating, freemium, paid subscription, usage/credits, or explicit “decide later” with a **default assumption** you want the PRD to use for scope tradeoffs? | **Free to start** with **signup credits (X)** to create/iterate a first PRD. **AI usage is prepaid credits** consumed **per AI operation**. **When credits = 0**, **generation is blocked** until **purchase more credits**. **No subscription in v0.** **No BYOK in v0.** **No unlimited free AI.** **Positioning:** “Start free with included credits. Buy more only when you need them.” | Defines **Payment model** (prepaid credits + starter grant); monetization exclusions (subs/BYOK/unlimited-free); implies billing/top-up + balance UX; informs Success Metrics (credit purchase vs sub). Persist via `/prd converge` → `/prd update`. |
+| Q-008 | 2026-05-09 | Should the **free signup credit grant (X)** be a **fixed number or range in the PRD** for v0 planning, or stay **explicitly TBD / tunable** until you model cost per AI operation? | **Stay TBD** — treat **X as configuration/ops tuning**, not a fixed number committed in the PRD; “doesn’t matter” for product narrative beyond “non-zero starter grant exists.” | **Configuration Matrix** carries X as tunable; avoids false precision in `PRD.md`; still compatible with credit-based model in Q-007. Persist via `/prd converge` → `/prd update`. |
+| Q-009 | 2026-05-09 | In v0, is a project/PRD **strictly single-user**, or should **inviting collaborators** (view/edit roles) be in scope for alignment workflows? | **Single-user for v0** — no multi-user collaboration/invites/roles in scope for the first release. | **Operating Model** = solo founder; simplifies auth/permissions MVP; sharing stays **in-app readable/link** semantics from Q-006 rather than co-editing. Persist via `/prd converge` → `/prd update`. |
+| Q-010 | 2026-05-09 | What **2–3 concrete metrics or outcomes** will define **v0 success** (e.g. signup → first PRD version, weekly return, credit purchase rate), beyond “the workflow exists”? | **Not known yet** — founder has **not selected success metrics**; this remains an **explicit open product decision** (not a hidden default). | **Success Metrics** in `PRD.md` must stay **TBD** or explicitly “unchosen”; **ICE/prioritize** should treat **Confidence as limited** until metrics are defined; no pretending v0 success is measurable without a chosen bar. Persist via `/prd converge` → `/prd update`. |
+| Q-011 | 2026-05-09 | For **shareable / readable in-app PRD output** in v0, should **viewers need an account (sign-in)**, or is **unauthenticated read** (e.g. read-only link without login) required or explicitly out of scope? | **In scope for v0:** **unauthenticated read-only share links.** **Owner** (signed-in) generates a link; **viewers** read **without signing in**. Viewers **cannot** edit, comment, duplicate, or access **workspace/private history.** **Defaults:** owner/editor **signed in**; viewer **via link**; owner can **disable** link; **public share URL not search-indexed** (noindex as product requirement). | Drives **Core User Journeys** (mint/read/revoke), **privacy** boundaries for shared vs private surfaces, and **MVP** sharing scope; clarifies anon viewer permissions. Persist via `/prd converge` → `/prd update`. |
+| Q-012 | 2026-05-09 | Beyond **owner disable** and **noindex**, should v0 include **time-limited links** and/or **password-protected links**, or is **disable-only** sufficient for the first release? | **v0 stays intentionally simple:** **public read-only links only** — **no** password, **no** expiry, **no** additional private-link controls beyond what’s already decided (owner disable + noindex). **Advanced sharing** may become a **paid feature later** if traction warrants; **not v0**. | Locks **MVP sharing** to the minimal control set; defers password/expiry/extra controls; records optional future **monetization** angle for advanced sharing (hypothesis). Persist via `/prd converge` → `/prd update`. |
+
+Rules:
+- Active queue contains only unresolved questions.
+- Answered questions move to Answered.
+- Ask one open question at a time.
+- Lowest priority number first, then lowest ID.
+- Do not keep duplicate open + answered rows for the same question.
+
+=== docs/product-decisions/README.md ===
+# Product Decisions
+
+Small, durable decision records complement versioned PRDs.
+
+- Naming: `PD-001.md`, `PD-002.md`, …
+- Store product decisions that should survive beyond chat.
+- Reference decisions from PRD sections instead of losing rationale in notes only.
+- Product decisions are project-scoped generated docs.
+- The reusable template lives in `.cursor/templates/prd/product-decision.template.md`.
+
