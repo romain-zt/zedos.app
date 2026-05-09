@@ -1,0 +1,108 @@
+<!--
+  Feature Area — scaffolded from approved map + docs/prd/PRD.md
+-->
+
+# Feature Area: PRD versioning
+
+## Status
+
+`exploratory`
+
+> **NEED_HUMAN:** false
+> **NEED_UPDATE:** false
+
+---
+
+## PRD Source
+
+- `docs/prd/PRD.md` § Feature Groups (FG-PRD-V0 — PRD versioning); § Core User Journeys (4); § Product Surface (Source of truth); § Business Objects (PRD version); § MVP Completeness Checklist; § Q-006 spirit (done ≠ export)
+- Related open questions: none (active queue empty)
+- Related product decisions: none
+
+---
+
+## Product Intent
+
+Within a project, the founder maintains a **versioned PRD** where the **in-app** document state is authoritative. They can move between versions so iteration is traceable and “complete” for a version **does not** depend on exporting a file.
+
+---
+
+## In Scope
+
+- Persist **PRD version** state in-app as the canonical record for that version.
+- Browse / move between **multiple PRD versions** within the same project (distinct navigation job from switching projects).
+- Align product meaning of “done” for a version with PRD: **not** gated on Markdown or PDF export.
+
+## Out of Scope
+
+- Markdown export or PDF export as **mandatory** completion criteria for a version (PRD: export not required for “done”; PDF not v0-critical; MD may be fast follow).
+- Co-editing or version branching with collaborators (Hard v0 exclusions).
+
+---
+
+## Business Objects Touched
+
+| Object | Relationship |
+|--------|----------------|
+| PRD version | Create/persist/browse versioned document state in-app |
+| Project | Versions are scoped per project container |
+
+---
+
+## User Journeys Touched
+
+- Journey 4 — Version the PRD and move between versions within a project.
+
+---
+
+## Dependencies
+
+| Dependency | Status | Notes |
+|------------|--------|-------|
+| Project workspace | pending | Versions attach to a project |
+
+---
+
+## Risks
+
+- If version history is confusing, founders lose trust in the PRD as source of truth — contradicts Product Surface commitment.
+
+---
+
+## Open Blockers
+
+| Blocker | Blocks | NEED_HUMAN |
+|---------|--------|------------|
+| — | — | — |
+
+---
+
+## Candidate Scope Slices
+
+| Slice | Description | Status |
+|-------|-------------|--------|
+| Create or capture PRD version | Founder can establish a version line and persist PRD content for that version in-app. | exploratory |
+| Browse and switch PRD versions | Founder moves between versions inside a project without losing context of which version is active. | exploratory |
+
+---
+
+## Readiness Verdict
+
+- [ ] PRD source sections read
+- [ ] Product intent stated without technical language
+- [ ] Business objects enumerated
+- [ ] User journeys identified
+- [ ] In-scope / out-of-scope explicitly separated
+- [ ] No unresolved PRD open questions affecting this area
+- [ ] Deferred behaviors explicitly named
+- [ ] Candidate Scope Slices are individually small enough
+
+**Verdict:** NOT READY
+
+---
+
+## Changelog
+
+| Date | Change | Author |
+|------|--------|--------|
+| 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |

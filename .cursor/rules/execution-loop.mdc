@@ -1,0 +1,209 @@
+---
+description: Governs the autonomous Zedos `/execute-prd` loop — queue, blockers, lock, logging, checker gates, and stop-before-implementation safety.
+globs:
+  - docs/WORK_QUEUE.md
+  - docs/BLOCKERS.md
+  - docs/EXECUTION_LOG.md
+  - docs/EXECUTION_LOCK.md
+  - docs/POINTS_OF_ATTENTION.md
+  - docs/product/**
+  - docs/prd/**
+alwaysApply: false
+---
+
+# Execution Loop — Zedos PRD Execution Workflow
+
+## 1. Purpose
+
+Operational governance for iterating product scope toward implementation **without** inventing product truth, skipping hierarchy levels, bypassing humans, or starting code.
+
+This rule complements:
+
+- `.cursor/rules/00-siso.mdc` — request quality and EXECUTION vs DISCOVERY classification
+- `.cursor/rules/feature-area-workflow.mdc` — PRD → Feature Area → Scope Slice → User Story → Spec → Task
+- `.cursor/checkers/scope-readiness-checker.md` — **only** source of readiness verdicts (`CLEAR` / `BLOCKED`)
+
+Command: `.cursor/commands/execute-prd.md`  
+Operational skill: `.cursor/skills/execution-loop/SKILL.md`
+
+---
+
+## 2. Rebuild state sources (scan)
+
+On every **`scan`** (and before trusting queue rows for **`next` / `run-one` / `loop`**), re-read and reconcile:
+
+| Source | Use |
+|--------|-----|
+| `docs/prd/state.md` | Version, direction, last change |
+| `docs/prd/PRD.md` | Product ground truth |
+| `docs/prd/questions/open-questions.md` | Active blockers/questions |
+| `docs/product/feature-areas/*.md` | Feature Area rows for `WORK_QUEUE` |
+| `docs/product/scope-slices/*.md` | Scope Slice rows |
+| `docs/product-decisions/README.md` | Durable decisions (if present) |
+| Existing `docs/BLOCKERS.md` | Preserve Resolution history; reconcile open rows |
+
+**Do not infer** statuses or flags that are absent in sources; default **`NEED_HUMAN: false`** and **`NEED_UPDATE: false`** for queue derivation when no explicit marker exists.
+
+---
+
+## 3. `docs/WORK_QUEUE.md` schema
+
+Maintain a single table:
+
+`| ID | Type | Parent | Status | Priority | NEED_HUMAN | NEED_UPDATE | Blocked By | Next Action |`
+
+**Types:** `Feature Area`, `Scope Slice`, `User Story`, `Spec`, `Task`, `Test`, `Review`
+
+**Statuses:** `candidate`, `exploratory`, `ready`, `active`, `blocked`, `done`, `deferred`
+
+**Priority column:** Product band **`P0`–`P4`** (Zedos mapping below), not checker pass order.
+
+**Parent:** Empty for Feature Area; parent **queue ID** for children (e.g. Scope Slice parent = `FA-*`).
+
+**Blocked By:** Semicolon-separated **blocker IDs** from `docs/BLOCKERS.md` (must match blocker **Scope** to this row’s artifact level).
+
+### Status mapping from artifacts
+
+When rebuilding from Feature Area / Scope Slice files:
+
+- Feature Area frontmatter **`Status: validated`** → queue **`ready`** (ready for slice decomposition / slice advancement per workflow).
+- Feature Area **`exploratory`**, **`blocked`**, **`deferred`** → align queue **`exploratory`**, **`blocked`**, **`deferred`** respectively.
+- Scope Slice **`exploratory`** / **`blocked`**, **`deferred`**, **`ready-for-user-stories`** → queue **`exploratory`**, **`blocked`**, **`deferred`**, **`ready`** respectively.
+
+---
+
+## 4. Product priority bands (queue `Priority`)
+
+| Band | Feature Areas |
+|------|----------------|
+| **P0** | Account & session → `FA-account-session`; Dashboard shell → `FA-dashboard-shell` |
+| **P1** | Project workspace → `FA-project-workspace`; PRD versioning → `FA-prd-versioning` |
+| **P2** | Guided clarification → `FA-guided-clarification`; Question history → `FA-question-history` |
+| **P3** | Read-only sharing → `FA-read-only-sharing`; Owner milestone feedback → `FA-owner-milestone-feedback` |
+| **P4** | Credit system → `FA-credit-system`; Payments → `FA-payments` |
+
+Derive **`SS-*`** row priority from its parent Feature Area’s band.
+
+---
+
+## 5. Selection priority order (checks **a–j**)
+
+When choosing the **next eligible** queue row (after excluding rows blocked per §6):
+
+**a.** If `docs/EXECUTION_LOCK.md` indicates **`stale: true`** → follow §8 stale handling before selecting new work.
+
+**b.** Rows with **`NEED_UPDATE: true`** at **artifact or workflow** scope (see §14) — surface in `POINTS_OF_ATTENTION`; block **their** subtree until resolved or explicitly deferred in queue + log.
+
+**c.** Rows in **`active`** matching a valid non-stale lock (§7) continue until the logged step completes or the lock is released.
+
+**d.** **`P0`** before **`P1`** before **`P2`** before **`P3`** before **`P4`**.
+
+**e.** Advancement frontier: prefer completing **earlier** hierarchy stages before later — **Feature Area readiness** → **Scope Slice refinement or promotion** → (future, when governance permits) User Story → Spec → Task — never skip levels (`feature-area-workflow` §3 hierarchy).
+
+**f.** Within the same **`P*`** band, prefer **deepest ready child** where the parent subtree is eligible — e.g. a **`ready`** or **`exploratory`** Scope Slice under a **`validated`** parent — **unless** blocker policy (§6) removes the subtree.
+
+**g.** Among peers, prefer **`ready`** then **`exploratory`** then **`candidate`** over **`deferred`**.
+
+**h.** Rows with **`NEED_HUMAN: true`** remain in queue for traceability but are **ineligible for autonomous `run-one` / `loop`** resolution; siblings stay eligible (**§6**).
+
+**i.** Respect **`/feature-area`** gates: Feature Area **`validated`** before Scope Slice **file creation**; Scope Slice **`ready-for-user-stories`** before creating User Story rows (when that phase is opened by governance).
+
+**j.** Idle: nothing eligible remains → **`stop`** (**§11**); recommend **`/execute-prd scan`** after human or PRD edits.
+
+---
+
+## 6. Blocker semantics — **non-blocking for siblings**
+
+A blocker impedes **only** the blocked artifact and **its descendant queue rows** (Subtree rule).
+
+- **`Scope: scope-slice`** → blocks that slice and future children (stories onward), **not** sibling slices, **unless** a separate blocker row targets those.
+- **`Scope: feature-area`** → blocks that Feature Area queue row and **all** rows whose **Parent** chain includes that FA ID.
+- **`Scope: global`** → blocks all rows until resolved or explicitly waived with human acknowledgment in **`EXECUTION_LOG`**.
+
+**Siblings** (same parent, not under blocked subtree) and **other Feature Areas** remain eligible per §5.
+
+Record load-bearing flags in **`docs/BLOCKERS.md`** with correct **Scope**.
+
+---
+
+## 7. `docs/BLOCKERS.md` schema
+
+Table:
+
+`| ID | Scope | Artifact | Reason | NEED_HUMAN | NEED_UPDATE | Created | Resolution |`
+
+**Scope values:** `global`, `feature-area`, `scope-slice`, `user-story`, `spec`, `task`, `test`, `review`
+
+**ID:** Stable **`B-NNN`**.
+
+**Resolution:** Blank until resolved; fill with date + outcome — retaining history is preferred over silent delete.
+
+Synchronize **`WORK_QUEUE.Blocked By`** with open blocker **`ID`** values.
+
+---
+
+## 8. `docs/EXECUTION_LOCK.md`
+
+Template fields:
+
+- **`active_item_id`** — Queue **ID**, or **`none`**
+- **`type`** — Queue type or **`none`**
+- **`parent_chain`** — YAML list or comma-separated ancestor queue IDs (`[]` if none)
+- **`current_action`** — One bounded governance action (skill enumerates examples)
+- **`started_at`** — ISO date (**`YYYY-MM-DD`** minimum)
+- **`allowed_files`** — Paths or globs the agent may touch while locked
+- **`forbidden_files`** — Default: product **implementation** trees (`src/**`, `app/**`, `packages/**`, `lib/**`) — forbid unless governance explicitly expands scope (**v0:** always forbid implementation)
+- **`stale`** — Boolean
+
+### Stale lock handling
+
+Treat lock as **`stale: true`** when **any** of:
+
+1. **`started_at`** more than **24 hours** before current run (calendar, repo host TZ → use ISO date consistency).
+2. **`active_item_id`** absent from **`WORK_QUEUE`** after a **`scan`**, or **Status** incompatible with **`current_action`**.
+3. Preconditions for **`current_action`** failed and lock was left set.
+
+Actions:
+
+1. Set **`stale: true`**; **`active_item_id` → `none`**; **`type` → `none`**; **`parent_chain` → `[]`**; set **`current_action`** to **`Stale lock released`** (optional short reason in lock body).
+2. Append **`EXECUTION_LOG`** explaining release.
+3. Do not execute **`run-one` / `loop`** against stale lock semantics — **`next`** after release.
+
+---
+
+## 9. `docs/EXECUTION_LOG.md`
+
+Append-only table:
+
+`| Timestamp | Mode | Item | Action | Outcome | Notes |`
+
+Modes: `init`, `scan`, `next`, `run-one`, `loop`, `system`.
+
+---
+
+## 10. `docs/POINTS_OF_ATTENTION.md`
+
+`| ID | Source | Severity | Note | Acknowledged |`
+
+Severity examples: **`info`**, **`watch`**, **`risk`**.
+
+---
+
+## 11. Stop conditions (autonomous **`loop`**)
+
+Stop when:
+
+1. **Implementation boundary:** Writing **application runtime code**, adding **runtime deps**, or materializing **`User Story`**, **`Spec`**, **`Task`**, **`Test`** queue artifacts **beyond** explicitly opened governance (**current:** stop **before** these; loop performs **feature-area**, **checker**, queue, blocker, lock, log steps only — **§12**).
+2. **Eligible set empty** after **`scan`**.
+3. **Stall:** **3** successive iterations with identical **`next`** result and no **`run-one`** progress — log **`stall`**.
+4. **Subtree blocked** and no eligible sibling or other FA under current priority band (**normal idle**).
+
+---
+
+## 12. Safety invariants
+
+1. **No implementation without governance path.** No production code paths on this loop (**v0**).
+2. **No `NEED_HUMAN` bypass** — resolving human flags requires **human** edits + **`EXECUTION_LOG`** + blocker **Resolution**.
+3. **No readiness without checker** — no claiming **`CLEAR`** or promotion-equivalent semantics without **`/feature-area check`** (**FA** or **SS** as applicable) or the same checklist text from **`scope-readiness-checker.md`** inlined in audit output (**feature-area-workflow** + checker).
+4. **`NEED_UPDATE` on workflow** — if **rules**, **templates**, or **`scope-readiness-checker`** cannot evaluate an artifact (**feature-area-workflow** §7), set **`NEED_UPDATE: true`**, log, add **`POINTS_OF_ATTENTION`**; subtree work that depends on advancement **must not** forge ahead with invented fixes.
+5. **SISO (`00-siso.mdc`)** — autonomous loop stays in **workflow DISCOVERY ops** territory; switches to gated **EXECUTION** only where this rule + **`feature-area`** command explicitly permit file edits (**allowed_files** subset).

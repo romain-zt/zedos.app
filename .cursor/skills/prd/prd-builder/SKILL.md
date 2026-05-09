@@ -701,3 +701,41 @@ The PRD is considered converged when:
 At this point: stop discovery, freeze PRD direction, transition to specs/implementation. The PRD Builder skill is no longer the active workflow — further changes require a deliberate `/prd update` with a version bump rationale.
 
 A PRD that never converges is not a PRD — it's a brainstorm.
+
+## 13. Handoff to Feature Area Workflow
+
+PRD Builder owns PRD discovery, convergence, and PRD-level Feature Groups. Its scope ends at the product definition layer.
+
+**Feature Area Workflow** (`.cursor/rules/feature-area-workflow.mdc`) owns execution decomposition: converting PRD Feature Groups into Feature Areas, decomposing Feature Areas into Scope Slices, and advancing Scope Slices toward user stories.
+
+### What PRD Builder must NOT do
+
+PRD Builder must never:
+
+- Create Feature Area files (`docs/product/feature-areas/`)
+- Create Scope Slice files (`docs/product/scope-slices/`)
+- Write user stories, specs, or tasks
+- Decompose a PRD Feature Group into Scope Slices directly (without Feature Area decomposition)
+- Use "Feature Group" naming in `docs/product/` artifacts
+
+### When to hand off
+
+Hand off when any of:
+
+- The PRD has converged (§12) and the next step is execution planning
+- A PRD Feature Group is too broad to yield Scope Slices without Feature Area decomposition first
+- The user asks to start building, planning, or decomposing product scope into work
+
+### How to hand off
+
+State explicitly:
+
+```txt
+PRD Feature Group "<name>" is at product-scope convergence.
+Execution decomposition requires Feature Area Workflow.
+
+Next step: read `.cursor/rules/feature-area-workflow.mdc` and convert this
+Feature Group into Feature Areas before creating any Scope Slices.
+```
+
+Do not perform the decomposition. Route clearly and stop.
