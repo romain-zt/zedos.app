@@ -270,6 +270,145 @@ v0 scope is **minimal sharing**: **public read-only URLs** with the already-deci
 
 ---
 
+## 2026-05-09 — v0 success metrics: lightweight in-product feedback
+
+### Raw user input
+> Feedback is the first v0 success metric.
+>
+> After key PRD moments, Zedos should automatically ask for lightweight feedback:
+> - 1–5 star rating or like/dislike
+> - optional comment box
+>
+> Primary success metric:
+> User feedback quality after PRD generation / iteration.
+>
+> Working metrics:
+> 1. Feedback response rate
+> Definition: % of users who answer the feedback prompt after a key PRD step.
+> Why it matters: if nobody answers, we cannot learn reliably.
+>
+> 2. Positive feedback rate
+> Definition: % of submitted feedback rated 4–5 stars or “like”.
+> Why it matters: measures whether the output feels useful enough to the user.
+>
+> 3. Negative feedback reasons
+> Definition: recurring themes from 1–3 star / dislike comments.
+> Why it matters: tells us what to fix first: unclear PRD, weak questions, wrong structure, too generic, missing context, etc.
+>
+> Product behavior:
+> - Ask automatically after meaningful moments, not constantly:
+>   - first PRD version generated
+>   - PRD updated after clarification
+>   - share link created / PRD viewed
+> - Feedback must be lightweight and skippable.
+> - Comment is optional.
+> - Store feedback per project, PRD version, and workflow step.
+
+### Interpreted product insight
+v0 success measurement centers on **in-product feedback** after **key PRD milestones**: **primary** lens is **feedback quality** tied to generation/iteration; **operational** measures include **response rate**, **positive rate** (4–5 / like), and **thematic analysis** of negative signals. Prompts are **automatic but selective** (first version, post-clarification update, share/ view moments), **skippable**, stars **or** binary like, **optional comment**, attributed in storage to **project + PRD version + workflow step**.
+
+### PRD implication
+**Success Metrics**, **journeys**, and **MVP** should explicitly include **feedback collection** UX and **measurement definitions**; **Flow Inventory** gains feedback-after-milestone flows; **Business Objects** likely include **feedback events**. Minor ambiguity: “PRD viewed” may mean **owner** vs **anonymous share viewer**—may need a follow-up if product boundaries differ.
+
+### New / updated questions
+- Q-013 answered (replaces prior “metrics unknown” gap from Q-010 for current truth). Q-010 annotated **SUPERSEDED** for metrics narrative. Next: Q-014.
+
+---
+
+## 2026-05-09 — First-run credit grace + recharge path
+
+### Raw user input
+> First-run credit grace model
+>
+> At signup, users receive X starter credits.
+>
+> During the first PRD circuit only, if the user slightly exceeds the starter credit balance, Zedos allows the current AI response to complete instead of cutting the flow mid-answer.
+>
+> After completion, the app shows a clear message:
+>
+> “You exceeded your included starter credits by X credits. We covered this one for you so your first PRD flow was not interrupted.”
+>
+> Then Zedos shows a recharge modal:
+> - buy more credits now
+> - enable auto-reload
+> - continue without credits, but paid AI generation is blocked until recharge
+>
+> This grace is one-time and limited to the first PRD circuit.
+> After that, credits are deducted continuously and generation is blocked when balance is insufficient, unless auto-reload is enabled.
+
+### Interpreted product insight
+v0 includes a **one-time “first PRD circuit” credit grace**: **starter balance X** at signup; if the user **marginally overspends** during that **first circuit**, the **in-flight AI completion** still **finishes**, then the app explains the **overage covered once** and opens a **recharge modal** with **buy now**, **auto-reload**, or **defer** (AI blocked until top-up). **After** that circuit, behavior is **strict**—**no mid-response grace**; **block** when balance can’t cover the operation **unless auto-reload** handles it.
+
+### PRD implication
+**Payment / credits** sections need **grace rules**, **first-circuit definition**, **negative or promotional balance semantics** (implicit debt covered once), **auto-reload** as a v0 product surface, and **recharge modal** copy/flows; **Q-014** commercial packaging (pack sizes, price bands, geo) still **not specified**—opened **Q-016**. Next open: **Q-015**.
+
+### New / updated questions
+- Q-014 answered (grace + recharge UX; packs/pricing/geo → **Q-016**, later split: **Q-015** for compliance/provider).
+
+---
+
+## 2026-05-09 — Stripe + v0 payment/compliance constraints
+
+### Raw user input
+> Stripe is selected for v0.
+>
+> Payment/compliance constraints for v0:
+> - Launch regions: France/EU + US.
+> - Payment provider: Stripe.
+> - Must support prepaid credit packs.
+> - Must support one-time credit top-ups.
+> - Must support explicit card saving for future auto-reload.
+> - Auto-reload must be opt-in only, not a hidden subscription.
+> - Auto-reload is a prepaid refill rule, not a subscription plan.
+> - Must support France/EU + US payment flows.
+> - Must support clear tax/VAT handling for digital AI credits.
+> - Must allow Zedos to maintain its own internal credit ledger.
+> - Must deduct credits progressively, per AI operation.
+> - Credit packs are X credits, not “1 PRD / N PRDs”.
+> - First signup circuit includes X starter credits.
+> - If the first PRD circuit slightly exceeds X, Zedos lets the current response finish and offers the overage once.
+> - After the first-circuit grace, paid AI generation is blocked at zero credits unless auto-reload succeeds.
+> - No BYOK in v0.
+> - No subscription in v0.
+> - No unlimited free AI.
+
+### Interpreted product insight
+v0 **locks payments to Stripe** with **launch coverage FR/EU + US**, **prepaid credit packs** and **one-time top-ups**, **VAT/tax clarity** for **digital AI credits**, and **Zedos-owned ledger** with **per-operation deduction**. **Saved payment method** enables **opt-in auto-reload** framed as **prepaid refill rules**, **not** a subscription. Product restates **first-circuit grace** and post-grace **hard stop at zero** unless **auto-reload succeeds**; **packs denominated in credits (X)**, not PRD-count bundles; **BYOK / subscription / unlimited free** remain **out of v0**.
+
+### PRD implication
+**Integration Boundaries** and **Configuration Matrix** can name **Stripe** and **FR/EU + US**; **payment model** gains **tax/VAT**, **ledger ownership**, **auto-reload semantics**, and **card-on-file** for refill; **Q-016** shrinks to **SKU count + rough pricing** (geo/provider decided here).
+
+### New / updated questions
+- Q-015 answered. **Q-016** narrowed (no longer asks geo).
+
+---
+
+## 2026-05-09 — Credit pack SKUs (100 / 200 / 1000) + pricing stance
+
+### Raw user input
+> Credit packs:
+> - 100 credits
+> - 200 credits
+> - 1000 credits
+>
+> Credit packs are sold as prepaid credit quantities, not as “number of PRDs.”
+> Credits are consumed progressively per AI operation.
+> Prices remain operator-configurable and can differ by currency/region.
+> v0 uses Stripe one-time payments for manual top-ups.
+> Auto-reload, when enabled, purchases one of these prepaid packs automatically using a saved payment method.
+> Auto-reload is opt-in and does not create a subscription.
+
+### Interpreted product insight
+v0 sells **three fixed pack sizes**—**100**, **200**, and **1000 credits**—as **pure prepaid quantities** (never “N PRDs”); **consumption stays per AI operation**. **List prices** are **operator-config** and may **vary by currency/region**. **Manual top-up** = **Stripe one-time** checkout; **opt-in auto-reload** charges **one of the same three packs** via **saved payment method**, **without** creating a **subscription**.
+
+### PRD implication
+**Configuration Matrix** can list **enumerated pack sizes** while keeping **prices tunable**; **flows** distinguish **one-time purchase** vs **auto-reload pack selection**; aligns with **Q-015** (Stripe, FR/EU+US). **Persisted `PRD.md` remains stale** until `/prd converge` → `/prd update`.
+
+### New / updated questions
+- Q-016 answered. Active queue empty → **PRD blocker scan**: remaining `PRD.md` gaps are **stale text** vs **Q-013–Q-016** / intentional TBD (**AI vendor** “not specified here”); recommend **`/prd converge`**.
+
+---
+
 Rules:
 - Append only.
 - Do not edit past entries unless correcting a clear interpretation error.
