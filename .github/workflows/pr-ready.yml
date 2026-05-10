@@ -15,6 +15,7 @@ jobs:
     if: "startsWith(github.event.pull_request.title, 'chore(orchestrator): [tracking]')"
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: write
       pull-requests: write
     env:
@@ -26,10 +27,17 @@ jobs:
       - name: Merge tracking PR
         run: |
           echo "✅ Tracking PR #$PR_NUMBER is ready: $PR_TITLE"
-          echo "Merging to trigger phase-orchestrator.yml…"
+          echo "Merging…"
 
           gh pr merge "$PR_NUMBER" \
             --repo "$REPO" \
             --merge \
-            --subject "chore(orchestrator): complete phase tracking PR #$PR_NUMBER [skip ci]" \
+            --subject "chore(orchestrator): complete phase tracking PR #$PR_NUMBER" \
             --delete-branch
+
+      - name: Dispatch Phase Orchestrator
+        run: |
+          echo "🔁 Dispatching phase-orchestrator to advance the chain…"
+          gh workflow run phase-orchestrator.yml \
+            --repo "$REPO" \
+            -f reason="tracking PR #$PR_NUMBER merged — auto-dispatch"
