@@ -271,12 +271,32 @@ function openTrackingPR(step: string): TrackingPR {
   gitExec(`commit -m "chore(orchestrator): open tracking PR for ${step} [skip ci]"`);
   gitExec(`push origin ${branch}`);
 
+  // Write body to a temp file to avoid shell escaping issues with backticks/special chars
+  const bodyFile = path.join(process.cwd(), ".github/scripts/.tracking-pr-body.md");
+  fs.writeFileSync(bodyFile, [
+    `## Orchestrator tracking PR`,
+    ``,
+    `Phase: \`${step}\``,
+    `Started: ${new Date().toISOString()}`,
+    ``,
+    `This PR is opened automatically when a phase agent starts.`,
+    `It is marked \`ready for review\` by the agent when the phase completes,`,
+    `which triggers the \`pr-ready.yml\` workflow to merge it and kick the next phase.`,
+    ``,
+    `**Do not merge manually** — let the agent drive it.`,
+    ``,
+    `**If you see this as draft for >2h**, the agent may be stuck. Check the Cursor dashboard.`,
+  ].join("\n"));
+
   const prUrl = gh(
-    `pr create --repo "${repo}" --base main --head "${branch}" --draft --title "${title}" --body "## Orchestrator tracking PR\\n\\nPhase: \`${step}\`\\nStarted: ${new Date().toISOString()}\\n\\nThis PR is opened automatically when a phase agent starts.\\nIt is marked \`ready for review\` by the agent when the phase completes,\\nwhich triggers the \`pr-ready.yml\` workflow to merge it and kick the next phase.\\n\\n**Do not merge manually** — let the agent drive it.\\n\\n**If you see this as draft for >2h**, the agent may be stuck. Check the Cursor dashboard."`,
+    `pr create --repo "${repo}" --base main --head "${branch}" --draft --title "${title}" --body-file "${bodyFile}"`,
   );
 
   // Extract PR number from URL (last segment)
   const prNumber = parseInt(prUrl.split("/").at(-1) ?? "0", 10);
+
+  // Clean up temp body file
+  try { fs.unlinkSync(bodyFile); } catch { /* ignore */ }
 
   // Return to main so the agent can commit on main
   gitExec(`checkout main`);
