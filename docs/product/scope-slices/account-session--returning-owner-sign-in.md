@@ -10,8 +10,9 @@
 
 ## Status
 
-`exploratory`
+`superseded`
 
+> **SUPERSEDED BY:** [account-session--sign-up-sign-in.md](./account-session--sign-up-sign-in.md) — the canonical slice covers both new and returning founders in a single cohesive slice (written 2026-05-10, designed for better-auth post-Phase 3)
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 

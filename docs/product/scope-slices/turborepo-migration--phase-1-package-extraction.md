@@ -12,10 +12,11 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
+> **Note:** Phase 0 is complete (apps/web/ exists, pnpm workspace operational as of 2026-05-10). Blocker resolved. Implementation Plan written at `docs/execution/plans/turborepo-migration--phase-1-package-extraction.plan.md`.
 
 ---
 

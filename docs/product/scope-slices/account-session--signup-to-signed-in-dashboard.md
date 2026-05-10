@@ -10,8 +10,9 @@
 
 ## Status
 
-`exploratory`
+`superseded`
 
+> **SUPERSEDED BY:** [account-session--sign-up-sign-in.md](./account-session--sign-up-sign-in.md) — that slice is the canonical definition (written 2026-05-10, designed for better-auth post-Phase 3, includes full UX states, error states, and blockers)
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 

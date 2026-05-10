@@ -1,6 +1,19 @@
 {
   "handoff_date": "2026-05-10",
-  "current_phase": "2a-complete-pending-approval",
+  "current_phase": "phase3-p1",
+
+  "_orchestrator_schema": "v2 — fields below (phase3, fa_account_session) are read by .github/scripts/phase-orchestrator.ts",
+  "phase3": {
+    "p0": "complete",
+    "p1": "not-started",
+    "p2": "not-started",
+    "p3": "not-started"
+  },
+  "fa_account_session": {
+    "slice1": "not-started"
+  },
+
+
   "pis_approved": false,
   "pis_blockers_count": 5,
   "pis_blockers": [
@@ -67,7 +80,7 @@
       "description": "Execution-side .cursor/ infrastructure (~102 files)"
     },
     "3": {
-      "status": "phase0-complete",
+      "status": "phase1-in-progress",
       "description": "Turborepo migration: zedos/nextjs_space/ → apps/web/, extract packages, Prisma→Drizzle, NextAuth→better-auth",
       "phase0": {
         "status": "complete",
@@ -152,8 +165,8 @@
       "scope_slice_phase1": {
         "path": "docs/product/scope-slices/turborepo-migration--phase-1-package-extraction.md",
         "status": "written",
-        "slice_status": "exploratory",
-        "blocked_by": "phase0_execution"
+        "slice_status": "ready-for-user-stories",
+        "blocked_by": null
       },
       "scope_slice_phase2": {
         "path": "docs/product/scope-slices/turborepo-migration--phase-2-drizzle.md",
@@ -170,12 +183,28 @@
       "implementation_plan_phase0": {
         "path": "docs/execution/plans/turborepo-migration--phase-0-scaffold.plan.md",
         "status": "written",
-        "plan_status": "executed-phase0a",
+        "plan_status": "complete",
         "approval_status": "executed-by-user-instruction",
         "pr_stack": [
-          "cursor/turborepo-phase0a-workspace-init-b3a8 (PR #11 — OPEN)",
-          "cursor/turborepo-phase0b-ci-secrets-b3a8 (pending)"
+          "cursor/turborepo-phase0a-workspace-init-b3a8 (PR #11 — MERGED)",
+          "cursor/turborepo-phase0b-ci-secrets-b3a8 (pending/skipped)"
         ]
+      },
+      "implementation_plan_phase1": {
+        "path": "docs/execution/plans/turborepo-migration--phase-1-package-extraction.plan.md",
+        "status": "written",
+        "plan_status": "proposed",
+        "approval_status": "pre-approved-by-overnight-run"
+      },
+      "implementation_plan_phase2": {
+        "path": "docs/execution/plans/turborepo-migration--phase-2-drizzle.plan.md",
+        "status": "written",
+        "plan_status": "proposed"
+      },
+      "implementation_plan_phase3": {
+        "path": "docs/execution/plans/turborepo-migration--phase-3-better-auth.plan.md",
+        "status": "written",
+        "plan_status": "proposed"
       }
     },
     "locked_decisions_confirmed": {
