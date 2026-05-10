@@ -124,6 +124,7 @@ The Plan moves from `proposed` → `approved` only after:
 - Cross layers in ways forbidden by `72-hexagonal-boundaries.mdc` §3.
 - Add to frozen-violation counts (per `72-hexagonal-boundaries.mdc` §7, `73-result-rop.mdc` §7).
 - Plan dependencies without listing them in `Dependencies Added`.
+- Confuse **describing** a source-tree path in a Plan with **writing** to it. Naming `prisma/migrations/<NNNN>_add_foo.sql` in the Plan's `Migrations` section is safe — it is a textual description, not a file write. The `forbidden_files` list in `execution-loop.mdc` §8 governs write operations only. `/plan` writes only `docs/execution/` artifacts.
 
 ---
 

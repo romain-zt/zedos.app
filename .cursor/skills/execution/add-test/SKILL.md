@@ -92,6 +92,35 @@ describe('CreditsDrizzleRepository (integration)', () => {
 });
 ```
 
+#### Integration test harness setup (required before first integration test in a package)
+
+> **Check first:** does the package already have `vitest.integration.config.ts` and a `test:integration` script?
+> If yes, skip to writing the test. If no, the Plan must include harness bootstrap as a separate Touched File.
+
+Per `78-testing.mdc` §3 and §6, integration tests require:
+
+1. **`vitest.integration.config.ts`** — separate Vitest config with `include: ['src/**/*.integration.ts']` and appropriate timeout settings.
+   Copy from `.cursor/templates/execution/vitest.integration.config.template.ts` and adjust:
+   - Update `include` glob to match the package's source layout.
+   - Set `globalSetup` to point to your DB setup helper.
+   - Uncomment and implement `global-setup.ts` if using test containers.
+
+2. **`test:integration` script** in `package.json`:
+   ```json
+   "test:integration": "vitest run --config vitest.integration.config.ts"
+   ```
+
+3. **`DATABASE_URL_TEST` env var** — a separate test database (never production). Add to `.env.test` and CI secrets. Never commit real credentials.
+
+4. **Test DB helper** (`src/__test-helpers__/global-setup.ts` or equivalent) — provisions a clean schema before the suite and tears it down after. Minimum viable version:
+   ```typescript
+   // src/__test-helpers__/setup-test-db.ts
+   import { drizzle } from 'drizzle-orm/node-postgres'; // or prisma equivalent
+   // ... connect to DATABASE_URL_TEST, run migrations, expose reset()
+   ```
+
+**Plan sizing note:** If no harness exists, the first persistence-touching Plan must include the harness bootstrap (`vitest.integration.config.ts` + setup helper) as explicit Touched Files. This is a prerequisite, not scope creep. Declare it in the Plan's `Dependencies Added` section if new packages are needed (e.g., `@testcontainers/postgresql`).
+
 ### Concurrent integration test (mandatory for credit / payment / quota)
 
 Per `.cursor/rules/75-drizzle.mdc` §5 + `78-testing.mdc` §7:

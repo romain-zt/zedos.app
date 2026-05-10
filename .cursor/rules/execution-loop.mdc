@@ -163,6 +163,8 @@ Template fields:
   - `**/public/**`, `**/scripts/**`
   - `**/*.ts`, `**/*.tsx`, `**/*.js`, `**/*.jsx` outside `docs/**`, `.cursor/**`
   Allow paths must be an explicit subset of `docs/**` (governance, PRD, product, product-decisions) or `.cursor/**` governance edits — never default to source trees. The **v0 stop condition** in §11.1 makes this list authoritative for both layouts.
+
+  > **Writes vs. describes distinction:** `forbidden_files` governs **file write operations** only. An Implementation Plan (written to `docs/execution/plans/*.plan.md`) that *textually describes* a migration path like `prisma/migrations/<NNNN>_add_idempotency.sql` is allowed — no source-tree file is being written. The `/plan` command writes only `docs/execution/user-stories/*.md` and `docs/execution/plans/*.plan.md`; it never touches the source tree. See also: `architect.md` "What you must NOT do".
 - **`stale`** — Boolean
 
 ### Stale lock handling

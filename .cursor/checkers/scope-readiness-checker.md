@@ -327,6 +327,23 @@ Run at any level.
 **FAIL signals:**
 - Feature Area says `NEED_HUMAN=false` while a child Scope Slice has `NEED_HUMAN=true`
 
+**Exception — `safety-fix-slice` carve-out:**
+
+A Scope Slice of `Subtype: safety-fix-slice` (see `feature-area-workflow.mdc` §10) may advance to `ready-for-user-stories` and proceed through `/plan` and `/implement` **even when its parent Feature Area carries `NEED_HUMAN: true`**, provided **all** of the following hold:
+
+1. The Scope Slice file contains a `Carve-out Justification` section that names every open FA blocker (by ID) and declares each orthogonal to the slice's surface.
+2. The parent FA blockers are **commercial-config decisions** (pricing, quantities, operator-tunable values, feature-flag commitments) — not product-scope or architecture decisions that would change what the slice builds.
+3. The Patch Intent Summary for any Plan under this slice lists the carve-out as its first `Approval blockers` entry. The user must explicitly reply `approved` — which constitutes written waiver of the carve-out.
+4. The parent Feature Area retains its `NEED_HUMAN: true` flag until the commercial-config decisions are resolved. The carve-out applies only to this specific slice.
+
+**Checker verdict when carve-out applies:** PASS (with note). Record the carve-out in the summary output:
+
+```
+| CC-04 | PASS (carve-out) | safety-fix-slice; FA blockers B-NNN declared orthogonal; carve-out waiver required in PIS |
+```
+
+**FAIL if:** The carve-out Justification is absent, incomplete, or cites FA blockers that **do** affect the slice surface (e.g., the slice changes credit amounts while "credit quantity X" is unresolved).
+
 ---
 
 ### CC-05 · NEED_UPDATE actioned

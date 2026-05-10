@@ -41,16 +41,22 @@
 <!--
   Required by .cursor/rules/70-execution-bridge.mdc §8. Resolve or mark UNKNOWN.
   UNKNOWN on a load-bearing field downgrades status to proposed-with-open-surface and blocks /implement.
+
+  For rows prefixed "(if Payment shape ≠ n/a)": fill these whenever the Payment shape row is not `n/a`.
+  Leave them `n/a` otherwise.
 -->
 
 | Field | Decision |
 |-------|----------|
-| Source-of-truth (data) | <Postgres via Prisma (today) | Postgres via Drizzle (post-Phase 3)> |
-| Auth source-of-truth | <NextAuth (transitional) | better-auth (post-Phase 2)> |
-| Async/sync boundary | <synchronous per request | …> |
-| Transaction boundary | <per use-case via $transaction | …> |
+| Source-of-truth (data) | <Postgres via Prisma (today) \| Postgres via Drizzle (post-Phase 3)> |
+| Auth source-of-truth | <NextAuth (transitional) \| better-auth (post-Phase 2)> |
+| Async/sync boundary | <synchronous per request \| …> |
+| Transaction boundary | <per use-case via $transaction \| …> |
 | External dependencies | <list of vendor SDKs touched> |
-| Payment shape (if money) | <Stripe Checkout + Webhook + Idempotency-Key | n/a> |
+| Payment shape (if money) | <Stripe Checkout + Webhook + Idempotency-Key \| n/a> |
+| ↳ Webhook idempotency mechanism (if Payment shape ≠ n/a) | <separate `processed_webhook_events` table \| JSON column on Purchase \| DB unique constraint with ON CONFLICT \| n/a> |
+| ↳ Webhook signature secret source (if Payment shape ≠ n/a) | <env var `STRIPE_WEBHOOK_SECRET` \| n/a> |
+| ↳ Reservation vs deduct-after-success (if Payment shape ≠ n/a) | <reserve-on-start + deduct-on-success \| deduct-upfront \| n/a> |
 
 ### Surface Blockers
 

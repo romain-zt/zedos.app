@@ -4,6 +4,9 @@
   Usage:    chat-only artifact produced by `implementer` immediately before the first code edit.
   Governed by: .cursor/rules/70-execution-bridge.mdc §3.3, .cursor/rules/80-change-policy.mdc §5.3
   Mirrors:  .cursor/skills/prd/prd-builder/persistence.md (PRD Patch Intent Summary)
+
+  NOTE: This artifact is chat-only — never persist as a .md file.
+  The audit trail is the chat transcript itself.
 -->
 
 # Patch Intent Summary — Execution
@@ -13,6 +16,26 @@
 Implementation Plan: `docs/execution/plans/{{FA_KEBAB}}--{{SLICE_KEBAB}}--{{STORY_KEBAB}}.plan.md`
 User Story: `docs/execution/user-stories/{{FA_KEBAB}}--{{SLICE_KEBAB}}--{{STORY_KEBAB}}.md`
 Scope Slice: `docs/product/scope-slices/{{FA_KEBAB}}--{{SLICE_KEBAB}}.md`
+
+## Approval blockers
+
+<!--
+  Preconditions the user must explicitly accept before `approved` is meaningful.
+  Default when nothing is unusual: `- None.`
+
+  When present, list each blocker as a numbered item. The user's `approved` reply constitutes
+  written acceptance of every blocker listed here. If a user could reasonably reply `approved`
+  without realising they are also waiving a non-trivial precondition, that precondition MUST
+  appear here.
+
+  Examples of content that belongs here:
+  - Parent FA `NEED_HUMAN` carve-out (safety-fix-slice per feature-area-workflow.mdc §10)
+  - An open product question (OQ-N) with a proposed default the user must accept
+  - A stacked PR shape that exceeds individual PR size limits in aggregate
+  - A placeholder (e.g. fixture TODO) that must be swapped before merge
+-->
+
+- None.
 
 ## Files to change
 
@@ -64,4 +87,7 @@ Reply `cancel` to stop.
   After approval, the implementer applies edits, then routes to verifier.
   After verifier PASS, the implementer routes to reviewer.
   Anything that requires deviation from this list requires a NEW Patch Intent Summary.
+
+  REMINDER: This PIS is chat-only. Do not write it to a file under docs/prd/patch-intent/,
+  docs/execution/patch-intent/, or anywhere else. The chat transcript is the audit trail.
 -->
