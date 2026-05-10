@@ -9,7 +9,8 @@
     "p3": "complete"
   },
   "fa_account_session": {
-    "slice1": "in-progress"
+    "slice1": "blocked",
+    "blocker": "Phase 3 better-auth migration incomplete: packages/auth/src/server.ts, packages/auth/src/guards.ts, and apps/web/app/api/auth/[...all]/route.ts are missing. Current auth is still NextAuth."
   },
   "pis_approved": false,
   "pis_blockers_count": 5,

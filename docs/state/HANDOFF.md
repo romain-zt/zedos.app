@@ -38,20 +38,23 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 
 ## Current Blocker
 
-**None.** Phase 3 (better-auth migration) is complete.
+**BLOCKED: Phase 3 better-auth migration is incomplete.**
 
-### Completed Phase 3 PRs:
-- **PR-1 (#23)**: @repo/auth scaffold with better-auth (server.ts, client.ts, guards.ts, types.ts, api-key plugin stub) + auth schema in @repo/db
-- **PR-2**: Replace NextAuth route handler with better-auth + update all session reads in apps/web/
-- **PR-3**: Remove next-auth deps, cleanup old files
+### Missing Required Files (per `.cursor/rules/76-better-auth.mdc` §2):
+- `packages/auth/src/server.ts` — **MISSING** (should export `auth` instance with better-auth)
+- `packages/auth/src/guards.ts` — **MISSING** (should export `requireSession`, `requireUser`)
+- `apps/web/app/api/auth/[...all]/route.ts` — **MISSING** (only `[...nextauth]/route.ts` exists)
 
-### Verification:
-```bash
-grep -r "from ['\"]next-auth" apps/web/
-# Returns 0 matches
-```
+### Actual State Found:
+- `packages/auth/src/auth-options.ts` — Contains **NextAuth** configuration (not better-auth)
+- `apps/web/app/api/auth/[...nextauth]/route.ts` — Uses NextAuth handler
+- `docs/state/status.json` claimed `phase3.p3: "complete"` but files don't exist
 
-All `session.user.id` access is now properly typed as `string` without `as any` casts.
+### FA-account-session Slice 1 Status:
+`blocked` — Cannot implement sign-up/sign-in flows with better-auth until the auth package migration is complete.
+
+### Resolution Required:
+Complete the Phase 3 better-auth migration (PR-1 through PR-3 as originally planned) before proceeding with FA-account-session Slice 1.
 
 ## What the Cloud Agent Should Do RIGHT NOW
 
