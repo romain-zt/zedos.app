@@ -42,30 +42,93 @@ const PHASE_PROMPTS: Record<string, string> = {
 Execute Phase 3 Phase 0: scaffold the Turborepo root.
 - Add root package.json, pnpm-workspace.yaml, turbo.jsonc, .changeset/, .npmrc, tsconfig.base.json
 - Move zedos/nextjs_space/ → apps/web/
-- Verify the app still builds after the move
-Update docs/state/status.json with phase3.p0 = "complete" when done.
-Open draft PRs for each logical unit. If blocked, document in docs/state/HANDOFF.md and stop.`,
+- Verify the app still builds after the move: pnpm typecheck && pnpm build must pass
+Open draft PRs for each logical unit (PR P0-a workspace init, PR P0-b CI hygiene).
+When all PRs are open and gates pass:
+  - Set docs/state/status.json -> phase3.p0 = "complete" and commit + push
+If blocked at any point:
+  - Set docs/state/status.json -> phase3.p0 = "blocked" and phase3.blocker = "<one-line reason>"
+  - Write a "Current Blocker" section in docs/state/HANDOFF.md describing what failed and what the next human action is
+  - Commit + push docs/state/status.json and docs/state/HANDOFF.md
+  - STOP — do not continue`,
 
-  "phase3-p1": `Read docs/state/HANDOFF.md and docs/execution/plans/turborepo-migration--phase-1-package-extraction.plan.md.
-Execute Phase 3 Phase 1: extract @repo/contracts, @repo/result, @repo/db, @repo/auth from apps/web/.
-Follow the plan exactly. Open draft PRs per package. Update docs/state/status.json with phase3.p1 = "complete" when done.
-If blocked, document in docs/state/HANDOFF.md and stop.`,
+  "phase3-p1": `Read docs/state/HANDOFF.md first, then read docs/execution/plans/turborepo-migration--phase-1-package-extraction.plan.md.
+The plan contains exact file paths for every operation. Follow it precisely.
 
-  "phase3-p2": `Read docs/state/HANDOFF.md and docs/product/scope-slices/turborepo-migration--phase-2-drizzle.md.
+Execute Phase 3 Phase 1: extract @repo/result, @repo/contracts, @repo/db, @repo/auth from apps/web/.
+Extraction order matters (dependency order): result → contracts → db → auth.
+Open one draft PR per package. After each PR passes pnpm typecheck && pnpm build, open the next.
+The pr-cascade.yml workflow will un-draft each PR when the previous merges.
+
+Architecture rules in .cursor/rules/ apply — especially 72-hexagonal-boundaries.mdc (no cross-layer imports) and 73-result-rop.mdc (Result<T,E> discipline).
+
+When all 4 PRs are open and the final verification gate passes:
+  - Set docs/state/status.json -> phase3.p1 = "complete" and commit + push on main (not on a branch)
+If blocked at any point:
+  - Set docs/state/status.json -> phase3.p1 = "blocked" and phase3.blocker = "<one-line reason>"
+  - Write a "Current Blocker" section in docs/state/HANDOFF.md
+  - Commit + push docs/state/ files
+  - STOP`,
+
+  "phase3-p2": `Read docs/state/HANDOFF.md first, then read docs/execution/plans/turborepo-migration--phase-2-drizzle.plan.md.
+The plan contains the full Drizzle schema translation from the Prisma schema (12 models, 10 schema files) and exact file paths for all 6 repository rewrites.
+
 Execute Phase 3 Phase 2: migrate Prisma → Drizzle ORM.
-Follow the scope slice. Open draft PRs. Update docs/state/status.json with phase3.p2 = "complete" when done.
-If blocked, document in docs/state/HANDOFF.md and stop.`,
+PR order: schema+config → repository rewrites → Prisma cleanup.
+Critical: CreditRepository.deductCredits() must use a Drizzle transaction with SELECT FOR UPDATE (see plan).
+After each PR: pnpm typecheck && pnpm build must pass before opening the next.
+Also run: drizzle-kit check (must exit 0 against the database after PR-1).
 
-  "phase3-p3": `Read docs/state/HANDOFF.md and docs/product/scope-slices/turborepo-migration--phase-3-better-auth.md.
-Execute Phase 3 Phase 3: migrate NextAuth → better-auth. API keys planned for v2/v3.
-Follow the scope slice. Open draft PRs. Update docs/state/status.json with phase3.p3 = "complete" when done.
-If blocked, document in docs/state/HANDOFF.md and stop.`,
+When all PRs are open and final gate passes:
+  - Set docs/state/status.json -> phase3.p2 = "complete" and commit + push on main
+If blocked:
+  - Set phase3.p2 = "blocked" and phase3.blocker = "<one-line reason>"
+  - Write "Current Blocker" in docs/state/HANDOFF.md
+  - Commit + push docs/state/ files
+  - STOP`,
 
-  "fa-account-session": `Read docs/state/HANDOFF.md and docs/product/feature-areas/account-session.md and docs/product/scope-slices/account-session--sign-up-sign-in.md.
+  "phase3-p3": `Read docs/state/HANDOFF.md first, then read docs/execution/plans/turborepo-migration--phase-3-better-auth.plan.md.
+The plan covers the full better-auth setup: server.ts, client.ts, guards.ts (Result<T,E> pattern), Drizzle adapter wiring against @repo/db, and the disabled API-key plugin stub for v2/v3.
+
+Execute Phase 3 Phase 3: migrate NextAuth → better-auth.
+PR order: @repo/auth better-auth scaffold + DB tables → handler + session wiring → cleanup.
+Critical: after PR-2, verify with grep that zero files in apps/web/ still import from 'next-auth'.
+Session shape: session.user.id must be string (not string | undefined) — no as any casts allowed.
+The API-key plugin stub must exist in packages/auth/src/plugins/api-key.ts (disabled).
+
+When all PRs are open and final gate passes (including the grep check):
+  - Set docs/state/status.json -> phase3.p3 = "complete" and commit + push on main
+If blocked:
+  - Set phase3.p3 = "blocked" and phase3.blocker = "<one-line reason>"
+  - Write "Current Blocker" in docs/state/HANDOFF.md
+  - Commit + push docs/state/ files
+  - STOP`,
+
+  "fa-account-session": `Read docs/state/HANDOFF.md first, then:
+  - docs/product/feature-areas/account-session.md (FA boundaries)
+  - docs/product/scope-slices/account-session--sign-up-sign-in.md (canonical slice — designed for better-auth post-Phase 3)
+  - docs/execution/user-stories/account-session--sign-up-sign-in--credentials-flow.md (user story with ACs)
+  - docs/product/scope-slices/account-session--session-persistence-protected-routes.md (sibling slice)
+  - .cursor/rules/76-better-auth.mdc (auth implementation rules)
+
+PREREQUISITE CHECK: before implementing, verify that Phase 3 better-auth is complete:
+  - packages/auth/src/server.ts exists and exports auth
+  - packages/auth/src/guards.ts exports requireSession and requireUser
+  - apps/web/app/api/auth/[...all]/route.ts exists with better-auth handler
+  If any of these are missing, set docs/state/status.json -> fa_account_session.slice1 = "blocked" + blocker message, and STOP.
+
 Execute FA-account-session, Slice 1: sign-up and sign-in flows using better-auth.
-Follow the scope slice and architecture rules in .cursor/rules/. Open draft PRs.
-Update docs/state/status.json with fa_account_session.slice1 = "complete" when done.
-If blocked, document in docs/state/HANDOFF.md and stop.`,
+Implement the 12 Acceptance Criteria from the user story (skip AC-11 and AC-12 which are PENDING human decisions).
+Architecture: route handlers → use-cases → @repo/auth; use Result<T,E> throughout.
+Open draft PRs per the user story test plan.
+
+When done:
+  - Set docs/state/status.json -> fa_account_session.slice1 = "complete" and commit + push on main
+If blocked:
+  - Set fa_account_session.slice1 = "blocked" and fa_account_session.blocker = "<one-line reason>"
+  - Write "Current Blocker" in docs/state/HANDOFF.md
+  - Commit + push docs/state/ files
+  - STOP`,
 };
 
 // ---------------------------------------------------------------------------

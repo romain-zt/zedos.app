@@ -1,9 +1,11 @@
 ---
 type: state-handoff
 date: 2026-05-10
-author: local-agent (pre-cloud handoff)
+author: local-agent (overnight pipeline update)
 workspace: /Users/romainpiveteau/Projects/ZedTech/zedos.app
 status: handoff-ready
+current_phase: phase3-p1
+current_blocker: none
 ---
 
 # Cloud Agent State Handoff
@@ -31,8 +33,28 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 | **Rules merge** | `COMPLETE` | `zedos/.cursor/rules/` merged into root `.cursor/rules/72-74*.mdc` and deleted. Single source of truth at root. |
 | **2a — Credit/Stripe planning** | `complete` | Scope Slice, User Story, Implementation Plan, and friction log all authored and on disk. |
 | **2b — Implementation** | `blocked-on-pis-approval` | 4-PR stack (~38 files, ~900 lines). Blocked on 5 PIS approval items. See §4. |
-| **3 — Turborepo migration** | `pending` | Move `zedos/nextjs_space/` → `apps/web/`, extract packages, migrate Prisma→Drizzle, NextAuth→better-auth. |
+| **3 — Turborepo migration** | `🔄 IN PROGRESS — phase3-p1 (package extraction)` | P0 scaffold COMPLETE (apps/web/ exists, PR #11 merged). P1 plan written. P2 Drizzle plan written. P3 better-auth plan written. Overnight pipeline will execute P1→P2→P3. |
 | **4 — Next Feature Areas** | `pending` | FA-account-session → FA-dashboard-shell → FA-prd-versioning → FA-guided-clarification → FA-credit-system (full). |
+
+## Current Blocker
+
+**None.** The pipeline can proceed with `phase3-p1`.
+
+## What the Cloud Agent Should Do RIGHT NOW
+
+1. Read `docs/execution/plans/turborepo-migration--phase-1-package-extraction.plan.md`
+2. Execute PR-1: extract `@repo/result` (see Touched Files — PR-1)
+3. Gate: `pnpm typecheck && pnpm build` must pass
+4. Execute PR-2: extract `@repo/contracts`
+5. Gate: same
+6. Execute PR-3: extract `@repo/db`
+7. Gate: same
+8. Execute PR-4: extract `@repo/auth`
+9. Gate: same
+10. Set `docs/state/status.json` → `phase3.p1 = "complete"` and commit + push
+11. The orchestrator will then fire the phase3-p2 agent automatically
+
+If any gate fails: set `phase3.p1 = "blocked"`, write blocker description to `docs/state/HANDOFF.md` "Current Blocker" section, commit + push, and stop.
 
 ---
 
@@ -407,7 +429,10 @@ _(All files from `zedos/.cursor/rules/` have been merged into root `.cursor/rule
 ## 11. What the Cloud Agent Should Do Next
 
 ### ~~Step 1: Complete the rules merge~~ ✅ DONE
-Rules merge completed. `zedos/.cursor/rules/` deleted. All cross-references updated.
+
+### ~~Step 2a: Turborepo Phase 0 scaffold~~ ✅ DONE (PR #11 merged, apps/web/ exists)
+
+### ~~Step 1b: Write Phase 1/2/3 Implementation Plans~~ ✅ DONE (2026-05-10 overnight prep)
 
 ### Step 2: Verify secret safety
 1. Check that `zedos/nextjs_space/.env` does NOT contain real secrets (or does not exist)
