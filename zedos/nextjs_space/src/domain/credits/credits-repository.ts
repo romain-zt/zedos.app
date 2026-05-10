@@ -16,21 +16,37 @@ export interface ICreditsRepository {
   getBalance(userId: string): Promise<Result<CreditBalance, ApplicationError>>;
 
   /**
-   * Deduct credits and record transaction atomically
+   * Deduct credits atomically inside a row-locked transaction.
+   * correlationId makes the deduct idempotent — two calls with the same id
+   * are collapsed to one effect (unique partial index on credit_transactions).
    */
   deductCredits(
     userId: string,
     amount: number,
-    operationType: OperationType
-  ): Promise<Result<CreditBalance, ApplicationError>>;
+    operationType: OperationType,
+    correlationId?: string
+  ): Promise<Result<CreditBalance & { graceActivated: boolean; idempotent?: boolean }, ApplicationError>>;
 
   /**
-   * Add credits and record transaction atomically
+   * Add credits atomically inside a row-locked transaction.
+   * correlationId makes the grant idempotent (Stripe webhook replay safety).
    */
   addCredits(
     userId: string,
     amount: number,
-    type: 'grant' | 'purchase' | 'auto_reload'
+    type: 'grant' | 'purchase' | 'auto_reload',
+    correlationId?: string
+  ): Promise<Result<CreditBalance, ApplicationError>>;
+
+  /**
+   * Reverse a prior deduction — compensating reversal for AI failure.
+   * The reversal row is written with correlationId = `${originalCorrelationId}--reverse`.
+   * Idempotent: a second reversal with the same originalCorrelationId is a no-op.
+   * OQ-2 decision: does NOT restore graceUsed (grace consumed on attempt).
+   */
+  reverseCredits(
+    userId: string,
+    originalCorrelationId: string
   ): Promise<Result<CreditBalance, ApplicationError>>;
 
   /**

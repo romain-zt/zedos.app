@@ -5,7 +5,7 @@
  * No I/O; coordinates between repositories and domain rules.
  */
 
-import { CreditBalance, CreditOperation, OperationType, CreditCheckResult } from './credits';
+import { CreditBalance, CreditOperation, OperationType, CreditCheckResult, CreditDeductionDecision } from './credits';
 import { UserId } from '../user/user';
 import { createLogger } from '@shared/observability/logger';
 
@@ -82,6 +82,53 @@ export class CreditsDomainService {
       graceApplicable: false,
       graceWillExpire: false,
       message: `Insufficient credits (${currentBalance}/${requiredAmount}). Please purchase more credits.`,
+    };
+  }
+
+  /**
+   * Compute the deduction decision inside a locked transaction.
+   * Called with the balance and graceUsed from the locked row (SELECT FOR UPDATE).
+   * Returns a discriminated union so the repo knows exactly what to write.
+   *
+   * Decision rules (per PRD):
+   *   - balance >= cost → 'proceed'
+   *   - balance < cost AND grace not used AND overage <= GRACE_CEILING → 'proceed-with-grace'
+   *   - balance < cost AND grace not used AND overage > GRACE_CEILING → 'reject' (overage-exceeds-ceiling)
+   *   - balance < cost AND grace already used → 'reject' (grace-exhausted)
+   */
+  static computeDeductionDecision(
+    lockedBalance: number,
+    lockedGraceUsed: boolean,
+    cost: number,
+    graceCeiling: number = parseInt(process.env.GRACE_CREDIT_CEILING ?? '20', 10)
+  ): CreditDeductionDecision {
+    if (lockedBalance >= cost) {
+      return { kind: 'proceed', newBalance: lockedBalance - cost, willActivateGrace: false };
+    }
+
+    const overage = cost - lockedBalance;
+
+    if (!lockedGraceUsed) {
+      if (overage <= graceCeiling) {
+        return {
+          kind: 'proceed-with-grace',
+          newBalance: lockedBalance - cost,
+          willActivateGrace: true,
+        };
+      }
+      return {
+        kind: 'reject',
+        newBalance: lockedBalance,
+        willActivateGrace: false,
+        reason: 'overage-exceeds-ceiling',
+      };
+    }
+
+    return {
+      kind: 'reject',
+      newBalance: lockedBalance,
+      willActivateGrace: false,
+      reason: 'grace-exhausted',
     };
   }
 

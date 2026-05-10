@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { CreditsDomainService } from '@/src/domain/credits/credits-service'
 
 export type OperationType =
   | 'clarification'
@@ -17,8 +18,6 @@ export function getCreditCost(operationType: OperationType): number {
   }
   return costs[operationType] ?? 1
 }
-
-const GRACE_CEILING = parseInt(process.env.GRACE_CREDIT_CEILING ?? '20', 10)
 
 export interface CreditCheckResult {
   allowed: boolean
@@ -46,107 +45,234 @@ export async function checkCredits(
   }
 
   const cost = getCreditCost(operationType)
-  const balance = user.creditBalance
-  const graceUsed = user.graceUsed
+  const decision = CreditsDomainService.computeDeductionDecision(
+    user.creditBalance,
+    user.graceUsed,
+    cost
+  )
 
-  // Has enough credits
-  if (balance >= cost) {
-    return { allowed: true, currentBalance: balance, cost, wouldUseGrace: false, graceAlreadyUsed: graceUsed }
-  }
-
-  // Not enough credits - check grace
-  if (!graceUsed) {
-    // First-circuit grace: allow if overage would be within ceiling
-    const overage = cost - balance
-    if (overage <= GRACE_CEILING) {
-      return { allowed: true, currentBalance: balance, cost, wouldUseGrace: true, graceAlreadyUsed: false }
-    } else {
-      return {
-        allowed: false,
-        reason: `This operation costs ${cost} credits but you only have ${balance}. The projected overage exceeds the ${GRACE_CEILING}-credit grace limit. Please add credits to continue.`,
-        currentBalance: balance,
-        cost,
-        wouldUseGrace: false,
-        graceAlreadyUsed: false,
-      }
+  if (decision.kind === 'proceed') {
+    return {
+      allowed: true,
+      currentBalance: user.creditBalance,
+      cost,
+      wouldUseGrace: false,
+      graceAlreadyUsed: user.graceUsed,
     }
   }
 
-  // Grace already used - block at zero
+  if (decision.kind === 'proceed-with-grace') {
+    return {
+      allowed: true,
+      currentBalance: user.creditBalance,
+      cost,
+      wouldUseGrace: true,
+      graceAlreadyUsed: false,
+    }
+  }
+
+  const reasons: Record<string, string> = {
+    'grace-exhausted': `Insufficient credits. You have ${user.creditBalance} credits but this operation costs ${cost}. Please add credits to continue.`,
+    'overage-exceeds-ceiling': `This operation costs ${cost} credits but you only have ${user.creditBalance}. The projected overage exceeds the grace limit. Please add credits to continue.`,
+    'insufficient-credits': `Insufficient credits. Required: ${cost}, Available: ${user.creditBalance}`,
+  }
+  const rejectionReason = (decision as any).reason as string
   return {
     allowed: false,
-    reason: `Insufficient credits. You have ${balance} credits but this operation costs ${cost}. Please add credits to continue.`,
-    currentBalance: balance,
+    reason: reasons[rejectionReason] ?? 'Insufficient credits',
+    currentBalance: user.creditBalance,
     cost,
     wouldUseGrace: false,
-    graceAlreadyUsed: true,
+    graceAlreadyUsed: user.graceUsed,
   }
 }
 
+type RowLock = { credit_balance: number; grace_used: boolean }
+
+/**
+ * Deduct credits atomically inside a SELECT FOR UPDATE transaction.
+ * correlationId makes this idempotent — same correlationId = no-op on repeat.
+ */
 export async function deductCredits(
   userId: string,
   operationType: OperationType,
-  metadata?: Record<string, any>
-): Promise<{ success: boolean; newBalance: number; graceActivated: boolean }> {
+  metadata?: Record<string, any>,
+  correlationId?: string
+): Promise<{ success: boolean; newBalance: number; graceActivated: boolean; idempotent?: boolean }> {
   const cost = getCreditCost(operationType)
 
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (!user) return { success: false, newBalance: 0, graceActivated: false }
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT credit_balance, grace_used FROM users WHERE id = $1 FOR UPDATE`,
+        userId
+      )) as RowLock[]
+      const locked = rows[0]
 
-  const newBalance = user.creditBalance - cost
-  const graceActivated = newBalance < 0 && !user.graceUsed
+      if (!locked) return { success: false, newBalance: 0, graceActivated: false }
 
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: userId },
-      data: {
-        creditBalance: newBalance,
-        ...(graceActivated ? { graceUsed: true } : {}),
-      },
-    }),
-    prisma.creditTransaction.create({
-      data: {
-        userId,
-        type: 'consumption',
-        amount: -cost,
-        balanceAfter: newBalance,
-        operationType,
-        metadata: metadata ?? {},
-      },
-    }),
-  ])
+      const decision = CreditsDomainService.computeDeductionDecision(
+        locked.credit_balance,
+        locked.grace_used,
+        cost
+      )
 
-  return { success: true, newBalance, graceActivated }
+      if (decision.kind === 'reject') {
+        return { success: false, newBalance: locked.credit_balance, graceActivated: false }
+      }
+
+      if (correlationId) {
+        const existing = await tx.creditTransaction.findFirst({
+          where: { userId, correlationId },
+        })
+        if (existing) {
+          const user = await tx.user.findUnique({ where: { id: userId } })
+          return {
+            success: true,
+            newBalance: user?.creditBalance ?? locked.credit_balance,
+            graceActivated: false,
+            idempotent: true,
+          }
+        }
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          creditBalance: decision.newBalance,
+          ...(decision.willActivateGrace ? { graceUsed: true } : {}),
+        },
+      })
+
+      await tx.creditTransaction.create({
+        data: {
+          userId,
+          type: 'consumption',
+          amount: -cost,
+          balanceAfter: decision.newBalance,
+          operationType,
+          metadata: metadata ?? {},
+          ...(correlationId ? { correlationId } : {}),
+        } as any,
+      })
+
+      return {
+        success: true,
+        newBalance: decision.newBalance,
+        graceActivated: decision.willActivateGrace,
+      }
+    })
+  } catch {
+    return { success: false, newBalance: 0, graceActivated: false }
+  }
+}
+
+/**
+ * Reverse a prior deduction. Compensating reversal on AI failure.
+ * Per OQ-2 decision: does NOT restore graceUsed.
+ */
+export async function reverseCredits(
+  userId: string,
+  originalCorrelationId: string
+): Promise<{ success: boolean; newBalance: number }> {
+  const reversalCorrelationId = `${originalCorrelationId}--reverse`
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT credit_balance, grace_used FROM users WHERE id = $1 FOR UPDATE`,
+        userId
+      )) as RowLock[]
+      const locked = rows[0]
+
+      if (!locked) return { success: false, newBalance: 0 }
+
+      const alreadyReversed = await tx.creditTransaction.findFirst({
+        where: { userId, correlationId: reversalCorrelationId },
+      })
+      if (alreadyReversed) {
+        return { success: true, newBalance: locked.credit_balance }
+      }
+
+      const original = await tx.creditTransaction.findFirst({
+        where: { userId, correlationId: originalCorrelationId, type: 'consumption' },
+      })
+      if (!original) {
+        return { success: true, newBalance: locked.credit_balance }
+      }
+
+      const deductedAmount = Math.abs(original.amount)
+      const newBalance = locked.credit_balance + deductedAmount
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { creditBalance: newBalance },
+      })
+
+      await tx.creditTransaction.create({
+        data: {
+          userId,
+          type: 'consumption',
+          amount: deductedAmount,
+          balanceAfter: newBalance,
+          operationType: original.operationType ?? undefined,
+          correlationId: reversalCorrelationId,
+          metadata: { reversal: true, originalCorrelationId },
+        } as any,
+      })
+
+      return { success: true, newBalance }
+    })
+  } catch {
+    return { success: false, newBalance: 0 }
+  }
 }
 
 export async function addCredits(
   userId: string,
   amount: number,
   type: 'grant' | 'purchase' | 'auto_reload',
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
+  correlationId?: string
 ): Promise<number> {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (!user) throw new Error('User not found')
+  return await prisma.$transaction(async (tx) => {
+    const rows = (await tx.$queryRawUnsafe(
+      `SELECT credit_balance, grace_used FROM users WHERE id = $1 FOR UPDATE`,
+      userId
+    )) as RowLock[]
+    const locked = rows[0]
 
-  const newBalance = user.creditBalance + amount
+    if (!locked) throw new Error('User not found')
 
-  await prisma.$transaction([
-    prisma.user.update({
+    if (correlationId) {
+      const existing = await tx.creditTransaction.findFirst({
+        where: { userId, correlationId },
+      })
+      if (existing) {
+        return locked.credit_balance
+      }
+    }
+
+    const newBalance = locked.credit_balance + amount
+
+    await tx.user.update({
       where: { id: userId },
       data: { creditBalance: newBalance },
-    }),
-    prisma.creditTransaction.create({
+    })
+
+    await tx.creditTransaction.create({
       data: {
         userId,
         type,
         amount,
         balanceAfter: newBalance,
         metadata: metadata ?? {},
-      },
-    }),
-  ])
+        ...(correlationId ? { correlationId } : {}),
+      } as any,
+    })
 
-  return newBalance
+    return newBalance
+  })
 }
 
 export async function grantStarterCredits(userId: string): Promise<boolean> {
@@ -169,7 +295,7 @@ export async function grantStarterCredits(userId: string): Promise<boolean> {
         balanceAfter: newBalance,
         operationType: 'starter_grant',
         metadata: { reason: 'New account starter credits' },
-      },
+      } as any,
     }),
   ])
 

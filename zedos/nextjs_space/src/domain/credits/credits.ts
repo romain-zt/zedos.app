@@ -42,9 +42,8 @@ export class CreditBalance {
     readonly amount: number,
     readonly graceUsed: boolean = false
   ) {
-    if (amount < 0) {
-      throw new Error('Credit balance cannot be negative');
-    }
+    // Negative balance is permitted when grace period has been used (first-circuit grace).
+    // The grace ceiling check is enforced by CreditsDomainService.computeDeductionDecision.
   }
 
   canDeduct(cost: number): boolean {
@@ -56,6 +55,13 @@ export class CreditBalance {
       throw new Error(`Insufficient credits: ${this.amount} < ${cost}`);
     }
     return new CreditBalance(this.userId, this.amount - cost, this.graceUsed);
+  }
+
+  /**
+   * Deduct with grace — balance may go negative. Only valid when willActivateGrace is true.
+   */
+  deductWithGrace(cost: number): CreditBalance {
+    return new CreditBalance(this.userId, this.amount - cost, true);
   }
 
   add(amount: number): CreditBalance {
@@ -97,3 +103,25 @@ export interface CreditCheckResult {
   graceWillExpire: boolean;
   message: string;
 }
+
+/**
+ * Credit Deduction Decision — returned by CreditsDomainService.computeDeductionDecision.
+ * The repository uses this to determine what to do inside a locked transaction.
+ */
+export type CreditDeductionDecision =
+  | {
+      kind: 'proceed';
+      newBalance: number;
+      willActivateGrace: false;
+    }
+  | {
+      kind: 'proceed-with-grace';
+      newBalance: number;
+      willActivateGrace: true;
+    }
+  | {
+      kind: 'reject';
+      newBalance: number;
+      willActivateGrace: false;
+      reason: 'insufficient-credits' | 'grace-exhausted' | 'overage-exceeds-ceiling';
+    };
