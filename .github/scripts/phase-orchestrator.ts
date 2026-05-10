@@ -199,7 +199,7 @@ function determineNextStep(status: StatusJson): string | null {
     return null;
   }
 
-  if (p3.blocked || fa.blocker) {
+  if (p3.blocker || fa.blocker) {
     const msg = p3.blocker ?? fa.blocker;
     console.log(`🚧 Blocked: ${msg}`);
     console.log("Manual intervention required. Stopping.");

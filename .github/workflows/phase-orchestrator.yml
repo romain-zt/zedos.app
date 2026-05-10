@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  # Safety net: re-check every 30 min in case a trigger was missed
+  # (e.g. GITHUB_TOKEN-triggered merges don't fire pull_request events)
+  schedule:
+    - cron: "*/30 * * * *"
   # Manual escape hatch — use when the chain is stuck and no PR is available to merge
   workflow_dispatch:
     inputs:
@@ -14,7 +18,10 @@ on:
 
 jobs:
   orchestrate:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || github.event_name == 'schedule'
+      || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
