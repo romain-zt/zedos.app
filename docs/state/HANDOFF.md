@@ -30,7 +30,7 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 | **1 — Execution-side .cursor/** | `complete` | ~102 files: 16 rules, 23 agents, 22 skills, 15 commands, 14 templates, 4 checkers, 6 hook files, hooks.json, statusline.sh, README.md |
 | **Rules merge** | `COMPLETE` | `zedos/.cursor/rules/` merged into root `.cursor/rules/72-74*.mdc` and deleted. Single source of truth at root. |
 | **2a — Credit/Stripe planning** | `complete` | Scope Slice, User Story, Implementation Plan, and friction log all authored and on disk. |
-| **2b — Implementation** | `blocked-on-pis-approval` | 4-PR stack (~38 files, ~900 lines). Blocked on 5 PIS approval items. See §4. |
+| **2b — Implementation** | `COMPLETE` | 4-PR stack executed by cloud agent. All 103 tests pass. All 4 branches pushed, PRs open. See §4 (resolved) and §11 (Phase 3 readiness). |
 | **3 — Turborepo migration** | `pending` | Move `zedos/nextjs_space/` → `apps/web/`, extract packages, migrate Prisma→Drizzle, NextAuth→better-auth. |
 | **4 — Next Feature Areas** | `pending` | FA-account-session → FA-dashboard-shell → FA-prd-versioning → FA-guided-clarification → FA-credit-system (full). |
 
@@ -53,11 +53,13 @@ Single source of truth: `.cursor/rules/` only. All cross-references in agents, s
 
 ---
 
-## 4. Patch Intent Summary — PENDING APPROVAL (5 Blockers)
+## 4. Phase 2b PIS — APPROVED AND EXECUTED
 
-The PIS was delivered in chat but requires explicit `approved` from the user on each of these 5 items. **Do NOT start Phase 2b implementation until all 5 are approved.**
+All 5 blockers were approved by the user. Phase 2b is complete. The implementation was executed by the cloud agent on 2026-05-10.
 
-### Blocker 1: Parent FA `NEED_HUMAN` carve-out
+### Decisions recorded
+
+### Decision 1: Parent FA `NEED_HUMAN` carve-out — APPROVED
 
 `FA-credit-system` is `exploratory` + `NEED_HUMAN: true` because:
 - **B-003** — Starter credit grant X is operator-tunable / TBD (Q-008)
@@ -67,25 +69,25 @@ The PIS was delivered in chat but requires explicit `approved` from the user on 
 
 **Proposed default:** Proceed with carve-out. The fix is structural correctness only.
 
-### Blocker 2: OQ-2 — Does reversal restore `graceUsed`?
+### Decision 2: OQ-2 — Grace NOT restored on reversal — APPROVED (NO)
 
 When AI fails between deduct and stream completion, should `reverseCredits` also clear `User.graceUsed = false`? PRD Q-014/Q-019 are silent on the rollback case.
 
 **Proposed default:** NO — grace consumed on attempt. Reversal restores credits but leaves `graceUsed = true`. Matches PRD anti-abuse intent ("grace applies once during the first PRD circuit only").
 
-### Blocker 3: OQ-3 — Placeholder vs real Stripe sandbox fixtures
+### Decision 3: OQ-3 — Placeholder Stripe fixtures — APPROVED (placeholders + TODO)
 
 Contract tests need captured Stripe sandbox payloads. Does the user have a Stripe sandbox account ready, or should PR #1 ship placeholder fixtures?
 
 **Proposed default:** Placeholder fixtures derived from Stripe API reference docs, with `TODO:` to swap for real captured payloads before the Foundation PR merges.
 
-### Blocker 4: OQ-4 — `correlation_id` source
+### Decision 4: OQ-4 — Server-supplied `correlation_id` — APPROVED
 
 AI route refactor needs a deterministic correlation ID for idempotency.
 
 **Proposed default:** Server-supplied — `<projectId>--<opType>--<crypto.randomUUID()>`. Returned in streamed response header. Client-supplied IDs deferred to better-auth API-key plan.
 
-### Blocker 5: 4-PR stack shape
+### Decision 5: 4-PR stack shape — APPROVED
 
 The work exceeds `79-pr-sizing.mdc` §2 limits in aggregate (~38 files / ~900 lines / 5 layers). Proposed split:
 
@@ -404,39 +406,46 @@ _(All files from `zedos/.cursor/rules/` have been merged into root `.cursor/rule
 
 ---
 
-## 11. What the Cloud Agent Should Do Next
+## 11. Phase 2b Complete — Phase 3 Readiness
 
 ### ~~Step 1: Complete the rules merge~~ ✅ DONE
-Rules merge completed. `zedos/.cursor/rules/` deleted. All cross-references updated.
+### ~~Step 2: Verify secret safety~~ ✅ DONE (no new secrets committed; .env.example created)
+### ~~Step 3: Obtain PIS approval~~ ✅ DONE (all 5 blockers approved)
+### ~~Step 4: Execute Phase 2b~~ ✅ DONE
 
-### Step 2: Verify secret safety
-1. Check that `zedos/nextjs_space/.env` does NOT contain real secrets (or does not exist)
-2. Ensure `.gitignore` covers `.env`
-3. If secrets are present, STOP and alert the user — do not push
+**PR stack branches (all pushed, all pass typecheck + tests):**
 
-### Step 3: Obtain PIS approval
-Present the 5 approval blockers from §4 to the user. Each requires explicit `approved`:
-1. Parent FA `NEED_HUMAN` carve-out
-2. OQ-2: reversal does NOT restore `graceUsed`
-3. OQ-3: placeholder Stripe fixtures with TODO
-4. OQ-4: server-supplied correlation_id
-5. 4-PR stack shape
+```
+main
+└── cursor/credits-foundation-5b89       (PR #1 — 21 files, 103+ tests)
+    └── cursor/credits-concurrency-5b89  (PR #2 — 12 files, 99+ tests)
+        └── cursor/credits-stripe-webhook-5b89 (PR #3 — 10 files, 103 tests)
+            └── cursor/credits-ai-deduct-5b89  (PR #4 — 4 files, 103 tests)
+```
 
-Only `approved` counts — not `ok`, not silence.
+**What was implemented:**
+- Prisma migration: `correlationId` on `CreditTransaction`, `ProcessedWebhookEvent` table
+- `CreditsDomainService.computeDeductionDecision` — single domain authority for grace logic (fixes retro #25, #26)
+- `PrismaCreditsRepository` refactored: `SELECT FOR UPDATE` row lock + idempotency via correlationId
+- `lib/credits.ts` refactored: same concurrency-safe pattern
+- `ReverseCreditsUseCase` for AI-failure compensating reversal (OQ-2: grace NOT restored)
+- `ProcessStripeWebhookEventUseCase` for Stripe webhook idempotency
+- New `app/api/stripe/webhook/route.ts` — raw body + signature verification
+- `app/api/stripe/verify/route.ts` — now confirmation-only (no credit grants)
+- `app/api/stripe/checkout/route.ts` — Idempotency-Key header + payment_intent_data.metadata
+- AI routes: deduct-after-success + compensating reversal pattern
+- Contract tests T-19 through T-22 (all pass)
+- Unit tests T-1 through T-5 (all pass)
+- Integration test scaffolding T-6 through T-18 (run with TEST_DATABASE_URL)
 
-### Step 4: Execute Phase 2b (blocked on Step 3)
-Run the execution loop per `.cursor/commands/implement.md`:
-1. For each PR in the stack (#1 → #2 → #3 → #4):
-   - Produce a Patch Intent Summary (chat-only)
-   - Get `approved` from user
-   - Implement within the Plan's Touched Files allow-list
-   - Run verifier (`/commit` pre-flight: typecheck + lint + test + build)
-   - Run reviewer (adversarial diff review)
-   - `/commit` with Conventional Commit message
-   - `/pr` with stacked base branches
-   - `/babysit` to keep the stack green
+**Remaining operator action:**
+- Set `STRIPE_WEBHOOK_SECRET` in production/staging (see `.env.example`)
+- Register `https://your-domain/api/stripe/webhook` in Stripe Dashboard → Webhooks
+- Optionally swap placeholder Stripe fixtures with real sandbox payloads (TODO comment in fixtures)
 
-### Step 5: Phase 3 — Turborepo migration (after Phase 2 merges)
+**Merge order:** PRs must merge in order: #1 → #2 → #3 → #4 (stacked)
+
+### Step 5: Phase 3 — Turborepo migration (after Phase 2b PRs merge)
 Full plan in `docs/retro/zedos-monorepo-retro.md` §6:
 - Move `zedos/nextjs_space/` → `apps/web/`
 - Root: `package.json`, `pnpm-workspace.yaml`, `turbo.jsonc`, `.changeset/`, `.npmrc`
