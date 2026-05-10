@@ -12,6 +12,9 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@repo/result": ["./packages/result/src/index.ts"]
+    }
   }
 }

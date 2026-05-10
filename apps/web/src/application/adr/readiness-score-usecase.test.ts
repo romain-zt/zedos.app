@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ReadinessScoreUseCase } from './readiness-score-usecase';
-import { ok } from '@shared/result/result';
+import { ok } from '@repo/result';
 
 const fullContent = {
   overview: 'x', problem: 'x', users: 'x', journeys: 'x',

@@ -1,6 +1,6 @@
 import { IUserRepository } from '@domain/user/user-repository';
 import { UserDomainService } from '@domain/user/user-service';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ApplicationError, UnauthorizedError } from '@shared/errors/application-error';
 import { UserDTO } from '@contracts/auth/auth-contracts';
 import { createLogger } from '@shared/observability/logger';

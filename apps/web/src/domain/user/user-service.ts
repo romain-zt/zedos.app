@@ -6,7 +6,7 @@
  */
 
 import { User, Email, UserId } from './user';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ValidationError } from '@shared/errors/application-error';
 import * as bcrypt from 'bcryptjs';
 

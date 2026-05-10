@@ -8,7 +8,8 @@
       "@contracts/*": ["./src/contracts/*"],
       "@infrastructure/*": ["./src/infrastructure/*"],
       "@ui/*": ["./src/ui/*"],
-      "@shared/*": ["./src/shared/*"]
+      "@shared/*": ["./src/shared/*"],
+      "@repo/result": ["../../packages/result/src/index.ts"]
     }
   },
   "include": [

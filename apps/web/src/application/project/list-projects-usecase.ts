@@ -1,5 +1,5 @@
 import { IProjectRepository, ProjectWithCounts } from '@domain/project/project-repository';
-import { Result } from '@shared/result/result';
+import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 
 export class ListProjectsUseCase {

@@ -1,5 +1,5 @@
 import { IProjectRepository } from '@domain/project/project-repository';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { ProjectDTO } from '@contracts/project/project-contracts';
 import { createLogger } from '@shared/observability/logger';

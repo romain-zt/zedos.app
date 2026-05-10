@@ -1,7 +1,7 @@
 import { IPrdRepository } from '@domain/prd/prd-repository';
 import { PrdVersionWithRelations } from '@domain/prd/prd';
 import { IProjectRepository } from '@domain/project/project-repository';
-import { Result, err } from '@shared/result/result';
+import { Result, err } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
 

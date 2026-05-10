@@ -1,7 +1,7 @@
 import { IAdrRepository } from '@domain/adr/adr-repository';
 import { IProjectRepository } from '@domain/project/project-repository';
 import { Adr } from '@domain/adr/adr';
-import { Result } from '@shared/result/result';
+import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 
 export class ListAdrsUseCase {

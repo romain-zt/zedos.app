@@ -1,7 +1,7 @@
 import { IProjectRepository } from '@domain/project/project-repository';
 import { IPrdRepository } from '@domain/prd/prd-repository';
 import { ProjectDomainService } from '@domain/project/project-service';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ApplicationError, ValidationError } from '@shared/errors/application-error';
 import { PhaseUnlockResponse } from '@contracts/adr/adr-contracts';
 import { createLogger } from '@shared/observability/logger';

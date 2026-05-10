@@ -3,7 +3,7 @@ import { IPrdRepository } from '@domain/prd/prd-repository';
 import { IAdrRepository } from '@domain/adr/adr-repository';
 import { ProjectDomainService } from '@domain/project/project-service';
 import { AdrDomainService } from '@domain/adr/adr-service';
-import { Result, ok } from '@shared/result/result';
+import { Result, ok } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { ReadinessScoreResponse } from '@contracts/adr/adr-contracts';
 
