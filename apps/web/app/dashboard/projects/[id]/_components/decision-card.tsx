@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { HelpCircle, Send, GripVertical } from 'lucide-react'
+import { HelpCircle, Send, MessageSquare } from 'lucide-react'
 
 interface DecisionOption {
   id: string
@@ -38,9 +38,18 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
   )
   const [comment, setComment] = useState('')
   const [customInput, setCustomInput] = useState('')
+  const [showComment, setShowComment] = useState(false)
 
   const options = decision?.options ?? []
   const type = decision?.type ?? 'single_choice'
+
+  // Simple choice: single_choice with 2-5 options, no per-option descriptions, no custom input
+  const isSimpleChoice =
+    type === 'single_choice' &&
+    options.length >= 2 &&
+    options.length <= 5 &&
+    options.every((o: DecisionOption) => !o.description) &&
+    !decision?.allow_custom
 
   const handleSubmit = () => {
     let response: any = { type }
@@ -90,28 +99,61 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
     setRanked(newRanked)
   }
 
-  return (
-    <Card className="border-primary/20 bg-primary/[0.02]">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-display">{decision?.title ?? 'Decision'}</CardTitle>
-        {decision?.description && (
-          <CardDescription>{decision.description}</CardDescription>
+  // Compact pill buttons for simple single_choice (2-5 options, no descriptions, no custom)
+  if (isSimpleChoice) {
+    return (
+      <div className="flex flex-wrap gap-1.5 mt-1">
+        {options.map((opt: DecisionOption) => (
+          <Button
+            key={opt.id}
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onClick={() => {
+              if (disabled) return
+              onSubmit({ type, selected: opt.id, label: opt.label })
+            }}
+            className="h-8 text-xs rounded-full px-3 hover:bg-primary hover:text-primary-foreground transition-colors"
+          >
+            {opt.label}
+          </Button>
+        ))}
+        {decision?.allow_not_sure && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNotSure}
+            disabled={disabled}
+            className="h-8 text-xs rounded-full px-3 text-muted-foreground"
+          >
+            Not sure
+          </Button>
         )}
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+    )
+  }
+
+  // Full card for complex cases (multi_choice, ranked, options with descriptions, allow_custom)
+  return (
+    <Card className="border-border/60 bg-muted/30">
+      <CardContent className="p-3 space-y-3">
+        {decision?.description && (
+          <p className="text-xs text-muted-foreground">{decision.description}</p>
+        )}
+
         {/* Single Choice */}
         {type === 'single_choice' && (
           <RadioGroup value={singleChoice} onValueChange={setSingleChoice} disabled={disabled}>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {options.map((opt: DecisionOption) => (
                 <div
                   key={opt.id}
-                  className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex items-start gap-2.5 p-2 rounded-md border hover:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => !disabled && setSingleChoice(opt.id)}
                 >
-                  <RadioGroupItem value={opt.id} id={opt.id} className="mt-0.5" />
+                  <RadioGroupItem value={opt.id} id={opt.id} className="mt-0.5 shrink-0" />
                   <div>
-                    <Label htmlFor={opt.id} className="font-medium cursor-pointer">{opt.label}</Label>
+                    <Label htmlFor={opt.id} className="text-sm font-medium cursor-pointer leading-tight">{opt.label}</Label>
                     {opt.description && (
                       <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
                     )}
@@ -124,18 +166,18 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
 
         {/* Multi Choice */}
         {type === 'multi_choice' && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {options.map((opt: DecisionOption) => (
               <div
                 key={opt.id}
-                className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                className="flex items-start gap-2.5 p-2 rounded-md border hover:bg-muted/50 transition-colors cursor-pointer"
                 onClick={() => !disabled && toggleMulti(opt.id)}
               >
                 <Checkbox
                   checked={(multiChoices ?? []).includes(opt.id)}
                   onCheckedChange={() => toggleMulti(opt.id)}
                   disabled={disabled}
-                  className="mt-0.5"
+                  className="mt-0.5 shrink-0"
                 />
                 <div>
                   <span className="text-sm font-medium">{opt.label}</span>
@@ -156,11 +198,11 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
               return (
                 <div
                   key={id}
-                  className="flex items-center gap-2 p-3 rounded-lg border bg-background"
+                  className="flex items-center gap-2 p-2 rounded-md border bg-background"
                 >
-                  <span className="text-xs font-mono text-muted-foreground w-5">{index + 1}.</span>
+                  <span className="text-xs font-mono text-muted-foreground w-4 shrink-0">{index + 1}.</span>
                   <span className="text-sm font-medium flex-1">{opt?.label ?? id}</span>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col shrink-0">
                     <button
                       onClick={() => moveRanked(index, index - 1)}
                       disabled={index === 0 || disabled}
@@ -189,20 +231,32 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
             value={customInput}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomInput(e.target.value)}
             rows={2}
-            className="resize-none"
+            className="resize-none text-sm"
             disabled={disabled}
           />
         )}
 
-        {/* Comment */}
-        <Textarea
-          placeholder="Add a comment (optional)"
-          value={comment}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value)}
-          rows={1}
-          className="resize-none text-sm"
-          disabled={disabled}
-        />
+        {/* Comment (collapsed by default) */}
+        {showComment ? (
+          <Textarea
+            placeholder="Add a comment..."
+            value={comment}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value)}
+            rows={1}
+            className="resize-none text-xs"
+            disabled={disabled}
+            autoFocus
+          />
+        ) : (
+          <button
+            onClick={() => setShowComment(true)}
+            disabled={disabled}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <MessageSquare className="h-3 w-3" />
+            Add a comment
+          </button>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-2">
@@ -210,8 +264,9 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
             size="sm"
             onClick={handleSubmit}
             disabled={disabled}
+            className="h-7 text-xs px-3"
           >
-            <Send className="mr-2 h-3.5 w-3.5" />
+            <Send className="mr-1.5 h-3 w-3" />
             Submit
           </Button>
           {decision?.allow_not_sure && (
@@ -220,9 +275,10 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
               size="sm"
               onClick={handleNotSure}
               disabled={disabled}
+              className="h-7 text-xs px-2 text-muted-foreground"
             >
-              <HelpCircle className="mr-2 h-3.5 w-3.5" />
-              Not sure / Ask differently
+              <HelpCircle className="mr-1 h-3 w-3" />
+              Not sure
             </Button>
           )}
         </div>
