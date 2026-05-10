@@ -61,6 +61,20 @@ Architecture discussion, agent definition, PRD methodology, workflow design, gov
 
 **EXECUTION** — concrete work: code changes, file edits, implementation, scaffolding, refactoring, dependency installation, spec generation for execution, architecture decisions to be acted on. Apply full SISO.
 
+EXECUTION mode is entered explicitly via one of these commands (see `.cursor/rules/80-change-policy.mdc` for the full authority table):
+
+- `/plan <slice-path>` — Implementation Plan (architect proposes; persisted only after approval)
+- `/implement <plan-path>` — code edits under the Plan's `Touched Files` allow-list, gated by Patch Intent Summary `approved`
+- `/fix <issue>` — focused bug fix (smaller scope than `/implement`, same gates)
+- `/review` — read-only diff review
+- `/commit` — stage + commit already-produced edits
+- `/pr` — open or update a PR (no code edits at this step)
+- `/babysit` — keep an open PR merge-ready (small scoped fixes)
+- `/split` — branch and PR reorganization (no behavior changes)
+- `/improve-config` — `.cursor/**` only — meta-improvements to governance
+
+Read-only EXECUTION commands (`/explore`, `/review`) do not require ORANGE/RED clearance but still classify as EXECUTION for audit purposes.
+
 SISO blocks only when `REQUEST_MODE = EXECUTION AND INPUT_QUALITY = ORANGE or RED`.
 
 The more autonomous the system, the stricter SISO must be — automation amplifies bad assumptions.

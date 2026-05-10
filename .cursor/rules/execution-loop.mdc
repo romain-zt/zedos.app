@@ -152,7 +152,17 @@ Template fields:
 - **`current_action`** — One bounded governance action (skill enumerates examples)
 - **`started_at`** — ISO date (**`YYYY-MM-DD`** minimum)
 - **`allowed_files`** — Paths or globs the agent may touch while locked
-- **`forbidden_files`** — Default: product **implementation** trees (`src/**`, `app/**`, `packages/**`, `lib/**`) — forbid unless governance explicitly expands scope (**v0:** always forbid implementation)
+- **`forbidden_files`** — Default-deny on every product **implementation** tree under both repo layouts. The autonomous loop is **governance-only**; it must never edit application runtime code. Explicit list (cover **pre-migration** at `zedos/nextjs_space/**` **and** **post-migration** at `apps/**`, `packages/**`, `services/**`):
+  - `zedos/nextjs_space/**`
+  - `zedos/.cursor/**` (in-repo architecture rules — protected)
+  - `apps/**`
+  - `packages/**`
+  - `services/**`
+  - `src/**`, `app/**`, `lib/**` (top-level fallback if either layout collapses to root)
+  - `prisma/**`, `**/prisma/**`
+  - `**/public/**`, `**/scripts/**`
+  - `**/*.ts`, `**/*.tsx`, `**/*.js`, `**/*.jsx` outside `docs/**`, `.cursor/**`
+  Allow paths must be an explicit subset of `docs/**` (governance, PRD, product, product-decisions) or `.cursor/**` governance edits — never default to source trees. The **v0 stop condition** in §11.1 makes this list authoritative for both layouts.
 - **`stale`** — Boolean
 
 ### Stale lock handling

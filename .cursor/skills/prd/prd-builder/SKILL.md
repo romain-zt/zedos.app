@@ -92,6 +92,15 @@ Canonical template rules live in `.cursor/rules/10-prd-discovery.mdc`.
 Use `.cursor/templates/prd/` as the only reusable source for generated PRD docs.
 Never use `docs/**` files as templates.
 
+## Supporting references
+
+Read on demand — do not preload:
+
+- `surface-gate.md` — Product Surface Gate (§3.0.5): required surface fields, output block, hard rules.
+- `feature-group-template.md` — Standard/critical Feature Group template (§4): sections, requirements, status semantics.
+- `ice-scoring.md` — ICE scale, formula, hard rules, staleness defaults (§5).
+- `persistence.md` — Patch Intent Summary vs full PRD Delta Proposal, approval ladder, post-write format (§8).
+
 ## 2.5 Discovery Note Mode
 
 During open discovery (`/prd discover`, `/prd note`, or informal PRD conversation), the default behavior is **capture-first**. Do not run the convergence loop. Do not score ICE. Do not ask for DoD, Out of Scope, or challenge tables. Do not propose a PRD update.
@@ -152,7 +161,7 @@ Declare at the start of each feature group. Determines required sections.
 | Type | Required sections | Use when |
 |---|---|---|
 | `lightweight` | WHY, WHAT, Out of Scope, rough ICE, Status | Quick idea, early exploration, tangential scope |
-| `standard` | Full template | Default for most feature groups |
+| `standard` | Full template (`feature-group-template.md`) | Default for most feature groups |
 | `critical` | Full template + Dependencies + Validation Metadata | Core user workflow, high-cost-if-wrong, blockers for other groups |
 
 Default is `standard`. Only declare explicitly if `lightweight` or `critical`.
@@ -181,69 +190,13 @@ Used for `lightweight` groups only. Exploratory — cannot be committed without 
 exploratory
 ```
 
-To promote to `standard` or `critical`, complete the full template in section 4 and re-run the convergence loop from section 3.1.
+To promote to `standard` or `critical`, complete the full template (`feature-group-template.md`) and re-run the convergence loop from §3.1.
 
 ## 3.0.5 Product Surface Gate
 
-The most dangerous failure mode of this system is **false convergence**: a clean-looking feature group that hides unresolved product-surface decisions. Surface decisions silently determine scope, dependencies, build cost, and what "done" even means. AI-generated PRD prose is especially good at making absent decisions look present.
+The Surface Gate runs before drafting WHY/WHO/WHAT/WHEN of a feature group when activation conditions in `surface-gate.md` apply. Read `surface-gate.md` for full mechanics, required fields, and the persisted Surface Block format.
 
-The Surface Gate runs *before* the first feature group is drafted for a new PRD, and *again* whenever a feature group surfaces a surface ambiguity that the current PRD has not resolved.
-
-### When to run the gate
-
-The gate does **not** fire during open discovery (`/prd discover`, `/prd note`) or informal PRD conversation. It fires only in `converge`, `prioritize`, and `update` modes, or when the user explicitly asks to validate a feature group.
-
-Within those modes, run the gate before drafting the first WHY/WHO/WHAT/WHEN of a feature group when **any** of:
-
-- `docs/prd/state.md` has no `DIRECTION` set, or it is the scaffold value
-- `docs/prd/PRD.md` has no validated feature group yet
-- The candidate group introduces a new buyer surface, merchant surface, market, or source-of-truth not already established in the PRD
-- Challenger has flagged a `FALSE CONVERGENCE RISK` against the current direction
-
-If none apply, skip the gate — the surface is already established.
-
-### Required surface fields
-
-Ask only the smallest set of product-shaping questions. One short answer per field, or `UNKNOWN — decision needed before implementation`. Never silently infer.
-
-| Field | Question | Why it matters |
-|---|---|---|
-| Primary market / language | Which market and language is v1 for? | Determines copy, legal, payment rails, support load |
-| Buyer entry point | Where does the buyer first encounter the product? | Distribution surface (Shopify page, embed, standalone, link, WhatsApp, …) |
-| Buyer-facing surface | Where does the buyer complete the action? | Same surface as entry, or a handoff? |
-| Merchant operating surface | Where does the merchant operate it? | Shopify admin, separate admin, calendar, email-only, manual |
-| Source of truth (after success) | Which system holds the canonical record after a successful action? | Booking record, Shopify order, calendar event, payment, customer record |
-| Confirmation channel | How does the buyer know it worked? | On-screen, email, SMS, WhatsApp, dashboard |
-| Payment model (if money) | Deposit, full prepayment, post-pay, free, merchant-configurable? | Determines refund logic, dispute surface, risk |
-| Hard v1 exclusions | What surfaces / markets / models are explicitly out of v1? | Caps scope drift |
-
-### Output: Surface Block
-
-Produce one block per gate run. Persisted as part of the active PRD (under "Product Surface" or per feature group, depending on scope).
-
-```md
-## Product Surface
-
-- Primary market / language: <answer | UNKNOWN — decision needed before implementation>
-- Buyer entry point: <…>
-- Buyer-facing surface: <…>
-- Merchant operating surface: <…>
-- Source of truth: <…>
-- Confirmation channel: <…>
-- Payment model: <… | n/a>
-- Hard v1 exclusions: <list>
-
-## Surface Blockers
-- <field>: <what decision is missing> — blocks: <implementation specs | this feature group | none>
-```
-
-### Hard rules
-
-- **The gate does not block discussion.** UNKNOWN is a valid, expected answer. Surface ambiguity must be made visible, not resolved by inference.
-- **The gate does block implementation readiness.** See section 6 (convergence checks) and section 8 (persistence).
-- **Confidence cap.** If `Buyer entry point`, `Buyer-facing surface`, `Merchant operating surface`, `Source of truth`, or `Primary market / language` is UNKNOWN, ICE Confidence for any feature group depending on that field is **capped at 4** (see section 5).
-- **No giant questionnaire.** Ask only fields that materially affect the next decision. Skip `Payment model` if money is not in scope. Group fields the user can answer in one breath.
-- **No silent inference.** If the user says "I don't know", write `UNKNOWN — decision needed before implementation`. Do not pick the most plausible answer "for now".
+In short: ask the smallest set of product-shaping questions; UNKNOWN is a valid answer; never silently infer; UNKNOWN on a required surface field caps Confidence at 4 and downgrades status from `validated` to `validated-with-open-surface`.
 
 ## 3. Convergence Loop
 
@@ -267,7 +220,7 @@ A feature group = a coherent slice of user value with a single intent. Not a the
 
 Ask: "What's the smallest user-visible capability we want to define right now?" If the user names something too large, split before proceeding.
 
-Then run the **Product Surface Gate** (section 3.0.5) if its activation conditions are met. Do not skip — false convergence almost always starts here. The gate may produce UNKNOWNs; that is fine. What is NOT fine is drafting WHY/WHO/WHAT/WHEN against silently-assumed surface.
+Then run the **Product Surface Gate** (§3.0.5; full mechanics in `surface-gate.md`) if its activation conditions are met. Do not skip — false convergence almost always starts here. The gate may produce UNKNOWNs; that is fine. What is NOT fine is drafting WHY/WHO/WHAT/WHEN against silently-assumed surface.
 
 ### 3.2 Draft WHY / WHO / WHAT / WHEN
 
@@ -288,15 +241,15 @@ Ask: "What's true when this is shipped?" Demand observable, user-visible conditi
 
 ### 3.5 Score ICE
 
-See section 5. Capture as `Impact,Confidence,Ease`. Require a one-line justification per axis.
+See `ice-scoring.md`. Capture as `Impact,Confidence,Ease`. Require a one-line justification per axis.
 
 ### 3.6 Convergence check
 
-Run checks from section 6. If any fail, loop back. Do not paper over weakness with prose.
+Run checks from §6. If any fail, loop back. Do not paper over weakness with prose.
 
 ### 3.7 Explicit user validation
 
-Show the full feature group block (section 4 template). Ask the user to validate four things, one by one:
+Show the full feature group block (template in `feature-group-template.md`). Ask the user to validate four things, one by one:
 
 **Validation scope — only semantic and structural changes trigger these checkpoints:**
 - `cosmetic` — wording, formatting, typos. No validation required.
@@ -313,149 +266,18 @@ Silence is NOT approval.
 ### 3.8 Hand off or continue
 
 Once validated, output the feature group block and recommend either:
-- `/prd update` to persist (section 8 — procedural only, no new discovery)
-- Continue to the next feature group (subject to active group limit in section 3)
+- `/prd update` to persist (§8 — procedural only, no new discovery)
+- Continue to the next feature group (subject to active group limit in §3)
 
 The skill never writes to `docs/prd/` inline during the convergence loop. Persistence is a separate, gated step.
 
 ## 4. Feature Group Template
 
-Standard and critical feature groups use this exact template:
-
-```md
-# <Feature Group Name>
-
-## WHY
-<3–5 lines: user/business reason. No solutioning.>
-
-## WHO
-<Target users — specific roles or segments. Not "everyone".>
-
-## WHAT
-<3–5 lines: the capability in user-visible terms. Verbs over nouns.>
-
-## WHEN
-<Trigger/context: when in the user's workflow does this matter?>
-
-## Product Surface
-<Inherit from PRD-level Surface block, OR list overrides for this group.
-Required fields (see section 3.0.5). Use `inherits PRD` if no override.
-Any UNKNOWN field caps Confidence at 4 and blocks implementation specs.>
-
-## Definition of Done
-- <Observable, user-visible condition 1>
-- <Observable, user-visible condition 2>
-
-## ICE
-<Impact>,<Confidence>,<Ease>
-
-Impact: <one line>
-Confidence: <one line>
-Ease: <one line>
-
-Why Confidence is not higher: <required>
-What would invalidate this: <required>
-
-## Dependencies
-- <Other feature group or external dependency — or "None">
-
-## Out of Scope
-- <Explicit exclusion 1>
-- <Explicit exclusion 2>
-
-## Open Questions
-- <Unresolved question blocking confidence>
-
-## Status
-exploratory | validated-with-open-surface | validated | committed
-
-## Validation Metadata
-Last validated: YYYY-MM-DD
-Stale after: YYYY-MM-DD
-```
-
-| Section | Required | Common failure | Correction |
-|---|---|---|---|
-| WHY | yes | Restates WHAT | Force "so that <outcome>" clause |
-| WHO | yes | "All users" | Demand a role or segment |
-| WHAT | yes | Implementation language | Strip frameworks and services |
-| WHEN | yes | Vague ("anytime") | Anchor to a user moment |
-| Product Surface | yes | Silently inferred / missing | Run Surface Gate (3.0.5); UNKNOWN is allowed, silent inference is not |
-| DoD | yes | Engineering-shaped | Reject; rewrite as user-observable |
-| ICE | yes | Fake confidence | See section 5 |
-| Dependencies | optional | Hides scope creep | Each dep must be defined or external |
-| Out of Scope | yes | Empty | Block until ≥2 exclusions |
-| Open Questions | optional | Dumping ground | Flag if it blocks Confidence ≥ 7 |
-| Status | yes | Never updated; `validated` claimed while surface UNKNOWN | Use `validated-with-open-surface` when surface fields are UNKNOWN; update at every /prd update pass |
-| Validation Metadata | required for validated/committed | Missing on critical groups | Add at first /prd update after initial draft |
-
-### Status semantics
-
-| Status | Means | May proceed to |
-|---|---|---|
-| `exploratory` | Shape under discussion; not user-validated | further discovery; not persistence as ready |
-| `validated-with-open-surface` | User value, WHAT, DoD agreed; one or more required surface fields are UNKNOWN | persistence (with explicit blockers listed); NOT implementation specs |
-| `validated` | All convergence checks pass AND all required surface fields resolved | persistence; implementation specs |
-| `committed` | `validated` + the team has decided to build it | implementation |
-
-A group cannot skip from `exploratory` to `committed`. A group cannot be `validated` while any required surface field is UNKNOWN — downgrade to `validated-with-open-surface` instead.
+Standard and critical feature groups use the exact template in `feature-group-template.md`. That document contains the full template, required-section table, common failure modes, corrections, and the four-state status semantics (`exploratory` / `validated-with-open-surface` / `validated` / `committed`).
 
 ## 5. ICE Scoring
 
-Captured as a flat tuple: `Impact,Confidence,Ease` (e.g. `8,6,7`).
-
-### Scale (1–10 each)
-
-| Axis | 1 | 5 | 10 |
-|---|---|---|---|
-| **Impact** | Marginal value | Solid value for a real segment | Game-changer for the core problem |
-| **Confidence** | Pure guess | Reasonable inference, weak data | Validated with direct user evidence |
-| **Ease** | Massive cost, deep unknowns | Real work, known approach | Trivial to ship and operate |
-
-### Formula
-
-```
-score = Impact × Confidence × Ease / 100
-```
-
-Max score: 10.0. Typical honest range: 0.5–5.0.
-
-Why multiplicative: a weakness in ANY axis drags the entire score down. Low Confidence (C=3) cuts the score by 70% regardless of Impact. High Ease cannot compensate for low Impact.
-
-### Display guidance
-
-The ICE **tuple** (`8,6,7`) is the canonical artifact stored in the PRD and used in discussion. Humans reason well about individual axis values.
-
-The **composite score** (`I × C × E / 100`) is used only for ranking across feature groups (section 7). Do not use the composite score in conversation — it obscures the reasoning. When discussing priority, talk about the axes: "Impact is high but Confidence is low — we need a test before committing."
-
-Never let a single number replace the three-axis discussion.
-
-### Tie-break
-
-Higher Ease first (cheaper to validate), then higher Confidence.
-
-### Hard rules
-
-- Reject any axis at 9–10 without evidence-rooted justification.
-- If Confidence ≤ 4, propose the cheapest test that would raise it before recommending build.
-- If Ease ≥ 9, ask: "What's the hidden cost — operations, support, edge cases?"
-- Never accept 10,10,10.
-- Default Confidence for new ideas: 3–4.
-- Confidence ≥ 7 requires evidence from Researcher.
-- Ease ≥ 8 requires challenge from Challenger.
-- "Why Confidence is not higher" and "What would invalidate this" are required in every ICE block. An ICE block without them is not scored.
-- Default Confidence for new ideas with no user evidence: 3 (not 5, not 7).
-- **Surface cap.** If any of `Buyer entry point`, `Buyer-facing surface`, `Merchant operating surface`, `Source of truth`, or `Primary market / language` is UNKNOWN for this group (per section 3.0.5), Confidence is capped at **4** regardless of evidence quality. The cap is lifted only when the surface field is resolved or the user explicitly waives the uncertainty in writing (recorded in Open Questions).
-
-### Staleness defaults
-
-| Status | Confidence half-life | Stale after |
-|---|---|---|
-| `exploratory` | 14 days | 14 days from last validated |
-| `validated` | 45 days | 45 days from last validated |
-| `committed` | 90 days | 90 days from last validated |
-
-A stale group must be re-challenged by Challenger before prioritization or implementation. Do not silently resume stale groups.
+See `ice-scoring.md` for scale, formula, display guidance, tie-break rules, hard rules (including the surface cap), and staleness defaults.
 
 ## 6. Convergence Checks
 
@@ -467,7 +289,7 @@ A feature group is converged when ALL of:
 4. ICE tuple exists with per-axis justification
 5. No Open Question blocks Confidence ≥ 7
 6. User has explicitly validated the four checkpoints in 3.7
-7. Product Surface block exists; every required field (3.0.5) is either resolved or explicitly marked UNKNOWN with the cap and blocker recorded
+7. Product Surface block exists; every required field (`surface-gate.md`) is either resolved or explicitly marked UNKNOWN with the cap and blocker recorded
 
 ### Implementation-readiness gate
 
@@ -513,127 +335,9 @@ Plus:
 
 ## 8. Writing PRD Updates
 
-`/prd update` is persistence, not discovery.
+`/prd update` is persistence, not discovery. Default mode is **Patch Intent Summary**, not full Before/After.
 
-Default persistence mode is **Patch Intent Summary**, not full Before/After.
-
-**PRD Lead pre-flight**: confirm a PRD Lead Context Brief exists for this `/prd update` flow (see §2.7) before assessing Patch Intent Summary vs. full PRD Delta Proposal. Do not re-run on `approved`, `preview`, or `cancel`.
-
-### Invariants
-
-- Only persist content that comes from prior discovery notes, answered questions, or an explicit convergence/checkpoint output.
-- Do not invent, improve, expand, or editorialize content during persistence.
-- Do not discover new content during `/prd update`.
-- If new content appears during update, stop and route it to `/prd note` or `/prd converge`.
-- Never treat `ok` as persistence approval.
-- Never echo full PRD content after writing.
-- The PRD file is the document surface; chat is the approval/control surface.
-
-### Answered-queue supersession annotations (`open-questions.md`)
-
-When the persisted PRD/`state.md` delta **supersedes** facts implied by older **Answered** rows, apply matching annotations in `docs/prd/questions/open-questions.md` in the **same** approved write batch (capture artifact only — not a version bump). Edit **Answer** and/or **PRD impact** cells only; use explicit supersession wording per `.cursor/commands/prd-questions.md` (e.g. pointer to newer `Q-NNN` or “persisted PRD”). **Never delete** answered rows.
-
-Include `docs/prd/questions/open-questions.md` under Patch Intent Summary **Files to change** when those annotations are needed; omit when no older answered facts are overridden.
-
-### Default: Patch Intent Summary
-
-Use Patch Intent Summary when all are true:
-
-- content source is prior discovery notes, answered questions, or the immediately preceding convergence proposal
-- no version bump
-- `history.md` and `archive/` will not be touched
-- no content is being deleted
-- no group is being promoted to `validated`, `committed`, or implementation-ready
-- no risky surface change after persistence
-- no implementation specs, tickets, architecture, dependency changes, terminal commands, or code
-
-Patch Intent Summary must be specific enough for approval but must not duplicate full PRD content.
-
-Format:
-
-```txt
-Patch Intent Summary
-
-Files to change:
-- <file> — <short change>
-
-Files not touched:
-- <file/group>
-
-Patch type:
-- patch
-
-Content source:
-- <notes/questions/convergence/checkpoint>
-
-Safety:
-- no status promoted to committed
-- no implementation specs/tickets/architecture
-- no history/archive update
-- unresolved blockers remain listed
-
-Approval required:
-Reply `approved` to apply.
-Reply `preview` to see the full before/after diff first.
-Reply `cancel` to stop.
-```
-
-### Full PRD Delta Proposal
-
-Use full Before/After only when:
-
-- user replies `preview`
-- version bump
-- `history.md` or `archive/` will be touched
-- deleting existing content
-- replacing already active non-scaffold PRD sections
-- promoting status to `validated`, `committed`, or implementation-ready
-- changing ICE by more than ±1
-- changing source of truth, buyer surface, merchant surface, payment model, or market/language after persistence
-- user explicitly asks to review exact wording before write
-
-### Approval behavior
-
-If previous assistant turn contained Patch Intent Summary:
-
-- `approved` applies the summarized patch
-- `preview` shows exact Before/After
-- `cancel` stops
-
-If previous assistant turn contained full PRD Delta Proposal:
-
-- `approved` applies the exact delta
-
-No Patch Intent Summary or full PRD Delta Proposal in the immediately preceding assistant turn means no write is allowed.
-
-### False-readiness guard
-
-A persistence update must never make a feature group look more ready than it is.
-
-- If required surface fields are UNKNOWN, status must not be `validated` or `committed`.
-- Use `validated-with-open-surface` only when user value/scope is agreed but surface blockers remain.
-- Do not create implementation specs, tickets, or architecture from `validated-with-open-surface`.
-- Do not promote anything to `committed` without explicit user decision.
-
-### After writing
-
-After applying, output only:
-
-```txt
-Updated:
-- <file> — <short change>
-
-Not touched:
-- <file/group>
-
-Remaining open questions:
-- <Q-ID> — <question>
-or
-- None
-
-Next recommended command:
-- /prd questions | /prd challenge | /prd converge | /prd prioritize
-```
+See `persistence.md` for: invariants, supersession-annotation rules, Patch Intent Summary triggers and format, full PRD Delta Proposal triggers, approval behavior (`approved` / `preview` / `cancel`, never `ok`), false-readiness guard, and post-write output format.
 
 ## 9. Collaboration
 
@@ -680,11 +384,11 @@ The skill is the construction and persistence surface. The agents provide viewpo
 
 A PRD is a coordination tool, not a ritual artifact. The goal is faster correct decisions, not more process. When the system starts feeling like work, cut a section — don't add one.
 
-- **Chat-first.** Never write docs/prd/ without going through the delta procedure in section 8.
+- **Chat-first.** Never write `docs/prd/` without going through the delta procedure in §8 (`persistence.md`).
 - **One feature group at a time.** No parallel construction.
 - **Explicit validation.** The four checkpoints in 3.7 are required every time.
 - **No technical content.** Defer implementation discussion.
-- **Respect persisted state.** Read PRD.md and state.md before extending.
+- **Respect persisted state.** Read `PRD.md` and `state.md` before extending.
 - **Honor SISO.** RED/ORANGE input → clarify before constructing.
 - **Smaller wins.** When in doubt, cut.
 

@@ -1,0 +1,110 @@
+{
+  "handoff_date": "2026-05-10",
+  "current_phase": "2a-complete-pending-approval",
+  "pis_approved": false,
+  "pis_blockers_count": 5,
+  "pis_blockers": [
+    {
+      "id": 1,
+      "label": "Parent FA NEED_HUMAN carve-out",
+      "description": "B-003 (operator X) and B-004 (burn-tier) are commercially orthogonal to this safety fix. User must waive CC-04.",
+      "proposed_default": "proceed-with-carve-out",
+      "status": "pending"
+    },
+    {
+      "id": 2,
+      "label": "OQ-2: reversal restores graceUsed?",
+      "description": "Does reversal on AI failure clear graceUsed? PRD Q-014/Q-019 silent on rollback.",
+      "proposed_default": "no — grace consumed on attempt",
+      "status": "pending"
+    },
+    {
+      "id": 3,
+      "label": "OQ-3: placeholder vs real Stripe sandbox fixtures",
+      "description": "Contract tests need Stripe payloads. User may not have sandbox ready.",
+      "proposed_default": "placeholder fixtures with TODO to swap before merge",
+      "status": "pending"
+    },
+    {
+      "id": 4,
+      "label": "OQ-4: correlation_id source",
+      "description": "AI route idempotency: server-supplied vs client-supplied correlation IDs.",
+      "proposed_default": "server-supplied (<projectId>--<opType>--<crypto.randomUUID()>)",
+      "status": "pending"
+    },
+    {
+      "id": 5,
+      "label": "4-PR stack shape",
+      "description": "Work exceeds single-PR limits. Proposed 4 stacked PRs: foundation → concurrency → webhook → ai-deduct.",
+      "proposed_default": "4-pr-stack",
+      "status": "pending"
+    }
+  ],
+  "rules_merge_status": "complete",
+  "rules_merge_detail": "All 7 files from zedos/.cursor/rules/ merged into root .cursor/rules/72-74*.mdc and deleted. Single source of truth at root.",
+  "secrets_rotated": false,
+  "secrets_detail": "3 secrets leaked: DB password, NEXTAUTH_SECRET, ABACUSAI_API_KEY. User-owned rotation. Plus new STRIPE_WEBHOOK_SECRET needed for Phase 2b.",
+  "env_file_status": "no-.env.example-exists",
+  "locked_decisions": {
+    "auth": "better-auth (Phase 3 migration from NextAuth). API keys v2/v3.",
+    "orm": "Drizzle (Phase 3 migration from Prisma)",
+    "monorepo": "pnpm + Turborepo + Changesets + syncpack",
+    "architecture": "Hexagonal, Result<T,E> RoP, contracts-as-zod",
+    "framework": "Next.js App Router",
+    "phase2_stack": "Prisma + NextAuth (no migration in Phase 2)",
+    "eslint_cleanup": "separate slice",
+    "as_any_cleanup": "separate technical-debt slice (117 casts)",
+    "dual_credit_consolidation": "deferred per Implementation Plan"
+  },
+  "next_action": "complete-rules-merge-then-obtain-pis-approval",
+  "phases": {
+    "0": {
+      "status": "in-progress-user-owned",
+      "description": "Secret rotation at providers"
+    },
+    "1": {
+      "status": "complete",
+      "description": "Execution-side .cursor/ infrastructure (~102 files)"
+    },
+    "rules_merge": {
+      "status": "complete",
+      "description": "zedos/.cursor/rules/ merged into root .cursor/rules/ and deleted"
+    },
+    "2a": {
+      "status": "complete",
+      "description": "Credit/Stripe planning artifacts (scope slice, user story, plan, friction log)"
+    },
+    "2b": {
+      "status": "blocked-on-approval",
+      "description": "Implementation: 4-PR stack, ~38 files, ~900 lines, 28-36 worker-hours est."
+    },
+    "3": {
+      "status": "pending",
+      "description": "Turborepo migration: zedos/nextjs_space/ → apps/web/, extract packages, Prisma→Drizzle, NextAuth→better-auth"
+    },
+    "4": {
+      "status": "pending",
+      "description": "Next Feature Areas: account-session → dashboard-shell → prd-versioning → guided-clarification → credit-system"
+    }
+  },
+  "active_artifacts": {
+    "scope_slice": "docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md",
+    "user_story": "docs/execution/user-stories/credit-system--ledger-concurrency-and-stripe-webhook--phase-3-fixes.md",
+    "implementation_plan": "docs/execution/plans/credit-system--ledger-concurrency-and-stripe-webhook--phase-3-fixes.plan.md",
+    "friction_log": "docs/retro/phase2a-friction-log.md"
+  },
+  "feature_areas_count": 10,
+  "scope_slices_count": 3,
+  "cursor_artifacts": {
+    "rules": 16,
+    "agents": 23,
+    "skills": 22,
+    "commands": 15,
+    "templates": 14,
+    "checkers": 4,
+    "hooks": 7,
+    "other": 2
+  },
+  "source_code_location": "zedos/nextjs_space/",
+  "post_migration_location": "apps/web/ + packages/*"
+}

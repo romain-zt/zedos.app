@@ -1,0 +1,263 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Coins, Zap, CreditCard, ArrowUpRight, ArrowDownRight, Gift, Check, AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
+import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
+
+interface CreditPack {
+  id: string
+  size: number
+  priceEur: number
+  label: string
+  description: string
+}
+
+export default function CreditsPage() {
+  const searchParams = useSearchParams()
+  const [balance, setBalance] = useState<number | null>(null)
+  const [graceUsed, setGraceUsed] = useState(false)
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [packs, setPacks] = useState<CreditPack[]>([])
+  const [costs, setCosts] = useState<Record<string, number>>({})
+  const [purchasing, setPurchasing] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [credRes, packRes] = await Promise.all([
+          fetch('/api/credits'),
+          fetch('/api/credits/packs'),
+        ])
+        if (credRes?.ok) {
+          const data = await credRes.json()
+          setBalance(data?.balance ?? 0)
+          setGraceUsed(data?.graceUsed ?? false)
+          setTransactions(data?.transactions ?? [])
+        }
+        if (packRes?.ok) {
+          const data = await packRes.json()
+          setPacks(data?.packs ?? [])
+          setCosts(data?.costs ?? {})
+        }
+      } catch {} finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  // Handle Stripe redirect
+  useEffect(() => {
+    const success = searchParams?.get('success')
+    const sessionId = searchParams?.get('session_id')
+    if (success === 'true' && sessionId) {
+      const verifyPayment = async () => {
+        try {
+          const res = await fetch('/api/stripe/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId }),
+          })
+          if (res?.ok) {
+            const data = await res.json()
+            setBalance(data?.balance ?? 0)
+            if (!data?.alreadyProcessed) {
+              toast.success(`${data?.creditsAdded ?? 0} credits added to your account!`)
+            }
+          }
+        } catch {
+          toast.error('Failed to verify payment')
+        }
+      }
+      verifyPayment()
+    }
+    if (searchParams?.get('canceled') === 'true') {
+      toast.error('Payment was canceled')
+    }
+  }, [searchParams])
+
+  const handlePurchase = async (packId: string) => {
+    setPurchasing(packId)
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packId }),
+      })
+      const data = await res.json()
+      if (data?.url) {
+        window.location.href = data.url
+      } else {
+        toast.error(data?.error ?? 'Failed to start checkout')
+      }
+    } catch {
+      toast.error('Failed to start checkout')
+    } finally {
+      setPurchasing(null)
+    }
+  }
+
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'grant': return <Gift className="h-4 w-4 text-green-500" />
+      case 'purchase': return <ArrowUpRight className="h-4 w-4 text-blue-500" />
+      case 'consumption': return <ArrowDownRight className="h-4 w-4 text-orange-500" />
+      case 'auto_reload': return <Zap className="h-4 w-4 text-purple-500" />
+      default: return <Coins className="h-4 w-4" />
+    }
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-8">
+      <FadeIn>
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Credits</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Credits power AI operations. Each operation has a defined cost.
+          </p>
+        </div>
+      </FadeIn>
+
+      {/* Balance Card */}
+      <FadeIn delay={0.1}>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Current Balance</p>
+                <p className="text-4xl font-bold font-mono mt-1">{balance !== null ? balance : '...'}</p>
+                {(balance ?? 0) < 0 && (
+                  <div className="flex items-center gap-1.5 mt-2 text-amber-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm">Negative balance — add credits to continue</span>
+                  </div>
+                )}
+                {graceUsed && (balance ?? 0) <= 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Grace period used. Credits required for all operations.
+                  </p>
+                )}
+              </div>
+              <div className="h-16 w-16 rounded-full bg-amber-50 flex items-center justify-center">
+                <Coins className="h-8 w-8 text-amber-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </FadeIn>
+
+      {/* Credit Packs */}
+      <div className="space-y-4">
+        <h2 className="font-display text-lg font-semibold">Add Credits</h2>
+        <Stagger staggerDelay={0.1}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {(packs ?? []).map((pack: CreditPack) => (
+              <StaggerItem key={pack.id}>
+                <Card className="relative hover:shadow-md transition-shadow">
+                  {pack.id === 'pack_200' && (
+                    <Badge className="absolute -top-2.5 right-4 bg-primary">Popular</Badge>
+                  )}
+                  <CardHeader className="pb-3">
+                    <CardTitle className="font-display text-lg">{pack.label}</CardTitle>
+                    <CardDescription>{pack.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <span className="text-3xl font-bold">€{pack.priceEur}</span>
+                      <span className="text-muted-foreground ml-1">for {pack.size} credits</span>
+                    </div>
+                    <Button
+                      className="w-full"
+                      variant={pack.id === 'pack_200' ? 'default' : 'outline'}
+                      onClick={() => handlePurchase(pack.id)}
+                      loading={purchasing === pack.id}
+                      disabled={!!purchasing}
+                    >
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Buy {pack.size} Credits
+                    </Button>
+                  </CardContent>
+                </Card>
+              </StaggerItem>
+            ))}
+          </div>
+        </Stagger>
+      </div>
+
+      {/* Cost Reference */}
+      <FadeIn delay={0.2}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display text-base">Credit Costs per Operation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Lightweight clarification', cost: costs?.clarification ?? 1 },
+                { label: 'Standard decision', cost: costs?.decision ?? 3 },
+                { label: 'Dynamic mini-form decision', cost: costs?.mini_form ?? 5 },
+                { label: 'PRD generation / major update', cost: costs?.prd_generation ?? 10 },
+                { label: 'PRD challenge / convergence', cost: costs?.prd_challenge ?? 15 },
+              ].map((item: any) => (
+                <div key={item.label} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
+                  <span className="text-sm">{item.label}</span>
+                  <Badge variant="secondary" className="font-mono">{item.cost}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </FadeIn>
+
+      {/* Transaction History */}
+      <div className="space-y-4">
+        <h2 className="font-display text-lg font-semibold">Transaction History</h2>
+        {(transactions?.length ?? 0) === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              No transactions yet
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {(transactions ?? []).map((tx: any) => (
+                  <div key={tx?.id} className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      {getTransactionIcon(tx?.type)}
+                      <div>
+                        <p className="text-sm font-medium capitalize">
+                          {tx?.type === 'consumption' ? (tx?.operationType ?? 'usage') : tx?.type}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {tx?.createdAt ? new Date(tx.createdAt).toLocaleDateString() : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-sm font-mono font-medium ${
+                        (tx?.amount ?? 0) > 0 ? 'text-green-600' : 'text-orange-600'
+                      }`}>
+                        {(tx?.amount ?? 0) > 0 ? '+' : ''}{tx?.amount ?? 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        bal: {tx?.balanceAfter ?? 0}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  )
+}

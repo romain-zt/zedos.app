@@ -1,0 +1,130 @@
+---
+description: What changes are permitted in DISCOVERY vs EXECUTION mode. Defines the narrow set of changes allowed at each governance phase. Ties into 00-siso.mdc by enumerating EXECUTION-mode commands.
+alwaysApply: true
+---
+
+# Change Policy
+
+## 1. Purpose
+
+Different governance phases permit different kinds of changes. This rule names them explicitly so the agent never silently expands authority.
+
+Anchors:
+
+- `.cursor/rules/00-siso.mdc` — request quality + CHAT/DISCOVERY/EXECUTION classification
+- `.cursor/rules/70-execution-bridge.mdc` — the Scope Slice → User Story → code seam
+- `.cursor/rules/feature-area-workflow.mdc` — the discovery hierarchy
+- `.cursor/rules/execution-loop.mdc` — autonomous loop boundaries
+- `.cursor/rules/79-pr-sizing.mdc` — per-PR scope limits
+
+---
+
+## 2. Mode → permitted changes
+
+The agent classifies each request per `00-siso.mdc` (CHAT / DISCOVERY / EXECUTION). This rule defines **what changes each mode is allowed to make**.
+
+### 2.1 CHAT
+
+Conversation only. No file writes anywhere.
+
+### 2.2 DISCOVERY
+
+| Allowed writes | Path |
+|---|---|
+| PRD discovery capture | `docs/prd/notes/`, `docs/prd/questions/open-questions.md` (capture artifacts) |
+| PRD persistence | `docs/prd/PRD.md`, `docs/prd/state.md`, `docs/prd/history.md`, `docs/prd/archive/` (only via `/prd update` after approval) |
+| Product decisions | `docs/product-decisions/PD-NNN.md` (only after approval) |
+| Feature Area files | `docs/product/feature-areas/<kebab>.md` (only via `/feature-area scaffold` / `promote` after approval) |
+| Scope Slice files | `docs/product/scope-slices/<...>.md` (only via `/feature-area scaffold-slices` / `refine-slice` / `promote-slice` after approval) |
+| Execution-loop tables | `docs/WORK_QUEUE.md`, `docs/BLOCKERS.md`, `docs/EXECUTION_LOG.md`, `docs/EXECUTION_LOCK.md`, `docs/POINTS_OF_ATTENTION.md` (only via `/execute-prd`) |
+| `.cursor/` governance | only when the user explicitly requests rule / agent / skill / template / checker work |
+
+Forbidden in DISCOVERY:
+
+- Source code writes (`zedos/nextjs_space/src/**`, `app/**`, `lib/**`, `apps/**`, `packages/**`, `services/**`)
+- Schema migrations (`prisma/**`, `packages/database/migrations/**`)
+- Dependency installs (`package.json`, `pnpm-lock.yaml`)
+- Build artifacts (`.next/`, `dist/`, `coverage/`, `*.tsbuildinfo`)
+
+The `pre-edit` hook refuses these writes when the active SISO classification is DISCOVERY.
+
+### 2.3 EXECUTION
+
+EXECUTION mode is entered explicitly via one of these commands:
+
+| Command | Permitted changes |
+|---|---|
+| `/explore` | Read-only — no writes |
+| `/plan <slice-path>` | `docs/execution/plans/<...>.plan.md` (after explicit approval of the proposal) |
+| `/implement <plan-path>` | Source code under the layout in effect (`zedos/nextjs_space/**` or `apps/**` + `packages/**`), within the Plan's `Touched Files` allow-list, after Patch Intent Summary `approved` |
+| `/fix <issue>` | Same source-code authority as `/implement` but scoped to a smaller change |
+| `/review` | Read-only — no writes |
+| `/commit` | Stages and commits files already produced by `/implement` or `/fix` |
+| `/pr` | Pushes the current branch and opens / updates a PR (no source-code edits at this step) |
+| `/babysit` | Triages PR comments, resolves clear conflicts, fixes CI — small scoped fixes only |
+| `/split` | Branch and PR creation only — no behavior changes; reorganizes existing diffs |
+| `/improve-config` | `.cursor/**` only — improvements to the governance system itself |
+
+EXECUTION never permits:
+
+- Bypassing the Plan's `Touched Files` allow-list
+- Writing to `docs/prd/**`, `docs/product/**`, or `docs/product-decisions/**` (DISCOVERY territory)
+- Modifying `.cursor/rules/**` or `.cursor/checkers/**` outside `/improve-config`
+- Adding dependencies via `/implement` without an explicit Plan section "Dependencies Added" listing each package + reason
+
+---
+
+## 3. Authority transitions (only via explicit command)
+
+The agent does not switch modes silently. Mode transitions:
+
+| From | To | Triggered by |
+|---|---|---|
+| CHAT | DISCOVERY | User runs a `/prd` or `/feature-area` mode |
+| DISCOVERY | EXECUTION | User runs `/plan`, `/implement`, `/fix`, `/commit`, `/pr`, `/babysit`, `/split`, or `/improve-config` |
+| EXECUTION | DISCOVERY | User runs a `/prd` or `/feature-area` mode (mid-implementation: agent stops, asks if discovery is intentional) |
+| any | CHAT | User asks a question with no command |
+
+Mid-implementation switches to DISCOVERY pause the active Plan — the Plan must be re-approved before execution resumes.
+
+---
+
+## 4. Implementation Plan as the authority document
+
+In EXECUTION mode, the **approved Implementation Plan** is the single source of authority for "what code changes are allowed". Specifically, the Plan must declare:
+
+| Plan section | Authority granted |
+|---|---|
+| `Touched Files (exact paths)` | The agent may edit only these paths |
+| `Layers Affected` | The agent may cross only the listed layer boundaries |
+| `Contracts Changed` | The agent may add/modify only the listed zod schemas |
+| `Migrations` | The agent may add only the listed migration steps |
+| `Dependencies Added` | The agent may install only the listed packages |
+| `Tests` | The agent must add/update at least the listed test files |
+| `Out of Scope` | The agent must not touch behavior listed here |
+
+Anything outside the Plan's allow-lists requires a Plan revision (with new approval), not silent expansion.
+
+---
+
+## 5. Hard rules
+
+1. **No silent mode escalation.** A request that arrives in DISCOVERY does not become EXECUTION because the agent thinks code would be useful — the user invokes the command.
+2. **No source-code writes outside an approved Plan.** Hooks enforce this at the tool layer.
+3. **No Plan execution without a Patch Intent Summary in the immediately preceding turn approved by the user.** `ok` is not approval.
+4. **No dependency installs without explicit Plan declaration.**
+5. **No `.cursor/` mutations outside `/improve-config`** except for the narrow scaffolding modes documented in `.cursor/commands/feature-area.md` and `.cursor/commands/prd.md`.
+6. **No skipping the `/review` step** when the diff exceeds the small-change threshold (§2 of `79-pr-sizing.mdc`).
+
+---
+
+## 6. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/rules/00-siso.mdc` | §2.1–§2.3 mode classification |
+| `.cursor/hooks.json` (`pre-edit`, `pre-commit`, `pre-pr`) | §5 hard rules at the tool layer |
+| `.cursor/agents/execution/architect.md` | §4 Plan-as-authority discipline |
+| `.cursor/agents/execution/implementer.md` | §3 mode transitions; §5.2, §5.3 |
+| `.cursor/checkers/implementation-readiness-checker.md` | §4 Plan section requirements |
+| `.cursor/checkers/pr-readiness-checker.md` | §5.6 review requirement before PR |

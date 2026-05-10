@@ -1,0 +1,192 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ClarificationChat } from './clarification-chat'
+import { PrdViewer } from './prd-viewer'
+import { QuestionHistoryPanel } from './question-history'
+import { ArchitecturePanel } from './architecture-panel'
+import { ReadinessScoreBadge } from './readiness-score-badge'
+import { MessageSquare, FileText, History, Settings, Layers } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { toast } from 'sonner'
+import { FadeIn } from '@/components/ui/animate'
+
+interface ProjectWorkspaceProps {
+  projectId: string
+  projectName: string
+  projectDescription: string | null
+}
+
+export function ProjectWorkspace({ projectId, projectName, projectDescription }: ProjectWorkspaceProps) {
+  const [activeTab, setActiveTab] = useState('clarify')
+  const [prdVersions, setPrdVersions] = useState<any[]>([])
+  const [selectedVersion, setSelectedVersion] = useState<any>(null)
+  const [showSettings, setShowSettings] = useState(false)
+  const [editName, setEditName] = useState(projectName ?? '')
+  const [editDesc, setEditDesc] = useState(projectDescription ?? '')
+  const [saving, setSaving] = useState(false)
+  const [phase, setPhase] = useState('intake')
+  const [loadingPhase, setLoadingPhase] = useState(true)
+
+  const fetchVersions = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/prd`)
+      if (res?.ok) {
+        const data = await res.json()
+        setPrdVersions(data ?? [])
+        if ((data?.length ?? 0) > 0 && !selectedVersion) {
+          setSelectedVersion(data[0])
+        }
+      }
+    } catch {}
+  }, [projectId, selectedVersion])
+
+  useEffect(() => {
+    fetchVersions()
+  }, [fetchVersions])
+
+  useEffect(() => {
+    const fetchPhase = async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}`)
+        if (res?.ok) {
+          const data = await res.json()
+          setPhase(data.phase || 'intake')
+        }
+      } catch {
+      } finally {
+        setLoadingPhase(false)
+      }
+    }
+    fetchPhase()
+  }, [projectId])
+
+  const handlePrdGenerated = useCallback(() => {
+    fetchVersions()
+    setActiveTab('prd')
+  }, [fetchVersions])
+
+  const handleSaveSettings = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName, description: editDesc }),
+      })
+      if (res?.ok) {
+        toast.success('Project updated')
+        setShowSettings(false)
+      }
+    } catch {
+      toast.error('Failed to update project')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-4">
+      <FadeIn>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight">{projectName}</h1>
+            {projectDescription && (
+              <p className="text-sm text-muted-foreground mt-0.5">{projectDescription}</p>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)}>
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
+      </FadeIn>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between mb-4">
+          <TabsList>
+            <TabsTrigger value="clarify" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Clarify
+            </TabsTrigger>
+            <TabsTrigger value="prd" className="gap-2">
+              <FileText className="h-4 w-4" />
+              PRD
+              {(prdVersions?.length ?? 0) > 0 && (
+                <span className="ml-1 text-xs bg-muted rounded-full px-1.5 py-0.5 font-mono">
+                  v{prdVersions?.[0]?.versionNumber ?? 1}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="architecture" className="gap-2">
+              <Layers className="h-4 w-4" />
+              Architecture
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-2">
+              <History className="h-4 w-4" />
+              History
+            </TabsTrigger>
+          </TabsList>
+          {!loadingPhase && <ReadinessScoreBadge projectId={projectId} />}
+        </div>
+
+        <TabsContent value="clarify" className="mt-4">
+          <ClarificationChat
+            projectId={projectId}
+            prdVersionId={selectedVersion?.id ?? null}
+            onPrdGenerated={handlePrdGenerated}
+          />
+        </TabsContent>
+
+        <TabsContent value="prd" className="mt-4">
+          <PrdViewer
+            projectId={projectId}
+            versions={prdVersions}
+            selectedVersion={selectedVersion}
+            onSelectVersion={setSelectedVersion}
+            onRefresh={fetchVersions}
+          />
+        </TabsContent>
+
+        <TabsContent value="architecture" className="mt-4">
+          <ArchitecturePanel projectId={projectId} phase={phase} />
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          <QuestionHistoryPanel projectId={projectId} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Project Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Name</label>
+              <Input value={editName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={editDesc}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditDesc(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setShowSettings(false)}>Cancel</Button>
+              <Button onClick={handleSaveSettings} loading={saving}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

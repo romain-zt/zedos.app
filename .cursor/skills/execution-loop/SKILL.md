@@ -82,7 +82,7 @@ Use when the user invokes **`/execute-prd <mode>`** or references **`execution-l
 2. **Lock:**
    - Set **`active_item_id`**, **`type`**, **`parent_chain`** (walk **Parent** column to root), **`current_action`** = chosen step, **`started_at`** = today ISO, **`stale: false`
    - **`allowed_files`:** minimal — e.g. one Scope Slice path + `WORK_QUEUE` + `EXECUTION_LOG` + `BLOCKERS` if reconciling
-   - **`forbidden_files`:** `src/**`, `app/**`, `packages/**`, `lib/**` (adjust if repo differs — **default deny** implementation trees)
+   - **`forbidden_files`:** default-deny implementation trees per `.cursor/rules/execution-loop.mdc` §8 — covers both pre-migration (`zedos/nextjs_space/**`, `zedos/.cursor/**`) and post-migration (`apps/**`, `packages/**`, `services/**`, `prisma/**`) layouts. Allow only the minimal `docs/**` / `.cursor/**` governance subset for the chosen action.
 3. Execute **one** step only:
    - **Feature Area exploratory** → usually **`/feature-area validate <name>`** (read-only) or user-approved **`promote`** after CLEAR
    - **Scope Slice exploratory** → **`/feature-area refine-slice`** (one file) **or** **`check`** (read-only)

@@ -1,0 +1,215 @@
+---
+description: Defines the seam from Scope Slice (product) to User Story → Implementation Plan → code (execution). The single point of governance between discovery-side and execution-side .cursor/.
+globs:
+  - docs/execution/**
+  - docs/product/scope-slices/**
+  - .cursor/templates/execution/**
+  - .cursor/checkers/implementation-readiness-checker.md
+alwaysApply: false
+---
+
+# Execution Bridge
+
+## 1. Purpose
+
+The discovery side of `.cursor/` (PRD → Feature Area → Scope Slice) ends at **`Status: ready-for-user-stories`**. The execution side begins at **User Story** and ends at a merged PR.
+
+Without an explicit seam, every Scope Slice that reaches `ready-for-user-stories` falls off a cliff. This rule defines the bridge — what artifact gets written next, where it lives, who writes it, what gates it, and how it flows into code.
+
+This rule complements:
+
+- `.cursor/rules/00-siso.mdc` — request quality and CHAT/DISCOVERY/EXECUTION classification
+- `.cursor/rules/feature-area-workflow.mdc` — the discovery hierarchy that ends at Scope Slice `ready-for-user-stories`
+- `.cursor/rules/execution-loop.mdc` — the autonomous governance loop that **stops** at this seam (v0)
+- `.cursor/checkers/implementation-readiness-checker.md` — the gate before `/implement`
+
+---
+
+## 2. Hierarchy (the full lifecycle)
+
+```
+Product
+→ Feature Area              (docs/product/feature-areas/)
+→ Scope Slice               (docs/product/scope-slices/)            — ends at ready-for-user-stories
+─── execution bridge ───
+→ User Story                (docs/execution/user-stories/)          — IS-NN: behavior the user can verify
+→ Implementation Plan       (docs/execution/plans/)                 — IP-NN: architect's pre-code design
+→ Patch Intent Summary      (chat artifact, no file)                — pre-write approval ladder
+→ Code change               (zedos/nextjs_space/** or apps/** + packages/**)
+→ Verification Report       (chat artifact)                         — typecheck/lint/test/build evidence
+→ Review Report             (chat artifact)                         — adversarial review of the diff
+→ Pull Request              (GitHub)                                — merged after CLEAR pr-readiness check
+```
+
+**Hard rule.** No level may be skipped. A change that lands in code without a User Story + Implementation Plan + Patch Intent Summary in the chat history is governance-non-compliant and must be reverted unless the user has explicitly waived the gate in writing for that specific change.
+
+---
+
+## 3. Artifact contracts
+
+### 3.1 User Story
+
+| Field | Source |
+|---|---|
+| Location | `docs/execution/user-stories/<fa-kebab>--<slice-kebab>--<story-kebab>.md` |
+| Template | `.cursor/templates/execution/user-story.template.md` |
+| ID | `US-<fa-kebab>--<slice-kebab>--<story-kebab>` |
+| Parent | One Scope Slice file (linked) |
+| Status | `draft` → `ready-for-implementation` |
+| Required sections | Acceptance Criteria, Test Plan, Touched Files (predicted), Out-of-Scope, Open Questions, Decision References |
+| Authored by | `architect` agent OR human; reviewed by `scope-critic` for product-scope creep |
+| Gate before next step | `implementation-readiness-checker.md` Part A (US-01 — US-06) |
+
+A User Story translates a Scope Slice's `Acceptance-Level Outcome` and `UX States` into testable, executable behavior. It does not name implementation files, frameworks, or APIs — those belong to the Implementation Plan.
+
+### 3.2 Implementation Plan
+
+| Field | Source |
+|---|---|
+| Location | `docs/execution/plans/<fa-kebab>--<slice-kebab>--<story-kebab>.plan.md` |
+| Template | `.cursor/templates/execution/implementation-plan.template.md` |
+| ID | `IP-<US-...>` (one-to-one with the parent User Story) |
+| Parent | One User Story file (linked) |
+| Status | `proposed` → `approved` → `executed` |
+| Required sections | Approach, Touched Files (exact paths), Layers Affected (per `72-hexagonal-boundaries.mdc`), Contracts Changed, Migrations, Tests, Rollback, Risks |
+| Authored by | `architect` agent — never `implementer` |
+| Gate before next step | `implementation-readiness-checker.md` Part B (IP-01 — IP-08) |
+
+The Implementation Plan is the only artifact where architecture, layer boundaries, and exact file paths first appear. Once approved, it is the contract that `implementer` follows. Deviations require a new Plan revision — silent improvisation is forbidden.
+
+### 3.3 Patch Intent Summary (PIS)
+
+| Field | Source |
+|---|---|
+| Location | Chat-only — never persisted as a file |
+| Template | `.cursor/templates/execution/patch-intent-summary.template.md` (referenced verbatim) |
+| Authored by | `implementer` agent immediately before the first code edit |
+| Approval | `approved` (apply) / `preview` (show full diff first) / `cancel` (stop) — never `ok` |
+| Gate before next step | Explicit user `approved` in the immediately preceding turn |
+
+PIS is the execution-side analogue of the PRD `/prd update` Patch Intent Summary. It binds **"the next code edits I am about to make"** to **"the Plan that was approved"**. It is the only mechanism by which `implementer` is allowed to write to source trees.
+
+### 3.4 Verification Report
+
+| Field | Source |
+|---|---|
+| Location | Chat-only — optionally archived under `docs/execution/verification/` for audit |
+| Template | `.cursor/templates/execution/verification-report.template.md` |
+| Authored by | `verifier` agent — never `implementer` |
+| Required evidence | typecheck, lint (boundaries enforced), test, build (per layout) |
+| Gate before next step | All four steps PASS (see `.cursor/agents/execution/verifier.md` hard-stop conditions) |
+
+### 3.5 Review Report
+
+| Field | Source |
+|---|---|
+| Location | Chat-only — optionally archived under `docs/execution/reviews/` for audit |
+| Template | `.cursor/templates/execution/review-report.template.md` |
+| Authored by | `reviewer` agent (adversarial to `implementer`) |
+| Gate before next step | `pr-readiness-checker.md` CLEAR |
+
+---
+
+## 4. Where artifacts live (path-aware, pre- and post-migration)
+
+The execution-side `docs/execution/` tree is **identical before and after the Turborepo migration**. Only the source code paths change.
+
+| Layout | Source code paths | Governance paths |
+|---|---|---|
+| **Pre-migration** (today) | `zedos/nextjs_space/src/**`, `zedos/nextjs_space/app/**`, `zedos/nextjs_space/lib/**`, `zedos/nextjs_space/prisma/**` | `docs/execution/**`, `.cursor/**` |
+| **Post-migration** (after Phase 3) | `apps/web/**`, `packages/**`, `services/**`, `prisma/**` | `docs/execution/**`, `.cursor/**` |
+
+Implementation Plans must list **exact** Touched Files using the layout in effect at planning time. If the migration runs between plan approval and execution, the plan is invalidated and must be re-approved.
+
+---
+
+## 5. Inputs to the bridge (what every Scope Slice must already provide)
+
+A `ready-for-user-stories` Scope Slice carries everything `architect` needs to write the User Story:
+
+| Scope Slice section | Used by | Used as |
+|---|---|---|
+| `User Value` | architect | One-sentence story preamble |
+| `Exact Boundary` (Included / Excluded) | architect | Story scope; auto-generated Acceptance Criteria seeds |
+| `UX States` | architect | Acceptance Criteria states (empty, loading, success, error, edge) |
+| `Data Touched` | architect | Predicted Touched Files in `application/` and `infrastructure/persistence/` |
+| `Credit / Payment Impact` | architect | Whether the Plan must touch `infrastructure/payments/` and `domain/credits/` |
+| `Sharing / Privacy Impact` | architect | Whether the Plan must touch share-link surfaces and `noindex` headers |
+| `Feedback / Instrumentation Impact` | architect | Whether the Plan must add owner-milestone hooks |
+| `Acceptance-Level Outcome` | architect | The behavioral assertion the Story formalizes |
+| `Dependencies` | architect | Cross-Slice ordering constraints |
+| `Blockers` | architect | If non-empty, refuse to start — route to `/feature-area refine-slice` |
+
+If a Scope Slice is missing any of these for the chosen story scope, **stop and route back to `/feature-area refine-slice`**. Do not fabricate the missing section in the User Story.
+
+---
+
+## 6. Approval ladder (mirrors the PRD ladder)
+
+The PRD workflow's approval ladder (Patch Intent Summary → optional preview → exact write) is **lifted verbatim** onto the execution side:
+
+1. **`/plan <slice-path>`** → Implementation Plan proposal (chat artifact). User reviews. Approval persists the plan to `docs/execution/plans/`.
+2. **`/implement <plan-path>`** → Patch Intent Summary (chat artifact, before any code edit). User responds `approved` / `preview` / `cancel`. Only `approved` allows code writes.
+3. **`/review`** → Review Report. User decides whether to act on findings.
+4. **`/pr`** → PR opened only after `pr-readiness-checker.md` returns CLEAR.
+
+`ok` is never approval. Silence is never approval. The same rule that holds for `/prd update` holds here.
+
+---
+
+## 7. Adversarial pairing
+
+Every constructive role has an adversarial counterpart. This is the execution-side analogue of the PRD `Builder ↔ Challenger` and `Builder ↔ Scope Critic` pairings.
+
+| Constructive | Adversarial | Pairing point |
+|---|---|---|
+| `architect` (writes Plans) | `domain-guardian` + `scope-critic` | Plan must not silently expand Scope Slice boundary or violate `72-hexagonal-boundaries.mdc` |
+| `implementer` (writes code) | `reviewer` + `verifier` | Diff must pass adversarial review **and** mechanical verification |
+| Plan-as-input | `architect-lead` (in `architect.md`) | Context-reconstruction brief before Plan is drafted, mirroring `prd-lead` / `feature-area-lead` |
+
+The adversarial role is **not optional** for `validated`-status work. A Plan without adversarial review and a diff without `reviewer` + `verifier` PASS are not allowed to merge.
+
+---
+
+## 8. Surface Gate (execution-side)
+
+The PRD Surface Gate (`.cursor/skills/prd/prd-builder/surface-gate.md`) is amplified onto the architecture surface. Before the first Implementation Plan in a new Feature Area, `architect` must resolve the **Architecture Surface Block**:
+
+| Field | Default for v0 |
+|---|---|
+| Source-of-truth (data) | Postgres via Prisma (today) → Postgres via Drizzle (post-Phase 3 migration target) |
+| Auth source-of-truth | better-auth — see `76-better-auth.mdc` |
+| Async/sync boundary | All v0 work synchronous per request; queues out of scope (PRD §"Out of v0 scope") |
+| Transaction boundary | Per use-case (`prisma.$transaction(async tx => …)`) — see `75-drizzle.mdc` post-migration |
+| External dependencies | Stripe (v0), no AI provider commitment beyond "managed; provider not named" (PRD §"AI inference") |
+| Payment shape | Stripe Checkout + Stripe Webhook with `Idempotency-Key` (per Phase 3 of monorepo retro) |
+
+UNKNOWN is a valid answer. UNKNOWN on a load-bearing field downgrades the Plan from `approved` to `proposed-with-open-surface` and blocks `/implement`.
+
+---
+
+## 9. Hard rules
+
+- **No code edits without an approved Implementation Plan and an approved Patch Intent Summary in the immediately preceding turn.** Hooks enforce this; agents must not bypass.
+- **No User Story authored before its parent Scope Slice is `ready-for-user-stories`** (per `feature-area-workflow.mdc` §5).
+- **No Implementation Plan that names architecture not grounded in `72-hexagonal-boundaries.mdc`, `73-result-rop.mdc`, `74-contracts-zod.mdc`, `75-drizzle.mdc`, `76-better-auth.mdc`, or `77-nextjs.mdc`.** If the situation requires patterns not covered by those rules, set `NEED_UPDATE: true` on the Plan and stop.
+- **No silent scope expansion across the bridge.** A User Story that includes behavior not in its parent Scope Slice's `Included Behavior` list is invalid.
+- **No diff that introduces `as any`, throws across layer boundaries, or imports raw vendor SDKs outside infrastructure** — see `73-result-rop.mdc` and `72-hexagonal-boundaries.mdc` §4.
+- **No PR opened without a CLEAR `pr-readiness-checker.md` run** in the same turn or hooks run.
+
+---
+
+## 10. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/checkers/implementation-readiness-checker.md` | §3.1, §3.2 gates; §5 input completeness |
+| `.cursor/checkers/pr-readiness-checker.md` | §6 approval ladder; §9 PR rules |
+| `.cursor/agents/execution/architect.md` | §3.2 Plan authoring; §8 Surface Gate |
+| `.cursor/agents/execution/implementer.md` | §3.3 Patch Intent Summary discipline |
+| `.cursor/agents/execution/verifier.md` | §3.4 mechanical verification |
+| `.cursor/agents/execution/reviewer.md` | §3.5 adversarial review |
+| `.cursor/agents/execution/domain-guardian.md` | §7 architecture-surface enforcement |
+| `.cursor/hooks.json` (`pre-edit`, `pre-commit`, `pre-pr`) | §9 hard rules at the tool layer |
+
+A rule without an enforcer is documentation, not governance.

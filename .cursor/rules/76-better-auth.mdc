@@ -1,0 +1,162 @@
+---
+description: better-auth conventions for zedos. Session shape, provider config, server-side guards, and the API-key plan for v2/v3. Locked decision (not NextAuth, not Clerk).
+globs:
+  - packages/auth/**
+  - apps/**/app/api/auth/**
+  - apps/**/middleware.ts
+  - zedos/nextjs_space/lib/auth-options.ts
+  - zedos/nextjs_space/app/api/auth/**
+alwaysApply: false
+---
+
+# better-auth Conventions
+
+## 1. Purpose
+
+Authentication is `better-auth` ([https://better-auth.com](https://better-auth.com)). Locked decision per the workspace stack — not NextAuth, not Clerk, not Auth.js. Drizzle-compatible (post-migration). API keys are planned for v2/v3.
+
+This rule governs:
+
+1. Where auth lives (the `packages/auth/` package).
+2. Session shape and how server code reads it.
+3. Provider configuration constraints.
+4. The pre-migration NextAuth-to-better-auth bridge plan.
+
+This rule complements:
+
+- `.cursor/rules/72-hexagonal-boundaries.mdc` — auth is `infrastructure/auth/` (pre-migration) or `packages/auth/` (post-migration)
+- `.cursor/rules/74-contracts-zod.mdc` — auth tokens, session payloads, API-key payloads are zod-validated
+- `.cursor/rules/77-nextjs.mdc` — server-action and middleware patterns for auth guards
+
+---
+
+## 2. Layout (post-migration)
+
+```
+packages/auth/
+├── src/
+│   ├── server.ts                      (auth instance — server-only entry)
+│   ├── client.ts                      (auth client for components)
+│   ├── adapter.ts                     (drizzle adapter wiring against packages/database)
+│   ├── plugins/
+│   │   ├── api-key.ts                 (API key plugin — v2/v3 only; off by default)
+│   │   └── … (e.g. emailOTP, magicLink — gated by product decision)
+│   ├── types.ts                       (Session, User, ApiKey augmentations)
+│   ├── guards.ts                      (requireSession, requireUser, requireApiKey helpers)
+│   └── index.ts
+├── package.json
+└── tsconfig.json
+```
+
+`apps/web/app/api/auth/[...all]/route.ts` mounts the better-auth handler. No business logic in that route — it forwards to `auth.handler`.
+
+---
+
+## 3. Session shape
+
+The session shape is defined in `packages/auth/src/types.ts` and consumed everywhere:
+
+```typescript
+import type { auth } from './server';
+
+export type Session = typeof auth.$Infer.Session;
+export type User = Session['user'];
+
+// Required fields on User (extended via better-auth user fields config):
+//   id, email, name, image, emailVerified, createdAt, updatedAt
+//   + zedos-specific:  creditBalance not on User — read via CreditsRepository
+```
+
+**Hard rule:** server code reads the session via `await auth.api.getSession({ headers })` and destructures `Session` only. Reaching into the underlying database row directly is a layering violation.
+
+---
+
+## 4. Server-side guards
+
+Every protected route, server action, and server component goes through one of these helpers (defined in `packages/auth/src/guards.ts`):
+
+```typescript
+// Returns Result<Session, UnauthorizedError>
+export async function requireSession(headers: Headers): Promise<Result<Session, UnauthorizedError>>;
+
+// Returns Result<User, UnauthorizedError>
+export async function requireUser(headers: Headers): Promise<Result<User, UnauthorizedError>>;
+
+// v2/v3 only — returns Result<ApiKey, UnauthorizedError>
+export async function requireApiKey(headers: Headers): Promise<Result<ApiKey, UnauthorizedError>>;
+```
+
+Conventions:
+
+- Return `Result<…, UnauthorizedError>`, not throws. Routes map to `401` via the standard error handler.
+- Never accept the user id as a parameter from the request body — always derive from the verified session/API-key.
+- Server components call `requireUser(headers())` early; redirect on `Result.err` via `redirect('/login')`.
+
+---
+
+## 5. Provider configuration constraints
+
+- **Email + password** is the v0 baseline. Other providers (Google, GitHub) ship per explicit product decision in `docs/product-decisions/`.
+- **Session JWT** with `7d` expiry by default; refresh on read. Tunable in `packages/auth/src/server.ts`.
+- **CSRF protection** is enabled (better-auth default). Do not disable.
+- **Rate limiting** lives in middleware (`apps/web/middleware.ts`), not in better-auth — keep concerns separated. Anchor: `docs/retro/zedos-monorepo-retro.md` finding #46.
+- **Trusted origins** must include only the deployed app origins. Wildcards forbidden.
+
+---
+
+## 6. API keys (v2/v3 plan, off in v0)
+
+The `api-key` plugin ships in `packages/auth/src/plugins/api-key.ts` but is **disabled by default**. Activation requires:
+
+1. A product decision in `docs/product-decisions/` describing the use case (programmatic access? agent integration? webhook signing?).
+2. A scope schema in `packages/contracts/auth/api-key.ts` describing permitted scopes.
+3. A migration step adding the API key tables (better-auth supplies them).
+4. Rate-limit rules per key id, not per IP.
+5. A revocation UI surface in the dashboard (separate Scope Slice).
+
+Do not enable the plugin via PR. The activation requires all five steps above to land in the same release.
+
+---
+
+## 7. Pre-migration (NextAuth) transitional rules
+
+Today's auth is NextAuth 4.24 + `@next-auth/prisma-adapter` in `zedos/nextjs_space/lib/auth-options.ts`. Known violations (frozen, scheduled for replacement in Phase 2 of the monorepo retro):
+
+| Violation | Where | Removed in |
+|---|---|---|
+| `(session.user as any).id` for user id | `lib/auth-options.ts:42` | Phase 2 (P2.4) — better-auth migration |
+| Silent catch swallowing DB errors | `lib/auth-options.ts:24-26` | Phase 2 (P2.4) |
+| Auth options colocated with the app | `lib/auth-options.ts` | Phase 2 (P2.4) — moves to `packages/auth/` |
+| `NEXTAUTH_SECRET` in committed `.env` | `.env:2` | Phase 0 (P0.1) — secret rotation |
+
+**Until the better-auth migration lands**, new auth-touching Implementation Plans must:
+
+1. Use the existing NextAuth `getServerSession(authOptions)` only inside route handlers and server actions.
+2. Type the session manually via `import type { Session } from 'next-auth'` with the existing augmentation file (when authored).
+3. Wrap the call in a `requireSession` helper (introduce one if missing) that returns `Result<Session, UnauthorizedError>` — bridging the transitional API to the post-migration target.
+4. Never add new `as any` casts to access `user.id` — extend the type augmentation file.
+
+Plans that introduce new auth flows should explicitly note **"transitional NextAuth path; replaced by better-auth in Phase 2"** and document the swap surface.
+
+---
+
+## 8. Hard rules
+
+1. Auth code lives only in `packages/auth/` (post-migration) or `zedos/nextjs_space/lib/auth-options.ts` + `app/api/auth/**` (pre-migration). No auth logic in routes, components, or use cases.
+2. Server code derives the authenticated user only from the verified session — never from request body.
+3. Auth failures return `Result.err(new UnauthorizedError(...))`, never throw, never silently mask DB errors.
+4. CSRF and trusted-origins protections must not be disabled.
+5. API keys are off in v0; activation follows §6 explicitly.
+6. New auth-touching code does not add to the violation count in §7.
+
+---
+
+## 9. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/agents/execution/auth-better-auth.md` | §3 session shape, §4 guards, §5 provider config |
+| `.cursor/agents/execution/architect.md` | §6 API-key activation prerequisites; §7 transitional discipline |
+| `.cursor/agents/execution/reviewer.md` | §8 hard rules — refuses `(user as any)`, raw NextAuth bypass |
+| `.cursor/agents/execution/security-pii.md` | §5 trusted origins, secret hygiene |
+| `.cursor/skills/execution/add-better-auth-flow/SKILL.md` | §4 guard pattern; §5 provider rules |

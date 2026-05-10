@@ -1,0 +1,84 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "plugins": ["boundaries"],
+  "rules": {
+    "@next/next/no-html-link-for-pages": "off"
+  },
+  "settings": {
+    "boundaries/elements": [
+      { "type": "domain",         "pattern": ["src/domain/*"] },
+      { "type": "application",    "pattern": ["src/application/*"] },
+      { "type": "contracts",      "pattern": ["src/contracts/*"] },
+      { "type": "infrastructure", "pattern": ["src/infrastructure/*"] },
+      { "type": "ui",             "pattern": ["src/ui/*"] },
+      { "type": "shared",         "pattern": ["src/shared/*"] },
+      { "type": "app",            "pattern": ["app/*"] },
+      { "type": "legacy-lib",     "pattern": ["lib/*"] },
+      { "type": "legacy-comp",    "pattern": ["components/*"] }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/**/*.ts", "src/**/*.tsx"],
+      "rules": {
+        "boundaries/no-unknown": "error",
+        "boundaries/element-types": [
+          "error",
+          {
+            "default": "disallow",
+            "rules": [
+              {
+                "from": ["domain"],
+                "allow": ["domain", "shared"]
+              },
+              {
+                "from": ["application"],
+                "allow": ["domain", "application", "contracts", "shared"]
+              },
+              {
+                "from": ["contracts"],
+                "allow": ["contracts", "shared"]
+              },
+              {
+                "from": ["infrastructure"],
+                "allow": ["domain", "application", "contracts", "infrastructure", "shared"]
+              },
+              {
+                "from": ["ui"],
+                "allow": ["ui", "shared", "contracts"]
+              },
+              {
+                "from": ["shared"],
+                "allow": ["shared"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["app/**/*.ts", "app/**/*.tsx"],
+      "rules": {
+        "boundaries/no-unknown": "warn",
+        "boundaries/element-types": [
+          "error",
+          {
+            "default": "disallow",
+            "rules": [
+              {
+                "from": ["app"],
+                "allow": ["app", "application", "infrastructure", "ui", "contracts", "shared", "legacy-lib", "legacy-comp"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["lib/**/*.ts", "lib/**/*.tsx", "components/**/*.ts", "components/**/*.tsx"],
+      "rules": {
+        "boundaries/element-types": "off"
+      }
+    }
+  ]
+}

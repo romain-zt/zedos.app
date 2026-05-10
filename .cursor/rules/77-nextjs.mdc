@@ -1,0 +1,220 @@
+---
+description: Next.js App Router conventions. Server vs client component discipline, route handlers vs server actions, streaming, error/loading boundaries, no-business-logic-in-routes.
+globs:
+  - zedos/nextjs_space/app/**
+  - zedos/nextjs_space/components/**
+  - apps/**/app/**
+  - apps/**/components/**
+  - packages/ui/**
+alwaysApply: false
+---
+
+# Next.js App Router Conventions
+
+## 1. Purpose
+
+zedos is Next.js (App Router). This rule governs:
+
+1. Server vs client component discipline.
+2. When to use a route handler vs a server action.
+3. Streaming, error, and loading boundaries.
+4. The "thin route" rule (see `.cursor/rules/72-hexagonal-boundaries.mdc` §5).
+
+This rule complements:
+
+- `.cursor/rules/72-hexagonal-boundaries.mdc` §5 — thin route pattern and route constraints
+- `.cursor/rules/73-result-rop.mdc` — Result-to-Response mapping
+- `.cursor/rules/74-contracts-zod.mdc` — request/response zod validation
+
+---
+
+## 2. Server vs client components
+
+**Default to server components.** A component is client-side only when one of these is true:
+
+- It uses React state (`useState`, `useReducer`).
+- It uses React effects (`useEffect`, `useLayoutEffect`).
+- It uses browser-only APIs (`window`, `localStorage`, `IntersectionObserver`).
+- It is interactive (`onClick`, `onChange`, etc).
+
+The `'use client'` directive must appear at the **leaf** that needs interactivity, not at the page level. A page that is mostly server-rendered with one interactive child should keep the page server-side and isolate the client behavior in a small component.
+
+**Hard rule:** server components must not import anything that pulls `react-dom/client` into the bundle. Specifically, do not import a client component into a server component's module scope without a default export and a separate file.
+
+---
+
+## 3. Route handler vs server action
+
+| Use a route handler (`app/api/.../route.ts`) when | Use a server action when |
+|---|---|
+| The endpoint is consumed by external clients (mobile, scripts, webhooks) | The action is invoked from the same app (form submit, button click) |
+| The shape is stable enough to version (`/api/v1/...`) | The shape is private to a server component / form |
+| You need fine-grained HTTP semantics (status codes, custom headers) | You want progressive enhancement (form works without JS) |
+| You need streaming JSON or SSE | You want React Suspense + revalidation |
+
+**Both** must obey the thin-adapter pattern: parse → call use case → map Result.
+
+---
+
+## 4. The thin-route rule (mechanical)
+
+Per `.cursor/rules/72-hexagonal-boundaries.mdc` §5:
+
+```typescript
+// ✅ Thin route — < 20 lines
+import { CreateProjectRequestSchema } from '@contracts/project';
+import { createProjectUseCase } from '@application/project';
+import { requireSession } from '@infrastructure/auth';
+import { resolveError } from '@shared/http';
+
+export async function POST(req: Request) {
+  const session = await requireSession(req.headers);
+  if (session.isErr()) return resolveError(session.error);
+
+  const parsed = CreateProjectRequestSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return Response.json(
+      { error: 'Invalid input', details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const result = await createProjectUseCase(parsed.data, session.unwrap().user.id);
+  if (result.isErr()) return resolveError(result.error);
+
+  return Response.json(result.unwrap());
+}
+```
+
+`reviewer` flags route handlers > 30 lines or that include any of:
+
+- `prisma.*` calls
+- `new Stripe(...)` (or post-migration `createStripeClient(...)`) at module scope inside the route
+- Multi-step business decisions (e.g. "if user.isVip, apply 10% discount" — that's a use case)
+- Direct DB query construction
+- Vendor SDK imports
+
+The fix is always the same: extract a use case in `application/`, inject ports, return `Result<T, E>`.
+
+---
+
+## 5. Server actions
+
+```typescript
+// app/dashboard/projects/_actions/create-project.ts
+'use server';
+
+import { CreateProjectRequestSchema } from '@contracts/project';
+import { createProjectUseCase } from '@application/project';
+import { requireSession } from '@infrastructure/auth';
+
+export async function createProjectAction(formData: FormData) {
+  const session = await requireSession(headers());
+  if (session.isErr()) {
+    return { ok: false as const, error: 'unauthorized' };
+  }
+
+  const parsed = CreateProjectRequestSchema.safeParse({
+    name: formData.get('name'),
+    description: formData.get('description'),
+  });
+
+  if (!parsed.success) {
+    return { ok: false as const, error: 'invalid', details: parsed.error.flatten() };
+  }
+
+  const result = await createProjectUseCase(parsed.data, session.unwrap().user.id);
+  if (result.isErr()) {
+    return { ok: false as const, error: result.error.code };
+  }
+
+  revalidatePath('/dashboard/projects');
+  return { ok: true as const, project: result.unwrap() };
+}
+```
+
+Conventions:
+
+- Server actions live in `_actions/` co-located folders (server-only convention).
+- The action returns a discriminated `{ ok: true, ... } | { ok: false, error, ... }` shape — never throws to the client.
+- `revalidatePath` / `revalidateTag` is the action's job, not the use case's.
+- Server actions never read raw request body — they read the typed `FormData` or a typed argument.
+
+---
+
+## 6. Streaming, loading, and error boundaries
+
+Every route segment must define:
+
+| File | Required when | Purpose |
+|---|---|---|
+| `loading.tsx` | The page does any server-side data fetch that could exceed 200ms | Suspense fallback |
+| `error.tsx` | Always (for `app/`, `app/dashboard/`, and any segment that fetches data) | Catches thrown exceptions; renders user-recoverable UI |
+| `not-found.tsx` | Any segment with dynamic routes (`[id]`) | 404 surface |
+
+Streaming JSON from AI providers must be implemented in route handlers (not server actions) — see `.cursor/skills/execution/add-route-handler/SKILL.md`. Stream completion buffers are validated against zod schemas before any side effect (credit deduct, DB write).
+
+---
+
+## 7. Pages and layouts
+
+- A `page.tsx` is a server component by default.
+- A `layout.tsx` is a server component by default.
+- A page that fetches data fetches via a use case, never via raw `prisma.*`. The retro flagged `app/dashboard/projects/[id]/page.tsx` for this violation (`docs/retro/zedos-monorepo-retro.md` finding #32) — frozen until Phase 3.
+- Layouts hold persistent UI; pages hold per-route content. A `layout.tsx` that re-fetches user data on every navigation is a smell.
+
+---
+
+## 8. Composition root
+
+Routes and server actions consume singletons from `apps/web/lib/composition.ts` (or `zedos/nextjs_space/lib/composition.ts` if introduced pre-migration). Anchor: `docs/retro/zedos-monorepo-retro.md` finding #33.
+
+```typescript
+// apps/web/lib/composition.ts
+import { db } from '@zedos/database';
+import { stripeClient } from '@zedos/sdk-stripe';
+import { aiClient } from '@zedos/sdk-ai';
+import { auth } from '@zedos/auth';
+
+import { CreditsDrizzleRepository } from '@zedos/persistence';
+import { ProjectsDrizzleRepository } from '@zedos/persistence';
+
+export const repos = {
+  credits: new CreditsDrizzleRepository(db),
+  projects: new ProjectsDrizzleRepository(db),
+} as const;
+
+export const clients = { stripe: stripeClient, ai: aiClient, auth } as const;
+
+// Use cases composed lazily via factory:
+export const useCases = makeUseCases({ repos, clients });
+```
+
+Routes call `useCases.createProject(...)`, never `new ProjectsDrizzleRepository(db)` per request.
+
+---
+
+## 9. Hard rules
+
+1. Routes < 30 lines. If you need more, extract a use case.
+2. No `prisma.*` (or post-migration `db.*`) outside `infrastructure/persistence/` (or `packages/persistence/`).
+3. No vendor SDK construction inside routes — consume from the composition root.
+4. Server actions return discriminated `{ ok: true } | { ok: false, error }` — never throw to the client.
+5. Every dynamic-data route segment ships `loading.tsx` and `error.tsx`.
+6. AI streamed JSON validates with zod before side effects run.
+7. Pages and layouts default to server components; `'use client'` is on the smallest leaf possible.
+8. `revalidatePath` / `revalidateTag` belongs to actions, not use cases.
+
+---
+
+## 10. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/agents/execution/nextjs-routes.md` | §3 route vs action choice; §4 thin-route shape; §6 boundaries |
+| `.cursor/agents/execution/architect.md` | §8 composition root usage; §6 boundary segment placement |
+| `.cursor/agents/execution/reviewer.md` | §9 hard rules on every diff |
+| `.cursor/skills/execution/add-route-handler/SKILL.md` | §3, §4 thin-route construction |
+| `.cursor/skills/execution/add-server-action/SKILL.md` | §3, §5 server-action construction |
+| `.cursor/skills/execution/add-page-route/SKILL.md` | §6 streaming/error/loading boundaries |
+| `eslint-plugin-boundaries` | §2 — `'use client'` discipline (via Next.js plugin) |

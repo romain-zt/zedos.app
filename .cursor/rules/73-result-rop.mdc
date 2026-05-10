@@ -1,0 +1,312 @@
+---
+description: Enforces Result<T,E> for cross-boundary calls. Bans `as any` casts, raw `throw new Error` outside domain entities, and exceptions crossing layer boundaries. Self-contained — no external canonical text.
+globs:
+  - zedos/nextjs_space/src/**/*.ts
+  - zedos/nextjs_space/src/**/*.tsx
+  - zedos/nextjs_space/app/**/*.ts
+  - zedos/nextjs_space/app/**/*.tsx
+  - apps/**/*.ts
+  - apps/**/*.tsx
+  - packages/**/*.ts
+  - packages/**/*.tsx
+alwaysApply: false
+---
+
+# Result<T,E> & Railway-Oriented Programming
+
+## 1. Purpose
+
+Every cross-layer call returns `Result<T, E>`. Exceptions never cross layer boundaries. `as any` is a code smell that masks architectural violations.
+
+This rule complements:
+
+- `.cursor/rules/72-hexagonal-boundaries.mdc` — which boundaries Result must cross
+- `.cursor/rules/74-contracts-zod.mdc` — Result error types are zod-validated where they cross runtime boundaries
+
+---
+
+## 2. The problem Result solves
+
+Without Result, exceptions cross layers unexpectedly. Callers don't know what errors to expect, and error handling becomes a guessing game of try/catch blocks. Result makes success/failure explicit in the type signature — no hidden exceptions.
+
+```typescript
+import { Result, ok, err } from '@shared';
+
+// Clear contract: returns either value T or error E
+export async function purchaseCredits(
+  packId: string
+): Promise<Result<CheckoutSession, PaymentError>> {
+  const result = await stripeClient.createSession(packId);
+  if (result.isErr()) return result;
+  return ok(result.unwrap());
+}
+```
+
+---
+
+## 3. The contract
+
+| Layer | Cross-boundary call must return | Throws allowed |
+|---|---|---|
+| `domain` (entities, services) | n/a — pure logic | Yes — business-rule violations only (see §7) |
+| `application` (use cases) | `Promise<Result<T, E>>` | No |
+| `infrastructure` (adapters wrapping vendors) | `Promise<Result<T, E>>` | No |
+| `app/` (route handlers, server actions, server components) | `Response` (Next) — but **calls** use cases via `.isErr()` check | No (top-level `app/error.tsx` catches anything that escapes) |
+| `ui` | n/a — components use hooks + state, not Result | No |
+
+**Result implementation today:** `zedos/nextjs_space/src/shared/result/result.ts`. Today's `Result<T, E = Error>` has variance soundness issues that force `as any` callsite casts (117 today per `docs/retro/zedos-monorepo-retro.md` finding #20). **Phase 1 of the migration replaces this with `neverthrow`**. New Implementation Plans authored after Phase 1 must use `neverthrow`; new Plans authored before must explicitly note "uses local `Result<T, E>` and accepts the variance constraint".
+
+---
+
+## 4. API
+
+### Creating Results
+
+```typescript
+import { ok, err } from '@shared';
+
+const success = ok(user);
+const failure = err(new ValidationError('Email already exists'));
+```
+
+### Type Guards
+
+```typescript
+const result: Result<User> = await fetchUser(id);
+
+if (result.isOk()) {
+  const user = result.unwrap(); // type-safe: User
+}
+
+if (result.isErr()) {
+  const error = result.error; // type-safe: Error
+}
+```
+
+### Chainable Operations
+
+```typescript
+// map: Transform success value
+const nameResult = userResult.map((u) => u.name);
+
+// flatMap: Chain operations
+const authorResult = userResult.flatMap((user) => {
+  return await fetchAuthor(user.authorId);
+});
+
+// mapErr: Transform error
+const customError = result.mapErr((e) => {
+  return new CustomError(`Failed: ${e.message}`);
+});
+
+// getOrElse: Provide default
+const name = nameResult.getOrElse('Anonymous');
+```
+
+### Collecting Multiple Results
+
+```typescript
+import { collect } from '@shared';
+
+const results = [ok(1), ok(2), err(new Error('Failed'))];
+const combined = collect(results);
+// isErr() → true, returns first error
+```
+
+---
+
+## 5. Where to use Result
+
+### ✅ Use in
+
+1. **All use cases (application layer)** — every use case returns `Promise<Result<T, E>>` where E is a typed `ApplicationError` subclass.
+2. **All infrastructure adapters** — vendor wrappers catch SDK exceptions and return `Result`.
+3. **API routes (thin adapters)** — routes call use cases and map Result to HTTP response.
+
+### ❌ Do NOT use in
+
+1. **React components** — use hooks + state instead. Result is a server-side pattern.
+2. **Domain entities** — they're pure logic. Throws are permitted for business-rule violations.
+
+---
+
+## 6. Banned patterns
+
+The following are mechanical violations. `reviewer`, `verifier`, and the `pre-commit` hook refuse them:
+
+### 6.1 `as any` casts to satisfy a Result type
+
+```typescript
+// ❌ BANNED
+return result as any;
+return ok(value) as any;
+const x = (result as any).data;
+```
+
+If a `Result<T, E>` callsite needs `as any`, the type signature is wrong. Fix the signature; do not cast. The only exception is the documented variance gap in the local `Result` implementation — and even there, new code must use `neverthrow` once Phase 1 lands.
+
+**Reviewer hard rule:** every new `as any` in a diff is a `🔴 Critical` finding.
+
+### 6.2 `throw new Error` outside `domain/`
+
+```typescript
+// ❌ BANNED in application/, infrastructure/, app/, lib/
+throw new Error('User not found');
+
+// ✅ Application/infrastructure layer
+return err(new NotFoundError('User not found'));
+```
+
+### 6.3 Swallowed errors in `try { … } catch { return null }`
+
+```typescript
+// ❌ BANNED
+try {
+  const user = await prisma.user.findUnique(...);
+} catch {
+  return null;  // silently masks DB failure as "user not found"
+}
+```
+
+Every `err(...)` payload must be a typed `ApplicationError` subclass.
+
+### 6.4 `unknown` errors with no narrowing
+
+```typescript
+// ❌ BANNED
+} catch (e) {
+  return err(e);  // type lost; consumer can't discriminate
+}
+
+// ✅
+} catch (e) {
+  const message = e instanceof Error ? e.message : 'unknown error';
+  return err(new ExternalServiceError('stripe', message, 502));
+}
+```
+
+### 6.5 Exceptions crossing layer boundaries
+
+A use case calling a repository that throws — **the use case must wrap the call** so the throw becomes a `Result.err`. Use cases that propagate raw exceptions outward are a layering violation.
+
+---
+
+## 7. Exception handling: when to throw
+
+You may throw only in these cases:
+
+1. **Domain layer** — business-rule violations (e.g., invalid entity state).
+2. **Top-level error handler** — global catch-all in Next.js (`app/error.tsx`).
+
+Everywhere else, return `Result<T, E>`.
+
+---
+
+## 8. The `Result.unwrap()` discipline
+
+`unwrap()` is allowed only after a verified `.isOk()` check, or in domain code where throws are permitted. Bare `result.unwrap()` without a preceding `isOk()` check is a `🟡 Suggestion` from `reviewer`.
+
+---
+
+## 9. Common patterns
+
+### Propagating errors (bail out)
+
+```typescript
+const userResult = await getUserUseCase(userId);
+if (userResult.isErr()) return userResult;
+const user = userResult.unwrap();
+```
+
+### Transforming errors
+
+```typescript
+const result = await someUseCase();
+return result.mapErr((e) => new ApplicationError({
+  code: ErrorCode.INTERNAL_SERVER_ERROR,
+  message: 'Something failed',
+  statusCode: 500,
+}));
+```
+
+### Early exit with specific error
+
+```typescript
+if (!credits) {
+  return err(new InsufficientCreditsError(requiredCredits, currentBalance));
+}
+```
+
+---
+
+## 10. ApplicationError hierarchy
+
+`zedos/nextjs_space/src/shared/errors/application-error.ts` defines the canonical hierarchy. Plans and PIS must use those classes — not `new Error(...)`. Common subclasses:
+
+| Class | Use for | HTTP mapping |
+|---|---|---|
+| `ValidationError` | Failed zod parse, business invariant violation | `400` |
+| `NotFoundError` | Resource missing | `404` |
+| `UnauthorizedError` | No session / invalid session | `401` |
+| `ForbiddenError` | Authenticated but not allowed | `403` |
+| `ExternalServiceError` | Stripe / AI / database failure | `502` (or `402` for Stripe-specific decline) |
+| `InsufficientCreditsError` | Credit-ledger gate failure | `402` |
+| `ConflictError` | Concurrency / idempotency conflict | `409` |
+
+Add a new subclass via the Plan only when no existing class fits, and only when the new error has a distinct HTTP/UX consequence.
+
+---
+
+## 11. Testing Result types
+
+```typescript
+import { ok, err } from '@shared';
+
+it('returns error when user not found', async () => {
+  const result = await getUserUseCase('nonexistent');
+  expect(result.isErr()).toBe(true);
+  expect(result.error).toBeInstanceOf(NotFoundError);
+});
+
+it('returns user when found', async () => {
+  const result = await getUserUseCase('user-123');
+  expect(result.isOk()).toBe(true);
+  expect(result.unwrap().id).toBe('user-123');
+});
+```
+
+---
+
+## 12. Hard rules
+
+1. Every cross-layer function (application use case, infrastructure adapter) returns `Promise<Result<T, E>>` where `E` is a typed `ApplicationError` subclass.
+2. Routes parse input, call exactly one use case, and map the Result to an HTTP response. No business logic.
+3. `as any` is forbidden except inside the documented `Result<T, E>` variance gap, which is itself slated for removal in Phase 1.
+4. `throw new Error` is forbidden outside `domain/` entities and `app/error.tsx`.
+5. Catch blocks must produce a typed `err(...)` — never `return null`, never silent re-throw, never `console.error` + swallow.
+6. `unwrap()` requires a prior `isOk()` check at the same call site.
+
+---
+
+## 13. v0 known violations (frozen, not allowed to compound)
+
+Per `docs/retro/zedos-monorepo-retro.md`:
+
+- 117 `as any` casts across `src/` (73), `app/` (41), `lib/` (3) — frozen until Phase 1 (P1.4) replaces `Result` with `neverthrow`.
+- Raw `throw new Error` in `lib/ai-service.ts:53` and `lib/credits.ts:129` — frozen until Phase 2 (`lib/` retirement).
+- Silent catch in `lib/auth-options.ts:24-26` — frozen until Phase 2 (P2.4).
+
+New code must not contribute to any of these counts. `reviewer` flags every new contribution as Critical.
+
+---
+
+## 14. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/agents/execution/architect.md` | §3 contract — every Plan declares Result/error types per touched file |
+| `.cursor/agents/execution/implementer.md` | §6 banned patterns — refuses to write `as any`, `throw new Error` outside domain |
+| `.cursor/agents/execution/reviewer.md` | §6 banned patterns + §8 unwrap discipline on every diff |
+| `.cursor/agents/execution/domain-guardian.md` | §12 hard rules; flags new contributions to §13 frozen counts |
+| `.cursor/hooks/pre-commit.sh` | refuses commits with new `as any` introduced |
+| `eslint`/`tsc` (Phase 1+) | §6.1, §6.4 mechanically — once `strict: true` lands |

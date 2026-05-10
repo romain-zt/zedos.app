@@ -1,0 +1,224 @@
+---
+description: Testing conventions for zedos. Vitest for unit/integration, Playwright for end-to-end. Coverage targets, test taxonomy, colocation rules, and the gates at which each test type runs.
+globs:
+  - zedos/nextjs_space/**/*.test.ts
+  - zedos/nextjs_space/**/*.spec.ts
+  - apps/**/*.test.ts
+  - apps/**/*.spec.ts
+  - apps/**/e2e/**
+  - packages/**/*.test.ts
+  - packages/**/*.spec.ts
+  - packages/vitestconfig/**
+alwaysApply: false
+---
+
+# Testing Conventions
+
+## 1. Purpose
+
+zedos uses Vitest for unit and integration tests, Playwright for end-to-end tests. This rule governs:
+
+1. The test taxonomy — what each test type proves.
+2. Colocation rules — where tests live.
+3. Coverage targets — what we measure.
+4. The gates — when each test type must pass.
+
+This rule complements:
+
+- `.cursor/rules/72-hexagonal-boundaries.mdc` — domain and application tests don't need network or DB
+- `.cursor/rules/73-result-rop.mdc` — Result-returning code is naturally test-friendly
+- `.cursor/agents/execution/test-runner.md` — agent that runs the suite
+- `.cursor/agents/execution/verifier.md` — gate that requires PASS before commit
+
+---
+
+## 2. Test taxonomy
+
+| Type | Scope | Tooling | Where it runs |
+|---|---|---|---|
+| **Unit** | A pure function, a domain entity, a use case with mocked ports | Vitest | Pre-commit, CI on every PR |
+| **Integration** | A use case wired against a real-ish adapter (test DB, MSW, in-memory queue) | Vitest + test container or MSW | CI on every PR |
+| **E2E** | A full user journey through the app (signup → first PRD → credit deduct → share link) | Playwright | CI on PRs labeled `e2e` and on `main` |
+| **Contract** | A zod schema's `safeParse` against a corpus of known good/bad inputs | Vitest | CI on every PR |
+
+Each layer has a default test type:
+
+| Layer | Default test type | Mocks |
+|---|---|---|
+| `domain/` | Unit | None — domain is pure |
+| `application/` | Unit + Integration | Ports mocked for unit; real persistence for integration |
+| `infrastructure/persistence/` | Integration | Test Postgres container |
+| `infrastructure/<vendor>/` (SDK wrappers) | Unit + Contract | MSW for HTTP, schema corpus for contract tests |
+| `app/` (route handlers, server actions) | Integration | Real composition root, mocked vendor clients via DI |
+| `ui/` | Component tests (Vitest) and Playwright for interactive flows | None / browser-real |
+
+---
+
+## 3. Colocation rules
+
+Tests live next to the code they test:
+
+```
+src/application/credits/
+├── purchase-credits.usecase.ts
+├── purchase-credits.usecase.test.ts        ← unit, mocked ports
+├── purchase-credits.usecase.integration.ts ← integration, real adapters
+```
+
+Conventions:
+
+- `*.test.ts` = Vitest unit tests. Always ship with new code.
+- `*.spec.ts` = Vitest integration tests. Ship when the use case wires real adapters.
+- `*.contract.test.ts` = zod contract tests for schemas in `contracts/`.
+- E2E tests live in `apps/web/e2e/` (post-migration) or `zedos/nextjs_space/e2e/` (pre-migration if introduced). They are not colocated with code.
+
+Test fixtures live in `__fixtures__/` next to the tests that use them. Shared fixtures go in `packages/test-helpers/` (post-migration).
+
+---
+
+## 4. Coverage targets
+
+| Layer | Statement coverage | Branch coverage |
+|---|---|---|
+| `domain/` | ≥ 90% | ≥ 80% |
+| `application/` (use cases) | ≥ 85% | ≥ 70% |
+| `infrastructure/<vendor>/` (SDK wrappers) | ≥ 80% (happy + error paths) | ≥ 60% |
+| `infrastructure/persistence/` | ≥ 75% (all repository methods covered) | ≥ 50% |
+| `app/` (routes, actions) | ≥ 70% (every error case mapped) | ≥ 50% |
+| `ui/` | smoke tests + Playwright for critical paths | n/a |
+
+These are **floors**, not ceilings. New code lands at or above these targets; CI fails if a PR drops the per-package coverage below the floor.
+
+Coverage is **not** the goal — behavior coverage is. A test suite at 100% coverage that never exercises the error paths is a worse signal than 70% with explicit error path tests. Coverage targets are sanity rails, not specs.
+
+---
+
+## 5. Test discipline
+
+### 5.1 Unit tests
+
+Pure, fast, deterministic:
+
+```typescript
+// src/application/credits/purchase-credits.usecase.test.ts
+import { describe, it, expect, vi } from 'vitest';
+
+describe('purchaseCreditsUseCase', () => {
+  it('returns NotFoundError when pack does not exist', async () => {
+    const repo = { findById: vi.fn().mockResolvedValue(err(new NotFoundError('pack'))) };
+    const result = await purchaseCreditsUseCase({ packId: 'x' }, repo, /* ... */);
+    expect(result.isErr()).toBe(true);
+    expect(result.error).toBeInstanceOf(NotFoundError);
+  });
+});
+```
+
+- No real network, no real DB, no real time (`vi.useFakeTimers()` when time matters).
+- Each test is < 50ms. Slow unit tests are integration tests in disguise — relabel.
+- One `expect` is fine; don't chain assertions to "save lines".
+
+### 5.2 Integration tests
+
+Wire real adapters against a test container:
+
+```typescript
+// src/application/credits/purchase-credits.usecase.integration.ts
+import { describe, beforeAll, afterAll, it, expect } from 'vitest';
+import { setupTestDb } from '@zedos/test-helpers';
+
+describe('purchaseCreditsUseCase (integration)', () => {
+  let db, repo;
+  beforeAll(async () => { db = await setupTestDb(); repo = new CreditsDrizzleRepository(db); });
+  afterAll(async () => { await db.close(); });
+
+  it('deducts credits atomically under concurrent calls', async () => { /* ... */ });
+});
+```
+
+- Each integration test owns its setup and teardown (no shared state across tests).
+- Concurrency tests for ledger / payment / quota paths are **mandatory** — see `75-drizzle.mdc` §5.
+
+### 5.3 Contract tests
+
+Validate schemas against a fixture corpus:
+
+```typescript
+// src/contracts/payments/checkout.contract.test.ts
+import { describe, it, expect } from 'vitest';
+import { CheckoutSessionSchema } from './checkout';
+import validFixture from './__fixtures__/checkout-session.valid.json';
+import invalidFixture from './__fixtures__/checkout-session.invalid.json';
+
+describe('CheckoutSessionSchema', () => {
+  it('parses a valid Stripe checkout session', () => {
+    expect(CheckoutSessionSchema.safeParse(validFixture).success).toBe(true);
+  });
+
+  it('rejects a session missing required fields', () => {
+    const result = CheckoutSessionSchema.safeParse(invalidFixture);
+    expect(result.success).toBe(false);
+  });
+});
+```
+
+Fixtures are real responses captured from staging or sandbox environments — never invented.
+
+### 5.4 E2E tests
+
+```typescript
+// apps/web/e2e/credits-purchase.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('signup → first PRD → credit deduct → share link', async ({ page }) => { /* ... */ });
+```
+
+- E2E covers the **5 critical journeys** from the PRD's Core User Journeys section.
+- Each journey runs on a clean DB seeded via `apps/web/e2e/fixtures/`.
+- Stripe runs in test mode; AI providers run via MSW in CI.
+
+---
+
+## 6. Required scripts (per `package.json`)
+
+```jsonc
+{
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "playwright test",
+    "test:coverage": "vitest run --coverage",
+    "build": "next build",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+  }
+}
+```
+
+The `verify` script is the single command `verifier` runs in `.cursor/agents/execution/verifier.md`. Every package must export it (post-migration via `turbo run verify`).
+
+---
+
+## 7. Hard rules
+
+1. New code ships with tests. A use case without a unit test is not implementation-complete.
+2. Concurrency-critical code (credit deduct, payment grant, idempotency keys) ships with at least one **concurrent integration test** that exercises the lock.
+3. Every zod schema in `contracts/` ships with a contract test (one valid + one invalid fixture minimum).
+4. Test files compile under the same `strict: true` budget as production code (no `as any`, no implicit any).
+5. Tests do not log to the real logger — use `vi.fn()` mocks. The exception is end-to-end logging assertion tests, which use a captured logger.
+6. `verifier` blocks promotion when any of typecheck, lint, test, or build fails.
+
+---
+
+## 8. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/agents/execution/test-runner.md` | §6 scripts; §7 hard rules |
+| `.cursor/agents/execution/verifier.md` | §6 `verify` script as the gate |
+| `.cursor/agents/execution/architect.md` | Plans must list test file paths and types in `Tests` section |
+| `.cursor/agents/execution/reviewer.md` | §7 hard rules on every diff |
+| `.cursor/skills/execution/add-test/SKILL.md` | §3 colocation; §5.1–§5.4 test shapes |
+| `.cursor/checkers/pr-readiness-checker.md` | PR cannot open if tests / coverage targets fail |
+| Vitest + Playwright + `pnpm-workspace.yaml` Turborepo `verify` task | §6 mechanically |

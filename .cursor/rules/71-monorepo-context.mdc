@@ -1,0 +1,178 @@
+---
+description: Turborepo conventions for the migration target. Documents the path layout pre-migration (zedos/nextjs_space/**) and post-migration (apps/web/**, packages/**, services/**) so every execution-side artifact resolves correctly across both states.
+globs:
+  - zedos/nextjs_space/**
+  - apps/**
+  - packages/**
+  - services/**
+  - turbo.json
+  - turbo.jsonc
+  - pnpm-workspace.yaml
+alwaysApply: false
+---
+
+# Monorepo Context
+
+## 1. Purpose
+
+zedos is migrating from a single Next.js app at `zedos/nextjs_space/` to a Turborepo (Phase 3 of `docs/retro/zedos-monorepo-retro.md`). Every execution-side artifact — agents, skills, commands, hooks — must work in **both** layouts without rewriting.
+
+This rule documents:
+
+1. The current (pre-migration) layout — what exists today
+2. The target (post-migration) layout — what Phase 3 will produce
+3. The cross-layout aliasing rules — how paths in plans, hooks, and rules stay valid in both worlds
+
+This rule complements:
+
+- `.cursor/rules/70-execution-bridge.mdc` — Implementation Plans must use the layout in effect at planning time
+- `.cursor/rules/72-hexagonal-boundaries.mdc` — layer boundaries that hold across layouts
+- `docs/retro/zedos-monorepo-retro.md` — full migration plan (read for context, not for governance)
+
+---
+
+## 2. Pre-migration layout (today)
+
+```
+zedos.app/                                       (workspace root)
+├── docs/                                        (governance — workspace-side)
+├── .cursor/                                     (workspace-side AI infrastructure)
+└── zedos/
+    ├── .cursor/rules/                           (in-repo architecture rules — code-side)
+    └── nextjs_space/                            (the Next.js app — single-package)
+        ├── app/                                 (Next.js App Router — routes + pages)
+        ├── components/                          (legacy shadcn/ui + composed components)
+        ├── lib/                                 (legacy "fat" modules — to be retired)
+        ├── prisma/                              (schema.prisma — moves to packages/database/ in Phase 3)
+        ├── public/
+        ├── scripts/                             (seed.ts, safe-seed.ts, grant-credits-all-users.ts)
+        ├── src/
+        │   ├── application/                     (use cases — Phase 3 → packages/application)
+        │   ├── contracts/                       (zod schemas — Phase 3 → packages/contracts)
+        │   ├── domain/                          (entities, ports, services — Phase 3 → packages/domain)
+        │   ├── infrastructure/                  (adapters — Phase 3 → packages/persistence + packages/sdk-*)
+        │   │   ├── persistence/                 (Prisma repos — Phase 3 → packages/persistence)
+        │   │   └── mappers/                     (row → domain mappers)
+        │   ├── shared/                          (Result, errors, logger — Phase 3 → packages/shared)
+        │   └── ui/                              (UI layer — currently empty; Phase 3 → packages/ui)
+        ├── package.json                         ({"name": "app", "private": true, no workspaces})
+        ├── tsconfig.json                        (strict: false today — fixed in Phase 1 of migration)
+        └── vitest.config.ts
+```
+
+### Pre-migration caveats
+
+- `eslint-plugin-boundaries` is configured but `next.config.js` sets `eslint.ignoreDuringBuilds: true` — boundaries are **not enforced at build time** today. CI must run `lint` as a separate step.
+- `tsconfig.json` has `strict: false`. Treat that as a known regression — new code in Implementation Plans must be authored as if `strict: true` were enforced.
+- `lib/` is a parallel runtime (`lib/credits.ts`, `lib/ai-service.ts`, `lib/auth-options.ts`). **No new feature work belongs in `lib/`** — it is in retirement.
+- `prisma/schema.prisma` has a hardcoded Linux-container `output` path. New Plans must not depend on that path; they must assume the default Prisma output.
+
+---
+
+## 3. Post-migration layout (target)
+
+```
+zedos.app/                                       (workspace root)
+├── apps/
+│   └── web/                                     (the Next.js app — moved from zedos/nextjs_space/)
+│       ├── app/                                 (App Router — routes + pages)
+│       ├── lib/composition.ts                   (per-app composition root)
+│       ├── e2e/                                 (Playwright — Phase 4)
+│       └── package.json
+├── packages/
+│   ├── tsconfig/                                (base.json, nextjs.json, node.json, test.json)
+│   ├── eslint-config/                           (base.cjs, next.cjs, react.cjs, boundaries.cjs)
+│   ├── vitestconfig/                            (shared Vitest preset)
+│   ├── domain/                                  (entities, ports, domain services)
+│   ├── application/                             (use cases)
+│   ├── contracts/                               (zod schemas — single source of truth)
+│   ├── persistence/                             (Drizzle adapters — replaces Prisma adapters per Phase 3)
+│   ├── shared/                                  (Result, errors, logger — neverthrow-backed)
+│   ├── ui/                                      (shadcn-ish design system + Storybook)
+│   ├── auth/                                    (better-auth options, type augmentation, adapters)
+│   ├── sdk-stripe/                              (vendor wrapper — Result<T> + zod-validated responses)
+│   ├── sdk-ai/                                  (vendor wrapper — provider-abstracted)
+│   ├── database/                                (drizzle schema + migrations — replaces zedos/nextjs_space/prisma/)
+│   └── result/                                  (neverthrow re-export + helpers, if not folded into shared/)
+├── services/                                    (only if/when async runtime units are justified — out of v0)
+├── prisma/                                      (transitional — exists only during Phase 1–2 if Drizzle migration is staged)
+├── pnpm-workspace.yaml
+├── turbo.jsonc
+├── .changeset/
+└── syncpack.config.js
+```
+
+### Stack decisions locked for the post-migration target
+
+| Concern | Choice | Rule |
+|---|---|---|
+| Package manager | pnpm | `71-monorepo-context.mdc` (this rule) |
+| Task runner | Turborepo | `71-monorepo-context.mdc` |
+| ORM | Drizzle (replacing Prisma) | `75-drizzle.mdc` |
+| Auth | better-auth | `76-better-auth.mdc` |
+| Framework | Next.js App Router | `77-nextjs.mdc` |
+| Result type | neverthrow (or fixed-variance Result) | `73-result-rop.mdc` |
+| Contracts | zod | `74-contracts-zod.mdc` |
+| Architecture | hexagonal layers | `72-hexagonal-boundaries.mdc` |
+
+These are not re-litigated. Implementation Plans assume them.
+
+---
+
+## 4. Cross-layout aliasing
+
+Every artifact under `.cursor/` that refers to source paths must resolve under both layouts. The conventions:
+
+### 4.1 Globs in rules
+
+Use multi-pattern globs that cover both layouts. Example for "any TypeScript source file":
+
+```yaml
+globs:
+  - zedos/nextjs_space/**/*.ts
+  - zedos/nextjs_space/**/*.tsx
+  - apps/**/*.ts
+  - apps/**/*.tsx
+  - packages/**/*.ts
+  - packages/**/*.tsx
+  - services/**/*.ts
+```
+
+### 4.2 Forbidden / allowed lists in EXECUTION_LOCK
+
+The `forbidden_files` list in `.cursor/rules/execution-loop.mdc` §8 covers both layouts simultaneously. Plans and PIS authors must list `allowed_files` explicitly using **the layout in effect at the time of writing** — never aspirational paths.
+
+### 4.3 Citing layers in Implementation Plans
+
+Plans cite layers by **name**, not by path:
+
+> "This change touches the application layer (`createPurchaseCheckoutUseCase`) and the infrastructure layer (`stripe-client.ts`)."
+
+The Plan's `Touched Files` section then lists the **exact paths under the current layout**. Post-migration, a Plan written pre-migration is invalidated and must be regenerated.
+
+### 4.4 ESLint boundaries config across layouts
+
+| Layout | Boundaries plugin location | Active scope |
+|---|---|---|
+| Pre-migration | `zedos/nextjs_space/.eslintrc.json` | `zedos/nextjs_space/src/**` |
+| Post-migration | `packages/eslint-config/boundaries.cjs` | every `packages/**` and `apps/**` package |
+
+---
+
+## 5. What this rule does NOT govern
+
+- Whether and when the migration runs — that's a product/leadership decision documented in `docs/retro/zedos-monorepo-retro.md`.
+- The exact migration sequence (Phase 0–4) — see the same retro for the full plan.
+- Whether to introduce additional packages (e.g. `packages/queries`, `packages/observability`) — that's a per-Plan decision routed through `architect`.
+
+---
+
+## 6. When this rule is invalidated
+
+This rule is invalidated and must be re-authored when:
+
+- The migration completes and `zedos/nextjs_space/` is removed → drop §2 entirely.
+- A new top-level layout emerges (e.g. multiple `apps/`, services that ship independently) → expand §3.
+- The locked stack decisions in §3 change (e.g. Drizzle is replaced) → update the rule + every dependent rule.
+
+Until then: the layout described here is canonical. New layouts proposed in Plans without updating this rule first are invalid.

@@ -1,8 +1,7 @@
 ---
 name: prd-researcher
-model: claude-opus-4-6
+model: claude-4.6-opus-high-thinking
 description: Brings market, user, and competitive context into product decisions.
-is_background: true
 ---
 
 # Role

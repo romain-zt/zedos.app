@@ -1,6 +1,6 @@
 ---
 name: feature-area-lead
-model: claude-opus-4-7
+model: claude-opus-4-7-thinking-xhigh
 description: High-context Feature Area owner. Reconstructs decomposition state across the PRD, existing Feature Areas, Scope Slices, open questions, and product decisions before any Feature Area operation.
 ---
 

@@ -1,0 +1,103 @@
+---
+description: Small-PR rule. Hard limits on diff size, surface area, and number of touched layers per PR. Routes oversized work back to /split before opening.
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# PR Sizing
+
+## 1. Purpose
+
+PRs are reviewed faster, regress less often, and roll back cleaner when they are small. zedos enforces explicit limits on diff size and the surface area touched.
+
+This rule complements:
+
+- `.cursor/rules/70-execution-bridge.mdc` — every PR maps to an Implementation Plan + User Story
+- `.cursor/commands/split.md` — the route for breaking up oversized work
+- `.cursor/checkers/pr-readiness-checker.md` — the gate that enforces these limits
+
+---
+
+## 2. Default limits
+
+A PR is considered **standard size** when **all** of:
+
+| Metric | Limit | Rationale |
+|---|---|---|
+| Net lines changed (added + removed) | ≤ 400 | Reviewer fatigue starts here |
+| Files touched | ≤ 15 | Cross-cutting changes are often refactors hiding inside features |
+| Hexagonal layers touched | ≤ 3 | A PR touching every layer is usually two PRs in a trench coat |
+| Packages touched (post-migration) | ≤ 3 | Same reasoning |
+| Test files touched | ≤ 5 | A PR with 10 new test files probably contains two features |
+| Schema migrations | ≤ 1 | One logical schema change per PR |
+| Commits | ≤ 10 (squash-eligible) | More commits than that needs a rebase first |
+
+A PR within all limits is **standard size** and follows the standard review SLA. A PR that exceeds any one limit is **oversized** and routes through `/split` before review.
+
+## 3. Exemptions (must be declared)
+
+A PR may exceed these limits when it is:
+
+- **Mechanical refactor** — a tool-driven rename, codemod, or formatting pass. Must declare `mechanical-refactor` in the PR title prefix and link the codemod source.
+- **Generated code update** — schema regeneration, OpenAPI client regen, etc. Must declare `generated` in the title prefix and link the generator command.
+- **Pure migration step** — a numbered phase in `docs/retro/zedos-monorepo-retro.md` (e.g. P0.3 — moving `zedos/nextjs_space/` to `apps/web/`). Must reference the phase ID.
+- **Single-commit revert** — the inverse of a recent merge. Must link the original PR.
+
+No other exemptions. "It's all related" is not a category. If reviewers disagree on the categorization, the PR splits.
+
+## 4. Stacked PR pattern
+
+When work is genuinely sequential (foundation → consumer), prefer **stacked PRs**:
+
+```
+main
+└── feature/credits-ledger-foundation        (PR #N)
+    └── feature/credits-purchase-flow        (PR #N+1, base = PR #N)
+        └── feature/credits-purchase-ui      (PR #N+2, base = PR #N+1)
+```
+
+Each PR in the stack independently passes the size limits. The `/split` command produces the stack; `/babysit` keeps each layer green.
+
+## 5. PR description must include
+
+Every PR description names its lineage:
+
+```md
+## Summary
+<1–3 sentences: what changed and why>
+
+## Linked artifacts
+- Scope Slice: docs/product/scope-slices/<fa>--<slice>.md
+- User Story: docs/execution/user-stories/<fa>--<slice>--<story>.md
+- Implementation Plan: docs/execution/plans/<...>.plan.md
+- Decision references: PD-NNN (if any)
+
+## Test plan
+- [ ] Unit tests added/updated
+- [ ] Integration tests added/updated (if persistence / contracts touched)
+- [ ] E2E tests added (if a new user-facing journey ships)
+- [ ] Manual verification (steps)
+
+## Out of scope (deliberate)
+- <thing not in this PR but adjacent>
+```
+
+`pr-readiness-checker.md` refuses to open a PR missing these sections.
+
+## 6. Hard rules
+
+1. PRs that exceed §2 limits without a declared §3 exemption do not open. `/split` runs first.
+2. Mixed-purpose PRs (refactor + new feature in the same diff) split. The "while I was there" rule fragments review.
+3. Schema migrations ship in PRs that **only** modify schema + generated code + minimal adapter wiring. Application logic that depends on the new schema ships in a follow-up.
+4. Cross-package refactors (`packages/*`) run via `/split` to produce one PR per package.
+5. Reverts are their own PR — never bundled with new work.
+
+## 7. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/checkers/pr-readiness-checker.md` | §2 limits, §5 description requirements |
+| `.cursor/commands/split.md` | §3 exemptions, §4 stacked PR construction |
+| `.cursor/agents/execution/reviewer.md` | §6 hard rules at review time |
+| `.cursor/hooks/pre-pr.sh` | §2 limits before allowing PR creation |

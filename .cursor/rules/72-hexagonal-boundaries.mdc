@@ -1,0 +1,359 @@
+---
+description: Defines the six hexagonal layers, their allowed imports, route-handler constraints, SDK wrapping pattern, and mechanical enforcement. Self-contained — no external canonical text.
+globs:
+  - zedos/nextjs_space/src/**
+  - zedos/nextjs_space/app/**
+  - apps/**
+  - packages/**
+  - services/**
+alwaysApply: false
+---
+
+# Hexagonal Boundaries
+
+## 1. Purpose
+
+zedos implements a **hexagonal (clean) architecture** organized into six layers within `src/`, ordered by dependency direction. This ensures:
+
+1. **Testability** — business logic is decoupled from frameworks (Next.js, Prisma, Stripe, etc.).
+2. **Replaceability** — external vendors can be swapped without touching business logic.
+3. **Clarity** — boundaries are enforced by TypeScript path aliases, ESLint rules, and this governance rule.
+4. **Scale** — the pattern is migration-path to monorepo (`src/domain/` → `packages/domain/`, etc.).
+
+This rule complements:
+
+- `.cursor/rules/73-result-rop.mdc` — error handling across boundaries
+- `.cursor/rules/74-contracts-zod.mdc` — contract layer is the only source of cross-layer DTOs
+- `.cursor/agents/execution/domain-guardian.md` — agent that enforces this rule on every diff
+
+---
+
+## 2. The six layers
+
+| Layer | Pre-migration path | Post-migration path |
+|---|---|---|
+| `domain` | `zedos/nextjs_space/src/domain/` | `packages/domain/src/` |
+| `application` | `zedos/nextjs_space/src/application/` | `packages/application/src/` |
+| `contracts` | `zedos/nextjs_space/src/contracts/` | `packages/contracts/src/` |
+| `infrastructure` | `zedos/nextjs_space/src/infrastructure/` | `packages/persistence/src/`, `packages/sdk-*/src/`, `packages/auth/src/` |
+| `ui` | currently empty (lives in `zedos/nextjs_space/components/` — drift) | `packages/ui/src/` |
+| `shared` | `zedos/nextjs_space/src/shared/` | `packages/shared/src/` |
+
+The drift between "spec" and "today" (UI in `components/` instead of `src/ui/`, `lib/` parallel runtime) is a known Phase-2 cleanup item. Implementation Plans authored today must **not** put new code in `lib/` — see §9.
+
+### 2.1 Domain (`src/domain/*`)
+
+Pure business logic. Zero external dependencies.
+
+- Entities (Project, PRD, ADR, User, CreditAccount)
+- Value Objects (ProjectId, EmailAddress, CreditBalance)
+- Domain Events (PRDGenerated, ProjectCreated, CreditsDeducted)
+- Domain Services (CreditCalculator, PrdValidator)
+- Interfaces (Ports) for repositories and external services
+
+Rules:
+- ❌ NO imports from: `application`, `infrastructure`, `contracts`, `ui`, `shared` (except `shared/result`, `shared/events`, `shared/errors`)
+- ✅ Can define its own errors
+- ✅ May throw for business-rule violations (see `73-result-rop.mdc`)
+
+### 2.2 Application (`src/application/*`)
+
+Use-case orchestration. Depends only on domain + contracts + shared.
+
+- Use-case handlers (CreateProject, GeneratePrd, UnlockArchitecture)
+- Application Services (ProjectService, PrdService)
+- Port implementations (interfaces borrowed from domain)
+
+Rules:
+- ✅ Can import: `@domain/*`, `@contracts/*`, `@shared/*`
+- ❌ Cannot import: `@infrastructure/*`, `@ui/*`
+- ✅ Calls ports (interfaces) defined in domain; implementations injected from infrastructure
+
+### 2.3 Contracts (`src/contracts/*`)
+
+Zod schemas = single source of truth for all I/O. See `74-contracts-zod.mdc` for full detail.
+
+Rules:
+- ✅ Can import: `@shared/*` only
+- ❌ Cannot import anything else
+
+### 2.4 Infrastructure (`src/infrastructure/*`)
+
+Adapters for external services. Implements ports from domain.
+
+Subfolders: `persistence/` (Prisma repos), `ai/` (wrapped LLM client), `payments/` (wrapped Stripe), `auth/` (auth adapters).
+
+Rules:
+- ✅ Can import: `@domain/*`, `@application/*`, `@contracts/*`, `@shared/*`
+- ❌ Cannot import: `@ui/*`
+- ✅ Raw vendor SDKs **MUST** be wrapped in vendor-client classes here (see §4)
+- ✅ Every external response **MUST** be validated with Zod schemas from `@contracts`
+
+### 2.5 UI (`src/ui/*`)
+
+React components. Isolated from business logic.
+
+Rules:
+- ✅ Can import: `@shared/*`, `@contracts/*` (for types/schemas)
+- ❌ Cannot import: `@domain/*`, `@application/*`, `@infrastructure/*`
+- ✅ All API calls happen in `app/` (routes/pages), not here
+
+### 2.6 Shared (`src/shared/*`)
+
+Cross-cutting utilities. No dependencies on other layers.
+
+- `result/` — Result<T,E> for ROP
+- `errors/` — ApplicationError hierarchy
+- `observability/` — Logger, tracing
+- `events/` — EventBus for domain events
+- `mappers/` — Base Mapper class
+
+Rules:
+- ✅ Imported by all layers
+- ❌ Cannot import from any other layer
+
+---
+
+## 3. Allowed and forbidden imports (the enforcement contract)
+
+| From layer | May import | May not import |
+|---|---|---|
+| `domain` | `shared` (only `result`, `events`, `errors`) | `application`, `contracts`, `infrastructure`, `ui` |
+| `application` | `domain`, `contracts`, `shared` | `infrastructure`, `ui` |
+| `contracts` | `shared` | `domain`, `application`, `infrastructure`, `ui` |
+| `infrastructure` | `domain`, `application`, `contracts`, `shared` | `ui` |
+| `ui` | `contracts` (types), `shared` | `domain`, `application`, `infrastructure` |
+| `shared` | nothing | every other layer |
+
+Routes (`app/api/**/route.ts`) and Server Components (`app/**/page.tsx`) are **adapters**, not a layer. They may call into `application/` use cases and `infrastructure/` composition; they may not import `domain/` directly except for read-only types.
+
+---
+
+## 4. SDK wrapping pattern (vendor isolation)
+
+Vendor SDKs (`stripe`, `bcrypt`, raw `fetch` to AI providers, raw `prisma` outside repository implementations) may **only** be imported inside `infrastructure/<vendor>/` adapters. Routes, components, and `lib/` may not import them.
+
+### 4.1 Structure
+
+```
+src/infrastructure/
+├── payments/
+│   ├── stripe-client.ts       # Single source of truth
+│   ├── stripe.repository.ts   # Port implementations
+│   └── index.ts
+├── ai/
+│   ├── abacus-client.ts
+│   └── index.ts
+└── auth/
+    ├── nextauth-adapter.ts
+    └── index.ts
+```
+
+### 4.2 Wrapper contract
+
+Every vendor wrapper:
+
+1. Returns `Result<T, ExternalServiceError>` — never throws.
+2. Validates all responses with Zod schemas from `@contracts/<vendor>/`.
+3. Is the **only** place that imports the raw SDK (`stripe`, `@aws-sdk/*`, etc.).
+4. Is the single place for logging, tracing, and retry logic for that vendor.
+
+### 4.3 Benefits
+
+- **Testability:** mock the wrapper, not the entire SDK.
+- **Replaceability:** swap Stripe → Adyen by implementing the same port interface.
+- **Observability:** logging in one place, not scattered across callsites.
+- **Validation:** external responses are parsed before crossing into the application layer.
+
+### 4.4 Checklist for new vendor integration
+
+- Create wrapper in `src/infrastructure/<vendor>/`
+- Wrap all SDK operations in try-catch → Result<T>
+- Define Zod schemas in `src/contracts/<vendor>/` for all responses
+- Validate all responses before returning
+- Return `ExternalServiceError` on failures
+- Export single instance or factory from `src/infrastructure/<vendor>/index.ts`
+- Never import raw SDK outside infrastructure layer
+- Add tests for wrapper (happy path + error cases)
+
+---
+
+## 5. Route handler constraints (thin adapter pattern)
+
+Routes are not a layer — they are HTTP adapters. A route handler must:
+
+1. **Parse & validate** input with a Zod schema from `@contracts`.
+2. **Call exactly one use-case** from `@application`.
+3. **Map the Result to an HTTP response.**
+
+That's it. No database queries, no business calculations, no vendor SDK calls.
+
+### 5.1 Size limit
+
+Routes should be < 20 lines of logic. A route file longer than 30 lines is a drift signal (§8).
+
+### 5.2 Dependency injection
+
+Routes inject infrastructure adapters into use-case calls:
+
+```typescript
+import { createPurchaseCheckoutUseCase } from '@application/credits';
+import { prismaUserRepository } from '@infrastructure/persistence';
+import { stripePaymentClient } from '@infrastructure/payments';
+
+export async function POST(req: Request) {
+  const parsed = CreateCheckoutRequestSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return Response.json({ error: 'Invalid input' }, { status: 400 });
+  }
+
+  const result = await createPurchaseCheckoutUseCase(
+    parsed.data.packId,
+    session.user.id,
+    prismaUserRepository,
+    stripePaymentClient
+  );
+
+  if (result.isErr()) {
+    return Response.json(
+      { error: result.error.message },
+      { status: result.error.statusCode }
+    );
+  }
+
+  return Response.json(result.unwrap());
+}
+```
+
+---
+
+## 6. Forbidden patterns
+
+### ❌ No raw SDK calls outside infrastructure
+
+```typescript
+// WRONG: Stripe call in application logic
+import Stripe from 'stripe';
+export async function purchaseCredits(packId: string) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const session = await stripe.checkout.sessions.create(...);
+}
+
+// RIGHT: call via injected infrastructure port
+export async function purchaseCredits(
+  packId: string,
+  paymentService: PaymentService
+): Promise<Result<{ sessionUrl: string }>> {
+  const result = await paymentService.createCheckoutSession(packId);
+  if (result.isErr()) return result;
+  return ok({ sessionUrl: result.unwrap().url });
+}
+```
+
+### ❌ No Prisma types leaking
+
+```typescript
+// WRONG: Prisma.User in application
+import { Prisma } from '@prisma/client';
+export async function getUser(id: string): Promise<Prisma.User> { ... }
+
+// RIGHT: Domain entity + mapper
+export async function getUser(id: string): Promise<User> { ... }
+```
+
+### ❌ No business logic in routes
+
+```typescript
+// WRONG: Credit checking in API route
+export async function POST(req: Request) {
+  const credits = await prisma.user.findUnique(...);
+  if (credits.creditBalance < 10) throw new Error("Insufficient credits");
+}
+
+// RIGHT: call use-case from application layer
+export async function POST(req: Request) {
+  const result = await checkCreditsAndDeductUseCase(user.id, 10);
+  if (result.isErr()) return toHttpResponse(result.error);
+  return Response.json({ success: true });
+}
+```
+
+---
+
+## 7. ESLint enforcement
+
+`eslint-plugin-boundaries` is configured at `zedos/nextjs_space/.eslintrc.json` today and will move to `packages/eslint-config/boundaries.cjs` post-migration.
+
+Today's gap: `next.config.js` sets `eslint.ignoreDuringBuilds: true`, so boundaries violations slip through `next build`. The fix lives in Phase 0 of `docs/retro/zedos-monorepo-retro.md`. **Until that fix lands, every Implementation Plan must run boundary lint as a separate verifier step** — see `.cursor/agents/execution/verifier.md`.
+
+---
+
+## 8. Hard rules (mechanically enforced)
+
+Each item below is a violation to refuse in `architect`, `implementer`, `reviewer`, `domain-guardian`, and the `pre-commit` hook:
+
+1. **No raw vendor SDK imports outside `infrastructure/`.** Specifically: `stripe`, `bcryptjs`, `bcrypt`, `@aws-sdk/*`, `@azure/storage-blob`, raw `fetch` to LLM providers, raw `prisma` (PrismaClient construction).
+2. **No `Prisma.<Model>` types leaking outside `infrastructure/persistence/`.** Domain entities are returned via mappers.
+3. **No business logic in routes.** Routes are < 20 lines: parse → call use case → map Result.
+4. **No `lib/` additions.** `zedos/nextjs_space/lib/` is in retirement. New code goes in `src/<layer>/`.
+5. **No throwing across layer boundaries.** Errors cross via `Result<T, E>` per `73-result-rop.mdc`.
+6. **No DTOs hand-written.** Cross-layer types are `z.infer<typeof Schema>` from `contracts/` per `74-contracts-zod.mdc`.
+7. **No `as any` to bridge a layer mismatch.** That cast hides a real architectural violation.
+
+---
+
+## 9. Drift signals — refuse to proceed
+
+The agent must stop and report when any of these surface during planning or implementation:
+
+- A route file longer than 30 lines.
+- A `prisma.*` call inside `app/`, `components/`, or `lib/`.
+- A `new Stripe(...)` outside `infrastructure/payments/` (or `packages/sdk-stripe/` post-migration).
+- A `getServerSession`-equivalent call inside `domain/` or `application/`.
+- An `import` from `application/` inside `domain/`.
+- An `as any` cast added to make a type-check pass.
+
+`reviewer` flags these as `🔴 Critical` findings. `verifier` halts the loop on lint violations of this kind.
+
+---
+
+## 10. v0 transitional carve-outs (documented exceptions)
+
+The pre-migration codebase has documented violations of this rule. They are **frozen** — no new code is allowed to compound them; they are scheduled for cleanup per the monorepo retro:
+
+| Exception | Where | Removed in |
+|---|---|---|
+| UI in `components/` not `src/ui/` | `zedos/nextjs_space/components/**` | Phase 2 (P2.7 of monorepo retro) |
+| `lib/credits.ts`, `lib/ai-service.ts`, `lib/auth-options.ts`, `lib/config.ts` parallel runtime | `zedos/nextjs_space/lib/**` | Phase 2 (P2.2 — P2.5 of monorepo retro) |
+| `prisma/schema.prisma` co-located with the app | `zedos/nextjs_space/prisma/` | Phase 1 (P1.6) → Phase 2 (P2.6) |
+| `next.config.js: eslint.ignoreDuringBuilds: true` | `zedos/nextjs_space/next.config.js` | Phase 0 (P0.5) |
+| `tsconfig.json: strict: false`, `noImplicitAny: false` | `zedos/nextjs_space/tsconfig.json` | Phase 1 (P1.1, P1.5) |
+| 117 `as any` casts across `src/`, `app/`, `lib/` | various | Phase 1 (P1.4) |
+
+Treat each exception as a **freeze**: do not add to the count, do not introduce parallel violations elsewhere, and prefer fixes that reduce the count whenever a touched file is in scope.
+
+---
+
+## 11. Migration path to monorepo
+
+When the time comes:
+
+1. Move `src/domain/` → `packages/domain/`
+2. Move `src/application/` → `packages/application/`
+3. Move `src/contracts/` → `packages/contracts/`
+4. Move `src/shared/` → `packages/shared/`
+5. Update workspace protocol in `tsconfig.json`
+6. No code changes — purely folder moves.
+
+---
+
+## 12. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/agents/execution/domain-guardian.md` | §3 import matrix, §8 hard rules, §9 drift signals |
+| `.cursor/agents/execution/architect.md` | §3 (Plan layer assignments), §10 (no compounding exceptions) |
+| `.cursor/agents/execution/reviewer.md` | §8 hard rules on every diff |
+| `.cursor/agents/execution/verifier.md` | §7 ESLint boundary run as a verification step |
+| `.cursor/hooks/pre-commit.sh` | §7, §8 — refuses commit on violation |
+| `eslint-plugin-boundaries` | §3 import matrix at lint time |

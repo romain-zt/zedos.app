@@ -1,6 +1,6 @@
 ---
 name: prd-challenger
-model: gpt-5.5
+model: gpt-5.5-medium
 description: Challenges weak assumptions, scope inflation, and unclear product reasoning. Detects PRD drift.
 ---
 

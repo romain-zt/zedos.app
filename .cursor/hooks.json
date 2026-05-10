@@ -1,4 +1,25 @@
 {
   "version": 1,
-  "hooks": {}
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/guard-destructive-git.sh",
+        "matcher": "git\\s+push.*--force|git\\s+push\\s+-f|git\\s+reset\\s+--hard|git\\s+clean\\s+-fdx|git\\s+commit.*--no-verify|rm\\s+-rf\\s+(\\.cursor|docs)|git\\s+rebase.*-i\\b",
+        "failClosed": true,
+        "timeout": 5
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": ".cursor/hooks/guard-protected-paths.sh",
+        "failClosed": true,
+        "timeout": 5
+      },
+      {
+        "command": ".cursor/hooks/post-edit-feedback.sh",
+        "failClosed": false,
+        "timeout": 30
+      }
+    ]
+  }
 }

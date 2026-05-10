@@ -1,0 +1,311 @@
+---
+description: Every cross-layer DTO is a zod schema. Types are inferred via z.infer, never hand-written. Every external response (Stripe, AI, auth) is parsed before crossing into the application layer. Self-contained — no external canonical text.
+globs:
+  - zedos/nextjs_space/src/contracts/**
+  - zedos/nextjs_space/src/**/*.ts
+  - zedos/nextjs_space/app/**/*.ts
+  - apps/**/*.ts
+  - packages/contracts/**
+  - packages/**/*.ts
+alwaysApply: false
+---
+
+# Contracts as Zod = Single Source of Truth
+
+## 1. Purpose
+
+Every type that crosses a layer boundary or runtime boundary (HTTP, vendor SDK, queue, AI response) is defined as a zod schema in `contracts/` (pre-migration `zedos/nextjs_space/src/contracts/`; post-migration `packages/contracts/`). Types are inferred via `z.infer` — never hand-written.
+
+This rule complements:
+
+- `.cursor/rules/72-hexagonal-boundaries.mdc` — `contracts/` may import only `shared/`
+- `.cursor/rules/73-result-rop.mdc` — failed zod parse → `err(new ValidationError(...))`
+- `.cursor/agents/execution/event-contracts.md` — agent that designs and reviews zod schemas
+
+---
+
+## 2. The contract
+
+| Boundary crossed | Schema responsible |
+|---|---|
+| HTTP request → application | `<Resource>RequestSchema` in `contracts/<resource>/` |
+| Application → HTTP response | `<Resource>DTOSchema` in `contracts/<resource>/` (validate before sending) |
+| Vendor SDK response → infrastructure | `<Vendor><Operation>ResponseSchema` in `contracts/<vendor>/` |
+| AI streamed JSON → infrastructure | `<AIOperation>ResponseSchema` in `contracts/ai/` |
+| Domain event → consumer | `<Event>Schema` in `contracts/<context>/events.ts` |
+| Form input → component → request | The same `<Resource>RequestSchema` reused on the client |
+
+A type that crosses any of these boundaries without a zod schema is a violation. `event-contracts` agent + `reviewer` flag it.
+
+---
+
+## 3. Contracts structure
+
+```
+src/contracts/
+├── shared/
+│   └── common.ts          # Shared schemas (ids, pagination)
+├── project/
+│   ├── create.ts          # CreateProjectRequest, ProjectDTO
+│   ├── update.ts          # UpdateProjectRequest
+│   └── index.ts
+├── payments/
+│   ├── checkout.ts        # CheckoutSessionRequest, SessionDTO
+│   └── index.ts
+├── ai/
+│   ├── clarification.ts   # ClarifyRequest, ClarifyResponse
+│   └── index.ts
+└── index.ts               # Re-exports all
+```
+
+---
+
+## 4. Schema examples
+
+### Request schema
+
+```typescript
+// src/contracts/project/create.ts
+import { z } from 'zod';
+import { IdSchema } from '../shared/common';
+
+export const CreateProjectRequestSchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().max(2000).optional(),
+});
+
+export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;
+```
+
+### DTO schema
+
+```typescript
+export const ProjectDTOSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  description: z.string().nullable(),
+  phase: z.enum(['intake', 'architecture']),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export type ProjectDTO = z.infer<typeof ProjectDTOSchema>;
+```
+
+### AI response schema
+
+```typescript
+// src/contracts/ai/clarification.ts
+export const ClarifyResponseSchema = z.object({
+  reasoning: z.string(),
+  question: AIQuestionSchema,
+  prdUpdates: z.record(z.string(), z.any()),
+});
+
+export type ClarifyResponse = z.infer<typeof ClarifyResponseSchema>;
+```
+
+### Vendor response schema
+
+```typescript
+// src/contracts/payments/checkout.ts
+export const CheckoutSessionSchema = z.object({
+  id: z.string(),
+  url: z.string().url(),
+  payment_status: z.enum(['unpaid', 'paid', 'no_payment_required']),
+  metadata: z.record(z.string()),
+  created: z.number(),
+});
+
+export type CheckoutSession = z.infer<typeof CheckoutSessionSchema>;
+```
+
+---
+
+## 5. Usage across layers
+
+### API Routes
+
+```typescript
+export async function POST(req: Request) {
+  const parsed = CreateProjectRequestSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return Response.json(
+      { error: 'Invalid input', details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const result = await createProjectUseCase(parsed.data, userId);
+  if (result.isErr()) {
+    return Response.json({ error: result.error.message }, { status: result.error.statusCode });
+  }
+
+  const dtoValidation = ProjectDTOSchema.safeParse(result.unwrap());
+  if (!dtoValidation.success) {
+    return Response.json({ error: 'Internal error' }, { status: 500 });
+  }
+
+  return Response.json(dtoValidation.data);
+}
+```
+
+### React Components
+
+```typescript
+import { ProjectDTOSchema } from '@contracts/project';
+type ProjectDTO = z.infer<typeof ProjectDTOSchema>;
+
+export function ProjectCard({ project }: { project: ProjectDTO }) {
+  return <div>{project.name}</div>;
+}
+```
+
+### Application Layer
+
+```typescript
+import { CreateProjectRequest } from '@contracts/project';
+
+export async function createProjectUseCase(
+  input: CreateProjectRequest,  // Already validated
+  userId: string,
+  projectRepository: ProjectRepository
+): Promise<Result<Project>> {
+  // ...
+}
+```
+
+### Infrastructure Adapters
+
+```typescript
+import { ClarifyResponseSchema } from '@contracts/ai';
+
+export class AbacusAIClient {
+  async clarify(request: ClarifyRequest): Promise<Result<ClarifyResponse>> {
+    try {
+      const raw = await fetch('...').then((r) => r.json());
+      const validation = ClarifyResponseSchema.safeParse(raw);
+      if (!validation.success) {
+        return err(new ExternalServiceError('ai', `Response validation failed`));
+      }
+      return ok(validation.data);
+    } catch (e) {
+      return err(new ExternalServiceError('ai', e.message));
+    }
+  }
+}
+```
+
+---
+
+## 6. Required contracts coverage (gap audit)
+
+Per `docs/retro/zedos-monorepo-retro.md` finding #16, today's `src/contracts/` covers `auth`, `credits`, `project`, `prd`, `adr` only. The following contexts are **missing contracts and must be created** before any new feature work touches them:
+
+- `payments/` — Stripe checkout, webhook event types, idempotency keys
+- `ai/` — Clarify request/response, PRD-generation request/response, streamed JSON shape
+- `share/` — Share-link create/revoke/read DTOs
+- `feedback/` — Owner milestone feedback submission
+- `questions/` — Question history list/append DTOs
+
+Implementation Plans that touch any of these without first introducing the contracts are invalid.
+
+---
+
+## 7. Hard rules
+
+1. **No hand-written `interface` or `type` for cross-layer DTOs.** Use `z.infer<typeof Schema>` exclusively.
+2. **Every API route validates `req.body` with `safeParse`** — failed parse returns `400` with `error.flatten()`.
+3. **Every API route validates the outbound DTO with `safeParse` before `Response.json(...)`.** A drift between the runtime payload and the schema is a server bug, not a client bug.
+4. **Every infrastructure adapter validates external responses with `safeParse`.** Failed parse → `err(new ExternalServiceError(<vendor>, <message>))`.
+5. **Schemas live only in `contracts/`.** A `z.object` defined inside `application/`, `infrastructure/`, or `app/` is a layering violation.
+6. **`contracts/` may import only `shared/`** (specifically `shared/result`, `shared/errors`). Never `domain/`, `application/`, `infrastructure/`, `ui/`.
+7. **Streamed JSON from AI providers must be parsed at the buffer-end before any side effect** — no credit deduction, no DB write, no follow-up call until the parse succeeds.
+
+---
+
+## 8. Schema authoring conventions
+
+```typescript
+// contracts/<resource>/<operation>.ts
+import { z } from 'zod';
+import { IdSchema, EmailSchema } from '../shared/common';
+
+export const CreatePurchaseRequestSchema = z.object({
+  packId: IdSchema,
+});
+
+export const PurchaseDTOSchema = z.object({
+  id: IdSchema,
+  status: z.enum(['pending', 'completed', 'failed']),
+  amountCents: z.number().int().positive(),
+  createdAt: z.coerce.date(),
+});
+
+export type CreatePurchaseRequest = z.infer<typeof CreatePurchaseRequestSchema>;
+export type PurchaseDTO = z.infer<typeof PurchaseDTOSchema>;
+```
+
+Conventions:
+
+- One file per operation, not one mega-file per resource. `contracts/credits/purchase.ts`, not `contracts/credits.ts`.
+- Each context exports an `index.ts` that re-exports schemas for ergonomic imports.
+- `shared/common.ts` holds `IdSchema`, `EmailSchema`, `DateSchema`, `PaginationSchema`.
+- Coerce at the boundary: `z.coerce.date()`, `z.coerce.number()` — agree the runtime contract once.
+- Discriminated unions for events: `z.discriminatedUnion('type', [...])`.
+
+---
+
+## 9. Validation strategy summary
+
+| Layer | Validates | Schema | Action on failure |
+|---|---|---|---|
+| Route handler | API request body | `<Resource>RequestSchema` | `400 Bad Request` with `error.flatten()` |
+| Route handler | Outbound DTO | `<Resource>DTOSchema` | `500` + log (server bug) |
+| Server action | Form input | `<Resource>RequestSchema` | Return typed error to client |
+| Use case | Domain invariants | (not zod — domain logic) | `Result.err(new ValidationError(...))` |
+| Infrastructure adapter | External API response | `<Vendor><Op>ResponseSchema` | `Result.err(new ExternalServiceError(...))` |
+| Component | Form data before submit | `<Resource>RequestSchema` | Render UI error; do not submit |
+
+---
+
+## 10. Testing contracts
+
+```typescript
+import { CreateProjectRequestSchema, ProjectDTOSchema } from '@contracts/project';
+
+it('validates valid create request', () => {
+  const data = { name: 'My Project', description: 'About my project' };
+  const result = CreateProjectRequestSchema.safeParse(data);
+  expect(result.success).toBe(true);
+});
+
+it('rejects missing name', () => {
+  const data = { description: 'About my project' };
+  const result = CreateProjectRequestSchema.safeParse(data);
+  expect(result.success).toBe(false);
+});
+```
+
+---
+
+## 11. v0 known gaps (frozen, must not compound)
+
+- No outbound DTO validation in any current route (finding #17 — `app/api/projects/route.ts:25` returns `result.unwrap()` raw).
+- No Stripe response validation in `app/api/stripe/verify/route.ts` (finding #18).
+- No AI streamed-JSON validation in `lib/ai-service.ts` (finding #19) — invalid JSON is silently skipped, side effects (credit deduct) run anyway.
+
+These are **frozen**: no new code may add to the count. New routes ship with full inbound + outbound validation. New AI integrations ship with response schemas.
+
+---
+
+## 12. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/agents/execution/event-contracts.md` | §2 boundary table; §6 missing-contracts gap; §8 conventions |
+| `.cursor/agents/execution/architect.md` | §6 — Plans must list new contracts before code that consumes them |
+| `.cursor/agents/execution/reviewer.md` | §7 hard rules on every diff; §11 frozen-gap policing |
+| `.cursor/agents/execution/domain-guardian.md` | §7.6 (`contracts/` import discipline) |
+| `.cursor/skills/execution/add-zod-contract/SKILL.md` | §8 conventions for new schemas |
+| ESLint (Phase 1+) | `no-restricted-syntax` rule against `z.object` outside `contracts/**` |
