@@ -4,10 +4,16 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why are you manually triggering? (optional)"
+        required: false
+        default: "manual kickoff"
 
 jobs:
   orchestrate:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
