@@ -8,7 +8,7 @@
 import { ICreditsRepository } from '@domain/credits/credits-repository';
 import { CreditBalance, CreditTransaction, OperationType } from '@domain/credits/credits';
 import { UserId } from '@domain/user/user';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError, DatabaseError } from '@shared/errors/application-error';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@shared/observability/logger';

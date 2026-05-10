@@ -6,7 +6,7 @@
  */
 
 import { Project } from './project';
-import { Result } from '@shared/result/result';
+import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 
 export interface ProjectWithCounts extends Project {

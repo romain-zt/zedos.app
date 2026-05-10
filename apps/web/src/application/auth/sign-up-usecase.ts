@@ -1,9 +1,9 @@
 import { IUserRepository } from '@domain/user/user-repository';
 import { UserDomainService } from '@domain/user/user-service';
 import { ICreditsRepository } from '@domain/credits/credits-repository';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ApplicationError, ValidationError } from '@shared/errors/application-error';
-import { UserDTO } from '@contracts/auth/auth-contracts';
+import { UserDTO } from '@repo/contracts/auth/auth-contracts';
 import { createLogger } from '@shared/observability/logger';
 import { v4 as uuidv4 } from 'uuid';
 

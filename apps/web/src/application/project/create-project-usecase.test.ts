@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CreateProjectUseCase } from './create-project-usecase';
-import { ok, err } from '@shared/result/result';
+import { ok, err } from '@repo/result';
 import { DatabaseError, ValidationError } from '@shared/errors/application-error';
 
 const makeMockRepo = () => ({

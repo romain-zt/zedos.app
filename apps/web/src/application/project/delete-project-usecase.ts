@@ -1,5 +1,5 @@
 import { IProjectRepository } from '@domain/project/project-repository';
-import { Result, err } from '@shared/result/result';
+import { Result, err } from '@repo/result';
 import { ApplicationError, NotFoundError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
 

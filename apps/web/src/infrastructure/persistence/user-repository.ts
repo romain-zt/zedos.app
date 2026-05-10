@@ -4,7 +4,7 @@
 
 import { IUserRepository } from '@domain/user/user-repository';
 import { User, Email } from '@domain/user/user';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError, DatabaseError } from '@shared/errors/application-error';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@shared/observability/logger';

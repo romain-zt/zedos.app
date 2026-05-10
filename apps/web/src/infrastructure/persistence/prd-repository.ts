@@ -4,7 +4,7 @@
 
 import { IPrdRepository } from '@domain/prd/prd-repository';
 import { PrdVersion, PrdVersionWithRelations } from '@domain/prd/prd';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ApplicationError, DatabaseError } from '@shared/errors/application-error';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@shared/observability/logger';

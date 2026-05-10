@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CheckPhaseUseCase } from './check-phase-usecase';
-import { ok, err } from '@shared/result/result';
+import { ok, err } from '@repo/result';
 import { NotFoundError } from '@shared/errors/application-error';
 
 const makeProjectRepo = (project: any = null) => ({
