@@ -5,7 +5,7 @@
   "phase3": {
     "p0": "complete",
     "p1": "complete",
-    "p2": "in-progress",
+    "p2": "complete",
     "p3": "not-started"
   },
   "fa_account_session": {
@@ -66,7 +66,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "turborepo-phase2-drizzle-migration",
+  "next_action": "turborepo-phase3-better-auth-migration",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -168,14 +168,14 @@
       "scope_slice_phase2": {
         "path": "docs/product/scope-slices/turborepo-migration--phase-2-drizzle.md",
         "status": "written",
-        "slice_status": "exploratory",
-        "blocked_by": "phase1_execution"
+        "slice_status": "executed",
+        "blocked_by": null
       },
       "scope_slice_phase3": {
         "path": "docs/product/scope-slices/turborepo-migration--phase-3-better-auth.md",
         "status": "written",
-        "slice_status": "exploratory",
-        "blocked_by": "phase2_execution"
+        "slice_status": "ready-for-user-stories",
+        "blocked_by": null
       },
       "implementation_plan_phase0": {
         "path": "docs/execution/plans/turborepo-migration--phase-0-scaffold.plan.md",
@@ -202,7 +202,12 @@
       "implementation_plan_phase2": {
         "path": "docs/execution/plans/turborepo-migration--phase-2-drizzle.plan.md",
         "status": "written",
-        "plan_status": "proposed"
+        "plan_status": "executed",
+        "pr_stack": [
+          "cursor/drizzle-schema-config-ed09",
+          "cursor/drizzle-repo-rewrites-ed09",
+          "cursor/drizzle-prisma-cleanup-ed09"
+        ]
       },
       "implementation_plan_phase3": {
         "path": "docs/execution/plans/turborepo-migration--phase-3-better-auth.plan.md",
@@ -222,6 +227,6 @@
       "orm_migration": "Prisma -> Drizzle (Phase 2)",
       "auth_migration": "NextAuth -> better-auth with API keys for v2/v3 (Phase 3)"
     },
-    "next_action": "Execute phase3-p2 (Drizzle migration) — all 4 P1 packages extracted"
+    "next_action": "Execute phase3-p3 (better-auth migration) — Drizzle migration complete"
   }
 }
