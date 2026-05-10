@@ -4,7 +4,7 @@
   "_orchestrator_schema": "v2 — fields below (phase3, fa_account_session) are read by .github/scripts/phase-orchestrator.ts",
   "phase3": {
     "p0": "complete",
-    "p1": "in-progress",
+    "p1": "complete",
     "p2": "not-started",
     "p3": "not-started"
   },
@@ -66,7 +66,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "turborepo-phase0b-ci-secrets-hygiene",
+  "next_action": "turborepo-phase2-drizzle-migration",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -77,7 +77,7 @@
       "description": "Execution-side .cursor/ infrastructure (~102 files)"
     },
     "3": {
-      "status": "phase1-in-progress",
+      "status": "phase1-complete",
       "description": "Turborepo migration: zedos/nextjs_space/ → apps/web/, extract packages, Prisma→Drizzle, NextAuth→better-auth",
       "phase0": {
         "status": "complete",
@@ -190,8 +190,14 @@
       "implementation_plan_phase1": {
         "path": "docs/execution/plans/turborepo-migration--phase-1-package-extraction.plan.md",
         "status": "written",
-        "plan_status": "proposed",
-        "approval_status": "pre-approved-by-overnight-run"
+        "plan_status": "executed",
+        "approval_status": "executed-by-user-instruction",
+        "pr_stack": [
+          "cursor/phase1-result-extraction-37f5",
+          "cursor/phase1-contracts-extraction-37f5",
+          "cursor/phase1-db-extraction-37f5",
+          "cursor/phase1-auth-extraction-37f5"
+        ]
       },
       "implementation_plan_phase2": {
         "path": "docs/execution/plans/turborepo-migration--phase-2-drizzle.plan.md",
@@ -216,6 +222,6 @@
       "orm_migration": "Prisma -> Drizzle (Phase 2)",
       "auth_migration": "NextAuth -> better-auth with API keys for v2/v3 (Phase 3)"
     },
-    "next_action": "Execute phase3-p1 (package extraction) — plan is written"
+    "next_action": "Execute phase3-p2 (Drizzle migration) — all 4 P1 packages extracted"
   }
 }
