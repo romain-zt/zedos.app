@@ -97,13 +97,25 @@ model CreditTransaction {
   balanceAfter  Int      @map("balance_after")
   operationType String?  @map("operation_type")
   metadata      Json?
+  correlationId String?  @map("correlation_id")
   createdAt     DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
+  @@unique([userId, correlationId], name: "credit_transactions_user_correlation_idx")
   @@map("credit_transactions")
+}
+
+model ProcessedWebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique @map("event_id")
+  eventType   String   @map("event_type")
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@index([processedAt])
+  @@map("processed_webhook_events")
 }
 
 model Purchase {
