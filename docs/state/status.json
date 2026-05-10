@@ -106,5 +106,60 @@
     "other": 2
   },
   "source_code_location": "zedos/nextjs_space/",
-  "post_migration_location": "apps/web/ + packages/*"
+  "post_migration_location": "apps/web/ + packages/*",
+  "phase3_planning": {
+    "status": "complete",
+    "planned_at": "2026-05-10",
+    "planned_by": "Cloud Agent",
+    "artifacts": {
+      "feature_area": {
+        "path": "docs/product/feature-areas/turborepo-migration.md",
+        "status": "written",
+        "fa_status": "validated",
+        "need_human": false
+      },
+      "scope_slice_phase0": {
+        "path": "docs/product/scope-slices/turborepo-migration--phase-0-scaffold.md",
+        "status": "written",
+        "slice_status": "ready-for-user-stories",
+        "need_human": false
+      },
+      "scope_slice_phase1": {
+        "path": "docs/product/scope-slices/turborepo-migration--phase-1-package-extraction.md",
+        "status": "written",
+        "slice_status": "exploratory",
+        "blocked_by": "phase0_execution"
+      },
+      "scope_slice_phase2": {
+        "path": "docs/product/scope-slices/turborepo-migration--phase-2-drizzle.md",
+        "status": "written",
+        "slice_status": "exploratory",
+        "blocked_by": "phase1_execution"
+      },
+      "scope_slice_phase3": {
+        "path": "docs/product/scope-slices/turborepo-migration--phase-3-better-auth.md",
+        "status": "written",
+        "slice_status": "exploratory",
+        "blocked_by": "phase2_execution"
+      },
+      "implementation_plan_phase0": {
+        "path": "docs/execution/plans/turborepo-migration--phase-0-scaffold.plan.md",
+        "status": "written",
+        "plan_status": "proposed",
+        "approval_status": "pending",
+        "pr_stack": [
+          "cursor/turborepo-phase0a-workspace-init",
+          "cursor/turborepo-phase0b-ci-secrets"
+        ]
+      }
+    },
+    "locked_decisions_confirmed": {
+      "monorepo_tooling": "pnpm + Turborepo + Changesets + syncpack",
+      "source_move": "zedos/nextjs_space/ -> apps/web/",
+      "packages_to_extract": ["@repo/contracts", "@repo/result", "@repo/db", "@repo/auth"],
+      "orm_migration": "Prisma -> Drizzle (Phase 2)",
+      "auth_migration": "NextAuth -> better-auth with API keys for v2/v3 (Phase 3)"
+    },
+    "next_action": "Obtain user approval of phase-0-scaffold.plan.md before /implement"
+  }
 }
