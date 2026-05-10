@@ -12,7 +12,7 @@ on:
 
 jobs:
   auto-merge-tracking:
-    if: startsWith(github.event.pull_request.title, 'chore(orchestrator): [tracking]')
+    if: "startsWith(github.event.pull_request.title, 'chore(orchestrator): [tracking]')"
     runs-on: ubuntu-latest
     permissions:
       contents: write
