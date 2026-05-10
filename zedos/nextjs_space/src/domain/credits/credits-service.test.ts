@@ -31,6 +31,58 @@ describe('CreditsDomainService', () => {
     });
   });
 
+  describe('computeDeductionDecision (T-1, T-2)', () => {
+    it('returns proceed when balance >= cost', () => {
+      const d = CreditsDomainService.computeDeductionDecision(100, false, 10);
+      expect(d.kind).toBe('proceed');
+      expect(d.newBalance).toBe(90);
+      expect(d.willActivateGrace).toBe(false);
+    });
+
+    it('returns proceed when balance equals cost exactly', () => {
+      const d = CreditsDomainService.computeDeductionDecision(10, false, 10);
+      expect(d.kind).toBe('proceed');
+      expect(d.newBalance).toBe(0);
+    });
+
+    it('returns proceed-with-grace when balance < cost and grace not used and overage <= ceiling', () => {
+      const d = CreditsDomainService.computeDeductionDecision(5, false, 15, 20);
+      expect(d.kind).toBe('proceed-with-grace');
+      expect(d.newBalance).toBe(-10);
+      expect(d.willActivateGrace).toBe(true);
+    });
+
+    it('returns proceed-with-grace at ceiling boundary (overage === ceiling)', () => {
+      const d = CreditsDomainService.computeDeductionDecision(0, false, 20, 20);
+      expect(d.kind).toBe('proceed-with-grace');
+      expect(d.newBalance).toBe(-20);
+    });
+
+    it('returns reject(overage-exceeds-ceiling) when overage > ceiling and grace not used', () => {
+      const d = CreditsDomainService.computeDeductionDecision(5, false, 30, 20);
+      expect(d.kind).toBe('reject');
+      if (d.kind === 'reject') {
+        expect(d.reason).toBe('overage-exceeds-ceiling');
+      }
+    });
+
+    it('returns reject(grace-exhausted) when balance < cost and grace already used', () => {
+      const d = CreditsDomainService.computeDeductionDecision(5, true, 15, 20);
+      expect(d.kind).toBe('reject');
+      if (d.kind === 'reject') {
+        expect(d.reason).toBe('grace-exhausted');
+      }
+    });
+
+    it('returns reject(grace-exhausted) when balance is 0 and grace already used', () => {
+      const d = CreditsDomainService.computeDeductionDecision(0, true, 1, 20);
+      expect(d.kind).toBe('reject');
+      if (d.kind === 'reject') {
+        expect(d.reason).toBe('grace-exhausted');
+      }
+    });
+  });
+
   describe('buildCreditCheckResult', () => {
     it('returns approved message for normal approval', () => {
       const r = CreditsDomainService.buildCreditCheckResult(true, 20, 5, false, false, false);
