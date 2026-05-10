@@ -1,0 +1,50 @@
+name: PR Cascade
+
+# When a PR merges into main, un-draft any open draft PRs whose base branch
+# matches the merged PR's head branch (stacked PR pattern).
+# Un-drafting triggers pr-automation.yml automatically.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  cascade:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      MERGED_HEAD: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - name: Find and un-draft stacked PRs
+        run: |
+          echo "Merged branch: $MERGED_HEAD"
+
+          # Find open draft PRs whose base matches the merged head branch
+          DRAFT_PRS=$(gh pr list \
+            --repo "$REPO" \
+            --state open \
+            --draft \
+            --base "$MERGED_HEAD" \
+            --json number,title \
+            --jq '.[] | "\(.number) \(.title)"')
+
+          if [ -z "$DRAFT_PRS" ]; then
+            echo "No draft PRs found with base '$MERGED_HEAD'."
+            exit 0
+          fi
+
+          echo "Draft PRs to un-draft:"
+          echo "$DRAFT_PRS"
+
+          # Un-draft each one — triggers pr-automation.yml via ready_for_review event
+          while IFS= read -r line; do
+            PR_NUM=$(echo "$line" | awk '{print $1}')
+            echo "→ Marking PR #$PR_NUM as ready for review"
+            gh pr ready "$PR_NUM" --repo "$REPO"
+          done <<< "$DRAFT_PRS"
