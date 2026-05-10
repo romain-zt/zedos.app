@@ -4,8 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
-import { checkCredits, deductCredits } from '@/lib/credits'
+import { checkCredits, deductCredits, reverseCredits } from '@/lib/credits'
 import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
+import { randomUUID } from 'crypto'
 
 const PRD_SYSTEM_PROMPT = `You are Zedos, generating a structured PRD from the founder's clarification history.
 
@@ -83,65 +84,60 @@ Rules:
 Respond with raw JSON only. No markdown, no code blocks.`
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = (session.user as any).id
+
+  const project = await prisma.project.findFirst({
+    where: { id: params.id, userId },
+  })
+  if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+
+  const creditCheck = await checkCredits(userId, 'prd_generation')
+  if (!creditCheck.allowed) {
+    return NextResponse.json({
+      error: 'insufficient_credits',
+      message: creditCheck.reason,
+      balance: creditCheck.currentBalance,
+      cost: creditCheck.cost,
+    }, { status: 402 })
+  }
+
+  // Server-supplied correlation_id per OQ-4 decision
+  const correlationId = `${params.id}--prd_generation--${randomUUID()}`
+
+  const history = await prisma.questionHistory.findMany({
+    where: { projectId: params.id },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  const lastVersion = await prisma.prdVersion.findFirst({
+    where: { projectId: params.id },
+    orderBy: { versionNumber: 'desc' },
+  })
+  const nextVersionNumber = (lastVersion?.versionNumber ?? 0) + 1
+  const isUpdate = nextVersionNumber > 1
+
+  const clarificationSummary = (history ?? []).map((q: any) => {
+    return `Q: ${q.structuredQuestion}\nA: ${q.founderAnswer ?? 'Not answered'}\nImpact: ${q.prdImpact ?? 'General'}`
+  }).join('\n\n')
+
+  const messages = [
+    { role: 'system' as const, content: PRD_SYSTEM_PROMPT },
+    {
+      role: 'user' as const,
+      content: `Project: "${project.name}"\nDescription: ${project.description ?? 'Not provided'}\n\nVersion: ${nextVersionNumber}${isUpdate ? ` (updating from v${nextVersionNumber - 1})` : ' (initial)'}\n\nClarification History:\n${clarificationSummary || 'No clarifications yet - generate a basic PRD framework based on the project name and description.'}`,
+    },
+  ]
+
+  if (isUpdate && lastVersion?.content) {
+    messages.push({
+      role: 'user' as const,
+      content: `Previous PRD (v${lastVersion.versionNumber}):\n${JSON.stringify(lastVersion.content)}\n\nUpdate this PRD with the new clarifications while preserving existing decisions.`,
+    })
+  }
+
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = (session.user as any).id
-
-    const project = await prisma.project.findFirst({
-      where: { id: params.id, userId },
-    })
-    if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-
-    // Credit check
-    const creditCheck = await checkCredits(userId, 'prd_generation')
-    if (!creditCheck.allowed) {
-      return NextResponse.json({
-        error: 'insufficient_credits',
-        message: creditCheck.reason,
-        balance: creditCheck.currentBalance,
-        cost: creditCheck.cost,
-      }, { status: 402 })
-    }
-
-    // Fetch all question history for this project
-    const history = await prisma.questionHistory.findMany({
-      where: { projectId: params.id },
-      orderBy: { createdAt: 'asc' },
-    })
-
-    // Get current version number
-    const lastVersion = await prisma.prdVersion.findFirst({
-      where: { projectId: params.id },
-      orderBy: { versionNumber: 'desc' },
-    })
-    const nextVersionNumber = (lastVersion?.versionNumber ?? 0) + 1
-    const isUpdate = nextVersionNumber > 1
-
-    // Build context from question history
-    const clarificationSummary = (history ?? []).map((q: any) => {
-      return `Q: ${q.structuredQuestion}\nA: ${q.founderAnswer ?? 'Not answered'}\nImpact: ${q.prdImpact ?? 'General'}`
-    }).join('\n\n')
-
-    const messages = [
-      { role: 'system' as const, content: PRD_SYSTEM_PROMPT },
-      {
-        role: 'user' as const,
-        content: `Project: "${project.name}"\nDescription: ${project.description ?? 'Not provided'}\n\nVersion: ${nextVersionNumber}${isUpdate ? ` (updating from v${nextVersionNumber - 1})` : ' (initial)'}\n\nClarification History:\n${clarificationSummary || 'No clarifications yet - generate a basic PRD framework based on the project name and description.'}`,
-      },
-    ]
-
-    if (isUpdate && lastVersion?.content) {
-      messages.push({
-        role: 'user' as const,
-        content: `Previous PRD (v${lastVersion.versionNumber}):\n${JSON.stringify(lastVersion.content)}\n\nUpdate this PRD with the new clarifications while preserving existing decisions.`,
-      })
-    }
-
-    // Deduct credits
-    await deductCredits(userId, 'prd_generation', { projectId: params.id })
-
-    // Call AI
     const aiResponse = await callAI({
       messages,
       stream: true,
@@ -151,27 +147,19 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     })
 
     const stream = createBufferedStreamingResponse(aiResponse, async (result: string) => {
+      // AI succeeded — deduct after stream completes
+      await deductCredits(userId, 'prd_generation', { projectId: params.id }, correlationId)
+
       try {
         const parsed = JSON.parse(result)
         await prisma.prdVersion.create({
-          data: {
-            projectId: params.id,
-            versionNumber: nextVersionNumber,
-            content: parsed,
-            status: 'generated',
-          },
+          data: { projectId: params.id, versionNumber: nextVersionNumber, content: parsed, status: 'generated' },
         })
       } catch (e: any) {
         console.error('Failed to save PRD version:', e)
-        // Still save as raw text
         try {
           await prisma.prdVersion.create({
-            data: {
-              projectId: params.id,
-              versionNumber: nextVersionNumber,
-              content: { raw: result },
-              status: 'generated',
-            },
+            data: { projectId: params.id, versionNumber: nextVersionNumber, content: { raw: result }, status: 'generated' },
           })
         } catch {}
       }
@@ -182,10 +170,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         Connection: 'keep-alive',
+        'X-Correlation-Id': correlationId,
       },
     })
-  } catch (error: any) {
-    console.error('Generate PRD error:', error)
-    return NextResponse.json({ error: error?.message ?? 'PRD generation failed' }, { status: 500 })
+  } catch (e: any) {
+    // AI failed — attempt compensating reversal (no-op if no deduct happened)
+    await reverseCredits(userId, correlationId)
+    console.error('Generate PRD error:', e)
+    return NextResponse.json({ error: e?.message ?? 'PRD generation failed', correlationId }, { status: 500 })
   }
 }
