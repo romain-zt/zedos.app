@@ -50,6 +50,7 @@ When all PRs are open and gates pass:
 If blocked at any point:
   - Set docs/state/status.json -> phase3.p0 = "blocked" and phase3.blocker = "<one-line reason>"
   - Write a "Current Blocker" section in docs/state/HANDOFF.md
+  - Update the tracking PR description with the blocker: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
   - Commit + push docs/state/status.json and docs/state/HANDOFF.md
   - STOP — do not call gh pr ready`,
 
@@ -69,6 +70,7 @@ When all 4 PRs are open and the final verification gate passes:
 If blocked at any point:
   - Set docs/state/status.json -> phase3.p1 = "blocked" and phase3.blocker = "<one-line reason>"
   - Write a "Current Blocker" section in docs/state/HANDOFF.md
+  - Update the tracking PR description with the blocker: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
   - Commit + push docs/state/ files
   - STOP — do not call gh pr ready`,
 
@@ -87,6 +89,7 @@ When all PRs are open and final gate passes:
 If blocked:
   - Set phase3.p2 = "blocked" and phase3.blocker = "<one-line reason>"
   - Write "Current Blocker" in docs/state/HANDOFF.md
+  - Update the tracking PR description with the blocker: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
   - Commit + push docs/state/ files
   - STOP — do not call gh pr ready`,
 
@@ -105,6 +108,7 @@ When all PRs are open and final gate passes (including the grep check):
 If blocked:
   - Set phase3.p3 = "blocked" and phase3.blocker = "<one-line reason>"
   - Write "Current Blocker" in docs/state/HANDOFF.md
+  - Update the tracking PR description with the blocker: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
   - Commit + push docs/state/ files
   - STOP — do not call gh pr ready`,
 
@@ -132,6 +136,7 @@ When done:
 If blocked:
   - Set fa_account_session.slice1 = "blocked" and fa_account_session.blocker = "<one-line reason>"
   - Write "Current Blocker" in docs/state/HANDOFF.md
+  - Update the tracking PR description with the blocker: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
   - Commit + push docs/state/ files
   - STOP — do not call gh pr ready`,
 };
@@ -199,32 +204,52 @@ function determineNextStep(status: StatusJson): string | null {
     return null;
   }
 
-  if (p3.blocker || fa.blocker) {
-    const msg = p3.blocker ?? fa.blocker;
-    console.log(`🚧 Blocked: ${msg}`);
-    console.log("Manual intervention required. Stopping.");
-    return null;
+  // Ordered pipeline — blocked steps are skipped, not halted on.
+  // Dependencies: p0 → p1 → p2 → p3 → fa-account-session
+  // A blocked dependency blocks its dependents too.
+  const pipeline: { key: string; status: PhaseStatus | undefined; dependsOn: string[] }[] = [
+    { key: "phase3-p0", status: p3.p0, dependsOn: [] },
+    { key: "phase3-p1", status: p3.p1, dependsOn: ["phase3-p0"] },
+    { key: "phase3-p2", status: p3.p2, dependsOn: ["phase3-p1"] },
+    { key: "phase3-p3", status: p3.p3, dependsOn: ["phase3-p2"] },
+    { key: "fa-account-session", status: fa.slice1, dependsOn: ["phase3-p3"] },
+  ];
+
+  const statusMap = new Map(pipeline.map((s) => [s.key, s.status]));
+  const blocked: string[] = [];
+
+  for (const step of pipeline) {
+    if (step.status === "complete") continue;
+
+    if (step.status === "blocked") {
+      console.log(`⏭️  Skipping "${step.key}" (blocked). Will try next eligible step.`);
+      blocked.push(step.key);
+      continue;
+    }
+
+    // Check if any dependency is not complete (incomplete or blocked)
+    const unmetDep = step.dependsOn.find((dep) => {
+      const depStatus = statusMap.get(dep);
+      return depStatus !== "complete";
+    });
+
+    if (unmetDep) {
+      const depStatus = statusMap.get(unmetDep);
+      if (depStatus === "blocked") {
+        console.log(`⏭️  Skipping "${step.key}" (dependency "${unmetDep}" is blocked).`);
+        blocked.push(step.key);
+      } else {
+        console.log(`⏭️  Skipping "${step.key}" (dependency "${unmetDep}" is ${depStatus ?? "not-started"}).`);
+      }
+      continue;
+    }
+
+    return step.key;
   }
 
-  if (p3.p0 !== "complete") {
-    if (p3.p0 === "blocked") { console.log(`🚧 phase3-p0 blocked: ${p3.blocker ?? "(no message)"}`); return null; }
-    return "phase3-p0";
-  }
-  if (p3.p1 !== "complete") {
-    if (p3.p1 === "blocked") { console.log(`🚧 phase3-p1 blocked: ${p3.blocker ?? "(no message)"}`); return null; }
-    return "phase3-p1";
-  }
-  if (p3.p2 !== "complete") {
-    if (p3.p2 === "blocked") { console.log(`🚧 phase3-p2 blocked: ${p3.blocker ?? "(no message)"}`); return null; }
-    return "phase3-p2";
-  }
-  if (p3.p3 !== "complete") {
-    if (p3.p3 === "blocked") { console.log(`🚧 phase3-p3 blocked: ${p3.blocker ?? "(no message)"}`); return null; }
-    return "phase3-p3";
-  }
-  if (fa.slice1 !== "complete") {
-    if (fa.slice1 === "blocked") { console.log(`🚧 fa-account-session/slice1 blocked: ${fa.blocker ?? "(no message)"}`); return null; }
-    return "fa-account-session";
+  if (blocked.length > 0) {
+    console.log(`\n🚧 Blocked steps: ${blocked.join(", ")}`);
+    console.log("   No unblocked work available. Check docs/state/status.json for blocker details.");
   }
 
   return null;
@@ -329,6 +354,39 @@ function markInProgress(status: StatusJson, step: string): void {
     console.log(`📝 docs/state/status.json updated: ${step} → in-progress`);
   } catch (err) {
     console.warn("⚠️  Could not commit status update (non-fatal):", err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Reset in-progress back to not-started (on failure / timeout)
+// ---------------------------------------------------------------------------
+
+function resetInProgress(step: string): void {
+  try {
+    gitExec(`checkout main`);
+    gitExec(`pull origin main --ff-only`);
+  } catch { /* may already be on main */ }
+
+  const current = readStatus();
+  if (!current) return;
+
+  switch (step) {
+    case "phase3-p0": if (current.phase3?.p0 === "in-progress") current.phase3.p0 = "not-started"; break;
+    case "phase3-p1": if (current.phase3?.p1 === "in-progress") current.phase3.p1 = "not-started"; break;
+    case "phase3-p2": if (current.phase3?.p2 === "in-progress") current.phase3.p2 = "not-started"; break;
+    case "phase3-p3": if (current.phase3?.p3 === "in-progress") current.phase3.p3 = "not-started"; break;
+    case "fa-account-session": if (current.fa_account_session?.slice1 === "in-progress") current.fa_account_session.slice1 = "not-started"; break;
+  }
+
+  writeStatus(current);
+
+  try {
+    gitExec(`add docs/state/status.json`);
+    gitExec(`commit -m "chore(orchestrator): reset ${step} from in-progress to not-started (agent failed) [skip ci]"`);
+    gitExec(`push`);
+    console.log(`🔄 Reset ${step} → not-started (will retry on next cron).`);
+  } catch (err) {
+    console.warn("⚠️  Could not commit status reset (non-fatal):", err);
   }
 }
 
@@ -509,6 +567,7 @@ try {
   if (result.status === "error") {
     console.error(`\n❌ Agent run for "${nextStep}" failed. Tracking PR #${trackingPR.number} remains draft.`);
     console.error(`   Check the Cursor dashboard. The draft PR is your signal that intervention is needed.`);
+    resetInProgress(nextStep);
     process.exit(2);
   }
 
@@ -538,7 +597,7 @@ try {
     console.error(`\n❌ Post-agent check FAILED: tracking PR #${trackingPR.number} is still a draft.`);
     console.error(`   The agent did NOT call \`gh pr ready ${trackingPR.number}\`.`);
     console.error(`   Work may be on a branch but PRs were not opened/signaled.`);
-    console.error(`   Manual intervention required — check open branches and open PRs manually.`);
+    resetInProgress(nextStep);
     process.exit(2);
   }
 
@@ -559,7 +618,7 @@ try {
     console.error(`\n❌ Post-agent check FAILED: docs/state/status.json still shows "${nextStep}" as not "complete".`);
     console.error(`   The agent did not update the status file.`);
     console.error(`   Tracking PR #${trackingPR.number} state: ${trackingPRIsDraft ? "draft" : "ready"}.`);
-    console.error(`   Manual intervention required.`);
+    resetInProgress(nextStep);
     process.exit(2);
   }
 
@@ -569,7 +628,9 @@ try {
 } catch (err) {
   if (err instanceof CursorAgentError) {
     console.error(`❌ Agent failed to start: ${err.message} (retryable=${err.isRetryable})`);
+    resetInProgress(nextStep);
     process.exit(1);
   }
+  resetInProgress(nextStep);
   throw err;
 }
