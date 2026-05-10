@@ -6,7 +6,7 @@
 
 import { Mapper } from '@shared/mappers/mapper';
 import { User } from '@domain/user/user';
-import { UserDTO } from '@contracts/auth/auth-contracts';
+import { UserDTO } from '@repo/contracts/auth/auth-contracts';
 
 export class UserMapper extends Mapper<User, any, UserDTO> {
   toPersistence(domain: User): any {

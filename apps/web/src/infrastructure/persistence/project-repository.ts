@@ -4,7 +4,7 @@
 
 import { IProjectRepository, ProjectWithCounts } from '@domain/project/project-repository';
 import { Project } from '@domain/project/project';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError, DatabaseError } from '@shared/errors/application-error';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@shared/observability/logger';

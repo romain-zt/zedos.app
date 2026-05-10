@@ -4,7 +4,7 @@
 
 import { IAdrRepository } from '@domain/adr/adr-repository';
 import { Adr, CORE_ADR_COUNT } from '@domain/adr/adr';
-import { Result, ok, err } from '@shared/result/result';
+import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError, DatabaseError } from '@shared/errors/application-error';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@shared/observability/logger';
