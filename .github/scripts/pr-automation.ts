@@ -89,43 +89,22 @@ Run \`gh pr diff ${prNumber}\` to get the full diff, then check for:
 
 // --- Run -------------------------------------------------------------------
 
-const agent = Agent.create({
-  apiKey,
-  cloud: {
-    repos: [{ url: `https://github.com/${repo}` }],
-    autoCreatePR: false,
-    skipReviewerRequest: true,
-  },
-});
-
 try {
-  const run = await agent.send(prompt);
-
-  // Log IDs immediately — needed for dashboard investigation if stream hangs.
-  console.log(`🆔 agent.agentId : ${agent.agentId}`);
-  console.log(`🆔 run.id        : ${run.id}`);
-
-  // Stream output live so GitHub Actions logs are readable in real time.
-  if (run.supports("stream")) {
-    for await (const event of run.stream()) {
-      if (event.type === "assistant") {
-        for (const block of event.message.content) {
-          if (block.type === "text") {
-            process.stdout.write(block.text);
-          }
-        }
-      }
-    }
-  }
-
-  const result = await run.wait();
+  const result = await Agent.prompt(prompt, {
+    apiKey,
+    cloud: {
+      repos: [{ url: `https://github.com/${repo}` }],
+      autoCreatePR: false,
+      skipReviewerRequest: true,
+    },
+  });
 
   if (result.status === "error") {
-    console.error(`\n❌ Agent run failed (run.id=${result.id}). Check the Cursor dashboard for details.`);
+    console.error(`\n❌ Agent run failed. Check the Cursor dashboard for details.`);
     process.exit(2);
   }
 
-  console.log(`\n✅ PR automation completed successfully (run.id=${result.id}).`);
+  console.log(`\n✅ PR automation completed successfully.`);
   process.exit(0);
 } catch (err) {
   if (err instanceof CursorAgentError) {
@@ -133,8 +112,4 @@ try {
     process.exit(1);
   }
   throw err;
-} finally {
-  if (typeof (agent as any)[Symbol.asyncDispose] === "function") {
-    await (agent as any)[Symbol.asyncDispose]();
-  }
 }
