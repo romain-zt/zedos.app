@@ -89,7 +89,7 @@ Run \`gh pr diff ${prNumber}\` to get the full diff, then check for:
 
 // --- Run -------------------------------------------------------------------
 
-await using agent = Agent.create({
+const agent = Agent.create({
   apiKey,
   cloud: {
     repos: [{ url: `https://github.com/${repo}` }],
@@ -133,4 +133,8 @@ try {
     process.exit(1);
   }
   throw err;
+} finally {
+  if (typeof (agent as any)[Symbol.asyncDispose] === "function") {
+    await (agent as any)[Symbol.asyncDispose]();
+  }
 }
