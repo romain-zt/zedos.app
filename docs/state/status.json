@@ -1,11 +1,11 @@
 {
   "handoff_date": "2026-05-10",
   "current_phase": "phase3-p1",
-  "_orchestrator_schema": "v2 \u2014 fields below (phase3, fa_account_session) are read by .github/scripts/phase-orchestrator.ts",
+  "_orchestrator_schema": "v2 — fields below (phase3, fa_account_session) are read by .github/scripts/phase-orchestrator.ts",
   "phase3": {
     "p0": "complete",
     "p1": "complete",
-    "p2": "not-started",
+    "p2": "in-progress",
     "p3": "not-started"
   },
   "fa_account_session": {
@@ -25,7 +25,7 @@
       "id": 2,
       "label": "OQ-2: reversal restores graceUsed?",
       "description": "Does reversal on AI failure clear graceUsed? PRD Q-014/Q-019 silent on rollback.",
-      "proposed_default": "no \u2014 grace consumed on attempt",
+      "proposed_default": "no — grace consumed on attempt",
       "status": "pending"
     },
     {
@@ -45,7 +45,7 @@
     {
       "id": 5,
       "label": "4-PR stack shape",
-      "description": "Work exceeds single-PR limits. Proposed 4 stacked PRs: foundation \u2192 concurrency \u2192 webhook \u2192 ai-deduct.",
+      "description": "Work exceeds single-PR limits. Proposed 4 stacked PRs: foundation → concurrency → webhook → ai-deduct.",
       "proposed_default": "4-pr-stack",
       "status": "pending"
     }
@@ -78,7 +78,7 @@
     },
     "3": {
       "status": "phase1-complete",
-      "description": "Turborepo migration: zedos/nextjs_space/ \u2192 apps/web/, extract packages, Prisma\u2192Drizzle, NextAuth\u2192better-auth",
+      "description": "Turborepo migration: zedos/nextjs_space/ → apps/web/, extract packages, Prisma→Drizzle, NextAuth→better-auth",
       "phase0": {
         "status": "complete",
         "completed_at": "2026-05-10",
@@ -87,7 +87,7 @@
         "verification": {
           "tests": "83/83 pass",
           "typecheck": "clean",
-          "build": "next build succeeds \u2014 31 routes"
+          "build": "next build succeeds — 31 routes"
         },
         "artifacts_created": [
           "package.json (root)",
@@ -107,7 +107,7 @@
     },
     "4": {
       "status": "pending",
-      "description": "Next Feature Areas: account-session \u2192 dashboard-shell \u2192 prd-versioning \u2192 guided-clarification \u2192 credit-system"
+      "description": "Next Feature Areas: account-session → dashboard-shell → prd-versioning → guided-clarification → credit-system"
     },
     "rules_merge": {
       "status": "complete",
@@ -183,7 +183,7 @@
         "plan_status": "complete",
         "approval_status": "executed-by-user-instruction",
         "pr_stack": [
-          "cursor/turborepo-phase0a-workspace-init-b3a8 (PR #11 \u2014 MERGED)",
+          "cursor/turborepo-phase0a-workspace-init-b3a8 (PR #11 — MERGED)",
           "cursor/turborepo-phase0b-ci-secrets-b3a8 (pending/skipped)"
         ]
       },
@@ -222,6 +222,6 @@
       "orm_migration": "Prisma -> Drizzle (Phase 2)",
       "auth_migration": "NextAuth -> better-auth with API keys for v2/v3 (Phase 3)"
     },
-    "next_action": "Execute phase3-p2 (Drizzle migration) \u2014 all 4 P1 packages extracted"
+    "next_action": "Execute phase3-p2 (Drizzle migration) — all 4 P1 packages extracted"
   }
 }
