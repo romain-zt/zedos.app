@@ -66,18 +66,6 @@
       "status": "complete",
       "description": "Execution-side .cursor/ infrastructure (~102 files)"
     },
-    "rules_merge": {
-      "status": "complete",
-      "description": "zedos/.cursor/rules/ merged into root .cursor/rules/ and deleted"
-    },
-    "2a": {
-      "status": "complete",
-      "description": "Credit/Stripe planning artifacts (scope slice, user story, plan, friction log)"
-    },
-    "2b": {
-      "status": "blocked-on-approval",
-      "description": "Implementation: 4-PR stack, ~38 files, ~900 lines, 28-36 worker-hours est."
-    },
     "3": {
       "status": "phase0-complete",
       "description": "Turborepo migration: zedos/nextjs_space/ → apps/web/, extract packages, Prisma→Drizzle, NextAuth→better-auth",
@@ -110,6 +98,18 @@
     "4": {
       "status": "pending",
       "description": "Next Feature Areas: account-session → dashboard-shell → prd-versioning → guided-clarification → credit-system"
+    },
+    "rules_merge": {
+      "status": "complete",
+      "description": "zedos/.cursor/rules/ merged into root .cursor/rules/ and deleted"
+    },
+    "2a": {
+      "status": "complete",
+      "description": "Credit/Stripe planning artifacts (scope slice, user story, plan, friction log)"
+    },
+    "2b": {
+      "status": "blocked-on-approval",
+      "description": "Implementation: 4-PR stack, ~38 files, ~900 lines, 28-36 worker-hours est."
     }
   },
   "active_artifacts": {
@@ -181,10 +181,18 @@
     "locked_decisions_confirmed": {
       "monorepo_tooling": "pnpm + Turborepo + Changesets + syncpack",
       "source_move": "zedos/nextjs_space/ -> apps/web/",
-      "packages_to_extract": ["@repo/contracts", "@repo/result", "@repo/db", "@repo/auth"],
+      "packages_to_extract": [
+        "@repo/contracts",
+        "@repo/result",
+        "@repo/db",
+        "@repo/auth"
+      ],
       "orm_migration": "Prisma -> Drizzle (Phase 2)",
       "auth_migration": "NextAuth -> better-auth with API keys for v2/v3 (Phase 3)"
     },
     "next_action": "Obtain user approval of phase-0-scaffold.plan.md before /implement"
+  },
+  "phase3": {
+    "p0": "in-progress"
   }
 }
