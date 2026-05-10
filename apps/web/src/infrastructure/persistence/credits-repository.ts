@@ -1,8 +1,8 @@
 /**
- * Prisma Credits Repository Adapter
+ * Drizzle Credits Repository Adapter
  *
- * Implements ICreditsRepository using Prisma.
- * Handles atomic credit deduction and transaction recording.
+ * Implements ICreditsRepository using Drizzle.
+ * Handles atomic credit deduction with SELECT FOR UPDATE and transaction recording.
  */
 
 import { ICreditsRepository } from '@domain/credits/credits-repository';
@@ -10,20 +10,26 @@ import { CreditBalance, CreditTransaction, OperationType } from '@domain/credits
 import { UserId } from '@domain/user/user';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError, DatabaseError } from '@shared/errors/application-error';
-import { PrismaClient } from '@prisma/client';
+import { db, users, creditTransactions, eq, desc, sql, type UserUpdate, type CreditTransactionInsert } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
-import { v4 as uuidv4 } from 'uuid';
 
 const logger = createLogger({ service: 'CreditsRepository' });
 
-export class PrismaCreditsRepository implements ICreditsRepository {
-  constructor(private prisma: PrismaClient) {}
+export class DrizzleCreditsRepository implements ICreditsRepository {
+  // Constructor kept for API compatibility - argument is ignored since we use the singleton db
+  constructor(_db?: unknown) {}
 
   async getBalance(userId: string): Promise<Result<CreditBalance, ApplicationError>> {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
+      const [user] = await db
+        .select({
+          id: users.id,
+          creditBalance: users.creditBalance,
+          graceUsed: users.graceUsed,
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
 
       if (!user) {
         return err(new NotFoundError('User not found'));
@@ -34,65 +40,81 @@ export class PrismaCreditsRepository implements ICreditsRepository {
         user.creditBalance,
         user.graceUsed
       );
-      return ok(balance) as any;
+      return ok(balance) as Result<CreditBalance, ApplicationError>;
     } catch (error) {
       logger.error('Failed to get balance', error);
       return err(new DatabaseError('Failed to get balance'));
     }
   }
 
+  /**
+   * Deducts credits with row-level locking (SELECT FOR UPDATE) to prevent race conditions.
+   * This fixes the credit double-spend vulnerability (retro finding #24).
+   */
   async deductCredits(
     userId: string,
     amount: number,
     operationType: OperationType
   ): Promise<Result<CreditBalance, ApplicationError>> {
     try {
-      // 1. Get current balance
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
+      const result = await db.transaction(async (tx) => {
+        // 1. Lock the user row with SELECT FOR UPDATE to prevent concurrent modifications
+        const lockedRows = await tx.execute(
+          sql`SELECT id, credit_balance, grace_used FROM users WHERE id = ${userId} FOR UPDATE`
+        );
+
+        const rows = lockedRows as unknown as Array<{ id: string; credit_balance: number; grace_used: boolean }>;
+        
+        if (!rows || rows.length === 0) {
+          return { error: new NotFoundError('User not found') };
+        }
+
+        const user = rows[0];
+
+        if (user.credit_balance < amount) {
+          return {
+            error: new ApplicationError({
+              code: 'INSUFFICIENT_CREDITS' as any,
+              message: `Insufficient credits. Required: ${amount}, Available: ${user.credit_balance}`,
+              statusCode: 402,
+              details: { required: amount, available: user.credit_balance },
+            }),
+          };
+        }
+
+        // 2. Deduct credits
+        const newBalance = user.credit_balance - amount;
+        const updateData: UserUpdate = { creditBalance: newBalance };
+        await tx
+          .update(users)
+          .set(updateData)
+          .where(eq(users.id, userId));
+
+        // 3. Record transaction
+        const txData: CreditTransactionInsert = {
+          userId,
+          type: 'consumption',
+          amount,
+          balanceAfter: newBalance,
+          operationType,
+        };
+        await tx.insert(creditTransactions).values(txData);
+
+        return {
+          balance: new CreditBalance(
+            new UserId(userId),
+            newBalance,
+            user.grace_used
+          ),
+        };
       });
 
-      if (!user) {
-        return err(new NotFoundError('User not found'));
+      if ('error' in result) {
+        return err(result.error);
       }
 
-      if (user.creditBalance < amount) {
-        return err(new ApplicationError({
-          code: 'INSUFFICIENT_CREDITS' as any,
-          message: `Insufficient credits. Required: ${amount}, Available: ${user.creditBalance}`,
-          statusCode: 402,
-          details: { required: amount, available: user.creditBalance },
-        }));
-      }
-
-      // 2. Atomically deduct and record transaction
-      const newBalance = user.creditBalance - amount;
-      const [updatedUser] = await this.prisma.$transaction([
-        this.prisma.user.update({
-          where: { id: userId },
-          data: {
-            creditBalance: newBalance,
-          },
-        }),
-        this.prisma.creditTransaction.create({
-          data: {
-            id: uuidv4(),
-            userId,
-            type: 'consumption',
-            amount,
-            balanceAfter: newBalance,
-            operationType,
-          } as any,
-        }),
-      ]);
-
-      const balance = new CreditBalance(
-        new UserId(updatedUser.id),
-        updatedUser.creditBalance,
-        updatedUser.graceUsed
-      );
       logger.info('Credits deducted', { userId, amount, operationType });
-      return ok(balance) as any;
+      return ok(result.balance) as Result<CreditBalance, ApplicationError>;
     } catch (error) {
       logger.error('Failed to deduct credits', error);
       return err(new DatabaseError('Failed to deduct credits'));
@@ -105,43 +127,56 @@ export class PrismaCreditsRepository implements ICreditsRepository {
     type: 'grant' | 'purchase' | 'auto_reload'
   ): Promise<Result<CreditBalance, ApplicationError>> {
     try {
-      // 1. Get current balance for validation
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
+      const result = await db.transaction(async (tx) => {
+        // 1. Lock the user row with SELECT FOR UPDATE
+        const lockedRows = await tx.execute(
+          sql`SELECT id, credit_balance, grace_used FROM users WHERE id = ${userId} FOR UPDATE`
+        );
+
+        const rows = lockedRows as unknown as Array<{ id: string; credit_balance: number; grace_used: boolean }>;
+        
+        if (!rows || rows.length === 0) {
+          return { error: new NotFoundError('User not found') };
+        }
+
+        const user = rows[0];
+
+        // 2. Add credits
+        const newBalance = user.credit_balance + amount;
+        
+        const updateData: UserUpdate = { creditBalance: newBalance };
+        if (type === 'grant') {
+          updateData.starterCreditsGranted = true;
+        }
+        await tx
+          .update(users)
+          .set(updateData)
+          .where(eq(users.id, userId));
+
+        // 3. Record transaction
+        const txData: CreditTransactionInsert = {
+          userId,
+          type,
+          amount,
+          balanceAfter: newBalance,
+        };
+        await tx.insert(creditTransactions).values(txData);
+
+        return {
+          balance: new CreditBalance(
+            new UserId(userId),
+            newBalance,
+            user.grace_used
+          ),
+        };
       });
 
-      if (!user) {
-        return err(new NotFoundError('User not found'));
+      if ('error' in result) {
+        return err(result.error);
       }
 
-      // 2. Atomically add and record transaction
-      const newBalance = user.creditBalance + amount;
-      const [updatedUser] = await this.prisma.$transaction([
-        this.prisma.user.update({
-          where: { id: userId },
-          data: {
-            creditBalance: newBalance,
-            ...(type === 'grant' && { starterCreditsGranted: true }),
-          },
-        }),
-        this.prisma.creditTransaction.create({
-          data: {
-            id: uuidv4(),
-            userId,
-            type,
-            amount,
-            balanceAfter: newBalance,
-          } as any,
-        }),
-      ]);
-
-      const balance = new CreditBalance(
-        new UserId(updatedUser.id),
-        updatedUser.creditBalance,
-        updatedUser.graceUsed
-      );
       logger.info('Credits added', { userId, amount, type });
-      return ok(balance) as any;
+      return ok(result.balance) as Result<CreditBalance, ApplicationError>;
     } catch (error) {
       logger.error('Failed to add credits', error);
       return err(new DatabaseError('Failed to add credits'));
@@ -152,29 +187,30 @@ export class PrismaCreditsRepository implements ICreditsRepository {
     transaction: CreditTransaction
   ): Promise<Result<CreditTransaction, ApplicationError>> {
     try {
-      const prismaTransaction = await this.prisma.creditTransaction.create({
-        data: {
-          id: transaction.id,
-          userId: transaction.userId,
-          type: transaction.type,
-          amount: transaction.amount,
-          balanceAfter: 0, // Placeholder
-          operationType: transaction.operationType,
-          metadata: transaction.metadata as any,
-        } as any,
-      });
+      const insertData: CreditTransactionInsert = {
+        userId: transaction.userId,
+        type: transaction.type,
+        amount: transaction.amount,
+        balanceAfter: 0,
+        operationType: transaction.operationType,
+        metadata: transaction.metadata,
+      };
+      const [row] = await db
+        .insert(creditTransactions)
+        .values(insertData)
+        .returning();
 
       const recorded: CreditTransaction = {
-        id: prismaTransaction.id,
-        userId: prismaTransaction.userId,
-        type: prismaTransaction.type as any,
-        amount: prismaTransaction.amount,
-        operationType: (prismaTransaction.operationType as any) || undefined,
-        metadata: prismaTransaction.metadata as any,
-        createdAt: prismaTransaction.createdAt,
+        id: row.id,
+        userId: row.userId,
+        type: row.type as CreditTransaction['type'],
+        amount: row.amount,
+        operationType: (row.operationType as OperationType) || undefined,
+        metadata: row.metadata as CreditTransaction['metadata'],
+        createdAt: row.createdAt,
       };
 
-      return ok(recorded) as any;
+      return ok(recorded) as Result<CreditTransaction, ApplicationError>;
     } catch (error) {
       logger.error('Failed to record transaction', error);
       return err(new DatabaseError('Failed to record transaction'));
@@ -186,23 +222,24 @@ export class PrismaCreditsRepository implements ICreditsRepository {
     limit: number = 50
   ): Promise<Result<CreditTransaction[], ApplicationError>> {
     try {
-      const transactions = await this.prisma.creditTransaction.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-      });
+      const transactions = await db
+        .select()
+        .from(creditTransactions)
+        .where(eq(creditTransactions.userId, userId))
+        .orderBy(desc(creditTransactions.createdAt))
+        .limit(limit);
 
       const result: CreditTransaction[] = transactions.map((t) => ({
         id: t.id,
         userId: t.userId,
-        type: t.type as any,
+        type: t.type as CreditTransaction['type'],
         amount: t.amount,
-        operationType: (t.operationType || undefined) as any,
-        metadata: t.metadata as any,
+        operationType: (t.operationType || undefined) as OperationType | undefined,
+        metadata: t.metadata as CreditTransaction['metadata'],
         createdAt: t.createdAt,
       }));
 
-      return ok(result) as any;
+      return ok(result) as Result<CreditTransaction[], ApplicationError>;
     } catch (error) {
       logger.error('Failed to get transaction history', error);
       return err(new DatabaseError('Failed to get transaction history'));
@@ -211,18 +248,30 @@ export class PrismaCreditsRepository implements ICreditsRepository {
 
   async useGracePeriod(userId: string): Promise<Result<CreditBalance, ApplicationError>> {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
+      const [user] = await db
+        .select({
+          id: users.id,
+          creditBalance: users.creditBalance,
+          graceUsed: users.graceUsed,
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
 
       if (!user) {
         return err(new NotFoundError('User not found'));
       }
 
-      const updatedUser = await this.prisma.user.update({
-        where: { id: userId },
-        data: { graceUsed: true },
-      });
+      const graceUpdateData: UserUpdate = { graceUsed: true };
+      const [updatedUser] = await db
+        .update(users)
+        .set(graceUpdateData)
+        .where(eq(users.id, userId))
+        .returning({
+          id: users.id,
+          creditBalance: users.creditBalance,
+          graceUsed: users.graceUsed,
+        });
 
       const balance = new CreditBalance(
         new UserId(updatedUser.id),
@@ -230,10 +279,13 @@ export class PrismaCreditsRepository implements ICreditsRepository {
         updatedUser.graceUsed
       );
       logger.info('Grace period used', { userId });
-      return ok(balance) as any;
+      return ok(balance) as Result<CreditBalance, ApplicationError>;
     } catch (error) {
       logger.error('Failed to use grace period', error);
       return err(new DatabaseError('Failed to use grace period'));
     }
   }
 }
+
+// Export for backwards compatibility
+export { DrizzleCreditsRepository as PrismaCreditsRepository };

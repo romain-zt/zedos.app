@@ -21,8 +21,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     resolvedUserId = user.id
   }
 
-  const projectRepo = new PrismaProjectRepository(prisma)
-  const adrRepo = new PrismaAdrRepository(prisma)
+  const projectRepo = new PrismaProjectRepository()
+  const adrRepo = new PrismaAdrRepository()
   const useCase = new ListAdrsUseCase(projectRepo, adrRepo)
   const result = await useCase.execute(params.id, resolvedUserId)
 

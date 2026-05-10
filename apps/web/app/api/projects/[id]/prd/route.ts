@@ -13,8 +13,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = (session.user as any).id
 
-  const projectRepo = new PrismaProjectRepository(prisma)
-  const prdRepo = new PrismaPrdRepository(prisma)
+  const projectRepo = new PrismaProjectRepository()
+  const prdRepo = new PrismaPrdRepository()
   const useCase = new GetPrdVersionsUseCase(projectRepo, prdRepo)
   const result = await useCase.execute(params.id, userId)
 
