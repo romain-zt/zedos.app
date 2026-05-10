@@ -61,13 +61,25 @@ As a {{USER_ROLE}}, I want to {{CAPABILITY}} so that {{OUTCOME}}.
 ## Touched Files (predicted)
 
 <!--
-  Best-effort list. Implementation Plan refines to exact paths under the layout in effect.
-  Use layer names, not file paths, when uncertain.
+  Best-effort list. Provide exact paths where possible, with a `(predicted)` annotation.
+  Layer names are acceptable only when the file path is genuinely unknown at story time —
+  but the Implementation Plan MUST refine every layer-only row to an exact path before
+  IP-04 (implementation-readiness-checker.md) will pass.
+
+  Preferred format (exact path):
+    app/api/stripe/webhook/route.ts (predicted, new)
+    lib/credits.ts (predicted, modify)
+
+  Acceptable fallback (layer only, TBD):
+    infrastructure → credits-repository.ts (predicted, layer TBD)
+
+  Do NOT leave this section empty. An empty Touched Files table fails US-04 (checker gate).
+  IP-04 explicitly requires exact paths — layer-only rows at the Story stage do not substitute.
 -->
 
-| Path or layer | Reason |
-|---------------|--------|
-|               |        |
+| Path or layer | Change type | Reason |
+|---------------|-------------|--------|
+|               | new / modify / delete | |
 
 ---
 

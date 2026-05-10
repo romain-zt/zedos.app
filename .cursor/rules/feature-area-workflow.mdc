@@ -281,3 +281,56 @@ Never:
 - Use "we should probably" or speculative language in a Scope Slice boundary definition
 - Mark a Scope Slice as `ready-for-user-stories` while it has unresolved `NEED_HUMAN` flags
 - Treat "PRD READY ENOUGH" as authorization for task slicing
+
+---
+
+## 10. Slice Subtypes
+
+Most Scope Slices follow the standard lifecycle (§5). Two additional subtypes are defined to handle cases where the standard readiness gate would block work that is structurally independent of product-config decisions.
+
+### Standard slice
+
+Default. Follows §5 lifecycle exactly. May not proceed past `NEED_HUMAN: true` without explicit user approval.
+
+### `safety-fix-slice`
+
+A Scope Slice that addresses **structural correctness, concurrency safety, data integrity, or security on already-shipped behavior** — where the fix does not alter any product-visible behavior that depends on the parent Feature Area's open commercial-config blockers.
+
+**When it applies:**
+
+- The parent Feature Area carries `NEED_HUMAN: true` exclusively because of **commercial-config decisions** (e.g., credit quantities, pricing tiers, operator-tunable parameters, feature-flag commitments) that are orthogonal to the fix's surface.
+- The slice itself changes **no behavior that depends on those undecided values** — it only makes existing behavior correct (concurrency-safe, idempotent, non-leaking).
+- The slice's author can explicitly enumerate **each parent FA blocker** and declare it orthogonal to the slice surface (the "Carve-out Justification" field).
+
+**Mechanical rule — when a `safety-fix-slice` may proceed:**
+
+1. The Scope Slice file sets `Subtype: safety-fix-slice`.
+2. The Scope Slice file includes a `Carve-out Justification` section that:
+   - Names every open blocker on the parent FA (by ID: B-NNN).
+   - States explicitly why each blocker does not affect the slice's surface.
+3. The Patch Intent Summary (PIS) for any Plan under this slice lists the carve-out as the **first Approval blocker** — the user must explicitly waive it by replying `approved`.
+4. CC-04 (`NEED_HUMAN` propagation) is satisfied by the carve-out justification for this slice only — the parent FA retains its `NEED_HUMAN: true` until the commercial-config decisions are resolved.
+
+**Scope Slice template addition for `safety-fix-slice`:**
+
+```markdown
+## Subtype
+
+`safety-fix-slice`
+
+## Carve-out Justification
+
+Parent FA blockers declared orthogonal to this slice's surface:
+
+| Blocker ID | Blocker description | Why orthogonal |
+|------------|---------------------|----------------|
+| B-NNN      | <description>       | <reason>       |
+```
+
+**What this subtype does NOT allow:**
+
+- Bypassing `NEED_HUMAN: true` for blockers that **do** affect the slice (e.g., a slice that changes credit burn amounts while B-003 "credit quantity X" is unresolved).
+- Silently proceeding without a PIS approval-blocker declaration.
+- Applying to slices that introduce new product-visible behavior (not just structural correctness).
+
+**Cross-references:** `scope-readiness-checker.md` CC-04 (carve-out exception), `70-execution-bridge.mdc` §3.3 (PIS approval blockers).

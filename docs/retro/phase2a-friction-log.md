@@ -4,7 +4,7 @@ phase: 2a — first dogfood of execution-side .cursor/
 date: 2026-05-10
 author: Cursor agent (Phase 2a planning worker)
 scope: governance / artifacts / templates / checkers / rules — NOT source code
-status: append-only; harvested into Phase 1 polish backlog
+status: HIGH/CRITICAL items resolved in improve-config pass (2026-05-10); MEDIUM/LOW remain open
 ---
 
 # Phase 2a Friction Log
@@ -15,62 +15,76 @@ The intent is **not** to fix `.cursor/` mid-dogfood — see the change-policy ru
 
 ---
 
-## F-01 (CRITICAL) — No "structural / safety-fix" slice path when parent FA is `NEED_HUMAN: true` on commercial-config blockers
+## F-01 (CRITICAL) ✅ RESOLVED — No "structural / safety-fix" slice path when parent FA is `NEED_HUMAN: true` on commercial-config blockers
 
 - **Where:** `feature-area-workflow.mdc` §5 + `scope-readiness-checker.md` CC-04 + `70-execution-bridge.mdc` §1.
 - **Symptom:** `FA-credit-system` is `exploratory` + `NEED_HUMAN: true` because B-003 (operator-config X) and B-004 (burn-tier commitment) are unresolved. Per CC-04, child Slices must propagate `NEED_HUMAN: true`. Per the bridge rule, a Slice may not become `ready-for-user-stories` while `NEED_HUMAN: true`. Per the Architect, a Plan may not be drafted unless the Slice is `ready-for-user-stories`.
   
   But the Phase 2 dogfood subject (concurrency-safety + Stripe webhook) is a **structural correctness fix on already-shipped behavior**. It does not require knowing the value of X or which burn-tier numbers are final — it requires the deduct path to be safe and the credit-grant path to be webhook-driven. The two FA blockers are **commercially orthogonal**.
 - **Workaround taken:** Authored the Slice anyway with `Status: ready-for-user-stories`, with an explicit "Parent FA `NEED_HUMAN` carve-out" section justifying that B-003 / B-004 are commercial-config decisions and do not affect ledger correctness or webhook correctness. Surfaced as the **#1 approval blocker** in the PIS so the user must explicitly waive in writing.
-- **Recommended Phase 1 polish:**
-  1. Add an explicit Slice subtype in `70-execution-bridge.mdc` and `feature-area-workflow.mdc` for "structural / safety / governance fix on already-shipped behavior" — call it `tech-debt-slice` or `safety-fix-slice`. Define when CC-04 may be carved out (parent FA blockers must be **declared orthogonal** to the slice's surface).
-  2. OR add to `scope-readiness-checker.md` a documented exception path: a Slice may be `ready-for-user-stories` despite parent FA `NEED_HUMAN: true` when the slice's `Carve-out Justification` field is filled and the parent FA blockers are explicitly named as orthogonal.
-  3. Either way, document the **mechanical rule** the agent applies. Today the only path is "stop and ask" — which doesn't compose with autonomous loops.
+- **Resolution (improve-config 2026-05-10):**
+  - Added `safety-fix-slice` subtype to `feature-area-workflow.mdc` §10 with full mechanical rules (Carve-out Justification field, PIS approval-blocker requirement, parent FA retains `NEED_HUMAN: true`).
+  - Added CC-04 carve-out exception to `scope-readiness-checker.md` with PASS (carve-out) verdict format and explicit FAIL conditions.
 
 ---
 
-## F-02 (HIGH) — `forbidden_files` in `execution-loop.mdc` §8 includes `prisma/**` and `**/prisma/**` — blocks legitimate `/plan`-side schema-change PROPOSALS
+## F-02 (HIGH) ✅ RESOLVED — `forbidden_files` in `execution-loop.mdc` §8 includes `prisma/**` and `**/prisma/**` — blocks legitimate `/plan`-side schema-change PROPOSALS
 
 - **Where:** `execution-loop.mdc` §8 `forbidden_files` list.
 - **Symptom:** The loop's allowed/forbidden semantics correctly forbid the *autonomous loop* from writing schema. But the rule is cited from many places as the canonical forbidden list for the agent generally. When authoring an Implementation Plan that **proposes** (textually) a `prisma/migrations/<NNNN>_add_webhook_idempotency.../migration.sql` change, the agent has to reason about whether describing the migration in a Plan is also forbidden. Reading carefully shows that `/plan` mode only writes `docs/execution/plans/*.md` — so we're safe — but the rule is unclear about the distinction between "write source-tree files" and "write Implementation Plans that *describe* source-tree changes".
 - **Workaround taken:** Confirmed via `/plan.md` command spec ("No source-tree writes. `/plan` writes only `docs/execution/user-stories/<...>.md` and `docs/execution/plans/<...>.plan.md`") that describing migrations textually is fine. Nothing was actually written to `prisma/`.
-- **Recommended Phase 1 polish:** Add a sentence to `execution-loop.mdc` §8 making the writes-vs-describes distinction explicit, and cross-link from `architect.md` "What you must NOT do" so the Architect agent doesn't second-guess.
+- **Resolution (improve-config 2026-05-10):**
+  - Added "Writes vs. describes distinction" callout block to `execution-loop.mdc` §8 `forbidden_files` entry.
+  - Added clarifying bullet to `architect.md` "What you must NOT do" section with cross-reference to the loop rule.
 
 ---
 
-## F-03 (HIGH) — Patch Intent Summary template lacks a "Preconditions" / "Inherited approval blockers" section
+## F-03 (HIGH) ✅ RESOLVED — Patch Intent Summary template lacks a "Preconditions" / "Inherited approval blockers" section
 
 - **Where:** `.cursor/templates/execution/patch-intent-summary.template.md`.
 - **Symptom:** The PIS template lists `Files to change`, `Patch type`, `Verification plan`, `Safety declarations`, `Approval required`. It has **no slot** for "preconditions the user must accept before `approved` is meaningful" — e.g. "the parent FA's `NEED_HUMAN` carve-out (per Friction Log F-01) must be explicitly waived in this turn". Today an inattentive user could reply `approved` without realising they're also waiving the FA carve-out.
 - **Workaround taken:** Added a new section "Approval blockers (must be answered before `approved` is meaningful)" at the top of the PIS body, ahead of `Files to change`. Documented this addition in the PIS itself so it's clear the deviation from template is intentional.
-- **Recommended Phase 1 polish:** Add a `## Approval blockers` (or `## Preconditions`) section to the PIS template, between `Plan reference` and `Files to change`. Default content: `- None.` Required content when present: a numbered list of explicit waivers/decisions the user is granting by replying `approved`.
+- **Resolution (improve-config 2026-05-10):**
+  - Added `## Approval blockers` section to the PIS template between `## Plan reference` and `## Files to change`.
+  - Default content: `- None.` Detailed comment explains when and how to populate it.
+  - Also added chat-only reminder note to template header and footer (F-09 bonus fix).
 
 ---
 
-## F-04 (HIGH) — User Story template's `Touched Files (predicted)` table allows "layer name" but the Implementation Plan checker IP-04 forbids globs/layer-only paths
+## F-04 (HIGH) ✅ RESOLVED — User Story template's `Touched Files (predicted)` table allows "layer name" but the Implementation Plan checker IP-04 forbids globs/layer-only paths
 
 - **Where:** `user-story.template.md` lines 61–70 vs `implementation-readiness-checker.md` IP-04.
 - **Symptom:** The User Story template explicitly says "Use layer names, not file paths, when uncertain" — encouraging soft predictions. But IP-04 (which gates `/implement`) requires "exact paths under the layout-in-effect" with no globs. Story template wording can lead to a Story that passes US-01..US-06 with vague rows like `application/credits/`, then the Plan author has to guess exact paths because the Story didn't commit to them.
 - **Workaround taken:** Filled the User Story's `Touched Files (predicted)` with both the layer name AND the exact filename (e.g. `app/api/stripe/webhook/route.ts (new)` and `infrastructure → stripe webhook handler`). Doubled the work but kept both checkers happy.
-- **Recommended Phase 1 polish:** Either (a) change the Story template to require best-effort exact paths with `(predicted)` annotation, or (b) add a checker check `US-07` explicitly stating that layer-only rows are PASS at the Story level but the Plan must refine. The current looseness leaves the gap to the Architect's discretion.
+- **Resolution (improve-config 2026-05-10):**
+  - Updated `user-story.template.md` Touched Files comment to require best-effort exact paths with `(predicted)` annotation.
+  - Layer-only rows documented as acceptable fallback only when path is genuinely unknown — with explicit note that IP-04 requires exact paths and the Plan must refine.
+  - Added `Change type` column (new / modify / delete) to the table for better Plan-author guidance.
 
 ---
 
-## F-05 (HIGH) — `implementation-plan.template.md` "Architecture Surface Block" lacks a "Webhook idempotency" row, even though `70-execution-bridge.mdc` §8 lists Stripe Webhook + Idempotency-Key as a load-bearing field
+## F-05 (HIGH) ✅ RESOLVED — `implementation-plan.template.md` "Architecture Surface Block" lacks a "Webhook idempotency" row, even though `70-execution-bridge.mdc` §8 lists Stripe Webhook + Idempotency-Key as a load-bearing field
 
 - **Where:** `implementation-plan.template.md` "Architecture Surface Block" section vs `70-execution-bridge.mdc` §8 table.
 - **Symptom:** The bridge rule §8 explicitly defines a `Payment shape (if money)` row mentioning "Stripe Checkout + Stripe Webhook with `Idempotency-Key`". The Plan template's Surface Block table has a `Payment shape (if money)` row — good — but doesn't break out the **idempotency table choice** (separate `processed_webhook_events` table vs JSON column on Purchase vs DB unique constraint with ON CONFLICT) as a load-bearing decision. For the present Plan, that decision is structural and reviewer-relevant, but the template doesn't surface it.
 - **Workaround taken:** Added a sub-row "Webhook idempotency mechanism" under the "Payment shape" entry in the Plan body, with explicit decision recorded.
-- **Recommended Phase 1 polish:** Extend the Surface Block template with optional sub-rows when `Payment shape` is non-`n/a`: `Webhook idempotency mechanism`, `Webhook signature secret source`, `Reservation vs deduct-after-success choice`. Make these sub-rows visible only when the upstream row is filled.
+- **Resolution (improve-config 2026-05-10):**
+  - Extended `implementation-plan.template.md` Architecture Surface Block with three `↳` sub-rows under `Payment shape (if money)`:
+    - `Webhook idempotency mechanism`
+    - `Webhook signature secret source`
+    - `Reservation vs deduct-after-success`
+  - Each marked `(if Payment shape ≠ n/a)` so they are visually conditional.
 
 ---
 
-## F-06 (MEDIUM) — `78-testing.mdc` §7.2 mandates "concurrent integration test" for credit/payment/quota paths but `vitest.config.ts` has no `test:integration` config and no test-DB harness
+## F-06 (MEDIUM) ✅ RESOLVED — `78-testing.mdc` §7.2 mandates "concurrent integration test" for credit/payment/quota paths but `vitest.config.ts` has no `test:integration` config and no test-DB harness
 
 - **Where:** `zedos/nextjs_space/vitest.config.ts` only declares `include: ['src/**/*.test.ts']` (no `*.integration.ts` glob, no separate config). `78-testing.mdc` §3 mandates `*.integration.ts` files, §6 mandates `test:integration` script, §7.2 mandates concurrent test for ledger.
 - **Symptom:** The Plan must commit to adding a concurrent integration test for the credit ledger (`75-drizzle.mdc` §5 + `78-testing.mdc` §7), but the repo today has no harness for it (no test container, no separate vitest config, no `test:integration` script in `package.json`). The Plan therefore has to **also** add the harness — which is its own chunk of scope.
 - **Workaround taken:** Plan §"Tests" lists the concurrent test file path. Plan §"Out of Scope" notes that the harness setup is included **only minimally** (a single `vitest.integration.config.ts` + a Postgres test-container helper). Plan §"PR Sizing" puts the harness change in PR #2 of the proposed stack, sized accordingly.
-- **Recommended Phase 1 polish:** Either (a) ship a default `vitest.integration.config.ts` template under `.cursor/templates/execution/` that Plans can reference and copy, or (b) carve a separate `tech-debt-slice: testing-harness-bootstrap` slice that's a precondition for any Plan touching `infrastructure/persistence/`. Today, every persistence-touching Plan re-litigates the harness setup.
+- **Resolution (improve-config 2026-05-10):**
+  - Created `.cursor/templates/execution/vitest.integration.config.template.ts` — ready-to-copy config with full inline documentation (include glob, timeout, globalSetup, path aliases, env vars, reporter).
+  - Added "Integration test harness setup" section to `add-test/SKILL.md` explaining the 4-step bootstrap (config file, `test:integration` script, `DATABASE_URL_TEST`, test DB helper) and Plan sizing guidance for first-time setup.
 
 ---
 
