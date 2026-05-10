@@ -512,7 +512,59 @@ try {
     process.exit(2);
   }
 
-  console.log(`\n✅ Agent for "${nextStep}" completed. Tracking PR #${trackingPR.number} should now be ready for review.`);
+  // ---------------------------------------------------------------------------
+  // Post-agent validation
+  // The SDK may return "success" even if the agent didn't complete all required
+  // steps. We verify two hard post-conditions before claiming victory:
+  //   1. Tracking PR is no longer a draft (agent called `gh pr ready`)
+  //   2. Phase status in status.json was updated to "complete"
+  // ---------------------------------------------------------------------------
+  console.log(`\n🔍 Verifying post-agent conditions for "${nextStep}"…`);
+
+  // 1. Check tracking PR draft state
+  let trackingPRIsDraft = true;
+  try {
+    const prJson = execSync(
+      `gh pr view ${trackingPR.number} --repo "${repo}" --json isDraft`,
+      { encoding: "utf8" }
+    ).trim();
+    const prData = JSON.parse(prJson) as { isDraft: boolean };
+    trackingPRIsDraft = prData.isDraft;
+  } catch {
+    console.warn(`⚠️  Could not query tracking PR #${trackingPR.number} state (non-fatal).`);
+  }
+
+  if (trackingPRIsDraft) {
+    console.error(`\n❌ Post-agent check FAILED: tracking PR #${trackingPR.number} is still a draft.`);
+    console.error(`   The agent did NOT call \`gh pr ready ${trackingPR.number}\`.`);
+    console.error(`   Work may be on a branch but PRs were not opened/signaled.`);
+    console.error(`   Manual intervention required — check open branches and open PRs manually.`);
+    process.exit(2);
+  }
+
+  // 2. Check status.json was updated to "complete"
+  const freshStatus = readStatus();
+  let phaseIsComplete = false;
+  if (freshStatus) {
+    switch (nextStep) {
+      case "phase3-p0": phaseIsComplete = freshStatus.phase3?.p0 === "complete"; break;
+      case "phase3-p1": phaseIsComplete = freshStatus.phase3?.p1 === "complete"; break;
+      case "phase3-p2": phaseIsComplete = freshStatus.phase3?.p2 === "complete"; break;
+      case "phase3-p3": phaseIsComplete = freshStatus.phase3?.p3 === "complete"; break;
+      case "fa-account-session": phaseIsComplete = freshStatus.fa_account_session?.slice1 === "complete"; break;
+    }
+  }
+
+  if (!phaseIsComplete) {
+    console.error(`\n❌ Post-agent check FAILED: docs/state/status.json still shows "${nextStep}" as not "complete".`);
+    console.error(`   The agent did not update the status file.`);
+    console.error(`   Tracking PR #${trackingPR.number} state: ${trackingPRIsDraft ? "draft" : "ready"}.`);
+    console.error(`   Manual intervention required.`);
+    process.exit(2);
+  }
+
+  console.log(`✅ Post-agent checks passed: tracking PR #${trackingPR.number} is ready, status.json updated.`);
+  console.log(`\n✅ Agent for "${nextStep}" completed successfully.`);
   process.exit(0);
 } catch (err) {
   if (err instanceof CursorAgentError) {
