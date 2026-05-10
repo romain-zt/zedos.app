@@ -1,0 +1,9 @@
+{
+  "extends": [
+    "@repo/eslint-config/next",
+    "@repo/eslint-config/boundaries"
+  ],
+  "rules": {
+    "@next/next/no-html-link-for-pages": "off"
+  }
+}

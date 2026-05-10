@@ -1,0 +1,28 @@
+# Environment variables — never commit real secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.*.example
+
+# Build artifacts
+.next/
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+
+# Turbo
+.turbo/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

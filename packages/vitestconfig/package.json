@@ -1,0 +1,12 @@
+{
+  "name": "@repo/vitestconfig",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "exports": {
+    "./base": "./base.ts"
+  },
+  "peerDependencies": {
+    "vitest": ">=4.0.0"
+  }
+}

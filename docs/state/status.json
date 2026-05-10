@@ -56,7 +56,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "complete-rules-merge-then-obtain-pis-approval",
+  "next_action": "turborepo-phase0b-ci-secrets-hygiene",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -79,8 +79,33 @@
       "description": "Implementation: 4-PR stack, ~38 files, ~900 lines, 28-36 worker-hours est."
     },
     "3": {
-      "status": "pending",
-      "description": "Turborepo migration: zedos/nextjs_space/ → apps/web/, extract packages, Prisma→Drizzle, NextAuth→better-auth"
+      "status": "phase0-complete",
+      "description": "Turborepo migration: zedos/nextjs_space/ → apps/web/, extract packages, Prisma→Drizzle, NextAuth→better-auth",
+      "phase0": {
+        "status": "complete",
+        "completed_at": "2026-05-10",
+        "pr": "https://github.com/romain-zt/zedos.app/pull/11",
+        "branch": "cursor/turborepo-phase0a-workspace-init-b3a8",
+        "verification": {
+          "tests": "83/83 pass",
+          "typecheck": "clean",
+          "build": "next build succeeds — 31 routes"
+        },
+        "artifacts_created": [
+          "package.json (root)",
+          "pnpm-workspace.yaml",
+          "turbo.jsonc",
+          ".changeset/config.json",
+          ".npmrc",
+          "syncpack.config.js",
+          "tsconfig.base.json",
+          ".gitignore",
+          "packages/tsconfig/ (@repo/tsconfig)",
+          "packages/eslint-config/ (@repo/eslint-config)",
+          "packages/vitestconfig/ (@repo/vitestconfig)",
+          "apps/web/ (moved from zedos/nextjs_space/)"
+        ]
+      }
     },
     "4": {
       "status": "pending",
@@ -105,7 +130,7 @@
     "hooks": 7,
     "other": 2
   },
-  "source_code_location": "zedos/nextjs_space/",
+  "source_code_location": "apps/web/",
   "post_migration_location": "apps/web/ + packages/*",
   "phase3_planning": {
     "status": "complete",
@@ -145,11 +170,11 @@
       "implementation_plan_phase0": {
         "path": "docs/execution/plans/turborepo-migration--phase-0-scaffold.plan.md",
         "status": "written",
-        "plan_status": "proposed",
-        "approval_status": "pending",
+        "plan_status": "executed-phase0a",
+        "approval_status": "executed-by-user-instruction",
         "pr_stack": [
-          "cursor/turborepo-phase0a-workspace-init",
-          "cursor/turborepo-phase0b-ci-secrets"
+          "cursor/turborepo-phase0a-workspace-init-b3a8 (PR #11 — OPEN)",
+          "cursor/turborepo-phase0b-ci-secrets-b3a8 (pending)"
         ]
       }
     },
