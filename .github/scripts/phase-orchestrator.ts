@@ -287,6 +287,143 @@ function markInProgress(status: StatusJson, step: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Preflight — .cursor/ infrastructure readiness check
+// ---------------------------------------------------------------------------
+// Before firing an execution agent, verify that the required .cursor/ artifacts
+// exist. If any are missing, fire a setup agent first (like hiring before building).
+//
+// To add requirements for a new phase, add an entry to PHASE_REQUIREMENTS below.
+
+interface PhaseRequirements {
+  agents?: string[];     // .cursor/agents/execution/<name>.md
+  skills?: string[];     // .cursor/skills/execution/<name>/SKILL.md
+  rules?: string[];      // .cursor/rules/<name>
+  commands?: string[];   // .cursor/commands/<name>.md
+}
+
+const PHASE_REQUIREMENTS: Record<string, PhaseRequirements> = {
+  "phase3-p1": {
+    agents: ["monorepo-explorer", "monorepo-analyst"],
+    skills: ["explore-monorepo"],
+    rules: ["71-monorepo-context.mdc"],
+  },
+  "phase3-p2": {
+    agents: ["drizzle-persistence", "domain-guardian"],
+    skills: ["add-drizzle-migration", "add-driven-adapter"],
+    rules: ["75-drizzle.mdc"],
+  },
+  "phase3-p3": {
+    agents: ["auth-better-auth", "nextjs-routes"],
+    skills: ["add-better-auth-flow", "add-route-handler"],
+    rules: ["76-better-auth.mdc", "77-nextjs.mdc"],
+  },
+  "fa-account-session": {
+    agents: ["auth-better-auth", "nextjs-routes", "security-pii"],
+    skills: ["add-better-auth-flow", "add-page-route", "add-server-action"],
+    rules: ["76-better-auth.mdc", "77-nextjs.mdc"],
+    commands: ["implement", "review"],
+  },
+};
+
+async function runPreflight(nextStep: string): Promise<boolean> {
+  const requirements = PHASE_REQUIREMENTS[nextStep];
+  if (!requirements) {
+    console.log(`✅ Preflight: no .cursor/ requirements declared for "${nextStep}" — proceeding.`);
+    return true;
+  }
+
+  const cwd = process.cwd();
+  const missing: Required<PhaseRequirements> = { agents: [], skills: [], rules: [], commands: [] };
+
+  for (const a of requirements.agents ?? []) {
+    if (!fs.existsSync(path.join(cwd, `.cursor/agents/execution/${a}.md`))) {
+      missing.agents.push(`.cursor/agents/execution/${a}.md`);
+    }
+  }
+  for (const s of requirements.skills ?? []) {
+    if (!fs.existsSync(path.join(cwd, `.cursor/skills/execution/${s}/SKILL.md`))) {
+      missing.skills.push(`.cursor/skills/execution/${s}/SKILL.md`);
+    }
+  }
+  for (const r of requirements.rules ?? []) {
+    if (!fs.existsSync(path.join(cwd, `.cursor/rules/${r}`))) {
+      missing.rules.push(`.cursor/rules/${r}`);
+    }
+  }
+  for (const c of requirements.commands ?? []) {
+    if (!fs.existsSync(path.join(cwd, `.cursor/commands/${c}.md`))) {
+      missing.commands.push(`.cursor/commands/${c}.md`);
+    }
+  }
+
+  const allMissing = [
+    ...missing.agents,
+    ...missing.skills,
+    ...missing.rules,
+    ...missing.commands,
+  ];
+
+  if (allMissing.length === 0) {
+    console.log(`✅ Preflight: all .cursor/ artifacts present for "${nextStep}" — proceeding.`);
+    return true;
+  }
+
+  console.log(`\n🔧 Preflight: ${allMissing.length} missing .cursor/ artifact(s) for "${nextStep}":`);
+  allMissing.forEach(f => console.log(`   - ${f}`));
+  console.log(`\n   Firing setup agent to create missing artifacts first…\n`);
+
+  const setupPrompt = `
+Read docs/state/HANDOFF.md for project context.
+The phase about to execute is: "${nextStep}"
+
+The following .cursor/ artifacts are MISSING and must be created BEFORE execution begins.
+Create each one now, following the conventions and voice of the existing artifacts in .cursor/.
+
+Missing artifacts:
+${allMissing.map(f => `- ${f}`).join('\n')}
+
+Guidelines:
+- For agents: follow the structure of .cursor/agents/execution/architect.md (purpose, inputs, outputs, hard-stop conditions, rules enforced)
+- For skills: follow the structure of existing skills in .cursor/skills/execution/ (≤500 lines, SKILL.md format)
+- For rules: follow the .mdc structure and numbering convention of existing .cursor/rules/ files
+- For commands: follow the structure of .cursor/commands/implement.md
+- Cross-reference existing artifacts where relevant — do not duplicate content
+- Do NOT touch source code or docs/state/ files
+- Voice: precise, declarative, no fluff — mirror the existing .cursor/ tone
+
+When done, commit with:
+  git add .cursor/
+  git commit -m "ci: add .cursor/ setup for ${nextStep} [skip ci]"
+  git push
+`.trim();
+
+  try {
+    const result = await Agent.prompt(setupPrompt, {
+      apiKey: apiKey!,
+      cloud: {
+        repos: [{ url: `https://github.com/${repo}` }],
+        autoCreatePR: false,
+        skipReviewerRequest: true,
+      },
+    });
+
+    if (result.status === "error") {
+      console.error(`❌ Preflight setup agent failed for "${nextStep}". Check Cursor dashboard.`);
+      return false;
+    }
+
+    console.log(`✅ Preflight setup agent completed. .cursor/ artifacts are now in place.`);
+    return true;
+  } catch (err) {
+    if (err instanceof CursorAgentError) {
+      console.error(`❌ Preflight setup agent failed to start: ${err.message}`);
+      return false;
+    }
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -318,6 +455,13 @@ console.log(`   Firing Cursor cloud agent…\n`);
 
 // Mark in-progress before firing (idempotency guard for concurrent runs)
 markInProgress(status, nextStep);
+
+// Preflight: ensure .cursor/ has everything needed before execution starts
+const preflightOk = await runPreflight(nextStep);
+if (!preflightOk) {
+  console.error(`❌ Preflight failed for "${nextStep}". Halting to avoid executing without required infrastructure.`);
+  process.exit(2);
+}
 
 try {
   const result = await Agent.prompt(prompt, {
