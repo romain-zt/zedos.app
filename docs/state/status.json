@@ -6,7 +6,7 @@
     "p0": "complete",
     "p1": "complete",
     "p2": "complete",
-    "p3": "in-progress"
+    "p3": "complete"
   },
   "fa_account_session": {
     "slice1": "not-started"
@@ -66,7 +66,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "turborepo-phase3-better-auth-migration",
+  "next_action": "phase3-complete-ready-for-phase4",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
