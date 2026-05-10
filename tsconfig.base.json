@@ -12,6 +12,9 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@repo/db": ["packages/db/src/index.ts"]
+    }
   }
 }
