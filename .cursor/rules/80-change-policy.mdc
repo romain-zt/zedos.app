@@ -55,6 +55,8 @@ EXECUTION mode is entered explicitly via one of these commands:
 | Command | Permitted changes |
 |---|---|
 | `/explore` | Read-only — no writes |
+| `/evol <description>` | Intake for product evolution (design fixes, UX improvements, feature enhancements). Small changes route to `/fix`; larger ones append a `candidate` row to `docs/WORK_QUEUE.md` + `docs/EXECUTION_LOG.md` (after `approved`) |
+| `/bug <description>` | Intake for bug reports. Small non-critical bugs route to `/fix`; critical/data-integrity/security bugs append rows to `docs/BLOCKERS.md`, `docs/WORK_QUEUE.md`, `docs/POINTS_OF_ATTENTION.md` + `docs/EXECUTION_LOG.md` (after `approved`) |
 | `/plan <slice-path>` | `docs/execution/plans/<...>.plan.md` (after explicit approval of the proposal) |
 | `/implement <plan-path>` | Source code under the layout in effect (`zedos/nextjs_space/**` or `apps/**` + `packages/**`), within the Plan's `Touched Files` allow-list, after Patch Intent Summary `approved` |
 | `/fix <issue>` | Same source-code authority as `/implement` but scoped to a smaller change |
@@ -81,7 +83,7 @@ The agent does not switch modes silently. Mode transitions:
 | From | To | Triggered by |
 |---|---|---|
 | CHAT | DISCOVERY | User runs a `/prd` or `/feature-area` mode |
-| DISCOVERY | EXECUTION | User runs `/plan`, `/implement`, `/fix`, `/commit`, `/pr`, `/babysit`, `/split`, or `/improve-config` |
+| DISCOVERY | EXECUTION | User runs `/evol`, `/bug`, `/plan`, `/implement`, `/fix`, `/commit`, `/pr`, `/babysit`, `/split`, or `/improve-config` |
 | EXECUTION | DISCOVERY | User runs a `/prd` or `/feature-area` mode (mid-implementation: agent stops, asks if discovery is intentional) |
 | any | CHAT | User asks a question with no command |
 
