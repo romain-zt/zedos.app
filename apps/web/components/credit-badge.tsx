@@ -15,7 +15,7 @@ export function CreditBadge() {
         const res = await fetch('/api/credits')
         if (res?.ok) {
           const data = await res.json()
-          setBalance(data?.balance ?? 0)
+          setBalance(data?.creditBalance ?? 0)
         }
       } catch {
         // Silently fail

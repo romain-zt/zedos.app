@@ -36,9 +36,9 @@ export default function CreditsPage() {
         ])
         if (credRes?.ok) {
           const data = await credRes.json()
-          setBalance(data?.balance ?? 0)
+          setBalance(data?.creditBalance ?? 0)
           setGraceUsed(data?.graceUsed ?? false)
-          setTransactions(data?.transactions ?? [])
+          setTransactions(data?.recentTransactions ?? [])
         }
         if (packRes?.ok) {
           const data = await packRes.json()
