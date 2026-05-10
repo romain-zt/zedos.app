@@ -25,8 +25,8 @@ export async function POST(
   const userId = await resolveUserId(session)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const projectRepo = new PrismaProjectRepository(prisma)
-  const prdRepo = new PrismaPrdRepository(prisma)
+  const projectRepo = new PrismaProjectRepository()
+  const prdRepo = new PrismaPrdRepository()
   const useCase = new CheckPhaseUseCase(projectRepo, prdRepo)
   const result = await useCase.execute(params.id, userId)
 

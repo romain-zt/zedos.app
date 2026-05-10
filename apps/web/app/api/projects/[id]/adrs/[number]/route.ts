@@ -27,8 +27,8 @@ export async function GET(
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const adrNumber = parseInt(params.number, 10)
-  const projectRepo = new PrismaProjectRepository(prisma)
-  const adrRepo = new PrismaAdrRepository(prisma)
+  const projectRepo = new PrismaProjectRepository()
+  const adrRepo = new PrismaAdrRepository()
   const useCase = new GetAdrUseCase(projectRepo, adrRepo)
   const result = await useCase.execute(params.id, userId, adrNumber)
 
@@ -49,8 +49,8 @@ export async function PATCH(
 
   const body = await req.json()
   const adrNumber = parseInt(params.number, 10)
-  const projectRepo = new PrismaProjectRepository(prisma)
-  const adrRepo = new PrismaAdrRepository(prisma)
+  const projectRepo = new PrismaProjectRepository()
+  const adrRepo = new PrismaAdrRepository()
   const useCase = new UpdateAdrUseCase(projectRepo, adrRepo)
   const result = await useCase.execute({
     projectId: params.id,

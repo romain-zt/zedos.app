@@ -1,31 +1,34 @@
 /**
- * Prisma User Repository Adapter
+ * Drizzle User Repository Adapter
  */
 
 import { IUserRepository } from '@domain/user/user-repository';
 import { User, Email } from '@domain/user/user';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError, DatabaseError } from '@shared/errors/application-error';
-import { PrismaClient } from '@prisma/client';
+import { db, users, eq, type UserUpdate, type NewUserRow } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'UserRepository' });
 
-export class PrismaUserRepository implements IUserRepository {
-  constructor(private prisma: PrismaClient) {}
+export class DrizzleUserRepository implements IUserRepository {
+  // Constructor kept for API compatibility - argument is ignored since we use the singleton db
+  constructor(_db?: unknown) {}
 
   async findByEmail(email: Email): Promise<Result<User, ApplicationError>> {
     try {
-      const prismaUser = await this.prisma.user.findUnique({
-        where: { email: email.value },
-      });
+      const [row] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email.value))
+        .limit(1);
 
-      if (!prismaUser) {
+      if (!row) {
         return err(new NotFoundError('User not found'));
       }
 
-      const user = this.mapToDomain(prismaUser);
-      return ok(user) as any;
+      const user = this.mapToDomain(row);
+      return ok(user) as Result<User, ApplicationError>;
     } catch (error) {
       logger.error('Failed to find user by email', error);
       return err(new DatabaseError('Failed to find user'));
@@ -34,16 +37,18 @@ export class PrismaUserRepository implements IUserRepository {
 
   async findById(userId: string): Promise<Result<User, ApplicationError>> {
     try {
-      const prismaUser = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
+      const [row] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
 
-      if (!prismaUser) {
+      if (!row) {
         return err(new NotFoundError('User not found'));
       }
 
-      const user = this.mapToDomain(prismaUser);
-      return ok(user) as any;
+      const user = this.mapToDomain(row);
+      return ok(user) as Result<User, ApplicationError>;
     } catch (error) {
       logger.error('Failed to find user by id', error);
       return err(new DatabaseError('Failed to find user'));
@@ -52,21 +57,23 @@ export class PrismaUserRepository implements IUserRepository {
 
   async create(user: User): Promise<Result<User, ApplicationError>> {
     try {
-      const prismaUser = await this.prisma.user.create({
-        data: {
-          id: user.id,
-          email: user.email,
-          name: user.name || '',
-          passwordHash: user.passwordHash,
-          creditBalance: user.creditBalance,
-          graceUsed: user.graceUsed,
-          starterCreditsGranted: user.starterCreditsGranted,
-        },
-      });
+      const insertData: NewUserRow = {
+        id: user.id,
+        email: user.email,
+        name: user.name || '',
+        passwordHash: user.passwordHash,
+        creditBalance: user.creditBalance,
+        graceUsed: user.graceUsed,
+        starterCreditsGranted: user.starterCreditsGranted,
+      };
+      const [row] = await db
+        .insert(users)
+        .values(insertData)
+        .returning();
 
-      const createdUser = this.mapToDomain(prismaUser);
+      const createdUser = this.mapToDomain(row);
       logger.info('User created', { userId: user.id });
-      return ok(createdUser) as any;
+      return ok(createdUser) as Result<User, ApplicationError>;
     } catch (error) {
       logger.error('Failed to create user', error);
       return err(new DatabaseError('Failed to create user'));
@@ -75,38 +82,46 @@ export class PrismaUserRepository implements IUserRepository {
 
   async update(user: User): Promise<Result<User, ApplicationError>> {
     try {
-      const prismaUser = await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          email: user.email,
-          name: user.name || '',
-          creditBalance: user.creditBalance,
-          graceUsed: user.graceUsed,
-          starterCreditsGranted: user.starterCreditsGranted,
-          updatedAt: new Date(),
-        },
-      });
+      const updateData: UserUpdate = {
+        email: user.email,
+        name: user.name || '',
+        creditBalance: user.creditBalance,
+        graceUsed: user.graceUsed,
+        starterCreditsGranted: user.starterCreditsGranted,
+      };
+      const [row] = await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, user.id))
+        .returning();
 
-      const updatedUser = this.mapToDomain(prismaUser);
+      if (!row) {
+        return err(new NotFoundError('User not found'));
+      }
+
+      const updatedUser = this.mapToDomain(row);
       logger.info('User updated', { userId: user.id });
-      return ok(updatedUser) as any;
+      return ok(updatedUser) as Result<User, ApplicationError>;
     } catch (error) {
       logger.error('Failed to update user', error);
       return err(new DatabaseError('Failed to update user'));
     }
   }
 
-  private mapToDomain(prismaUser: any): User {
+  private mapToDomain(row: typeof users.$inferSelect): User {
     return {
-      id: prismaUser.id,
-      email: prismaUser.email,
-      name: prismaUser.name || null,
-      passwordHash: prismaUser.passwordHash,
-      creditBalance: prismaUser.creditBalance,
-      graceUsed: prismaUser.graceUsed,
-      starterCreditsGranted: prismaUser.starterCreditsGranted,
-      createdAt: prismaUser.createdAt,
-      updatedAt: prismaUser.updatedAt,
+      id: row.id,
+      email: row.email,
+      name: row.name || null,
+      passwordHash: row.passwordHash,
+      creditBalance: row.creditBalance,
+      graceUsed: row.graceUsed,
+      starterCreditsGranted: row.starterCreditsGranted,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     };
   }
 }
+
+// Export for backwards compatibility
+export { DrizzleUserRepository as PrismaUserRepository };
