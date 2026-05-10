@@ -3,8 +3,8 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
-import { prisma } from '@/lib/prisma'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
+import { db, users, eq } from '@repo/db'
 import { GetProjectUseCase } from '@application/project/get-project-usecase'
 import { UpdateProjectUseCase } from '@application/project/update-project-usecase'
 import { DeleteProjectUseCase } from '@application/project/delete-project-usecase'
@@ -18,19 +18,15 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   const userId = getSessionUserId(session)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const repo = new PrismaProjectRepository(prisma)
+  const repo = new DrizzleProjectRepository()
+  const useCase = new GetProjectUseCase(repo)
+  const result = await useCase.execute(params.id, userId)
 
-  // Use the full query with includes for backwards compat with frontend
-  const project = await prisma.project.findFirst({
-    where: { id: params.id, userId },
-    include: {
-      prdVersions: { orderBy: { versionNumber: 'desc' } },
-      _count: { select: { questionHistory: true } },
-    },
-  })
-
-  if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-  return NextResponse.json(project)
+  if (result.isErr()) {
+    const e = result.error as any
+    return NextResponse.json({ error: e.message }, { status: e.statusCode || 404 })
+  }
+  return NextResponse.json(result.unwrap())
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -39,7 +35,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const repo = new PrismaProjectRepository(prisma)
+  const repo = new DrizzleProjectRepository()
   const useCase = new UpdateProjectUseCase(repo)
   const result = await useCase.execute({
     projectId: params.id,
@@ -60,7 +56,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
   const userId = getSessionUserId(session)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const repo = new PrismaProjectRepository(prisma)
+  const repo = new DrizzleProjectRepository()
   const useCase = new DeleteProjectUseCase(repo)
   const result = await useCase.execute(params.id, userId)
 

@@ -3,9 +3,8 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
-import { prisma } from '@/lib/prisma'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
-import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
+import { DrizzlePrdRepository } from '@infrastructure/persistence/prd-repository'
 import { GetPrdVersionsUseCase } from '@application/prd/get-prd-versions-usecase'
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
@@ -13,8 +12,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = (session.user as any).id
 
-  const projectRepo = new PrismaProjectRepository(prisma)
-  const prdRepo = new PrismaPrdRepository(prisma)
+  const projectRepo = new DrizzleProjectRepository()
+  const prdRepo = new DrizzlePrdRepository()
   const useCase = new GetPrdVersionsUseCase(projectRepo, prdRepo)
   const result = await useCase.execute(params.id, userId)
 

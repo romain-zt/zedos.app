@@ -1,6 +1,6 @@
-export * from './user-repository';
-export * from './credits-repository';
-export * from './project-repository';
-export * from './prd-repository';
-export * from './adr-repository';
+export { DrizzleUserRepository, DrizzleUserRepository as PrismaUserRepository } from './user-repository';
+export { DrizzleCreditsRepository, DrizzleCreditsRepository as PrismaCreditsRepository } from './credits-repository';
+export { DrizzleProjectRepository, DrizzleProjectRepository as PrismaProjectRepository } from './project-repository';
+export { DrizzlePrdRepository, DrizzlePrdRepository as PrismaPrdRepository } from './prd-repository';
+export { DrizzleAdrRepository, DrizzleAdrRepository as PrismaAdrRepository } from './adr-repository';
 

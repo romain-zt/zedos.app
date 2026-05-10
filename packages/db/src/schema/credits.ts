@@ -29,3 +29,15 @@ export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type NewCreditTransaction = typeof creditTransactions.$inferInsert;
 export type ProcessedWebhookEvent = typeof processedWebhookEvents.$inferSelect;
 export type NewProcessedWebhookEvent = typeof processedWebhookEvents.$inferInsert;
+
+export type CreditTransactionInsertFull = {
+  id?: string;
+  userId: string;
+  type: string;
+  amount: number;
+  balanceAfter: number;
+  operationType?: string | null;
+  metadata?: unknown;
+  correlationId?: string | null;
+  createdAt?: Date;
+};

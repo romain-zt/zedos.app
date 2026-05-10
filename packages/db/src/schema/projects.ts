@@ -15,3 +15,16 @@ export const projects = pgTable('projects', {
 
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+
+export type ProjectInsertFull = {
+  id?: string;
+  userId: string;
+  name: string;
+  description?: string | null;
+  phase?: string;
+  architectureStartedAt?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+export type ProjectUpdateFull = Partial<Omit<ProjectInsertFull, 'id' | 'userId' | 'createdAt'>>;

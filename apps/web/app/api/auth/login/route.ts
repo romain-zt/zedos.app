@@ -11,8 +11,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { SignInRequestSchema } from '@contracts/auth/auth-contracts';
 import { SignInUseCase } from '@application/auth/sign-in-usecase';
-import { PrismaUserRepository } from '@infrastructure/persistence/user-repository';
-import { prisma } from '@/lib/prisma';
+import { DrizzleUserRepository } from '@infrastructure/persistence/user-repository';
 import { ApplicationError } from '@shared/errors/application-error';
 
 export async function POST(request: NextRequest) {
@@ -32,7 +31,7 @@ export async function POST(request: NextRequest) {
     const input = parseResult.data as any;
 
     // 2. Instantiate repository
-    const userRepository = new PrismaUserRepository(prisma);
+    const userRepository = new DrizzleUserRepository();
 
     // 3. Execute use-case
     const useCase = new SignInUseCase(userRepository);

@@ -10,8 +10,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
-import { PrismaCreditsRepository } from '@infrastructure/persistence/credits-repository';
-import { prisma } from '@/lib/prisma';
+import { DrizzleCreditsRepository } from '@infrastructure/persistence/credits-repository';
 import { ApplicationError } from '@shared/errors/application-error';
 
 export async function GET() {
@@ -24,7 +23,7 @@ export async function GET() {
     const userId = (session.user as any).id;
 
     // 2. Instantiate repository
-    const creditsRepository = new PrismaCreditsRepository(prisma);
+    const creditsRepository = new DrizzleCreditsRepository();
 
     // 3. Get balance
     const balanceResult = await creditsRepository.getBalance(userId);

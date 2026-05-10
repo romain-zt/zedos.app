@@ -4,9 +4,9 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
-import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
-import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
+import { DrizzlePrdRepository } from '@infrastructure/persistence/prd-repository'
+import { DrizzleAdrRepository } from '@infrastructure/persistence/adr-repository'
 import { ReadinessScoreUseCase } from '@application/adr/readiness-score-usecase'
 
 async function resolveUserId(session: any): Promise<string | null> {
@@ -26,9 +26,9 @@ export async function GET(
   const userId = await resolveUserId(session)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const projectRepo = new PrismaProjectRepository(prisma)
-  const prdRepo = new PrismaPrdRepository(prisma)
-  const adrRepo = new PrismaAdrRepository(prisma)
+  const projectRepo = new DrizzleProjectRepository()
+  const prdRepo = new DrizzlePrdRepository()
+  const adrRepo = new DrizzleAdrRepository()
   const useCase = new ReadinessScoreUseCase(projectRepo, prdRepo, adrRepo)
   const result = await useCase.execute(params.id, userId)
 

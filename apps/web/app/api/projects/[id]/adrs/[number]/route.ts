@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
-import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
+import { DrizzleAdrRepository } from '@infrastructure/persistence/adr-repository'
 import { GetAdrUseCase } from '@application/adr/get-adr-usecase'
 import { UpdateAdrUseCase } from '@application/adr/update-adr-usecase'
 
@@ -27,8 +27,8 @@ export async function GET(
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const adrNumber = parseInt(params.number, 10)
-  const projectRepo = new PrismaProjectRepository(prisma)
-  const adrRepo = new PrismaAdrRepository(prisma)
+  const projectRepo = new DrizzleProjectRepository()
+  const adrRepo = new DrizzleAdrRepository()
   const useCase = new GetAdrUseCase(projectRepo, adrRepo)
   const result = await useCase.execute(params.id, userId, adrNumber)
 
@@ -49,8 +49,8 @@ export async function PATCH(
 
   const body = await req.json()
   const adrNumber = parseInt(params.number, 10)
-  const projectRepo = new PrismaProjectRepository(prisma)
-  const adrRepo = new PrismaAdrRepository(prisma)
+  const projectRepo = new DrizzleProjectRepository()
+  const adrRepo = new DrizzleAdrRepository()
   const useCase = new UpdateAdrUseCase(projectRepo, adrRepo)
   const result = await useCase.execute({
     projectId: params.id,

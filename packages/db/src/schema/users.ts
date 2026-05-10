@@ -15,3 +15,17 @@ export const users = pgTable('users', {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+export type UserInsertFull = {
+  id?: string;
+  email: string;
+  passwordHash: string;
+  name: string;
+  creditBalance?: number;
+  starterCreditsGranted?: boolean;
+  graceUsed?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+export type UserUpdateFull = Partial<Omit<UserInsertFull, 'id' | 'createdAt'>>;
