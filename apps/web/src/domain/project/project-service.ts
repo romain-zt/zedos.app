@@ -43,25 +43,46 @@ export class ProjectDomainService {
   /**
    * Check if PRD content satisfies stability requirements for phase transition.
    * Returns the count of filled sections and whether all are filled.
+   *
+   * Supports two formats:
+   * - sections-array: { sections: [{ id, content, ... }] } (AI-generated)
+   * - flat-key: { overview: "...", problem: "...", ... } (legacy)
    */
   static checkPrdStability(prdContent: Record<string, unknown> | null): {
     isStable: boolean;
     filledCount: number;
     totalRequired: number;
   } {
+    const totalRequired = PRD_REQUIRED_SECTIONS.length;
+
     if (!prdContent) {
-      return { isStable: false, filledCount: 0, totalRequired: PRD_REQUIRED_SECTIONS.length };
+      return { isStable: false, filledCount: 0, totalRequired };
     }
 
+    // Sections-array format: { sections: [{ id, content }] }
+    if (Array.isArray(prdContent.sections)) {
+      const sections = prdContent.sections as Array<Record<string, unknown>>;
+      const filledCount = sections.filter((s) => {
+        const content = s.content;
+        return content && typeof content === 'string' && content.trim().length > 0;
+      }).length;
+      return {
+        isStable: filledCount >= totalRequired,
+        filledCount,
+        totalRequired,
+      };
+    }
+
+    // Legacy flat-key format
     const filledCount = PRD_REQUIRED_SECTIONS.filter((section) => {
       const val = prdContent[section];
       return val && (typeof val === 'string' ? val.trim().length > 0 : true);
     }).length;
 
     return {
-      isStable: filledCount === PRD_REQUIRED_SECTIONS.length,
+      isStable: filledCount === totalRequired,
       filledCount,
-      totalRequired: PRD_REQUIRED_SECTIONS.length,
+      totalRequired,
     };
   }
 
