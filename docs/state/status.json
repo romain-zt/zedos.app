@@ -219,9 +219,6 @@
       "orm_migration": "Prisma -> Drizzle (Phase 2)",
       "auth_migration": "NextAuth -> better-auth with API keys for v2/v3 (Phase 3)"
     },
-    "next_action": "Obtain user approval of phase-0-scaffold.plan.md before /implement"
-  },
-  "phase3": {
-    "p0": "in-progress"
+    "next_action": "Execute phase3-p1 (package extraction) — plan is written"
   }
 }
