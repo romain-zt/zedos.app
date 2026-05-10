@@ -4,6 +4,9 @@
 
 | ID | Status | Priority | Question | Source note | Blocks |
 |---|---|---:|---|---|---|
+| Q-021 | open | 3 | Is email verification required before a founder's first access to the signed-in web app after signup? If yes, a "check your inbox" intermediate state must be added and the sign-up flow becomes two-step. If no, signup leads directly to the signed-in dashboard. | FA-account-session redefinition (2026-05-10) | `account-session--sign-up-sign-in` UX states; slice promotion to `ready-for-user-stories` |
+| Q-022 | open | 2 | What is the expected product behavior when a founder's session expires during an active clarification or PRD editing session — is unsaved in-progress work preserved (requiring auto-save or draft recovery across FAs), or is data loss on expiry acceptable for v0? | FA-account-session redefinition (2026-05-10) | `account-session--session-persistence-protected-routes` acceptance outcome; cross-FA dependencies (PRD versioning, guided clarification) |
+| Q-023 | open | 4 | Is profile editing (display name, password change, email change) a v0 requirement for the account-session Feature Area, or is it deferred to a future release? If required, a third scope slice must be defined for this FA. | FA-account-session redefinition (2026-05-10) | FA-account-session completeness; whether a third scope slice is needed |
 
 ## Answered
 
