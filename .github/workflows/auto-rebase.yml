@@ -1,18 +1,14 @@
-name: PR Cascade
+name: Auto-rebase on Conflict
 
-# When a PR merges into main:
-# 1. Find open draft PRs whose base = the merged head branch (stacked PR pattern)
-# 2. Rebase them onto main — auto-resolving conflicts (branch wins on code, pnpm-lock regenerated)
-# 3. Merge them directly — keeping the chain moving overnight without human intervention
+# After every push to main, find open PRs that now have merge conflicts
+# and automatically rebase them — keeping the overnight chain unblocked.
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [main]
 
 jobs:
-  cascade:
-    if: github.event.pull_request.merged == true
+  auto-rebase:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,7 +16,6 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
-      MERGED_HEAD: ${{ github.event.pull_request.head.ref }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,28 +30,26 @@ jobs:
         with:
           version: latest
 
-      - name: Find, rebase, and merge stacked PRs
+      - name: Rebase all conflicted open PRs
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-          echo "Merged branch: $MERGED_HEAD"
-
-          DRAFT_PRS=$(gh pr list \
+          # Find all open PRs (non-draft too) that target main and have conflicts
+          CONFLICTED=$(gh pr list \
             --repo "$REPO" \
             --state open \
-            --draft \
-            --base "$MERGED_HEAD" \
-            --json number,headRefName,title \
-            --jq '.[] | "\(.number) \(.headRefName) \(.title)"')
+            --base main \
+            --json number,headRefName,mergeable \
+            --jq '.[] | select(.mergeable == "CONFLICTING") | "\(.number) \(.headRefName)"')
 
-          if [ -z "$DRAFT_PRS" ]; then
-            echo "No stacked draft PRs found with base '$MERGED_HEAD'."
+          if [ -z "$CONFLICTED" ]; then
+            echo "✅ No conflicted PRs found."
             exit 0
           fi
 
-          echo "Stacked PRs to advance:"
-          echo "$DRAFT_PRS"
+          echo "Conflicted PRs to rebase:"
+          echo "$CONFLICTED"
 
           while IFS= read -r line; do
             PR_NUM=$(echo "$line" | awk '{print $1}')
@@ -64,15 +57,12 @@ jobs:
             echo ""
             echo "━━━ PR #$PR_NUM ($PR_BRANCH) ━━━"
 
-            # Rebase branch onto current main, auto-resolving conflicts
-            echo "→ Fetching and rebasing onto main"
             git fetch origin "$PR_BRANCH"
             git checkout "$PR_BRANCH"
             git pull origin "$PR_BRANCH" --ff-only 2>/dev/null || true
 
             if ! git rebase origin/main -X ours; then
-              echo "→ Conflict detected — resolving pnpm-lock.yaml by regenerating"
-              # For pnpm-lock.yaml conflicts: always regenerate (never merge manually)
+              # pnpm-lock.yaml: always regenerate
               if git diff --name-only --diff-filter=U | grep -q "pnpm-lock.yaml"; then
                 rm -f pnpm-lock.yaml
                 git checkout --ours . 2>/dev/null || true
@@ -80,34 +70,23 @@ jobs:
                 GIT_EDITOR=true git rebase --continue || true
               fi
 
-              # If still conflicted, force-resolve all remaining with ours (branch wins)
+              # Remaining conflicts: branch wins
               while git diff --name-only --diff-filter=U | grep -q .; do
-                echo "→ Force-resolving remaining conflicts (branch wins)"
                 git diff --name-only --diff-filter=U | xargs git checkout --ours
                 git add -A
                 GIT_EDITOR=true git rebase --continue || break
               done
             fi
 
-            # Regenerate pnpm-lock.yaml fresh (avoids any lock drift)
-            echo "→ Regenerating pnpm-lock.yaml"
+            # Regenerate lock file
             pnpm install --frozen-lockfile=false --silent 2>/dev/null || true
             if [ -n "$(git diff --name-only pnpm-lock.yaml)" ]; then
               git add pnpm-lock.yaml
               git commit -m "chore: regenerate pnpm-lock.yaml after rebase [skip ci]" || true
             fi
 
-            echo "→ Force-pushing rebased branch"
             git push --force-with-lease origin "$PR_BRANCH"
+            echo "✅ PR #$PR_NUM rebased and pushed"
 
-            echo "→ Rebasing PR #$PR_NUM base onto main"
-            gh pr edit "$PR_NUM" --repo "$REPO" --base main
-
-            echo "→ Merging PR #$PR_NUM"
-            gh pr merge "$PR_NUM" --repo "$REPO" --merge --delete-branch \
-              || echo "  ⚠️ Could not merge PR #$PR_NUM — check GitHub for details"
-
-            # Return to main for next iteration
             git checkout main
-            git pull origin main --ff-only 2>/dev/null || true
-          done <<< "$DRAFT_PRS"
+          done <<< "$CONFLICTED"
