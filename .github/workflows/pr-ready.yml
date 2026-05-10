@@ -1,0 +1,35 @@
+name: PR Ready — Auto-merge Orchestrator Tracking PRs
+
+# Fires when any PR is marked ready for review.
+# If the PR title starts with "chore(orchestrator): [tracking]", it is an
+# auto-generated phase tracking PR. Merge it immediately so the
+# phase-orchestrator.yml workflow fires and advances the chain.
+
+on:
+  pull_request:
+    types: [ready_for_review]
+    branches: [main]
+
+jobs:
+  auto-merge-tracking:
+    if: startsWith(github.event.pull_request.title, 'chore(orchestrator): [tracking]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+    steps:
+      - name: Merge tracking PR
+        run: |
+          echo "✅ Tracking PR #$PR_NUMBER is ready: $PR_TITLE"
+          echo "Merging to trigger phase-orchestrator.yml…"
+
+          gh pr merge "$PR_NUMBER" \
+            --repo "$REPO" \
+            --merge \
+            --subject "chore(orchestrator): complete phase tracking PR #$PR_NUMBER [skip ci]" \
+            --delete-branch
