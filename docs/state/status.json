@@ -1,19 +1,16 @@
 {
   "handoff_date": "2026-05-10",
   "current_phase": "phase3-p1",
-
   "_orchestrator_schema": "v2 — fields below (phase3, fa_account_session) are read by .github/scripts/phase-orchestrator.ts",
   "phase3": {
     "p0": "complete",
-    "p1": "not-started",
+    "p1": "in-progress",
     "p2": "not-started",
     "p3": "not-started"
   },
   "fa_account_session": {
     "slice1": "not-started"
   },
-
-
   "pis_approved": false,
   "pis_blockers_count": 5,
   "pis_blockers": [
