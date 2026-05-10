@@ -1,8 +1,10 @@
 name: PR Cascade
 
-# When a PR merges into main, un-draft any open draft PRs whose base branch
-# matches the merged PR's head branch (stacked PR pattern).
-# Un-drafting triggers pr-automation.yml automatically.
+# When a PR merges into main:
+# 1. Find open draft PRs whose base = the merged head branch (stacked PR pattern)
+# 2. Rebase them onto main (so they can cleanly target main)
+# 3. Un-draft them (triggers ready_for_review → pr-ready.yml for tracking PRs)
+# 4. Enable auto-merge so they land without human intervention overnight
 
 on:
   pull_request:
@@ -14,14 +16,14 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
       MERGED_HEAD: ${{ github.event.pull_request.head.ref }}
     steps:
-      - name: Find and un-draft stacked PRs
+      - name: Find, rebase, un-draft, and auto-merge stacked PRs
         run: |
           echo "Merged branch: $MERGED_HEAD"
 
@@ -39,12 +41,19 @@ jobs:
             exit 0
           fi
 
-          echo "Draft PRs to un-draft:"
+          echo "Stacked PRs to advance:"
           echo "$DRAFT_PRS"
 
-          # Un-draft each one — triggers pr-automation.yml via ready_for_review event
           while IFS= read -r line; do
             PR_NUM=$(echo "$line" | awk '{print $1}')
-            echo "→ Marking PR #$PR_NUM as ready for review"
+            echo ""
+            echo "→ PR #$PR_NUM: rebasing base onto main"
+            gh pr edit "$PR_NUM" --repo "$REPO" --base main
+
+            echo "→ PR #$PR_NUM: marking as ready for review"
             gh pr ready "$PR_NUM" --repo "$REPO"
+
+            echo "→ PR #$PR_NUM: enabling auto-merge"
+            gh pr merge "$PR_NUM" --repo "$REPO" --auto --merge \
+              || echo "  (auto-merge already enabled or not available — continuing)"
           done <<< "$DRAFT_PRS"
