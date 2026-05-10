@@ -1,7 +1,8 @@
 {
   "handoff_date": "2026-05-10",
-  "current_phase": "2a-complete-pending-approval",
-  "pis_approved": false,
+  "updated_date": "2026-05-10",
+  "current_phase": "2b-complete",
+  "pis_approved": true,
   "pis_blockers_count": 5,
   "pis_blockers": [
     {
@@ -9,42 +10,42 @@
       "label": "Parent FA NEED_HUMAN carve-out",
       "description": "B-003 (operator X) and B-004 (burn-tier) are commercially orthogonal to this safety fix. User must waive CC-04.",
       "proposed_default": "proceed-with-carve-out",
-      "status": "pending"
+      "status": "approved"
     },
     {
       "id": 2,
       "label": "OQ-2: reversal restores graceUsed?",
       "description": "Does reversal on AI failure clear graceUsed? PRD Q-014/Q-019 silent on rollback.",
       "proposed_default": "no — grace consumed on attempt",
-      "status": "pending"
+      "status": "approved-no"
     },
     {
       "id": 3,
       "label": "OQ-3: placeholder vs real Stripe sandbox fixtures",
       "description": "Contract tests need Stripe payloads. User may not have sandbox ready.",
       "proposed_default": "placeholder fixtures with TODO to swap before merge",
-      "status": "pending"
+      "status": "approved-placeholders"
     },
     {
       "id": 4,
       "label": "OQ-4: correlation_id source",
       "description": "AI route idempotency: server-supplied vs client-supplied correlation IDs.",
       "proposed_default": "server-supplied (<projectId>--<opType>--<crypto.randomUUID()>)",
-      "status": "pending"
+      "status": "approved-server-supplied"
     },
     {
       "id": 5,
       "label": "4-PR stack shape",
       "description": "Work exceeds single-PR limits. Proposed 4 stacked PRs: foundation → concurrency → webhook → ai-deduct.",
       "proposed_default": "4-pr-stack",
-      "status": "pending"
+      "status": "approved"
     }
   ],
   "rules_merge_status": "complete",
   "rules_merge_detail": "All 7 files from zedos/.cursor/rules/ merged into root .cursor/rules/72-74*.mdc and deleted. Single source of truth at root.",
   "secrets_rotated": false,
-  "secrets_detail": "3 secrets leaked: DB password, NEXTAUTH_SECRET, ABACUSAI_API_KEY. User-owned rotation. Plus new STRIPE_WEBHOOK_SECRET needed for Phase 2b.",
-  "env_file_status": "no-.env.example-exists",
+  "secrets_detail": "3 secrets leaked: DB password, NEXTAUTH_SECRET, ABACUSAI_API_KEY. User-owned rotation. STRIPE_WEBHOOK_SECRET needed for Phase 2b (documented in .env.example).",
+  "env_file_status": "env.example-created",
   "locked_decisions": {
     "auth": "better-auth (Phase 3 migration from NextAuth). API keys v2/v3.",
     "orm": "Drizzle (Phase 3 migration from Prisma)",
@@ -54,9 +55,12 @@
     "phase2_stack": "Prisma + NextAuth (no migration in Phase 2)",
     "eslint_cleanup": "separate slice",
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
-    "dual_credit_consolidation": "deferred per Implementation Plan"
+    "dual_credit_consolidation": "deferred per Implementation Plan",
+    "oq2_grace_on_reversal": "no — grace consumed on attempt (approved)",
+    "oq3_fixtures": "placeholder fixtures with TODO (approved)",
+    "oq4_correlation_id": "server-supplied: <projectId>--<opType>--<randomUUID> (approved)"
   },
-  "next_action": "complete-rules-merge-then-obtain-pis-approval",
+  "next_action": "phase-3-turborepo-migration",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -75,8 +79,42 @@
       "description": "Credit/Stripe planning artifacts (scope slice, user story, plan, friction log)"
     },
     "2b": {
-      "status": "blocked-on-approval",
-      "description": "Implementation: 4-PR stack, ~38 files, ~900 lines, 28-36 worker-hours est."
+      "status": "complete",
+      "description": "Implementation: 4-PR stack executed. All 4 branches pushed, PRs created.",
+      "prs": [
+        {
+          "id": "pr1",
+          "branch": "cursor/credits-foundation-5b89",
+          "base": "main",
+          "description": "Foundation: schema migration, payment contracts, test harness, package.json scripts",
+          "files": 21,
+          "tests": "All 83 pre-existing + 7 new contract tests pass"
+        },
+        {
+          "id": "pr2",
+          "branch": "cursor/credits-concurrency-5b89",
+          "base": "cursor/credits-foundation-5b89",
+          "description": "Concurrency: row-lock ledger, reversal usecase, domain decision, unit tests",
+          "files": 12,
+          "tests": "99 tests pass (16 new tests covering T-1 through T-4)"
+        },
+        {
+          "id": "pr3",
+          "branch": "cursor/credits-stripe-webhook-5b89",
+          "base": "cursor/credits-concurrency-5b89",
+          "description": "Stripe webhook: new route, verify decoupling, checkout idempotency, process usecase",
+          "files": 10,
+          "tests": "103 tests pass (4 new unit tests T-5)"
+        },
+        {
+          "id": "pr4",
+          "branch": "cursor/credits-ai-deduct-5b89",
+          "base": "cursor/credits-stripe-webhook-5b89",
+          "description": "AI deduct-after-success: clarify + generate-prd with compensating reversal",
+          "files": 4,
+          "tests": "103 tests pass (no new unit tests; integration placeholders added)"
+        }
+      ]
     },
     "3": {
       "status": "pending",
