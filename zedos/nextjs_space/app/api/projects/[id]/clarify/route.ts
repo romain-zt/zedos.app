@@ -4,8 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/prisma'
-import { checkCredits, deductCredits, OperationType } from '@/lib/credits'
+import { checkCredits, deductCredits, reverseCredits, OperationType } from '@/lib/credits'
 import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
+import { randomUUID } from 'crypto'
 
 const SYSTEM_PROMPT = `You are Zedos, an expert product strategist helping solo founders turn vague product ideas into clear, versioned PRDs (Product Requirements Documents).
 
@@ -62,80 +63,75 @@ Important:
 Respond with raw JSON only. Do not include code blocks, markdown, or any other formatting.`
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = (session.user as any).id
+
+  const project = await prisma.project.findFirst({
+    where: { id: params.id, userId },
+  })
+  if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+
+  const body = await request.json()
+  const { message, decisionResponse, prdVersionId } = body ?? {}
+
+  let opType: OperationType = 'clarification'
+  if (decisionResponse?.type === 'mini_form' || decisionResponse?.type === 'modal_form') {
+    opType = 'mini_form'
+  } else if (decisionResponse) {
+    opType = 'decision'
+  }
+
+  const creditCheck = await checkCredits(userId, opType)
+  if (!creditCheck.allowed) {
+    return NextResponse.json({
+      error: 'insufficient_credits',
+      message: creditCheck.reason,
+      balance: creditCheck.currentBalance,
+      cost: creditCheck.cost,
+    }, { status: 402 })
+  }
+
+  // Server-supplied correlation_id per OQ-4 decision
+  const correlationId = `${params.id}--${opType}--${randomUUID()}`
+
+  const history = await prisma.questionHistory.findMany({
+    where: { projectId: params.id },
+    orderBy: { createdAt: 'asc' },
+    take: 20,
+  })
+
+  const messages: Array<{ role: string; content: string }> = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    {
+      role: 'user',
+      content: `Project: "${project.name}"\nDescription: ${project.description ?? 'Not provided yet'}`,
+    },
+  ]
+
+  for (const q of (history ?? [])) {
+    messages.push({
+      role: 'assistant',
+      content: JSON.stringify({ message: q.structuredQuestion, decision_ui: q.availableOptions ?? null }),
+    })
+    if (q.founderAnswer) {
+      messages.push({ role: 'user', content: q.founderAnswer })
+    }
+  }
+
+  let userMessage = ''
+  if (decisionResponse) {
+    userMessage = `Decision response: ${JSON.stringify(decisionResponse)}${message ? `\nAdditional comment: ${message}` : ''}`
+  } else if (message) {
+    userMessage = message
+  } else {
+    userMessage = 'Start the product clarification process. Ask me about my product idea.'
+  }
+  messages.push({ role: 'user', content: userMessage })
+
+  let aiError: Error | null = null
+
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = (session.user as any).id
-
-    const project = await prisma.project.findFirst({
-      where: { id: params.id, userId },
-    })
-    if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-
-    const body = await request.json()
-    const { message, decisionResponse, prdVersionId } = body ?? {}
-
-    // Determine operation type based on context
-    let opType: OperationType = 'clarification'
-    if (decisionResponse?.type === 'mini_form' || decisionResponse?.type === 'modal_form') {
-      opType = 'mini_form'
-    } else if (decisionResponse) {
-      opType = 'decision'
-    }
-
-    // Credit check
-    const creditCheck = await checkCredits(userId, opType)
-    if (!creditCheck.allowed) {
-      return NextResponse.json({
-        error: 'insufficient_credits',
-        message: creditCheck.reason,
-        balance: creditCheck.currentBalance,
-        cost: creditCheck.cost,
-      }, { status: 402 })
-    }
-
-    // Fetch conversation history
-    const history = await prisma.questionHistory.findMany({
-      where: { projectId: params.id },
-      orderBy: { createdAt: 'asc' },
-      take: 20,
-    })
-
-    // Build messages for AI
-    const messages: Array<{ role: string; content: string }> = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: `Project: "${project.name}"\nDescription: ${project.description ?? 'Not provided yet'}`,
-      },
-    ]
-
-    // Add conversation history
-    for (const q of (history ?? [])) {
-      messages.push({
-        role: 'assistant',
-        content: JSON.stringify({
-          message: q.structuredQuestion,
-          decision_ui: q.availableOptions ?? null,
-        }),
-      })
-      if (q.founderAnswer) {
-        messages.push({ role: 'user', content: q.founderAnswer })
-      }
-    }
-
-    // Add current input
-    let userMessage = ''
-    if (decisionResponse) {
-      userMessage = `Decision response: ${JSON.stringify(decisionResponse)}${message ? `\nAdditional comment: ${message}` : ''}`
-    } else if (message) {
-      userMessage = message
-    } else {
-      userMessage = 'Start the product clarification process. Ask me about my product idea.'
-    }
-    messages.push({ role: 'user', content: userMessage })
-
-    // Call AI with streaming and JSON response
     const aiResponse = await callAI({
       messages: messages as any,
       stream: true,
@@ -144,15 +140,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       responseFormat: { type: 'json_object' },
     })
 
-    // Deduct credits
-    const deduction = await deductCredits(userId, opType, {
-      projectId: params.id,
-      prdVersionId,
-    })
-
-    // Stream response back with buffering
     const stream = createBufferedStreamingResponse(aiResponse, async (result: string) => {
-      // Save question history on completion
+      // AI succeeded — deduct after stream completes
+      await deductCredits(userId, opType, { projectId: params.id, prdVersionId }, correlationId)
+
       try {
         const parsed = JSON.parse(result)
         await prisma.questionHistory.create({
@@ -177,10 +168,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         Connection: 'keep-alive',
+        'X-Correlation-Id': correlationId,
       },
     })
-  } catch (error: any) {
-    console.error('Clarify error:', error)
-    return NextResponse.json({ error: error?.message ?? 'Clarification failed' }, { status: 500 })
+  } catch (e: any) {
+    aiError = e
+    // AI failed — attempt compensating reversal (no-op if no deduct happened)
+    await reverseCredits(userId, correlationId)
+    console.error('Clarify error:', e)
+    return NextResponse.json({ error: e?.message ?? 'Clarification failed', correlationId }, { status: 500 })
   }
 }
