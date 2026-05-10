@@ -103,6 +103,61 @@ No secrets beyond the default `GITHUB_TOKEN` are required.
 
 ---
 
+---
+
+## Phase Orchestrator — autonomous pipeline driver
+
+`.github/workflows/phase-orchestrator.yml` closes the autonomy loop: every time a PR merges into `main`, it reads `docs/state/status.json`, determines the next phase to execute, and fires a Cursor cloud agent automatically.
+
+**How phases advance:**
+
+1. A PR merges into `main`.
+2. The orchestrator reads `docs/state/status.json` to find the current phase state.
+3. If the last completed phase's entry is `"complete"`, it advances to the next phase.
+4. It marks the next phase as `"in-progress"` in `status.json` (commits + pushes `[skip ci]`).
+5. It fires `Agent.prompt` with the phase-specific instructions.
+6. The agent does the work and writes `"complete"` back to `status.json` when done.
+7. The next merged PR triggers the cycle again.
+
+**Phase chain:**
+
+```
+phase3-p0 (Turborepo scaffold)
+  → phase3-p1 (package extraction)
+  → phase3-p2 (Drizzle migration)
+  → phase3-p3 (better-auth migration)
+  → fa-account-session (sign-up / sign-in)
+```
+
+**Kill switch — pause automation instantly:**
+
+1. Go to your repo on GitHub
+2. **Settings → Secrets and variables → Actions → Variables tab**
+3. Click **New repository variable**
+4. Name: `ORCHESTRATOR_ENABLED`, Value: `true`
+
+To **pause** automation (no agents fired, no errors):
+
+- Edit the variable → set Value to `false`
+
+To **resume**:
+
+- Edit the variable → set Value back to `true`
+
+> If the variable is absent entirely, the orchestrator defaults to **enabled**.
+
+**Guard rails built in:**
+
+| Condition | Behavior |
+|---|---|
+| `ORCHESTRATOR_ENABLED=false` | Logs and exits 0 — no agent fired |
+| `docs/state/status.json` missing | Logs warning and exits 0 — safe on new repos |
+| Any phase is `"in-progress"` | Holds — another agent is already running |
+| Any phase is `"blocked"` | Logs the blocker message and exits 0 — never auto-proceeds past a blocker |
+| `CURSOR_API_KEY` missing | Exits 1 with a clear message |
+
+---
+
 ## Troubleshooting
 
 | Symptom | Fix |
