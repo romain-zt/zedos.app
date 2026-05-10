@@ -2,7 +2,7 @@ import { ICreditsRepository } from '@domain/credits/credits-repository';
 import { CreditsDomainService } from '@domain/credits/credits-service';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
-import { CreditBalanceDTO } from '@contracts/credits/credits-contracts';
+import { CreditBalanceDTO } from '@repo/contracts/credits/credits-contracts';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ operation: 'AddCreditsUseCase' });

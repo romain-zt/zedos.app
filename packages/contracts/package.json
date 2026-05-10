@@ -1,0 +1,32 @@
+{
+  "name": "@repo/contracts",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./auth": "./src/auth/index.ts",
+    "./credits": "./src/credits/index.ts",
+    "./payments": "./src/payments/index.ts",
+    "./project": "./src/project/index.ts",
+    "./prd": "./src/prd/index.ts",
+    "./adr": "./src/adr/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "dependencies": {
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "workspace:*",
+    "@repo/vitestconfig": "workspace:*",
+    "typescript": "5.2.2",
+    "vitest": "^4.1.5"
+  }
+}

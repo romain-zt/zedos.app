@@ -5,11 +5,12 @@
       "@/*": ["./*"],
       "@domain/*": ["./src/domain/*"],
       "@application/*": ["./src/application/*"],
-      "@contracts/*": ["./src/contracts/*"],
       "@infrastructure/*": ["./src/infrastructure/*"],
       "@ui/*": ["./src/ui/*"],
       "@shared/*": ["./src/shared/*"],
-      "@repo/result": ["../../packages/result/src/index.ts"]
+      "@repo/result": ["../../packages/result/src/index.ts"],
+      "@repo/contracts": ["../../packages/contracts/src/index.ts"],
+      "@repo/contracts/*": ["../../packages/contracts/src/*"]
     }
   },
   "include": [

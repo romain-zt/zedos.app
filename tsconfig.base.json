@@ -14,7 +14,9 @@
     "noImplicitOverride": true,
     "noEmit": true,
     "paths": {
-      "@repo/result": ["./packages/result/src/index.ts"]
+      "@repo/result": ["./packages/result/src/index.ts"],
+      "@repo/contracts": ["./packages/contracts/src/index.ts"],
+      "@repo/contracts/*": ["./packages/contracts/src/*"]
     }
   }
 }

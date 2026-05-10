@@ -2,7 +2,7 @@ import { IProjectRepository } from '@domain/project/project-repository';
 import { ProjectDomainService } from '@domain/project/project-service';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, ValidationError } from '@shared/errors/application-error';
-import { ProjectDTO } from '@contracts/project/project-contracts';
+import { ProjectDTO } from '@repo/contracts/project/project-contracts';
 import { createLogger } from '@shared/observability/logger';
 import { v4 as uuidv4 } from 'uuid';
 

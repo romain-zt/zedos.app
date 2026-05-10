@@ -9,7 +9,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { SignInRequestSchema } from '@contracts/auth/auth-contracts';
+import { SignInRequestSchema } from '@repo/contracts/auth/auth-contracts';
 import { SignInUseCase } from '@application/auth/sign-in-usecase';
 import { PrismaUserRepository } from '@infrastructure/persistence/user-repository';
 import { prisma } from '@/lib/prisma';

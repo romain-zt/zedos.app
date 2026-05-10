@@ -3,7 +3,7 @@ import { IPrdRepository } from '@domain/prd/prd-repository';
 import { ProjectDomainService } from '@domain/project/project-service';
 import { Result, ok } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
-import { PhaseCheckResponse } from '@contracts/adr/adr-contracts';
+import { PhaseCheckResponse } from '@repo/contracts/adr/adr-contracts';
 
 export class CheckPhaseUseCase {
   constructor(

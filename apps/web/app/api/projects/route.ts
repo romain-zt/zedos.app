@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { ListProjectsUseCase } from '@application/project/list-projects-usecase'
 import { CreateProjectUseCase } from '@application/project/create-project-usecase'
-import { CreateProjectRequestSchema } from '@contracts/project/project-contracts'
+import { CreateProjectRequestSchema } from '@repo/contracts/project/project-contracts'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
