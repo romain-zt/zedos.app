@@ -17,7 +17,8 @@
       "@repo/result": ["./packages/result/src/index.ts"],
       "@repo/contracts": ["./packages/contracts/src/index.ts"],
       "@repo/contracts/*": ["./packages/contracts/src/*"],
-      "@repo/db": ["./packages/db/src/index.ts"]
+      "@repo/db": ["./packages/db/src/index.ts"],
+      "@repo/auth": ["./packages/auth/src/index.ts"]
     }
   }
 }

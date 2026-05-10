@@ -128,9 +128,15 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: 1.1.2
         version: 1.1.2(@types/react-dom@18.2.7)(@types/react@18.2.22)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@repo/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@repo/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@repo/result':
         specifier: workspace:*
         version: link:../../packages/result
@@ -373,6 +379,34 @@ importers:
         specifier: ^4.1.5
         version: 4.1.5(@types/node@20.6.2)(vite@8.0.11(@types/node@20.6.2)(esbuild@0.28.0)(jiti@1.21.7)(terser@5.47.1)(tsx@4.20.3)(yaml@2.8.4))
 
+  packages/auth:
+    dependencies:
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../db
+      bcryptjs:
+        specifier: 2.4.3
+        version: 2.4.3
+      next:
+        specifier: '>=14'
+        version: 14.2.28(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      next-auth:
+        specifier: 4.24.11
+        version: 4.24.11(next@14.2.28(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+    devDependencies:
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/bcryptjs':
+        specifier: 2.4.6
+        version: 2.4.6
+      '@types/node':
+        specifier: 20.6.2
+        version: 20.6.2
+      typescript:
+        specifier: 5.2.2
+        version: 5.2.2
+
   packages/contracts:
     dependencies:
       zod:
@@ -391,6 +425,25 @@ importers:
       vitest:
         specifier: ^4.1.5
         version: 4.1.5(@types/node@20.6.2)(vite@8.0.11(@types/node@20.6.2)(esbuild@0.28.0)(jiti@1.21.7)(terser@5.47.1)(tsx@4.20.3)(yaml@2.8.4))
+
+  packages/db:
+    dependencies:
+      '@prisma/client':
+        specifier: 6.7.0
+        version: 6.7.0(prisma@6.7.0(typescript@5.2.2))(typescript@5.2.2)
+    devDependencies:
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: 20.6.2
+        version: 20.6.2
+      prisma:
+        specifier: 6.7.0
+        version: 6.7.0(typescript@5.2.2)
+      typescript:
+        specifier: 5.2.2
+        version: 5.2.2
 
   packages/eslint-config:
     dependencies:
