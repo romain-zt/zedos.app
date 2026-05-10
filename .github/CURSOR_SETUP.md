@@ -76,6 +76,33 @@ Watch the Actions tab for live output.
 
 ---
 
+---
+
+## How stacked PRs cascade automatically (`pr-cascade.yml`)
+
+`.github/workflows/pr-cascade.yml` closes the loop for stacked PRs (see `79-pr-sizing.mdc` §4).
+
+**How it works:**
+
+1. A PR merges into `main`.
+2. `pr-cascade.yml` fires on the `closed` + merged event.
+3. It lists all open **draft** PRs whose **base branch** equals the just-merged PR's **head branch**.
+4. For each match it calls `gh pr ready`, which un-drafts the PR.
+5. Un-drafting fires the `ready_for_review` event — triggering `pr-automation.yml` automatically.
+
+**Typical flow for a 3-layer stack:**
+
+```
+main
+└── feature/A  (PR #10) → merges → triggers cascade
+    └── feature/B  (PR #11, draft, base = feature/A) → un-drafted → pr-automation runs
+        └── feature/C  (PR #12, draft, base = feature/B) → stays draft until #11 merges
+```
+
+No secrets beyond the default `GITHUB_TOKEN` are required.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Fix |
