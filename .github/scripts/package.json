@@ -1,0 +1,9 @@
+{
+  "name": "pr-automation",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cursor/sdk": "latest",
+    "tsx": "latest"
+  }
+}
