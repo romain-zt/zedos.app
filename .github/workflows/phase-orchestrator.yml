@@ -1,0 +1,36 @@
+name: Phase Orchestrator
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  orchestrate:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm install --prefix .github/scripts
+
+      - name: Run phase orchestrator
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          MERGED_PR_NUMBER: ${{ github.event.pull_request.number }}
+          MERGED_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          MERGED_PR_TITLE: ${{ github.event.pull_request.title }}
+          ORCHESTRATOR_ENABLED: ${{ vars.ORCHESTRATOR_ENABLED || 'true' }}
+        run: npx tsx .github/scripts/phase-orchestrator.ts
