@@ -28,7 +28,7 @@ export default function DashboardPage() {
         }
         if (credRes?.ok) {
           const credData = await credRes.json()
-          setCredits(credData?.balance ?? 0)
+          setCredits(credData?.creditBalance ?? 0)
         }
       } catch {
         // Silently handle
