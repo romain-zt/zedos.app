@@ -1,0 +1,7 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "pnpm --filter @repo/db db:migrate && pnpm --filter @repo/web build",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- apps/web/ packages/"
+}
