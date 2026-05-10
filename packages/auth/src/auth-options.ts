@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { db } from '@repo/db';
+import { db, users, eq } from '@repo/db';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -14,9 +14,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
         try {
-          const user = await db.user.findUnique({
-            where: { email: credentials.email.toLowerCase().trim() },
-          });
+          const [user] = await db.select().from(users).where(eq(users.email, credentials.email.toLowerCase().trim())).limit(1);
           if (!user) return null;
           const valid = await bcrypt.compare(credentials.password, user.passwordHash);
           if (!valid) return null;
