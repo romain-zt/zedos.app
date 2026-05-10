@@ -63,6 +63,8 @@ Architecture discussion, agent definition, PRD methodology, workflow design, gov
 
 EXECUTION mode is entered explicitly via one of these commands (see `.cursor/rules/80-change-policy.mdc` for the full authority table):
 
+- `/evol <description>` — product evolution intake (design fixes, UX improvements, feature enhancements); routes small changes to `/fix`, queues larger ones in WORK_QUEUE
+- `/bug <description>` — bug intake; routes small bugs to `/fix`, logs critical bugs to BLOCKERS.md + WORK_QUEUE
 - `/plan <slice-path>` — Implementation Plan (architect proposes; persisted only after approval)
 - `/implement <plan-path>` — code edits under the Plan's `Touched Files` allow-list, gated by Patch Intent Summary `approved`
 - `/fix <issue>` — focused bug fix (smaller scope than `/implement`, same gates)
