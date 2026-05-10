@@ -38,10 +38,35 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 
 ## Current Blocker
 
-**None.** The pipeline can proceed with `phase3-p1`.
+**Phase 1 package extraction not executed.** The Implementation Plan for Phase 2 (Drizzle migration) assumes:
+
+> **Layout in effect:** post-Phase-1 (packages/db/ exists with Prisma schema; all persistence repos import from @repo/db)
+
+But the actual codebase state is:
+- `packages/db/` does not exist
+- `packages/contracts/` does not exist
+- `packages/result/` does not exist
+- `packages/auth/` does not exist
+- Prisma schema remains at `apps/web/prisma/schema.prisma`
+- Contracts remain at `apps/web/src/contracts/`
+- Result remains at `apps/web/src/shared/result/`
+- Auth options remain at `apps/web/lib/auth-options.ts`
+
+The `status.json` shows `phase3.p1 = "complete"` but the Phase 1 PRs (cursor/phase1-result-extraction-37f5, cursor/phase1-contracts-extraction-37f5, cursor/phase1-db-extraction-37f5, cursor/phase1-auth-extraction-37f5) were never created or merged.
+
+**Resolution options:**
+1. Execute Phase 1 package extraction first (per `docs/execution/plans/turborepo-migration--phase-1-package-extraction.plan.md`)
+2. Update the Phase 2 Drizzle plan to work with the current layout (Prisma in `apps/web/prisma/`, create `packages/db/` with Drizzle directly)
+
+The orchestrator should either:
+- Revert `phase3.p1` to "in-progress" and fire a P1 agent
+- Or instruct this agent to adapt the P2 plan to the actual layout
 
 ## What the Cloud Agent Should Do RIGHT NOW
 
+**BLOCKED:** Phase 2 (Drizzle) cannot proceed until Phase 1 (package extraction) is actually executed.
+
+**If you are a Phase 1 agent:**
 1. Read `docs/execution/plans/turborepo-migration--phase-1-package-extraction.plan.md`
 2. Execute PR-1: extract `@repo/result` (see Touched Files — PR-1)
 3. Gate: `pnpm typecheck && pnpm build` must pass
@@ -51,10 +76,13 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 7. Gate: same
 8. Execute PR-4: extract `@repo/auth`
 9. Gate: same
-10. Set `docs/state/status.json` → `phase3.p1 = "complete"` and commit + push
+10. Set `docs/state/status.json` → `phase3.p1 = "complete"` (correctly this time) and commit + push
 11. The orchestrator will then fire the phase3-p2 agent automatically
 
-If any gate fails: set `phase3.p1 = "blocked"`, write blocker description to `docs/state/HANDOFF.md` "Current Blocker" section, commit + push, and stop.
+**If you are a Phase 2 agent:**
+1. Verify packages/db/, packages/contracts/, packages/result/, packages/auth/ exist
+2. If they don't exist: set `phase3.p2 = "blocked"`, update this blocker section, commit + push, and stop
+3. If they exist: proceed with the Phase 2 Drizzle migration plan
 
 ---
 

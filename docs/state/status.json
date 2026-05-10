@@ -5,8 +5,9 @@
   "phase3": {
     "p0": "complete",
     "p1": "complete",
-    "p2": "in-progress",
-    "p3": "not-started"
+    "p2": "blocked",
+    "p3": "not-started",
+    "blocker": "Phase 1 package extraction never executed: packages/db, packages/contracts, packages/result, packages/auth do not exist. Phase 2 Drizzle plan assumes post-P1 layout with @repo/db in place."
   },
   "fa_account_session": {
     "slice1": "not-started"
