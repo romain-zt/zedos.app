@@ -21,7 +21,8 @@
       "fa-prd-versioning--browse-and-switch-prd-versions": "complete",
       "fa-question-history--persist-structured-decision-entries": "complete",
       "fa-question-history--owner-views-question-history": "complete",
-      "fa-read-only-sharing--mint-read-only-link": "complete"
+      "fa-read-only-sharing--mint-read-only-link": "complete",
+      "fa-services-feature-split--prd-to-feature-split": "in-progress"
     }
   },
   "cursor_self_improve": {
