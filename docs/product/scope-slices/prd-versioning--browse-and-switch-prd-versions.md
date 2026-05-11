@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -47,7 +47,12 @@ Founder can see all PRD versions within a project and move to any version to rev
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Loading / pending | Workspace is fetching PRD versions | PRD area may be empty or stale until the list arrives; user remains in the project |
+| Empty (transitional) | Ensure-first-version has not completed yet | No versions to show until the sibling slice creates version 1 |
+| Single version | Exactly one PRD version row | Selector still shows the identity of that version; copy explains there is only one |
+| Multiple versions | Two or more rows | List / picker shows each version (at least version number + status where available); user can switch |
+| Active version | After user picks or default selection | Prominent “active version” indication in the PRD panel and consistent tab affordance |
+| Error (load) | List fetch fails or payload invalid | User sees an error signal (e.g. toast) that versions could not be loaded; stays signed in and in the project |
 
 ---
 
@@ -55,7 +60,8 @@ Founder can see all PRD versions within a project and move to any version to rev
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| PRD version | read | List and display metadata and content for versions in the current project |
+| Project | read | Versions scoped to the open project; no project switch in this slice |
 
 ---
 
@@ -82,7 +88,7 @@ None — version browsing is not a defined milestone trigger in PRD v1. The "PRD
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
 | Project workspace | Feature Area | validated | Versions are scoped to a project |
-| `create-or-capture-prd-version` | Scope Slice | exploratory | At least one version must exist to browse; list is empty until a version is created |
+| `create-or-capture-prd-version` | Scope Slice | complete | At least one version must exist to browse; ensure-first runs before list in the workspace |
 
 ---
 
@@ -102,18 +108,18 @@ A signed-in founder inside a project can see all PRD versions for that project a
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -122,3 +128,4 @@ A signed-in founder inside a project can see all PRD versions for that project a
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice prd-versioning` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX states, data touched, dependency on create-or-capture → complete; promoted to ready-for-user-stories | cloud-agent |

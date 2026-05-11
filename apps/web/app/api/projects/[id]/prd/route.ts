@@ -10,6 +10,7 @@ import { EnsureFirstPrdVersionUseCase } from '@application/prd/ensure-first-prd-
 import {
   CreateOrCapturePrdVersionRequestSchema,
   CapturedPrdVersionResponseSchema,
+  PrdVersionListResponseSchema,
 } from '@repo/contracts/prd/prd-contracts'
 import { ApplicationError } from '@shared/errors/application-error'
 
@@ -25,7 +26,9 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   const useCase = new GetPrdVersionsUseCase(new PrismaProjectRepository(), new PrismaPrdRepository())
   const result = await useCase.execute(params.id, userId)
   if (result.isErr()) return toErrorResponse(result.error)
-  return NextResponse.json(result.unwrap())
+  const out = PrdVersionListResponseSchema.safeParse(result.unwrap())
+  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  return NextResponse.json(out.data)
 }
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {

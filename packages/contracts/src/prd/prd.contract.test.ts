@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   CreateOrCapturePrdVersionRequestSchema,
   CapturedPrdVersionResponseSchema,
+  PrdVersionListResponseSchema,
 } from './prd-contracts';
 
 describe('CreateOrCapturePrdVersionRequestSchema', () => {
@@ -40,5 +41,43 @@ describe('CapturedPrdVersionResponseSchema', () => {
 
   it('rejects when version object missing', () => {
     expect(CapturedPrdVersionResponseSchema.safeParse({ created: true }).success).toBe(false);
+  });
+});
+
+describe('PrdVersionListResponseSchema', () => {
+  const row = {
+    id: 'ver_1',
+    projectId: 'proj_1',
+    versionNumber: 2,
+    content: null,
+    status: 'draft',
+    createdAt: '2026-05-11T12:00:00.000Z',
+    updatedAt: '2026-05-11T12:05:00.000Z',
+  };
+
+  it('parses a valid non-empty array from JSON date strings', () => {
+    const r = PrdVersionListResponseSchema.safeParse([row]);
+    expect(r.success).toBe(true);
+  });
+
+  it('parses empty array', () => {
+    expect(PrdVersionListResponseSchema.safeParse([]).success).toBe(true);
+  });
+
+  it('rejects non-array root', () => {
+    expect(PrdVersionListResponseSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('rejects row missing versionNumber', () => {
+    const bad = { ...row };
+    delete (bad as { versionNumber?: number }).versionNumber;
+    expect(PrdVersionListResponseSchema.safeParse([bad]).success).toBe(false);
+  });
+
+  it('rejects fractional versionNumber', () => {
+    expect(
+      PrdVersionListResponseSchema.safeParse([{ ...row, versionNumber: 1.5 }])
+        .success,
+    ).toBe(false);
   });
 });

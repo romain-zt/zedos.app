@@ -6,18 +6,20 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  FileText, Share2, Copy, Check, ExternalLink, XCircle,
-  AlertCircle, CheckCircle2, CircleDot, ChevronDown,
+  FileText, Share2, Copy, Check, XCircle,
+  AlertCircle, CheckCircle2, CircleDot,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
 
 interface PrdViewerProps {
   projectId: string
-  versions: any[]
-  selectedVersion: any
-  onSelectVersion: (v: any) => void
+  versions: PrdVersionDTO[]
+  selectedVersion: PrdVersionDTO | null
+  onSelectVersion: (v: PrdVersionDTO) => void
   onRefresh: () => void
 }
 
@@ -41,15 +43,11 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
     }
   }, [selectedVersion])
 
-  // Milestone: PRD reopened
-  useEffect(() => {
-    if (selectedVersion?.content) {
-      setFeedbackType('prd_reopened')
-      setShowFeedback(true)
-    }
-  }, [selectedVersion?.id])
-
-  const content = selectedVersion?.content as any
+  const content = selectedVersion?.content as Record<string, unknown> & {
+    title?: string
+    sections?: unknown[]
+    version_summary?: string
+ }
   const sections = content?.sections ?? []
 
   const handleShare = async () => {
@@ -140,22 +138,22 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
     <div className="space-y-4">
       {/* Version selector + actions */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <Select
             value={selectedVersion?.id ?? ''}
             onValueChange={(id: string) => {
-              const v = versions.find((v: any) => v.id === id)
+              const v = versions.find((x) => x.id === id)
               if (v) onSelectVersion(v)
             }}
           >
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full sm:w-48 min-h-11 text-base" aria-label="PRD version">
               <SelectValue placeholder="Select version" />
             </SelectTrigger>
             <SelectContent>
-              {(versions ?? []).map((v: any) => (
-                <SelectItem key={v?.id} value={v?.id ?? ''}>
-                  Version {v?.versionNumber ?? '?'}
-                  {v?.status ? ` (${v.status})` : ''}
+              {(versions ?? []).map((v) => (
+                <SelectItem key={v.id} value={v.id} className="min-h-11 text-base">
+                  Version {v.versionNumber}
+                  {v.status ? ` (${v.status})` : ''}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -165,7 +163,7 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {shareLink ? (
             <div className="flex items-center gap-1">
               <Button variant="outline" size="sm" onClick={handleCopy}>
@@ -185,6 +183,19 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
           )}
         </div>
       </div>
+
+      <Alert className="border-primary/20 bg-primary/5">
+        <FileText className="h-4 w-4" />
+        <AlertTitle className="text-sm font-medium leading-snug">
+          Active version: {selectedVersion ? `v${selectedVersion.versionNumber}` : '—'}
+          {selectedVersion?.status ? ` · ${selectedVersion.status}` : ''}
+        </AlertTitle>
+        <AlertDescription className="text-xs text-muted-foreground sm:text-sm mt-0.5">
+          {versions.length > 1
+            ? `This project has ${versions.length} versions. Pick one above — Clarify and sharing use the version shown here.`
+            : 'You are viewing the only PRD version for this project.'}
+        </AlertDescription>
+      </Alert>
 
       {/* Version summary */}
       {content?.version_summary && (

@@ -82,7 +82,7 @@ Within a project, the founder maintains a **versioned PRD** where the **in-app**
 | Slice | Description | Status |
 |-------|-------------|--------|
 | Create or capture PRD version | Founder can establish a version line and persist PRD content for that version in-app. | complete |
-| Browse and switch PRD versions | Founder moves between versions inside a project without losing context of which version is active. | exploratory |
+| Browse and switch PRD versions | Founder moves between versions inside a project without losing context of which version is active. | complete |
 
 ---
 
@@ -108,3 +108,4 @@ Within a project, the founder maintains a **versioned PRD** where the **in-app**
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
 | 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
 | 2026-05-11 | Marked "Create or capture PRD version" slice **complete** after orchestrated delivery | cloud-agent |
+| 2026-05-11 | Marked "Browse and switch PRD versions" slice **complete** after orchestrated delivery (PR #46) | cloud-agent |
