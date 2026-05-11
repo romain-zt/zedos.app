@@ -6,7 +6,17 @@ import { IPrdRepository } from '@domain/prd/prd-repository';
 import { PrdVersion, PrdVersionWithRelations, PrdStatus } from '@domain/prd/prd';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, DatabaseError } from '@shared/errors/application-error';
-import { db, prdVersions, shareLinks, questionHistory, eq, and, desc, sql } from '@repo/db';
+import {
+  db,
+  prdVersions,
+  shareLinks,
+  questionHistory,
+  eq,
+  and,
+  desc,
+  sql,
+  type NewPrdVersion,
+} from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'PrdRepository' });
@@ -91,6 +101,58 @@ export class DrizzlePrdRepository implements IPrdRepository {
     } catch (error) {
       logger.error('Failed to fetch latest PRD', error);
       return err(new DatabaseError('Failed to fetch latest PRD'));
+    }
+  }
+
+  async ensureFirstVersion(
+    projectId: string,
+    content: Record<string, unknown> | null
+  ): Promise<Result<{ created: boolean; version: PrdVersion }, ApplicationError>> {
+    try {
+      const latestResult = await this.findLatestByProjectId(projectId);
+      if (latestResult.isErr()) return err(latestResult.error);
+      const existing = latestResult.unwrap();
+      if (existing) {
+        return ok({ created: false, version: existing }) as Result<{ created: boolean; version: PrdVersion }, ApplicationError>;
+      }
+
+      const defaultContent =
+        content ??
+        ({
+          source: 'in_app',
+          summary: 'Initial PRD version (placeholder — edit via clarify and generate when ready)',
+          sections: [],
+        } satisfies Record<string, unknown>);
+
+      const [inserted] = await db
+        .insert(prdVersions)
+        .values({
+          projectId,
+          versionNumber: 1,
+          content: defaultContent,
+          status: 'draft',
+        } as NewPrdVersion)
+        .returning();
+
+      if (!inserted) {
+        return err(new DatabaseError('Failed to create PRD version'));
+      }
+
+      return ok({
+        created: true,
+        version: {
+          id: inserted.id,
+          projectId: inserted.projectId,
+          versionNumber: inserted.versionNumber,
+          content: inserted.content as Record<string, unknown> | null,
+          status: inserted.status as PrdStatus,
+          createdAt: inserted.createdAt,
+          updatedAt: inserted.updatedAt,
+        },
+      }) as Result<{ created: boolean; version: PrdVersion }, ApplicationError>;
+    } catch (error) {
+      logger.error('Failed to ensure first PRD version', error);
+      return err(new DatabaseError('Failed to ensure first PRD version'));
     }
   }
 }

@@ -5,7 +5,7 @@
  * Pure domain model.
  */
 
-export type PrdStatus = 'draft' | 'final';
+export type PrdStatus = 'draft' | 'final' | 'generated';
 
 export interface PrdVersion {
   id: string;

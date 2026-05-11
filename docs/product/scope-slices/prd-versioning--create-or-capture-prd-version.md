@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -46,7 +46,12 @@ Founder establishes a new PRD version line and the document state for that versi
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| First visit / no version yet | A signed-in owner opens the project workspace and the app ensures a first version exists | The app creates version **1** in the background with placeholder in-app content; the workspace can load version metadata without blocking on exports |
+| Idempotent ensure | The ensure action runs again (reload, duplicate request) | No duplicate version **1**; the existing row is returned |
+| Success (list) | Ensure succeeded and list fetch succeeds | The founder sees at least one PRD version for the project in the workspace UI |
+| Unauthorized | Session missing or invalid | API returns 401; the client does not treat this as an initialization failure worth retrying as “PRD init” |
+| Server / validation error | Non-401 failure on ensure or list | User-visible error (toast) that PRD versions could not be loaded or initialized |
+| Wrong project / not owner | Authenticated user does not own the project | Access error from the API (mapped to existing application error semantics) |
 
 ---
 
@@ -54,7 +59,9 @@ Founder establishes a new PRD version line and the document state for that versi
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| PRD version | Create (conditional), read | First version per project when none exists — version number 1, draft status, JSON content in-app |
+| Project | Read | Ownership check before any write |
+| (Future) Owner milestones | — | Instrumentation hooks deferred — see Feedback section |
 
 ---
 
@@ -84,7 +91,7 @@ Coordination with `owner-milestone-feedback` FA is required.
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| Project workspace | Feature Area | validated | Versions attach to a project container |
+| Project workspace | Feature Area | complete (orchestrated) | Versions attach to a project container |
 
 ---
 
@@ -104,18 +111,18 @@ A signed-in founder working in a project can establish a PRD version and have it
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -124,3 +131,4 @@ A signed-in founder working in a project can establish a PRD version and have it
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice prd-versioning` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX states, data touched, readiness; promoted to `ready-for-user-stories` — orchestrator `fa-prd-versioning--create-or-capture-prd-version` | cloud-agent |
