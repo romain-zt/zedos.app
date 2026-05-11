@@ -16,7 +16,8 @@
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": "blocked",
       "fa-project-workspace--create-project": "complete",
       "fa-project-workspace--list-and-open-project": "complete",
-      "fa-project-workspace--switch-active-project": "complete"
+      "fa-project-workspace--switch-active-project": "complete",
+      "fa-prd-versioning--create-or-capture-prd-version": "in-progress"
     }
   },
   "cursor_self_improve": {
