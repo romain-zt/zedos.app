@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-read-only-sharing--mint-read-only-link-complete
+current_phase: fa-services-feature-split--prd-to-feature-split-governance-complete
 current_blocker: null
 ---
 
@@ -12,15 +12,14 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-read-only-sharing--mint-read-only-link`: **complete** (see `docs/state/status.json`).
-- **Tracking PR:** #51 — `orchestrator/tracking-fa-read-only-sharing--mint-read-only-link-1778524252604` → `main`. Mark ready when CI green: `gh pr ready 51 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-services-feature-split--prd-to-feature-split`: **complete** (governance: user story + implementation plan authored; see `docs/state/status.json`).
+- **Tracking PR:** #52 — `orchestrator/tracking-fa-services-feature-split--prd-to-feature-split-1778524681979` → `main`. Mark ready when CI green: `gh pr ready 52 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **Product:** Scope slice `docs/product/scope-slices/read-only-sharing--mint-read-only-link.md` refined to `ready-for-user-stories` (UX states + data touched + readiness checklist).
-- **Execution:** User story `docs/execution/user-stories/read-only-sharing--mint-read-only-link--v0.md` + plan `docs/execution/plans/read-only-sharing--mint-read-only-link--v0.plan.md` (executed).
-- **Contracts:** `packages/contracts/src/share/mint.ts` — `CreateShareLinkRequestSchema`, `ShareLinkMintResponseSchema`, `ShareLinkSummarySchema`; PRD DTO uses summary schema.
-- **App:** `MintReadOnlyShareLinkUseCase` + `DrizzlePrdRepository.mintReadOnlyShareLink` (ownership, idempotent active link); `POST /api/share/create` thin route with zod in/out; `prd-viewer.tsx` validates mint response with `ShareLinkMintResponseSchema` and surfaces API errors.
+- **Execution bridge:** User story `docs/execution/user-stories/services-feature-split--prd-to-feature-split--v0.md` (`ready-for-implementation`).
+- **Implementation plan:** `docs/execution/plans/services-feature-split--prd-to-feature-split--v0.plan.md` (`proposed`; human **approval** required before `/implement` and any source edits per 70-execution-bridge).
+- **Pipeline registry:** `docs/state/orchestration.pipeline.json` now links the slice row to the story and plan paths.
 
 ## Still blocked elsewhere
 
@@ -28,14 +27,12 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. **Next eligible slice (depends on mint):** `fa-read-only-sharing--anonymous-read-surface` in `docs/state/orchestration.pipeline.json`.
-2. Credits slice only after human `approved` on each PIS item.
+1. **Implementation:** Review and **approve** the plan (checkbox + chat), produce PIS, then implement stacked PRs on the tracking branch per plan §Approach and 79-pr-sizing.
+2. **Next FG-POST-PRD-V1 slice (depends on this):** `fa-user-stories--story-generation-from-feature-split` in `docs/state/orchestration.pipeline.json`.
+3. Credits slice only after human `approved` on each PIS item.
 
 ## Key files (this slice)
 
-- Scope slice: `docs/product/scope-slices/read-only-sharing--mint-read-only-link.md`
-- User story: `docs/execution/user-stories/read-only-sharing--mint-read-only-link--v0.md`
-- Plan: `docs/execution/plans/read-only-sharing--mint-read-only-link--v0.plan.md`
-- API: `apps/web/app/api/share/create/route.ts`
-- UI: `apps/web/app/dashboard/projects/[id]/_components/prd-viewer.tsx`
-- Repository: `apps/web/src/infrastructure/persistence/prd-repository.ts` (`mintReadOnlyShareLink`)
+- Scope slice: `docs/product/scope-slices/services-feature-split--prd-to-feature-split.md`
+- User story: `docs/execution/user-stories/services-feature-split--prd-to-feature-split--v0.md`
+- Plan: `docs/execution/plans/services-feature-split--prd-to-feature-split--v0.plan.md`

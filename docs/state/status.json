@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-11",
-  "current_phase": "fa-read-only-sharing--mint-read-only-link-complete",
+  "current_phase": "fa-services-feature-split--prd-to-feature-split-governance-complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -22,7 +22,7 @@
       "fa-question-history--persist-structured-decision-entries": "complete",
       "fa-question-history--owner-views-question-history": "complete",
       "fa-read-only-sharing--mint-read-only-link": "complete",
-      "fa-services-feature-split--prd-to-feature-split": "in-progress"
+      "fa-services-feature-split--prd-to-feature-split": "complete"
     }
   },
   "cursor_self_improve": {
@@ -54,6 +54,9 @@
   },
   "fa_read_only_sharing": {
     "mint_read_only_link": "complete"
+  },
+  "fa_services_feature_split": {
+    "prd_to_feature_split": "complete"
   },
   "fa_dashboard_shell": {
     "slice1": "complete",
@@ -114,7 +117,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Tracking PR #51 (read-only sharing mint link): mark ready when CI green — gh pr ready 51 --repo romain-zt/zedos.app. Next pipeline slice: fa-read-only-sharing--anonymous-read-surface. Parallel: orch-credit-system still blocked on PIS (PR #39).",
+  "next_action": "Tracking PR #52 (feature split governance): mark ready when CI green — gh pr ready 52 --repo romain-zt/zedos.app. Next pipeline slice: fa-user-stories--story-generation-from-feature-split (after merge) or fa-read-only-sharing--anonymous-read-surface per planner. Parallel: orch-credit-system still blocked on PIS (PR #39).",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
@@ -175,9 +178,9 @@
     }
   },
   "active_artifacts": {
-    "scope_slice": "docs/product/scope-slices/read-only-sharing--mint-read-only-link.md",
-    "user_story": "docs/execution/user-stories/read-only-sharing--mint-read-only-link--v0.md",
-    "implementation_plan": "docs/execution/plans/read-only-sharing--mint-read-only-link--v0.plan.md",
+    "scope_slice": "docs/product/scope-slices/services-feature-split--prd-to-feature-split.md",
+    "user_story": "docs/execution/user-stories/services-feature-split--prd-to-feature-split--v0.md",
+    "implementation_plan": "docs/execution/plans/services-feature-split--prd-to-feature-split--v0.plan.md",
     "parallel_blocked_slice": "docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md"
   },
   "feature_areas_count": 10,
