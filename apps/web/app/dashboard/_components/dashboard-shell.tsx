@@ -19,7 +19,6 @@ import {
   GitBranch,
   Users,
   BarChart3,
-  Boxes,
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -32,10 +31,9 @@ const NAV_ITEMS = [
 
 const PLACEHOLDER_ICONS: Record<string, LucideIcon> = {
   'services-feature-split': GitBranch,
-  'cursor-packaging': Zap,
-  'user-stories-delivery': Users,
+  'user-stories': Users,
   'test-first-workflows': BarChart3,
-  'architecture-analysis': Boxes,
+  'delivery': Zap,
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
