@@ -102,12 +102,15 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const creditCheck = await checkCredits(userId, opType)
     if (!creditCheck.allowed) {
-      return NextResponse.json({
-        error: 'insufficient_credits',
-        message: creditCheck.reason,
-        balance: creditCheck.currentBalance,
-        cost: creditCheck.cost,
-      }, { status: 402 })
+      return NextResponse.json(
+        {
+          error: 'insufficient_credits',
+          message: creditCheck.reason,
+          balance: creditCheck.currentBalance,
+          cost: creditCheck.cost,
+        },
+        { status: 402 }
+      )
     }
 
     const history = await db
@@ -180,7 +183,38 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       } catch (e: unknown) {
         console.error('Failed to save question history:', e)
       }
-    })
+      const validated = ClarificationStreamJsonSchema.safeParse(raw)
+      if (!validated.success) {
+        console.error('Clarify stream: schema validation failed before side effects', validated.error.flatten())
+        return
+      }
+      const ai = validated.data
+      try {
+        await deductCredits(userId, opType, {
+          projectId: params.id,
+          prdVersionId: prdVersionId ?? undefined,
+        })
+      } catch (e: unknown) {
+        console.error('Clarify: credit deduction failed after validated AI response', e)
+        return
+      }
+      const insertResult = await questionHistoryRepository.create({
+        projectId: params.id,
+        prdVersionId: prdVersionId ?? null,
+        structuredQuestion: ai.message,
+        availableOptions: ai.decision_ui,
+        founderAnswer,
+        optionalComment: optionalComment ?? null,
+        aiInterpretation: ai.reasoning,
+        prdImpact: ai.prd_section_affected,
+        questionType: ai.suggested_credit_type,
+      })
+      if (insertResult.isErr()) {
+        console.error('Clarify: failed to persist question history', insertResult.error)
+      }
+    }
+
+    const stream = createBufferedStreamingResponse(aiResponse, persistAfterValidStream)
 
     return new Response(stream, {
       headers: {
@@ -189,8 +223,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         Connection: 'keep-alive',
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Clarify error:', error)
-    return NextResponse.json({ error: error?.message ?? 'Clarification failed' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : 'Clarification failed'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

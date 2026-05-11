@@ -8,7 +8,7 @@ import { QuestionHistoryListResponseSchema } from '@repo/contracts/questions/his
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const userResult = await requireUser(headers())
+    const userResult = await requireUser(await headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const userId = userResult.unwrap().id
 
