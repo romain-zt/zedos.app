@@ -19,7 +19,8 @@
       "fa-project-workspace--switch-active-project": "complete",
       "fa-prd-versioning--create-or-capture-prd-version": "complete",
       "fa-prd-versioning--browse-and-switch-prd-versions": "complete",
-      "fa-question-history--persist-structured-decision-entries": "complete"
+      "fa-question-history--persist-structured-decision-entries": "complete",
+      "fa-question-history--owner-views-question-history": "in-progress"
     }
   },
   "cursor_self_improve": {
