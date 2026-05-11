@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { signUp, signIn } from '@repo/auth'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { signUp, signIn, useSession } from '@repo/auth'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthLayout } from '@/components/layouts/auth-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,10 +13,24 @@ import { toast } from 'sonner'
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { data: session, isPending } = useSession()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+
+  useEffect(() => {
+    if (!isPending && session) {
+      router.replace(callbackUrl)
+    }
+  }, [session, isPending, router, callbackUrl])
+
+  if (isPending || session) {
+    return null
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,8 +38,8 @@ export default function SignupPage() {
       toast.error('Please fill in all fields')
       return
     }
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters')
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters')
       return
     }
     setLoading(true)
@@ -46,9 +60,9 @@ export default function SignupPage() {
       })
       if (result.error) {
         toast.error('Account created but login failed. Please sign in.')
-        router.replace('/login')
+        router.replace(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)
       } else {
-        router.replace('/dashboard')
+        router.replace(callbackUrl)
       }
     } catch {
       toast.error('Something went wrong')
@@ -99,11 +113,11 @@ export default function SignupPage() {
             <Input
               id="password"
               type="password"
-              placeholder="At least 6 characters"
+              placeholder="At least 8 characters"
               value={password}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               className="pl-10"
-              minLength={6}
+              minLength={8}
               required
             />
           </div>
