@@ -7,7 +7,6 @@ name: Phase Orchestrator
 on:
   pull_request:
     types: [closed]
-    branches: [main]
   # Safety net: re-check every 30 min in case a trigger was missed
   # (e.g. GITHUB_TOKEN-triggered merges don't fire pull_request events)
   schedule:
@@ -20,12 +19,23 @@ on:
         required: false
         default: "manual kickoff"
 
+concurrency:
+  group: phase-orchestrator-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   orchestrate:
     if: >-
       github.event_name == 'workflow_dispatch'
       || github.event_name == 'schedule'
-      || github.event.pull_request.merged == true
+      || (
+        github.event_name == 'pull_request'
+        && github.event.pull_request.merged == true
+        && (
+          github.event.pull_request.base.ref == 'main'
+          || startsWith(github.event.pull_request.base.ref, 'feature/')
+        )
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -47,8 +57,9 @@ jobs:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          MERGED_PR_NUMBER: ${{ github.event.pull_request.number }}
-          MERGED_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-          MERGED_PR_TITLE: ${{ github.event.pull_request.title }}
+          MERGED_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+          MERGED_HEAD_BRANCH: ${{ github.event.pull_request.head.ref || '' }}
+          MERGED_PR_TITLE: ${{ github.event.pull_request.title || '' }}
           ORCHESTRATOR_ENABLED: ${{ vars.ORCHESTRATOR_ENABLED || 'true' }}
+          ORCHESTRATOR_TRACKING_BASE: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
         run: npx tsx .github/scripts/phase-orchestrator.ts

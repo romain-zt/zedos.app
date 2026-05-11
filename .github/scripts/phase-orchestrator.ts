@@ -12,6 +12,8 @@ const repo = process.env.REPO;
 const mergedHeadBranch = process.env.MERGED_HEAD_BRANCH ?? "";
 const mergedPrNumber = process.env.MERGED_PR_NUMBER ?? "";
 const orchestratorEnabled = process.env.ORCHESTRATOR_ENABLED !== "false";
+/** Open tracking PRs against `main` or a long-lived integration branch, e.g. `feature/my-epic` */
+const trackingBase = (process.env.ORCHESTRATOR_TRACKING_BASE ?? "main").trim() || "main";
 
 if (!orchestratorEnabled) {
   console.log("⏸️  ORCHESTRATOR_ENABLED=false — paused. Set it to 'true' to resume.");
@@ -42,7 +44,9 @@ const ORCHESTRATOR_BRANCH_RULES = `## Orchestrator branch rules (mandatory)
 A **draft tracking PR already exists**: PR #{TRACKING_PR_NUMBER}, head \`{TRACKING_PR_BRANCH}\` → base \`main\`. Automation **only auto-merges that PR** (and stacked dependents via pr-cascade.yml). Commits that exist only on PRs that target \`main\` directly will **not** be included when the tracking PR merges.
 
 - **Primary branch:** check out and push **all** implementation work to \`{TRACKING_PR_BRANCH}\` (\`git fetch origin && git checkout {TRACKING_PR_BRANCH}\`). The open draft PR will grow to include your diff.
-- **Multiple PRs for this phase:** stack them — first additional PR must use \`gh pr create --base {TRACKING_PR_BRANCH} ...\` (draft). Each next PR uses \`--base\` = the **previous** feature branch name. Never open phase work as a standalone PR to \`main\` unless it is stacked this way.
+- **Merge target for this tracking PR:** base branch is \`{TRACKING_BASE}\` (often \`main\`; for large epics set repo variable \`ORCHESTRATOR_TRACKING_BASE\` to e.g. \`feature/my-epic\` so sub-tasks merge into the integration branch one-by-one, then merge \`feature/my-epic\` → \`main\` when done).
+- **Multiple PRs for this phase:** stack them — first additional PR must use \`gh pr create --base {TRACKING_PR_BRANCH} ...\` (draft). Each next PR uses \`--base\` = the **previous** feature branch name. Never open phase work as a standalone PR to \`{TRACKING_BASE}\` only unless it is stacked this way.
+- **Human blocker:** if work cannot proceed without a person (secrets, product call, access), set the phase to \`"blocked"\` in docs/state/status.json with \`blocker\` starting with \`NEED_HUMAN:\` (recommended), update HANDOFF, do **not** call \`gh pr ready\`. The orchestrator will mirror that state to \`main\` and skip this phase so it can pick the next eligible task.
 - **status.json / HANDOFF.md:** commit them on \`{TRACKING_PR_BRANCH}\` with the rest of the phase so they merge with the code.
 
 `;
@@ -314,6 +318,7 @@ function openTrackingPR(step: string): TrackingPR {
     `## Orchestrator tracking PR`,
     ``,
     `Phase: \`${step}\``,
+    `Merge base: \`${trackingBase}\``,
     `Started: ${new Date().toISOString()}`,
     ``,
     `This PR is opened automatically when a phase agent starts.`,
@@ -326,7 +331,7 @@ function openTrackingPR(step: string): TrackingPR {
   ].join("\n"));
 
   const prUrl = gh(
-    `pr create --repo "${repo}" --base main --head "${branch}" --draft --title "${title}" --body-file "${bodyFile}"`,
+    `pr create --repo "${repo}" --base "${trackingBase}" --head "${branch}" --draft --title "${title}" --body-file "${bodyFile}"`,
   );
 
   // Extract PR number from URL (last segment)
@@ -353,6 +358,123 @@ function readStatusFromGitRev(revLike: string): StatusJson | null {
     return JSON.parse(raw) as StatusJson;
   } catch {
     return null;
+  }
+}
+
+function getInProgressStep(s: StatusJson): string | null {
+  const p3 = s.phase3 ?? {};
+  const fa = s.fa_account_session ?? {};
+  if (p3.p0 === "in-progress") return "phase3-p0";
+  if (p3.p1 === "in-progress") return "phase3-p1";
+  if (p3.p2 === "in-progress") return "phase3-p2";
+  if (p3.p3 === "in-progress") return "phase3-p3";
+  if (fa.slice1 === "in-progress") return "fa-account-session";
+  return null;
+}
+
+function extractStepFromTrackingTitle(title: string): string | null {
+  if (!title.startsWith("chore(orchestrator): [tracking]")) return null;
+  const m = title.match(/\[tracking\]\s+(\S+)/u);
+  return m?.[1] ?? null;
+}
+
+interface GhPrListRow {
+  number: number;
+  title: string;
+  headRefName: string;
+  isDraft: boolean;
+  url: string;
+  baseRefName: string;
+}
+
+function findDraftTrackingPR(step: string): TrackingPR | null {
+  try {
+    const raw = gh(
+      `pr list --repo "${repo}" --state open --json number,title,headRefName,isDraft,url,baseRefName`,
+    );
+    const prs = JSON.parse(raw) as GhPrListRow[];
+    for (const pr of prs) {
+      if (!pr.isDraft) continue;
+      if (extractStepFromTrackingTitle(pr.title) !== step) continue;
+      if (pr.baseRefName !== trackingBase) {
+        console.log(`   …skipping PR #${pr.number} (base '${pr.baseRefName}' ≠ orchestrator base '${trackingBase}')`);
+        continue;
+      }
+      return { number: pr.number, branch: pr.headRefName, url: pr.url };
+    }
+  } catch (e) {
+    console.warn("⚠️  findDraftTrackingPR failed:", e);
+  }
+  return null;
+}
+
+function phaseCompleteOnStatus(step: string, st: StatusJson): boolean {
+  switch (step) {
+    case "phase3-p0": return st.phase3?.p0 === "complete";
+    case "phase3-p1": return st.phase3?.p1 === "complete";
+    case "phase3-p2": return st.phase3?.p2 === "complete";
+    case "phase3-p3": return st.phase3?.p3 === "complete";
+    case "fa-account-session": return st.fa_account_session?.slice1 === "complete";
+    default: return false;
+  }
+}
+
+function phaseBlockedOnStatus(step: string, st: StatusJson): boolean {
+  switch (step) {
+    case "phase3-p0": return st.phase3?.p0 === "blocked";
+    case "phase3-p1": return st.phase3?.p1 === "blocked";
+    case "phase3-p2": return st.phase3?.p2 === "blocked";
+    case "phase3-p3": return st.phase3?.p3 === "blocked";
+    case "fa-account-session": return st.fa_account_session?.slice1 === "blocked";
+    default: return false;
+  }
+}
+
+function applyBlockedMirror(mainS: StatusJson, remoteS: StatusJson, step: string): void {
+  switch (step) {
+    case "phase3-p0":
+      mainS.phase3 = { ...mainS.phase3, p0: "blocked", blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker };
+      break;
+    case "phase3-p1":
+      mainS.phase3 = { ...mainS.phase3, p1: "blocked", blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker };
+      break;
+    case "phase3-p2":
+      mainS.phase3 = { ...mainS.phase3, p2: "blocked", blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker };
+      break;
+    case "phase3-p3":
+      mainS.phase3 = { ...mainS.phase3, p3: "blocked", blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker };
+      break;
+    case "fa-account-session":
+      mainS.fa_account_session = {
+        ...mainS.fa_account_session,
+        slice1: "blocked",
+        blocker: remoteS.fa_account_session?.blocker ?? mainS.fa_account_session?.blocker,
+      };
+      break;
+  }
+}
+
+/** Copy blocked phase state from agent branch into main so the pipeline can skip and continue */
+function syncBlockedFromRemoteToMain(step: string, remoteRev: string): boolean {
+  const remoteS = readStatusFromGitRev(remoteRev);
+  if (!remoteS || !phaseBlockedOnStatus(step, remoteS)) return false;
+  try {
+    gitExec(`checkout main`);
+    gitExec(`pull origin main --ff-only`);
+  } catch { /* */ }
+  const mainS = readStatus();
+  if (!mainS) return false;
+  applyBlockedMirror(mainS, remoteS, step);
+  writeStatus(mainS);
+  try {
+    gitExec(`add docs/state/status.json`);
+    gitExec(`commit -m "chore(orchestrator): mirror blocked state for ${step} from agent branch [skip ci]"`);
+    gitExec(`push`);
+    console.log(`📌 Mirrored '${step}' → blocked on main (orchestrator will skip this step).`);
+    return true;
+  } catch (err) {
+    console.warn("⚠️  Could not commit blocked mirror to main:", err);
+    return false;
   }
 }
 
@@ -532,140 +654,182 @@ When done, commit with:
   }
 }
 
+function buildOrchestratorPrompt(step: string, trackingPR: TrackingPR, remediate: boolean): string {
+  const tmpl = PHASE_PROMPTS[step];
+  if (!tmpl) {
+    throw new Error(`No PHASE_PROMPTS entry for "${step}"`);
+  }
+  const remediation = remediate
+    ? `## Remediation pass (mandatory context)
+
+Phase **${step}** is **in-progress**. Draft tracking PR **#${trackingPR.number}** (\`${trackingPR.branch}\` → \`${trackingBase}\`) already exists.
+Automation is re-invoking you to **continue** until the phase ships or is explicitly blocked:
+
+- Resolve Merge conflicts — rebase \`${trackingPR.branch}\` onto the latest \`${trackingBase}\`; keep stacked child branches consistent.
+- Fix failing CI, review comments, and branch-protection checks; push to \`${trackingPR.branch}\` (and stacked heads as needed).
+- When fully done: set the matching field in docs/state/status.json to \`"complete"\` on \`${trackingPR.branch}\`, commit, push, then \`gh pr ready ${trackingPR.number} --repo ${repo}\`.
+- If blocked by a human (secrets, product/legal, irreversible decision): set the phase to \`"blocked"\` with \`blocker\` beginning \`NEED_HUMAN:\`, update HANDOFF, do **not** call \`gh pr ready\`. The orchestrator will copy \`blocked\` onto \`main\` and advance to other pipeline work.
+
+`
+    : "";
+  return `${remediation}${ORCHESTRATOR_BRANCH_RULES}${tmpl}`
+    .replace(/\{TRACKING_PR_NUMBER\}/g, String(trackingPR.number))
+    .replace(/\{TRACKING_PR_BRANCH\}/g, trackingPR.branch)
+    .replace(/\{REPO\}/g, repo!)
+    .replace(/\{TRACKING_BASE\}/g, trackingBase);
+}
+
+async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: boolean): Promise<void> {
+  const prompt = buildOrchestratorPrompt(step, trackingPR, remediate);
+  console.log(`🚀 Firing Cursor cloud agent for ${step}${remediate ? " (remediation)" : ""}…\n`);
+
+  try {
+    const result = await Agent.prompt(prompt, {
+      apiKey: apiKey!,
+      cloud: {
+        repos: [{ url: `https://github.com/${repo}` }],
+        autoCreatePR: false,
+        skipReviewerRequest: true,
+      },
+    });
+
+    if (result.status === "error") {
+      console.error(`\n❌ Agent run for "${step}" failed. Check the Cursor dashboard.`);
+      if (!findDraftTrackingPR(step)) {
+        resetInProgress(step);
+      }
+      process.exit(2);
+    }
+
+    console.log(`\n🔍 Verifying post-agent conditions for "${step}"…`);
+
+    try {
+      gitExec(`fetch origin ${trackingPR.branch}`);
+    } catch {
+      console.warn(`⚠️  git fetch origin ${trackingPR.branch} failed — status check may fail.`);
+    }
+
+    const remoteRev = `origin/${trackingPR.branch}`;
+
+    let trackingPRIsDraft = true;
+    try {
+      const prJson = execSync(
+        `gh pr view ${trackingPR.number} --repo "${repo}" --json isDraft`,
+        { encoding: "utf8" },
+      ).trim();
+      const prData = JSON.parse(prJson) as { isDraft: boolean };
+      trackingPRIsDraft = prData.isDraft;
+    } catch {
+      console.warn(`⚠️  Could not query tracking PR #${trackingPR.number} state (non-fatal).`);
+    }
+
+    const freshStatus = readStatusFromGitRev(remoteRev);
+    const phaseIsComplete = freshStatus ? phaseCompleteOnStatus(step, freshStatus) : false;
+
+    if (trackingPRIsDraft) {
+      if (syncBlockedFromRemoteToMain(step, remoteRev)) {
+        console.log("✅ Phase marked blocked on main; orchestrator can pick other work.");
+        process.exit(0);
+      }
+      console.log(
+        `\n⏳ Tracking PR #${trackingPR.number} still draft — leaving phase in-progress for next remediation run (schedule/webhook).`,
+      );
+      process.exit(0);
+    }
+
+    if (!phaseIsComplete) {
+      if (syncBlockedFromRemoteToMain(step, remoteRev)) {
+        process.exit(0);
+      }
+      console.error(
+        `\n❌ Post-agent check FAILED: docs/state/status.json on '${remoteRev}' does not show "${step}" as complete.`,
+      );
+      resetInProgress(step);
+      process.exit(2);
+    }
+
+    console.log(`✅ Post-agent checks passed: tracking PR #${trackingPR.number} is ready, status.json complete.`);
+    console.log(`\n✅ Agent for "${step}" completed successfully.`);
+    process.exit(0);
+  } catch (err) {
+    if (err instanceof CursorAgentError) {
+      console.error(`❌ Agent failed to start: ${err.message} (retryable=${err.isRetryable})`);
+      if (!findDraftTrackingPR(step)) {
+        resetInProgress(step);
+      }
+      process.exit(1);
+    }
+    throw err;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
-console.log(`\n🤖 Phase Orchestrator`);
-console.log(`   Merged PR : #${mergedPrNumber}`);
-console.log(`   Head branch: ${mergedHeadBranch}`);
-console.log(`   Repo       : ${repo}\n`);
+async function mainOrchestrator(): Promise<void> {
+  console.log(`\n🤖 Phase Orchestrator`);
+  console.log(`   Merged PR     : #${mergedPrNumber}`);
+  console.log(`   Head branch   : ${mergedHeadBranch}`);
+  console.log(`   Repo          : ${repo}`);
+  console.log(`   Tracking base : ${trackingBase}\n`);
 
-const status = readStatus();
-if (!status) process.exit(0);
-
-const nextStep = determineNextStep(status);
-
-if (!nextStep) {
-  console.log("🏁 No next automated step. All phases complete or manual decision required.");
-  process.exit(0);
-}
-
-const promptTemplate = PHASE_PROMPTS[nextStep];
-if (!promptTemplate) {
-  console.error(`❌ No prompt defined for step "${nextStep}". Add it to PHASE_PROMPTS.`);
-  process.exit(1);
-}
-
-console.log(`🚀 Next step: ${nextStep}`);
-
-// 1. Mark in-progress on main (idempotency guard)
-markInProgress(status, nextStep);
-
-// 2. Preflight check
-const preflightOk = await runPreflight(nextStep);
-if (!preflightOk) {
-  console.error(`❌ Preflight failed for "${nextStep}". Halting.`);
-  process.exit(2);
-}
-
-// 3. Open draft tracking PR — agent will call `gh pr ready <n>` when done
-console.log(`\n📋 Opening draft tracking PR for ${nextStep}…`);
-const trackingPR = openTrackingPR(nextStep);
-
-// 4. Inject tracking PR info into the prompt
-const prompt = `${ORCHESTRATOR_BRANCH_RULES}${promptTemplate}`
-  .replace(/\{TRACKING_PR_NUMBER\}/g, String(trackingPR.number))
-  .replace(/\{TRACKING_PR_BRANCH\}/g, trackingPR.branch)
-  .replace(/\{REPO\}/g, repo!);
-
-console.log(`🚀 Firing Cursor cloud agent for ${nextStep}…\n`);
-
-try {
-  const result = await Agent.prompt(prompt, {
-    apiKey: apiKey!,
-    cloud: {
-      repos: [{ url: `https://github.com/${repo}` }],
-      autoCreatePR: false,
-      skipReviewerRequest: true,
-    },
-  });
-
-  if (result.status === "error") {
-    console.error(`\n❌ Agent run for "${nextStep}" failed. Tracking PR #${trackingPR.number} remains draft.`);
-    console.error(`   Check the Cursor dashboard. The draft PR is your signal that intervention is needed.`);
-    resetInProgress(nextStep);
-    process.exit(2);
+  let status = readStatus();
+  if (!status) {
+    process.exit(0);
   }
 
-  // ---------------------------------------------------------------------------
-  // Post-agent validation
-  // The SDK may return "success" even if the agent didn't complete all required
-  // steps. We verify two hard post-conditions before claiming victory:
-  //   1. Tracking PR is no longer a draft (agent called `gh pr ready`)
-  //   2. Phase status in status.json on the **tracking branch** is "complete"
-  // ---------------------------------------------------------------------------
-  console.log(`\n🔍 Verifying post-agent conditions for "${nextStep}"…`);
-
-  try {
-    gitExec(`fetch origin ${trackingPR.branch}`);
-  } catch {
-    console.warn(`⚠️  git fetch origin ${trackingPR.branch} failed — status check may fail.`);
-  }
-
-  const remoteRev = `origin/${trackingPR.branch}`;
-
-  // 1. Check tracking PR draft state
-  let trackingPRIsDraft = true;
-  try {
-    const prJson = execSync(
-      `gh pr view ${trackingPR.number} --repo "${repo}" --json isDraft`,
-      { encoding: "utf8" }
-    ).trim();
-    const prData = JSON.parse(prJson) as { isDraft: boolean };
-    trackingPRIsDraft = prData.isDraft;
-  } catch {
-    console.warn(`⚠️  Could not query tracking PR #${trackingPR.number} state (non-fatal).`);
-  }
-
-  if (trackingPRIsDraft) {
-    console.error(`\n❌ Post-agent check FAILED: tracking PR #${trackingPR.number} is still a draft.`);
-    console.error(`   The agent did NOT call \`gh pr ready ${trackingPR.number}\`.`);
-    console.error(`   Work may be on a branch but PRs were not opened/signaled.`);
-    resetInProgress(nextStep);
-    process.exit(2);
-  }
-
-  // 2. Check status.json on the tracking branch (CI checkout is not the agent's clone)
-  const freshStatus = readStatusFromGitRev(remoteRev);
-  let phaseIsComplete = false;
-  if (freshStatus) {
-    switch (nextStep) {
-      case "phase3-p0": phaseIsComplete = freshStatus.phase3?.p0 === "complete"; break;
-      case "phase3-p1": phaseIsComplete = freshStatus.phase3?.p1 === "complete"; break;
-      case "phase3-p2": phaseIsComplete = freshStatus.phase3?.p2 === "complete"; break;
-      case "phase3-p3": phaseIsComplete = freshStatus.phase3?.p3 === "complete"; break;
-      case "fa-account-session": phaseIsComplete = freshStatus.fa_account_session?.slice1 === "complete"; break;
+  const inProg = getInProgressStep(status);
+  if (inProg) {
+    const draftPR = findDraftTrackingPR(inProg);
+    if (draftPR) {
+      console.log(`🔁 Remediation: "${inProg}" in-progress — re-using draft PR #${draftPR.number}.`);
+      if (!PHASE_PROMPTS[inProg]) {
+        console.error(`❌ No prompt defined for step "${inProg}". Add it to PHASE_PROMPTS.`);
+        process.exit(1);
+      }
+      const preflightOk = await runPreflight(inProg);
+      if (!preflightOk) {
+        console.error(`❌ Preflight failed for "${inProg}". Halting.`);
+        process.exit(2);
+      }
+      await executeAgentRun(inProg, draftPR, true);
+      return;
+    }
+    console.log(
+      `⚠️  "${inProg}" is in-progress on main but no open draft tracking PR for base '${trackingBase}'. Resetting.`,
+    );
+    resetInProgress(inProg);
+    status = readStatus();
+    if (!status) {
+      process.exit(0);
     }
   }
 
-  if (!phaseIsComplete) {
-    console.error(`\n❌ Post-agent check FAILED: docs/state/status.json on '${remoteRev}' does not show "${nextStep}" as "complete".`);
-    console.error(`   The agent must commit the updated status on '${trackingPR.branch}' together with the phase work.`);
-    console.error(`   Tracking PR #${trackingPR.number} state: ${trackingPRIsDraft ? "draft" : "ready"}.`);
-    resetInProgress(nextStep);
+  const nextStep = determineNextStep(status);
+  if (!nextStep) {
+    console.log("🏁 No next automated step. All phases complete or manual decision required.");
+    process.exit(0);
+  }
+
+  if (!PHASE_PROMPTS[nextStep]) {
+    console.error(`❌ No prompt defined for step "${nextStep}". Add it to PHASE_PROMPTS.`);
+    process.exit(1);
+  }
+
+  console.log(`🚀 Next step: ${nextStep}`);
+
+  markInProgress(status, nextStep);
+
+  const preflightOk = await runPreflight(nextStep);
+  if (!preflightOk) {
+    console.error(`❌ Preflight failed for "${nextStep}". Halting.`);
     process.exit(2);
   }
 
-  console.log(`✅ Post-agent checks passed: tracking PR #${trackingPR.number} is ready, status.json updated.`);
-  console.log(`\n✅ Agent for "${nextStep}" completed successfully.`);
-  process.exit(0);
-} catch (err) {
-  if (err instanceof CursorAgentError) {
-    console.error(`❌ Agent failed to start: ${err.message} (retryable=${err.isRetryable})`);
-    resetInProgress(nextStep);
-    process.exit(1);
-  }
-  resetInProgress(nextStep);
-  throw err;
+  console.log(`\n📋 Opening draft tracking PR for ${nextStep}…`);
+  const trackingPR = openTrackingPR(nextStep);
+  await executeAgentRun(nextStep, trackingPR, false);
 }
+
+await mainOrchestrator();

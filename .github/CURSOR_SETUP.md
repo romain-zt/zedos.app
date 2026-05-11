@@ -107,11 +107,17 @@ No secrets beyond the default `GITHUB_TOKEN` are required.
 
 ## Phase Orchestrator — autonomous pipeline driver
 
-`.github/workflows/phase-orchestrator.yml` closes the autonomy loop: every time a PR merges into `main`, it reads `docs/state/status.json`, determines the next phase to execute, and fires a Cursor cloud agent automatically.
+`.github/workflows/phase-orchestrator.yml` reads `docs/state/status.json`, starts or **continues** phases, and fires a Cursor cloud agent. It runs when a PR merges into **`main`** or a **`feature/*`** integration branch, on a **30-minute schedule**, or via **workflow_dispatch**.
+
+**Remediation and human blockers:**
+
+1. If a phase is **`in-progress`** and a **draft** orchestrator tracking PR still exists for that phase (same merge base as `ORCHESTRATOR_TRACKING_BASE`, default `main`), the orchestrator **re-fires the agent** with a remediation prompt (conflicts, CI, review feedback) instead of exiting immediately.
+2. When the agent marks **`blocked`** on the tracking branch (recommended: `blocker` starting with `NEED_HUMAN:`), the script mirrors **`blocked`** onto **`main`** so the next run **skips** that phase and can pick another eligible step.
+3. Optional **integration branch:** set the Actions variable `ORCHESTRATOR_TRACKING_BASE` to e.g. `feature/my-epic` (branch must exist on the remote). Tracking PRs target that branch; land stacked sub-PRs into it; when ready, merge `feature/my-epic` → `main`. `pr-cascade.yml` cascades stacks after merges to `main` or `feature/*`.
 
 **How phases advance:**
 
-1. A PR merges into `main`.
+1. A PR merges into `main` or `feature/*` (or the schedule / manual run fires).
 2. The orchestrator reads `docs/state/status.json` to find the current phase state.
 3. If the last completed phase's entry is `"complete"`, it advances to the next phase.
 4. It marks the next phase as `"in-progress"` in `status.json` (commits + pushes `[skip ci]`).
@@ -152,8 +158,8 @@ To **resume**:
 |---|---|
 | `ORCHESTRATOR_ENABLED=false` | Logs and exits 0 — no agent fired |
 | `docs/state/status.json` missing | Logs warning and exits 0 — safe on new repos |
-| Any phase is `"in-progress"` | Holds — another agent is already running |
-| Any phase is `"blocked"` | Logs the blocker message and exits 0 — never auto-proceeds past a blocker |
+| Any phase is `"in-progress"` | If an open **draft** tracking PR exists for that step (matching `ORCHESTRATOR_TRACKING_BASE`), a **remediation** agent run is started. If there is **no** such draft, the step is **reset** to `not-started` so the chain can recover. |
+| Any phase is `"blocked"` | That step is **skipped**; the pipeline attempts the next eligible step (dependencies permitting). Prefer `NEED_HUMAN:` in `blocker` text for operator-visible stalls. |
 | `CURSOR_API_KEY` missing | Exits 1 with a clear message |
 
 ---
