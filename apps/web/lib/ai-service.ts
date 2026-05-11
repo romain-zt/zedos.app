@@ -84,20 +84,21 @@ export function createBufferedStreamingResponse(
   onComplete: (result: string) => Promise<void> | void
 ): ReadableStream {
   return new ReadableStream({
-    async start(controller) {
-      const reader = aiResponse?.body?.getReader()
-      const decoder = new TextDecoder()
-      const encoder = new TextEncoder()
-      let buffer = ''
-      let partialRead = ''
+    start(controller) {
+      const run = async () => {
+        const reader = aiResponse?.body?.getReader()
+        const decoder = new TextDecoder()
+        const encoder = new TextEncoder()
+        let buffer = ''
+        let partialRead = ''
 
-      try {
-        while (true) {
-          const { done, value } = await (reader as any).read()
-          if (done) break
-          partialRead += decoder.decode(value, { stream: true })
-          const lines = partialRead.split('\n')
-          partialRead = lines.pop() ?? ''
+        try {
+          while (true) {
+            const { done, value } = await (reader as ReadableStreamDefaultReader<Uint8Array>).read()
+            if (done) break
+            partialRead += decoder.decode(value, { stream: true })
+            const lines = partialRead.split('\n')
+            partialRead = lines.pop() ?? ''
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -108,21 +109,25 @@ export function createBufferedStreamingResponse(
                 } catch (e: any) {
                   console.error('onComplete error:', e)
                 }
-                const finalData = JSON.stringify({ status: 'completed', result: buffer })
-                controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
-                return
-              }
-              try {
-                const parsed = JSON.parse(data)
-                const content = parsed?.choices?.[0]?.delta?.content ?? ''
-                buffer += content
-                const progressData = JSON.stringify({ status: 'processing', partial: content })
-                controller.enqueue(encoder.encode(`data: ${progressData}\n\n`))
-              } catch {
-                // Skip invalid JSON
               }
             }
           }
+          if (buffer) {
+            try {
+              await onComplete(buffer)
+            } catch {
+              /* best-effort */
+            }
+            const finalData = JSON.stringify({ status: 'completed', result: buffer })
+            controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
+          }
+        } catch (error: unknown) {
+          console.error('Buffered stream error:', error)
+          const message = error instanceof Error ? error.message : 'Stream failed'
+          const errData = JSON.stringify({ status: 'error', message })
+          controller.enqueue(encoder.encode(`data: ${errData}\n\n`))
+        } finally {
+          controller.close()
         }
         // If we reach here without [DONE], still complete
         if (buffer) {
@@ -137,6 +142,8 @@ export function createBufferedStreamingResponse(
       } finally {
         controller.close()
       }
+
+      void run()
     },
   })
 }

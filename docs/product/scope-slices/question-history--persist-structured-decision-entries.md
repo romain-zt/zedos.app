@@ -69,7 +69,7 @@ Every product decision made during the clarification flow produces a structured,
 
 ## Credit / Payment Impact
 
-None — writing a structured decision record does not itself consume credits (credit consumption occurs in the AI clarification step that produced the decision moment).
+Persisting the structured row does not define a **new** billable product action — credit checks and deduction remain tied to the **existing** clarification AI call (same step that produces the decision moment). This slice does not introduce standalone pricing for “save row only.” Coordination with the **Credit system** FA stays unchanged.
 
 ---
 
