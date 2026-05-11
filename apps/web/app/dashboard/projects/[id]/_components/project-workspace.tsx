@@ -181,7 +181,11 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          <QuestionHistoryPanel projectId={projectId} />
+          <QuestionHistoryPanel
+            projectId={projectId}
+            prdVersions={prdVersions}
+            isTabActive={activeTab === 'history'}
+          />
         </TabsContent>
       </Tabs>
 

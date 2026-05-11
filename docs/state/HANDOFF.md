@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-question-history--persist-structured-decision-entries-complete
+current_phase: fa-question-history--owner-views-question-history-complete
 current_blocker: null
 ---
 
@@ -12,16 +12,15 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-question-history--persist-structured-decision-entries`: **complete** (see `docs/state/status.json`).
-- **Tracking PR:** #48 — `orchestrator/tracking-fa-question-history--persist-structured-decision-entries-1778521309393` → `main`. Mark ready when CI green: `gh pr ready 48 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-question-history--owner-views-question-history`: **complete** (see `docs/state/status.json`).
+- **Tracking PR:** #49 — `orchestrator/tracking-fa-question-history--owner-views-question-history-1778523883291` → `main`. Mark ready when CI green: `gh pr ready 49 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **Product:** Scope slice `docs/product/scope-slices/question-history--persist-structured-decision-entries.md` at `ready-for-user-stories`; FA `question-history.md` marks “Persist structured decision entries” **complete**.
-- **Execution:** User story `docs/execution/user-stories/question-history--persist-structured-decision-entries--v0.md` + plan `docs/execution/plans/question-history--persist-structured-decision-entries--v0.plan.md` (executed).
-- **Contracts:** Zod for clarify stream (`ClarifyAiResponseSchema`), decision UI, generate-PRD stream (`GeneratePrdAiResponseSchema`), clarify POST (`ClarifyPostBodySchema`), question-history list DTOs with legacy `available_options` coercion (`QuestionHistoryListResponseSchema`).
-- **App:** Clarify + generate-prd routes validate streamed JSON **before** credit deduct and DB writes; GET `/api/projects/:id/questions` validates outbound payload; clarify route TypeScript fixes for `AIMessage` and `decisionResponse` narrowing.
-- **Coordination:** Guided-clarification FA remains exploratory (NEED_HUMAN) — does not block this persistence slice; product should align prompts with the contracts over time.
+- **Product:** Scope slice `docs/product/scope-slices/question-history--owner-views-question-history.md` refined to `ready-for-user-stories` and FA `question-history.md` marks **Owner views question history** **complete**.
+- **Execution:** User story `docs/execution/user-stories/question-history--owner-views-question-history--v0.md` + plan `docs/execution/plans/question-history--owner-views-question-history--v0.plan.md` (executed).
+- **App:** History tab loads question history with `QuestionHistoryListResponseSchema` on the client; displays structured question, decision UI options, founder answer, optional comment, AI interpretation, PRD impact, PRD version label (from workspace version list), timestamps; loading / empty / error+retry; refetch when History tab is active and manual refresh.
+- **Coordination:** Anonymous share surface unchanged (no history there).
 
 ## Still blocked elsewhere
 
@@ -29,13 +28,13 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. Pick the next eligible `orchestration.steps` row in `docs/state/orchestration.pipeline.json` (e.g. `fa-question-history--owner-views-question-history` depends on this step).
+1. Pick the next eligible `orchestration.steps` row in `docs/state/orchestration.pipeline.json`.
 2. Credits slice only after human `approved` on each PIS item.
 
 ## Key files (this slice)
 
-- Scope slice: `docs/product/scope-slices/question-history--persist-structured-decision-entries.md`
-- User story: `docs/execution/user-stories/question-history--persist-structured-decision-entries--v0.md`
-- Plan: `docs/execution/plans/question-history--persist-structured-decision-entries--v0.plan.md`
-- Contracts: `packages/contracts/src/ai/clarify-stream.ts`, `decision-ui.ts`, `generate-prd-stream.ts`, `packages/contracts/src/questions/history.ts`, `history.contract.test.ts`
-- API: `apps/web/app/api/projects/[id]/clarify/route.ts`, `generate-prd/route.ts`, `questions/route.ts`
+- Scope slice: `docs/product/scope-slices/question-history--owner-views-question-history.md`
+- User story: `docs/execution/user-stories/question-history--owner-views-question-history--v0.md`
+- Plan: `docs/execution/plans/question-history--owner-views-question-history--v0.plan.md`
+- UI: `apps/web/app/dashboard/projects/[id]/_components/question-history.tsx`, `project-workspace.tsx`
+- API (unchanged): `apps/web/app/api/projects/[id]/questions/route.ts`

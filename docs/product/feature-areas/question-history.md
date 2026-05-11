@@ -84,7 +84,7 @@ The founder keeps a **structured, owner-private log** of product decisions: each
 | Slice | Description | Status |
 |-------|-------------|--------|
 | Persist structured decision entries | Each decision writes/updates the six-field structured record (not raw chat). | complete |
-| Owner views question history | Signed-in owner can browse/search the log in the private workspace contextually. | exploratory |
+| Owner views question history | Signed-in owner can browse/search the log in the private workspace contextually. | complete |
 
 ---
 
@@ -109,3 +109,4 @@ The founder keeps a **structured, owner-private log** of product decisions: each
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
 | 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
+| 2026-05-11 | Slice “Owner views question history” refined + executed (History tab UI) | — |
