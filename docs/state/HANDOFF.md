@@ -13,7 +13,7 @@ current_blocker: null
 ## Orchestration (canonical)
 
 - **Pipeline step** `fa-read-only-sharing--anonymous-read-surface`: **complete**. Anonymous `/share/[token]` reads enabled share rows joined only to `prd_versions` (no project/workspace fields). API + UI use `AnonymousSharedPrdResponseSchema`; errors are generic.
-- **Tracking PR:** #59 — `orchestrator/tracking-fa-read-only-sharing--anonymous-read-surface-1778526778149` → `main`. Mark ready when CI green: `gh pr ready 59 --repo romain-zt/zedos.app`.
+- **Tracking PR:** #62 — `orchestrator/tracking-fa-read-only-sharing--anonymous-read-surface-1778529351123` → `main`. Mark ready when CI green: `gh pr ready 62 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
