@@ -157,12 +157,12 @@ Revert UI links; disable routes. Schema rollback only via forward follow-up migr
 
 ## Approval
 
-- [ ] User reviewed and approved this Plan
+- [x] User reviewed and approved this Plan
 - [ ] Patch Intent Summary will be produced before any code edit
 - [ ] Verification steps (typecheck / lint / test / build) defined in §Tests above
 
-**Approval status:** pending
-**Approval date:** —
+**Approval status:** approved
+**Approval date:** 2026-05-11
 
 ---
 
@@ -171,3 +171,4 @@ Revert UI links; disable routes. Schema rollback only via forward follow-up migr
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Initial proposed plan for story generation slice | — |
+| 2026-05-11 | Approved by owner — unlocked for orchestrator implementation | owner |

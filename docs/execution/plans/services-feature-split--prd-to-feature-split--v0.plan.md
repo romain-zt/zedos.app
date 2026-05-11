@@ -157,12 +157,12 @@ Disable routes and UI link; drop migration via forward follow-up only if needed.
 
 ## Approval
 
-- [ ] User reviewed and approved this Plan
+- [x] User reviewed and approved this Plan
 - [ ] Patch Intent Summary will be produced before any code edit
 - [ ] Verification steps (typecheck / lint / test / build) defined in §Tests above
 
-**Approval status:** pending
-**Approval date:** —
+**Approval status:** approved
+**Approval date:** 2026-05-11
 
 ---
 
@@ -171,3 +171,4 @@ Disable routes and UI link; drop migration via forward follow-up only if needed.
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Initial proposed plan for PRD → feature split slice | — |
+| 2026-05-11 | Approved by owner — unlocked for orchestrator implementation | owner |

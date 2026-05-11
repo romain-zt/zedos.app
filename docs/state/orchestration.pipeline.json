@@ -415,6 +415,36 @@
         "planFile": null,
         "notes": "Governance step: create user story + plan if not present before implementing."
       }
+    },
+    {
+      "id": "fa-services-feature-split--prd-to-feature-split--impl",
+      "dependsOn": [
+        "fa-services-feature-split--prd-to-feature-split"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "PRD to feature split — implementation",
+        "featureAreaFile": "docs/product/feature-areas/services-feature-split.md",
+        "scopeSliceFile": "docs/product/scope-slices/services-feature-split--prd-to-feature-split.md",
+        "userStoryFile": "docs/execution/user-stories/services-feature-split--prd-to-feature-split--v0.md",
+        "planFile": "docs/execution/plans/services-feature-split--prd-to-feature-split--v0.plan.md",
+        "notes": "IMPLEMENTATION PHASE — governance artifacts (user story + approved plan) already exist. Stack PRs on tracking branch: (1) packages/db migration + schema, (2) contracts + domain + persistence + use cases, (3) API routes, (4) dashboard UI + placeholder removal. pnpm typecheck && pnpm build must pass on every stacked PR head."
+      }
+    },
+    {
+      "id": "fa-user-stories--story-generation-from-feature-split--impl",
+      "dependsOn": [
+        "fa-services-feature-split--prd-to-feature-split--impl"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Story generation from feature split — implementation",
+        "featureAreaFile": "docs/product/feature-areas/user-stories.md",
+        "scopeSliceFile": "docs/product/scope-slices/user-stories--story-generation-from-feature-split.md",
+        "userStoryFile": "docs/execution/user-stories/user-stories--story-generation-from-feature-split--v0.md",
+        "planFile": "docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md",
+        "notes": "IMPLEMENTATION PHASE — governance artifacts (user story + approved plan) already exist. Stack PRs on tracking branch: (1) packages/db migration 0005 (user_story_corpora + user_story_lines, FK to feature_split_clusters), (2) contracts + domain + persistence + use cases, (3) API routes, (4) dashboard UI + placeholder navigation updates. Depends on feature_split_clusters table from upstream impl step."
+      }
     }
   ]
 }
