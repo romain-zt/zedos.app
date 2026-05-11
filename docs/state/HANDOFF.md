@@ -29,7 +29,8 @@ current_blocker: null
 
 1. **Implementation:** Run `/implement` against the plan with explicit PIS `approved`; ship stacked PRs on the tracking branch per plan §Approach and PR sizing (79).
 2. **Upstream:** User story corpus / `user_story_lines` FK from `fa-user-stories--story-generation-from-feature-split` — plan allows nullable linkage until those tables exist.
-3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface`, `fa-owner-milestone-feedback--milestone-detection-and-prompt` (see `orchestration.steps`).
+3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface` (see `orchestration.steps`).
+4. **`fa-owner-milestone-feedback--milestone-detection-and-prompt` (blocked):** Step is **blocked** in `docs/state/status.json`; see `fa_owner_milestone_feedback` for `NEED_HUMAN` rationale. Tracking PR **#60** — do **not** run `gh pr ready 60` until the scope slice is ready-for-user-stories and an approved Implementation Plan exists. This tracking branch carries foundation work: milestone feedback contracts, `/api/feedback` Zod validation, and a repaired `createBufferedStreamingResponse` plus clarify route (bad merge removed) so clarify/PRD SSE paths typecheck and build.
 
 ## Key files (this slice)
 
