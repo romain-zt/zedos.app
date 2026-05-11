@@ -4,6 +4,10 @@ import { randomUUID } from 'node:crypto';
 export const users = pgTable('users', {
   id: text('id').primaryKey().$defaultFn(() => randomUUID()),
   email: text('email').notNull().unique(),
+  /** Required by better-auth default user model (`requireEmailVerification: false` still persists this flag). */
+  emailVerified: boolean('email_verified').notNull().default(false),
+  /** Optional profile image URL (better-auth default user field). */
+  image: text('image'),
   passwordHash: text('password_hash').notNull(),
   name: text('name').notNull(),
   creditBalance: integer('credit_balance').notNull().default(0),

@@ -16,3 +16,11 @@ test('better-auth migration defines sessions, accounts, verifications', () => {
   assert.match(sql, /accounts_user_id_users_id_fk/);
   assert.match(sql, /sessions_user_id_users_id_fk/);
 });
+
+test('migration 0002 adds better-auth user columns on users', () => {
+  const sqlPath = path.join(__dirname, '0002_better_auth_user_profile_fields.sql');
+  assert.ok(fs.existsSync(sqlPath), `missing migration file: ${sqlPath}`);
+  const sql = fs.readFileSync(sqlPath, 'utf8');
+  assert.match(sql, /email_verified/i);
+  assert.match(sql, /\bimage\b/i);
+});

@@ -10,6 +10,8 @@ export interface NewUserRow {
   email: string;
   passwordHash: string;
   name: string;
+  emailVerified?: boolean;
+  image?: string | null;
   creditBalance?: number;
   graceUsed?: boolean;
   starterCreditsGranted?: boolean;
@@ -22,6 +24,8 @@ export interface UserUpdate {
   email?: string;
   name?: string;
   passwordHash?: string;
+  emailVerified?: boolean;
+  image?: string | null;
   creditBalance?: number;
   graceUsed?: boolean;
   starterCreditsGranted?: boolean;
