@@ -1,13 +1,13 @@
 <!--
-  Feature Area — scaffolded from approved map + docs/prd/PRD.md (FG-FUTURE north star arc)
-  Status: deferred — PRD v1 marks post-PRD pipeline as "under construction / not v0"
+  Feature Area — scaffolded from approved map + docs/prd/PRD.md
+  Activated in PRD v2 (FG-POST-PRD-V1) — post-PRD pipeline brought into active v1 scope.
 -->
 
 # Feature Area: Services / feature split
 
 ## Status
 
-`deferred`
+`exploratory`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -16,7 +16,7 @@
 
 ## PRD Source
 
-- `docs/prd/PRD.md` § Feature Groups (FG-FUTURE — "Services/feature split, tech alignment, Cursor packaging, user stories, delivery loop"; `deferred`); § Global Product Picture (north star arc: "versioned PRD → services/feature grouping…"); § Product Overview ("services/feature split… out of v0 scope… under construction"); § Out of Scope ("Post-PRD pipeline (services split…) | No (dashboard: under construction)")
+- `docs/prd/PRD.md` § Feature Groups (FG-POST-PRD-V1 — "Post-PRD pipeline: services/feature split…"; `exploratory`); § Global Product Picture ("Beyond v0 — FG-POST-PRD-V1 (active v1 scope): services/feature split → user stories → test-first workflows → Cursor delivery"); § FG-POST-PRD-V1 Sub-components ("Services / feature split"); § Flow Inventory ("Post-PRD pipeline… | Yes (v1 scope — FG-POST-PRD-V1)")
 - Related open questions: none
 - Related product decisions: none
 
@@ -55,7 +55,8 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 
 ## User Journeys Touched
 
-- Not yet defined in PRD v1 (this area is post-v0 north star). TBD when the PRD is updated to include the post-PRD pipeline.
+- Founder opens a completed PRD version and initiates a feature split to decompose it into named service/feature clusters.
+- Founder reviews, adjusts, and confirms the proposed clusters before proceeding to user story generation.
 
 ---
 
@@ -64,7 +65,6 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 | Dependency | Status | Notes |
 |------------|--------|-------|
 | PRD versioning FA | pending | A stable, versioned PRD is required as input; the founder must have completed the PRD flow first |
-| PRD v1 update | blocked | PRD must move FG-FUTURE into active scope before this FA can advance to `exploratory` |
 
 ---
 
@@ -79,7 +79,7 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 
 | Blocker | Blocks | NEED_HUMAN |
 |---------|--------|------------|
-| PRD scope — FG-FUTURE is `deferred` in PRD v1 | Advancement to `exploratory` and all downstream work | false — requires `/evol` or `/prd update` to bring into active scope, not a human product decision |
+| None | — | — |
 
 ---
 
@@ -87,22 +87,22 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| PRD-to-feature-split | Founder generates a first-pass feature split from a stable PRD version and can review or adjust the proposed clusters. | deferred |
+| PRD-to-feature-split | Founder generates a first-pass feature split from a stable PRD version and can review or adjust the proposed clusters. | exploratory |
 
 ---
 
 ## Readiness Verdict
 
-- [ ] PRD source sections read
-- [ ] Product intent stated without technical language
-- [ ] Business objects enumerated
-- [ ] User journeys identified
-- [ ] In-scope / out-of-scope explicitly separated
-- [ ] No unresolved PRD open questions affecting this area
-- [ ] Deferred behaviors explicitly named
-- [ ] Candidate Scope Slices are individually small enough
+- [x] PRD source sections read
+- [x] Product intent stated without technical language
+- [x] Business objects enumerated
+- [x] User journeys identified
+- [x] In-scope / out-of-scope explicitly separated
+- [x] No unresolved PRD open questions affecting this area
+- [x] Deferred behaviors explicitly named
+- [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** BLOCKED — PRD v1 marks this area `deferred` (FG-FUTURE). Advancement requires PRD update to bring post-PRD pipeline into active scope.
+**Verdict:** READY — PRD v2 activates FG-POST-PRD-V1; PRD scope blocker resolved. No open blockers.
 
 ---
 
@@ -111,3 +111,4 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) — created as `deferred` per PRD v1 FG-FUTURE | — |
+| 2026-05-11 | Activated — PRD v2 promotes FG-FUTURE → FG-POST-PRD-V1 (active v1 scope); status changed `deferred` → `exploratory`; PRD scope blocker cleared | — |

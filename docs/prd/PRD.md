@@ -11,7 +11,7 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 
 # Product Overview
 
-**Zedos** helps founders who use AI to **ship and validate** a market idea when they only have a **vague concept**. In **v0**, the product delivers **guided clarification**, a **versioned in-app PRD**, **question history**, **readable, shareable output** in the browser, **credit-metered AI** with **Stripe** purchase flows, and **owner-only milestone feedback** so learning tracks **PRD quality** after key steps. Other capabilities implied by the long-term vision (services/feature split, technical and Cursor workspace alignment, user stories, test-first delivery) are **out of v0 scope** and are surfaced elsewhere in the dashboard as **under construction**.
+**Zedos** helps founders who use AI to **ship and validate** a market idea when they only have a **vague concept**. In **v0**, the product delivers **guided clarification**, a **versioned in-app PRD**, **question history**, **readable, shareable output** in the browser, **credit-metered AI** with **Stripe** purchase flows, and **owner-only milestone feedback** so learning tracks **PRD quality** after key steps. The PRD workflow is **v0** scope. The post-PRD pipeline (services/feature split, user stories, test-first workflows, Cursor delivery) is **FG-POST-PRD-V1** — active v1 scope, not v0 deliverables. These surfaces transition from under construction in the dashboard as v1 implementation proceeds.
 
 # Problem & Users
 
@@ -51,7 +51,7 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 
 **v0** is a **solo** founder experience: **multiple projects**, each with **multiple PRD versions**, **guided clarification**, persisted **question history**, **credit-metered AI** (**Stripe** top-ups, **internal ledger**, **first-circuit grace** then strict balance rules), **simple public read-only share links** (anonymous viewers, no workspace/history leakage, owner can disable, **not** search-indexed), and **owner-only milestone feedback** so the product can measure **PRD usefulness** without surveying anonymous viewers.
 
-**Beyond v0 (north star, not in scope for this release):** discovery described a longer arc — **product clarification → versioned PRD →** services/feature grouping **→** technical needs **→** architecture / Cursor setup **→** user stories **→** test-first delivery and iteration. That sequence informs direction but **must not** be mistaken for v0 deliverables; non-PRD surfaces appear as **under construction** in the customer dashboard.
+**Beyond v0 — FG-POST-PRD-V1 (active v1 scope):** the post-PRD pipeline — **services/feature split → user stories → test-first workflows → Cursor delivery** — is now active v1 scope (**FG-POST-PRD-V1**). These surfaces transition from **under construction** to planned deliverables. The PRD workflow (FG-PRD-V0) must ship first; FG-POST-PRD-V1 follows.
 
 # Operating Model
 
@@ -89,7 +89,7 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 | **Share:** mint read-only URL, anonymous read, revoke link, noindex | Yes |
 | Markdown / PDF export | No as MVP gate (MD may follow as fast / v0.1) |
 | Team / invites / roles | No |
-| Post-PRD pipeline (services split, Cursor artifacts, user stories, CI) | No (dashboard: under construction) |
+| Post-PRD pipeline (services/feature split, user stories, test-first workflows, Cursor delivery) | Yes (v1 scope — FG-POST-PRD-V1) |
 
 # Business Objects
 
@@ -143,7 +143,8 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 | Id | Name | Status | Notes |
 |----|------|--------|--------|
 | FG-PRD-V0 | PRD workspace (web): projects, versions, clarification, credits, share | `exploratory` | Sole v0 delivery slice |
-| FG-FUTURE | Services/feature split, tech alignment, Cursor packaging, user stories, delivery loop | `deferred` | Names only; not v0 |
+| FG-POST-PRD-V1 | Post-PRD pipeline: services/feature split, user stories, test-first workflows, Cursor delivery | `exploratory` | Active v1 scope — see FG-POST-PRD-V1 sub-components |
+| FG-FUTURE | Services/feature split, tech alignment, Cursor packaging, user stories, delivery loop | `archived` | Superseded by FG-POST-PRD-V1 |
 
 ## FG-PRD-V0 Sub-components
 
@@ -159,6 +160,17 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 | **Share** | Mint read-only public URL; anonymous read (no edit/comment/workspace access); owner revoke; noindex |
 
 Dashboard shell (under-construction sections for non-PRD areas) is a v0 prerequisite outside this group's scope boundary.
+
+## FG-POST-PRD-V1 Sub-components
+
+| Sub-component | v1 scope anchor |
+|---|---|
+| **Services / feature split** | Break a validated PRD into logical service groupings and feature clusters; structured output consumable by downstream steps |
+| **User stories** | Translate each feature cluster into structured, testable user stories; per-story: title, actor, outcome, acceptance criteria |
+| **Test-first workflows** | For each user story, generate a task list with implementation prompt per task; v0 format: user story doc with embedded tasks + prompts (no separate test scaffold) |
+| **Cursor delivery** | Package and export user stories + task prompts into a Cursor-ready format; initial target: `.cursor/` folder structure + WORK_QUEUE-compatible entries |
+
+FG-PRD-V0 must be delivered before FG-POST-PRD-V1 implementation begins.
 
 # Build Sequence
 

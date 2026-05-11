@@ -1,6 +1,6 @@
 <!--
-  Feature Area — scaffolded from approved map + docs/prd/PRD.md (FG-FUTURE north star arc)
-  Status: deferred — PRD v1 marks post-PRD pipeline as "under construction / not v0"
+  Feature Area — scaffolded from approved map + docs/prd/PRD.md
+  Activated in PRD v2 (FG-POST-PRD-V1) — post-PRD pipeline brought into active v1 scope.
   Product clarification (2026-05-11): "task splitting / for v0 we provide user story with task in it
   (and prompt for each task)" — user stories with embedded tasks + a Cursor prompt per task.
 -->
@@ -9,7 +9,7 @@
 
 ## Status
 
-`deferred`
+`exploratory`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -18,7 +18,7 @@
 
 ## PRD Source
 
-- `docs/prd/PRD.md` § Feature Groups (FG-FUTURE — "delivery loop"; `deferred`); § Global Product Picture (north star arc: "→ test-first delivery and iteration"); § Product Overview ("test-first delivery… out of v0 scope… under construction"); § Out of Scope ("Post-PRD pipeline (…CI…) | No (dashboard: under construction)")
+- `docs/prd/PRD.md` § Feature Groups (FG-POST-PRD-V1 — "test-first workflows"; `exploratory`); § Global Product Picture ("Beyond v0 — FG-POST-PRD-V1: … → test-first workflows → Cursor delivery"); § FG-POST-PRD-V1 Sub-components ("Test-first workflows"); § Flow Inventory ("Post-PRD pipeline… | Yes (v1 scope — FG-POST-PRD-V1)")
 - Related open questions: none
 - Related product decisions: none
 
@@ -58,7 +58,8 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 
 ## User Journeys Touched
 
-- Not yet defined in PRD v1 (this area is post-v0 north star). TBD when the PRD is updated to include the post-PRD pipeline.
+- Founder opens a user story and initiates task splitting to generate an ordered task list with Cursor-ready prompts.
+- Founder reviews and adjusts tasks and prompts before handing off to the Delivery area for packaging.
 
 ---
 
@@ -66,8 +67,7 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| User stories FA | deferred | A set of user stories is required as input for task splitting |
-| PRD v1 update | blocked | PRD must move FG-FUTURE into active scope before this FA can advance to `exploratory` |
+| User stories FA | exploratory | A set of user stories is required as input for task splitting |
 
 ---
 
@@ -82,7 +82,7 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 
 | Blocker | Blocks | NEED_HUMAN |
 |---------|--------|------------|
-| PRD scope — FG-FUTURE is `deferred` in PRD v1 | Advancement to `exploratory` and all downstream work | false — requires `/evol` or `/prd update` to bring into active scope |
+| None | — | — |
 
 ---
 
@@ -90,22 +90,22 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Task splitting with prompts | Founder breaks a user story into tasks and receives a Cursor-ready prompt for each, producing a story ready for implementation. | deferred |
+| Task splitting with prompts | Founder breaks a user story into tasks and receives a Cursor-ready prompt for each, producing a story ready for implementation. | exploratory |
 
 ---
 
 ## Readiness Verdict
 
-- [ ] PRD source sections read
-- [ ] Product intent stated without technical language
-- [ ] Business objects enumerated
-- [ ] User journeys identified
-- [ ] In-scope / out-of-scope explicitly separated
-- [ ] No unresolved PRD open questions affecting this area
-- [ ] Deferred behaviors explicitly named
-- [ ] Candidate Scope Slices are individually small enough
+- [x] PRD source sections read
+- [x] Product intent stated without technical language
+- [x] Business objects enumerated
+- [x] User journeys identified
+- [x] In-scope / out-of-scope explicitly separated
+- [x] No unresolved PRD open questions affecting this area
+- [x] Deferred behaviors explicitly named
+- [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** BLOCKED — PRD v1 marks this area `deferred` (FG-FUTURE). Advancement requires PRD update to bring post-PRD pipeline into active scope.
+**Verdict:** READY — PRD v2 activates FG-POST-PRD-V1; PRD scope blocker resolved. No open blockers.
 
 ---
 
@@ -114,3 +114,4 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) — created as `deferred` per PRD v1 FG-FUTURE; product intent clarified as task splitting + prompt-per-task for v0 of this area | — |
+| 2026-05-11 | Activated — PRD v2 promotes FG-FUTURE → FG-POST-PRD-V1 (active v1 scope); status changed `deferred` → `exploratory`; PRD scope blocker cleared | — |

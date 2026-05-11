@@ -1,23 +1,23 @@
 <!--
-  Feature Area — scaffolded from approved map + docs/prd/PRD.md (FG-FUTURE north star arc)
-  Status: deferred — PRD v1 marks post-PRD pipeline as "under construction / not v0"
-  Maps to "Cursor packaging" in FG-FUTURE; also covers "tech alignment" from the same group.
+  Feature Area — scaffolded from approved map + docs/prd/PRD.md
+  Activated in PRD v2 (FG-POST-PRD-V1) — post-PRD pipeline brought into active v1 scope.
+  Maps to "Cursor delivery" in FG-POST-PRD-V1; export format requires a product decision (NEED_HUMAN=true).
 -->
 
 # Feature Area: Delivery
 
 ## Status
 
-`deferred`
+`exploratory`
 
-> **NEED_HUMAN:** false
+> **NEED_HUMAN:** true — export format for Cursor packaging requires a product decision
 > **NEED_UPDATE:** false
 
 ---
 
 ## PRD Source
 
-- `docs/prd/PRD.md` § Feature Groups (FG-FUTURE — "Cursor packaging", "tech alignment"; `deferred`); § Global Product Picture (north star arc: "→ architecture / Cursor setup → … test-first delivery"); § Product Overview ("Cursor… out of v0 scope… under construction"); § Out of Scope ("Post-PRD pipeline (…Cursor artifacts…) | No (dashboard: under construction)")
+- `docs/prd/PRD.md` § Feature Groups (FG-POST-PRD-V1 — "Cursor delivery"; `exploratory`); § Global Product Picture ("Beyond v0 — FG-POST-PRD-V1: … → Cursor delivery"); § FG-POST-PRD-V1 Sub-components ("Cursor delivery"); § Flow Inventory ("Post-PRD pipeline… | Yes (v1 scope — FG-POST-PRD-V1)")
 - Related open questions: none
 - Related product decisions: none
 
@@ -57,7 +57,8 @@ After a user story has been broken into tasks with prompts, Zedos **packages and
 
 ## User Journeys Touched
 
-- Not yet defined in PRD v1 (this area is post-v0 north star). TBD when the PRD is updated to include the post-PRD pipeline.
+- Founder reviews their completed user stories + tasks + prompts and initiates a Cursor package export.
+- Founder receives a structured deliverable they can open directly in Cursor to start implementation.
 
 ---
 
@@ -65,8 +66,7 @@ After a user story has been broken into tasks with prompts, Zedos **packages and
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| Test-first workflows FA | deferred | Tasks + prompts must exist before packaging; Delivery consumes that output |
-| PRD v1 update | blocked | PRD must move FG-FUTURE into active scope before this FA can advance to `exploratory` |
+| Test-first workflows FA | exploratory | Tasks + prompts must exist before packaging; Delivery consumes that output |
 
 ---
 
@@ -81,8 +81,7 @@ After a user story has been broken into tasks with prompts, Zedos **packages and
 
 | Blocker | Blocks | NEED_HUMAN |
 |---------|--------|------------|
-| PRD scope — FG-FUTURE is `deferred` in PRD v1 | Advancement to `exploratory` and all downstream work | false — requires `/evol` or `/prd update` to bring into active scope |
-| Export format for Cursor packaging | Exact delivery format (file structure, markdown shape, Cursor-specific conventions) | true — requires product decision before Scope Slices can be defined |
+| Export format for Cursor packaging | Exact delivery format (file structure, markdown shape, Cursor-specific conventions) | true — requires product decision before Scope Slices can be fully defined |
 
 ---
 
@@ -90,22 +89,22 @@ After a user story has been broken into tasks with prompts, Zedos **packages and
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Cursor package export | Founder exports their completed user stories, tasks, and prompts as a structured package ready to open in Cursor. | deferred |
+| Cursor package export | Founder exports their completed user stories, tasks, and prompts as a structured package ready to open in Cursor. | exploratory |
 
 ---
 
 ## Readiness Verdict
 
-- [ ] PRD source sections read
-- [ ] Product intent stated without technical language
-- [ ] Business objects enumerated
-- [ ] User journeys identified
-- [ ] In-scope / out-of-scope explicitly separated
-- [ ] No unresolved PRD open questions affecting this area
-- [ ] Deferred behaviors explicitly named
+- [x] PRD source sections read
+- [x] Product intent stated without technical language
+- [x] Business objects enumerated
+- [x] User journeys identified
+- [x] In-scope / out-of-scope explicitly separated
+- [x] No unresolved PRD open questions affecting this area
+- [x] Deferred behaviors explicitly named
 - [ ] Candidate Scope Slices are individually small enough
 
-**Verdict:** BLOCKED — PRD v1 marks this area `deferred` (FG-FUTURE). Advancement requires PRD update to bring post-PRD pipeline into active scope. Export format also requires a product decision (NEED_HUMAN=true for that blocker).
+**Verdict:** PARTIALLY BLOCKED — PRD scope blocker cleared (PRD v2 / FG-POST-PRD-V1). One open NEED_HUMAN blocker remains: export format for Cursor packaging must be decided before Scope Slices can be fully defined.
 
 ---
 
@@ -114,3 +113,4 @@ After a user story has been broken into tasks with prompts, Zedos **packages and
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) — created as `deferred` per PRD v1 FG-FUTURE; maps to "Cursor packaging" + "tech alignment" from FG-FUTURE | — |
+| 2026-05-11 | Activated — PRD v2 promotes FG-FUTURE → FG-POST-PRD-V1 (active v1 scope); status changed `deferred` → `exploratory`; PRD scope blocker cleared; export format NEED_HUMAN blocker remains | — |
