@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -46,7 +46,12 @@ Founder can disable a live share link at any time; pages served at share URLs ar
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Success — link disabled | Owner submits disable for a share link they own; link was active | Action completes; link is shown as disabled / no longer listed among active links; anonymous visitors see inactive share surface |
+| Success — idempotent | Owner repeats disable on an already-disabled link | Same outcome as success; no error; row remains disabled |
+| Error — not signed in | No session when calling the owner action | Generic unauthorized; no detail about whether the link exists |
+| Error — invalid input | Request body missing or empty `shareLinkId` | Validation error with clear field feedback |
+| Error — not found | Link id does not exist, or exists but is not owned by this user | Same not-found outcome (no leak whether id exists vs wrong owner) |
+| Anonymous — revoked | Visitor opens share URL after owner disabled link | Inactive / not-found style experience; no PRD content |
 
 ---
 
@@ -54,7 +59,9 @@ Founder can disable a live share link at any time; pages served at share URLs ar
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| Share link | Read + conditional update | `enabled`, `disabled_at`; ownership checked via PRD version → project |
+| PRD version | Read (join only) | Ownership path for share link row |
+| Project | Read (join only) | Owner user id for authorization |
 
 ---
 
@@ -80,8 +87,8 @@ None — revoking a link is not a defined owner milestone trigger in PRD v1.
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| `mint-read-only-link` | Scope Slice | exploratory | A link must exist before it can be revoked |
-| `anonymous-read-surface` | Scope Slice | exploratory | The revocation must prevent the anonymous surface from serving content |
+| `mint-read-only-link` | Scope Slice | complete | A link must exist before it can be revoked |
+| `anonymous-read-surface` | Scope Slice | complete | The revocation must prevent the anonymous surface from serving content |
 
 ---
 
@@ -101,18 +108,18 @@ A signed-in founder can disable a live share link; after revocation, visitors ac
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -121,3 +128,4 @@ A signed-in founder can disable a live share link; after revocation, visitors ac
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice read-only-sharing` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX states, data touched, dependency statuses; promoted to `ready-for-user-stories` | cloud-agent |

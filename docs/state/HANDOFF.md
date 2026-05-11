@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-read-only-sharing--anonymous-read-surface-complete
+current_phase: fa-read-only-sharing--revoke-link-and-noindex-complete
 current_blocker: null
 ---
 
@@ -12,15 +12,15 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-read-only-sharing--anonymous-read-surface`: **complete**. Anonymous `/share/[token]` reads enabled share rows joined only to `prd_versions` (no project/workspace fields). API + UI use `AnonymousSharedPrdResponseSchema`; errors are generic.
-- **Tracking PR:** #62 — `orchestrator/tracking-fa-read-only-sharing--anonymous-read-surface-1778529351123` → `main`. Mark ready when CI green: `gh pr ready 62 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-read-only-sharing--revoke-link-and-noindex`: **complete**. Owner-authenticated `POST /api/share/disable` validates body with `DisableShareLinkRequestSchema`, runs `RevokeReadOnlyShareLinkUseCase`, persists via `revokeReadOnlyShareLink` (idempotent disable, ownership check). Share pages keep `robots: noindex`.
+- **Tracking PR:** #64 — `orchestrator/tracking-fa-read-only-sharing--revoke-link-and-noindex-1778529549863` → `main`. Mark ready when CI green: `gh pr ready 64 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **User story:** `docs/execution/user-stories/read-only-sharing--anonymous-read-surface--v0.md` (`ready-for-implementation`).
-- **Implementation plan:** `docs/execution/plans/read-only-sharing--anonymous-read-surface--v0.plan.md` (`approved`).
-- **Pipeline registry:** `docs/state/orchestration.pipeline.json` links this slice to the story and plan paths.
-- **Code:** `GetAnonymousSharedPrdUseCase`, Drizzle anonymous read path, contracts + tests, `GET /api/share/[token]`, share UI (`loading.tsx`, `error.tsx`, contract-validated client fetch).
+- **User story:** `docs/execution/user-stories/read-only-sharing--revoke-link-and-noindex--v0.md`
+- **Implementation plan:** `docs/execution/plans/read-only-sharing--revoke-link-and-noindex--v0.plan.md`
+- **Contracts:** `packages/contracts/src/share/revoke.ts` + tests
+- **Code:** domain port `revokeReadOnlyShareLink`, Drizzle repo implementation (+ Drizzle `share_links.enabled` insert/update typing workaround), use case + tests, thin disable route, `drizzle-orm` devDependency in `apps/web` for `PgUpdateSetSource` import
 
 ## Still blocked elsewhere
 
@@ -28,11 +28,11 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. **`fa-read-only-sharing--revoke-link-and-noindex`** (depends on this step) — or **parallel:** `fa-owner-milestone-feedback--milestone-detection-and-prompt` (see `orchestration.steps`).
-2. **`fa-test-first-workflows--task-splitting-with-prompts`** tracking PR **#56** if still pending readiness.
+1. Pick next eligible **orchestration.steps** not complete/blocked (e.g. `fa-owner-milestone-feedback--milestone-detection-and-prompt` if unblocked).
+2. **Credits** tracking PR **#39** remains blocked until PIS approvals.
 
 ## Key files (this slice)
 
-- Scope slice: `docs/product/scope-slices/read-only-sharing--anonymous-read-surface.md`
-- User story: `docs/execution/user-stories/read-only-sharing--anonymous-read-surface--v0.md`
-- Plan: `docs/execution/plans/read-only-sharing--anonymous-read-surface--v0.plan.md`
+- Scope slice: `docs/product/scope-slices/read-only-sharing--revoke-link-and-noindex.md`
+- User story: `docs/execution/user-stories/read-only-sharing--revoke-link-and-noindex--v0.md`
+- Plan: `docs/execution/plans/read-only-sharing--revoke-link-and-noindex--v0.plan.md`
