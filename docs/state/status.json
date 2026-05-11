@@ -89,8 +89,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "governance-audit-complete-proceed-p1-fa-or-orchestrator-queue",
-  "orchestration_blocker": null,
+  "next_action": "orch-credit-system-slice-await-pis-approval-then-implement-on-tracking-pr-39",
+  "orchestration_blocker": "NEED_HUMAN: Explicit Patch Intent Summary approval for all 5 blockers in docs/state/HANDOFF.md §4 (reply with `approved` per id 1–5). Implementation Plan docs/execution/plans/credit-system--ledger-concurrency-and-stripe-webhook--phase-3-fixes.plan.md must be promoted from proposed to approved before `/implement`. No `gh pr ready 39` until slice executes and verifies.",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -142,8 +142,11 @@
       "description": "Credit/Stripe planning artifacts (scope slice, user story, plan, friction log)"
     },
     "2b": {
-      "status": "blocked-on-approval",
-      "description": "Implementation: 4-PR stack, ~38 files, ~900 lines, 28-36 worker-hours est."
+      "status": "blocked-on-pis-and-plan-approval",
+      "description": "orch-credit-system slice (PR #39 tracking branch): blocked until PIS §4 (5× explicit `approved`) + Implementation Plan promoted from proposed → approved",
+      "orchestrator_step": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
+      "tracking_pr": 39,
+      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778500683893"
     }
   },
   "active_artifacts": {
