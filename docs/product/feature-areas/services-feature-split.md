@@ -7,7 +7,7 @@
 
 ## Status
 
-`exploratory`
+`validated`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -102,7 +102,7 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 - [x] Deferred behaviors explicitly named
 - [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** READY — PRD v2 activates FG-POST-PRD-V1; PRD scope blocker resolved. No open blockers.
+**Verdict:** READY FOR SCOPE SLICES
 
 ---
 
@@ -112,3 +112,4 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 |------|--------|--------|
 | 2026-05-11 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) — created as `deferred` per PRD v1 FG-FUTURE | — |
 | 2026-05-11 | Activated — PRD v2 promotes FG-FUTURE → FG-POST-PRD-V1 (active v1 scope); status changed `deferred` → `exploratory`; PRD scope blocker cleared | — |
+| 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |

@@ -9,7 +9,7 @@
 
 ## Status
 
-`exploratory`
+`validated`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -105,7 +105,7 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 - [x] Deferred behaviors explicitly named
 - [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** READY — PRD v2 activates FG-POST-PRD-V1; PRD scope blocker resolved. No open blockers.
+**Verdict:** READY FOR SCOPE SLICES
 
 ---
 
@@ -115,3 +115,4 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 |------|--------|--------|
 | 2026-05-11 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) — created as `deferred` per PRD v1 FG-FUTURE; product intent clarified as task splitting + prompt-per-task for v0 of this area | — |
 | 2026-05-11 | Activated — PRD v2 promotes FG-FUTURE → FG-POST-PRD-V1 (active v1 scope); status changed `deferred` → `exploratory`; PRD scope blocker cleared | — |
+| 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
