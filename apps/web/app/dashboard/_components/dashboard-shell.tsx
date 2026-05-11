@@ -52,7 +52,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <TooltipProvider delayDuration={400}>
+      <RoadmapItemModal item={roadmapModal} onClose={() => setRoadmapModal(null)} />
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -105,33 +105,30 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
             <div className="pt-4 pb-2">
               <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Under construction
+                Coming in v1
               </p>
             </div>
             {DEFERRED_ROADMAP_PLACEHOLDERS.map((item) => {
               const Icon = PLACEHOLDER_ICONS[item.id] ?? Construction
               return (
-                <Tooltip key={item.id}>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground',
-                        'border border-dashed border-muted-foreground/25 bg-muted/20',
-                        'cursor-help text-left min-h-11 touch-manipulation',
-                        'hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                      )}
-                      aria-label={`${item.title} — under construction, not available in v0`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0 opacity-80" />
-                      <span className="flex-1 min-w-0 leading-snug">{item.title}</span>
-                      <Construction className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-[240px] text-xs sm:text-sm">
-                    {item.tooltip}
-                  </TooltipContent>
-                </Tooltip>
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setRoadmapModal(item)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground',
+                    'border border-dashed border-muted-foreground/25 bg-muted/20',
+                    'cursor-pointer text-left min-h-11 touch-manipulation',
+                    'hover:bg-muted/35 hover:text-foreground hover:border-muted-foreground/40',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    'transition-colors'
+                  )}
+                  aria-label={`${item.title} — coming in v1, tap to learn more`}
+                >
+                  <Icon className="h-4 w-4 shrink-0 opacity-80" />
+                  <span className="flex-1 min-w-0 leading-snug">{item.title}</span>
+                  <Construction className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+                </button>
               )
             })}
           </nav>
