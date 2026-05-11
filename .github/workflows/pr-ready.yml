@@ -5,10 +5,11 @@ name: PR Ready — Auto-merge Orchestrator Tracking PRs
 # auto-generated phase tracking PR. Merge it immediately so the
 # phase-orchestrator.yml workflow fires and advances the chain.
 
+# Any base branch (main, feature/*, etc.) — tracking PRs may target an integration branch
+# when ORCHESTRATOR_TRACKING_BASE is set — see .github/CURSOR_SETUP.md
 on:
   pull_request:
     types: [ready_for_review]
-    branches: [main]
 
 jobs:
   auto-merge-tracking:

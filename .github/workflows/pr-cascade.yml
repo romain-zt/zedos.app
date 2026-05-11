@@ -1,18 +1,22 @@
 name: PR Cascade
 
-# When a PR merges into main:
+# When a PR merges into main or a feature/* integration branch:
 # 1. Find open draft PRs whose base = the merged head branch (stacked PR pattern)
-# 2. Rebase them onto main — auto-resolving conflicts (branch wins on code, pnpm-lock regenerated)
+# 2. Rebase them onto the merge target branch — auto-resolving conflicts (branch wins on code, pnpm-lock regenerated)
 # 3. Merge them directly — keeping the chain moving overnight without human intervention
 
 on:
   pull_request:
     types: [closed]
-    branches: [main]
 
 jobs:
   cascade:
-    if: github.event.pull_request.merged == true
+    if: >-
+      github.event.pull_request.merged == true
+      && (
+        github.event.pull_request.base.ref == 'main'
+        || startsWith(github.event.pull_request.base.ref, 'feature/')
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -21,6 +25,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
       MERGED_HEAD: ${{ github.event.pull_request.head.ref }}
+      MERGED_BASE: ${{ github.event.pull_request.base.ref }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,7 +43,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-          echo "Merged branch: $MERGED_HEAD"
+          echo "Merged branch: $MERGED_HEAD (into $MERGED_BASE)"
 
           DRAFT_PRS=$(gh pr list \
             --repo "$REPO" \
@@ -62,13 +67,14 @@ jobs:
             echo ""
             echo "━━━ PR #$PR_NUM ($PR_BRANCH) ━━━"
 
-            # Rebase branch onto current main, auto-resolving conflicts
-            echo "→ Fetching and rebasing onto main"
+            # Rebase branch onto merge target (main or feature/* integration branch)
+            echo "→ Fetching and rebasing onto $MERGED_BASE"
+            git fetch origin "$MERGED_BASE"
             git fetch origin "$PR_BRANCH"
             git checkout "$PR_BRANCH"
             git pull origin "$PR_BRANCH" --ff-only 2>/dev/null || true
 
-            if ! git rebase origin/main -X ours; then
+            if ! git rebase "origin/$MERGED_BASE" -X ours; then
               echo "→ Conflict detected — resolving pnpm-lock.yaml by regenerating"
               # For pnpm-lock.yaml conflicts: always regenerate (never merge manually)
               if git diff --name-only --diff-filter=U | grep -q "pnpm-lock.yaml"; then
@@ -98,14 +104,14 @@ jobs:
             echo "→ Force-pushing rebased branch"
             git push --force-with-lease origin "$PR_BRANCH"
 
-            echo "→ Rebasing PR #$PR_NUM base onto main"
-            gh pr edit "$PR_NUM" --repo "$REPO" --base main
+            echo "→ Rebasing PR #$PR_NUM base onto $MERGED_BASE"
+            gh pr edit "$PR_NUM" --repo "$REPO" --base "$MERGED_BASE"
 
             echo "→ Merging PR #$PR_NUM"
             gh pr merge "$PR_NUM" --repo "$REPO" --merge --delete-branch \
               || echo "  ⚠️ Could not merge PR #$PR_NUM — check GitHub for details"
 
-            # Return to main for next iteration
-            git checkout main
-            git pull origin main --ff-only 2>/dev/null || true
+            # Return to merge target for next iteration
+            git checkout "$MERGED_BASE"
+            git pull origin "$MERGED_BASE" --ff-only 2>/dev/null || true
           done <<< "$DRAFT_PRS"
