@@ -1,4 +1,5 @@
 import { Agent, CursorAgentError } from "@cursor/sdk";
+import { buildCursorCloudOptions } from "./cursor-sdk-options";
 import { execSync } from "node:child_process";
 
 // --- Environment -----------------------------------------------------------
@@ -90,14 +91,7 @@ Run \`gh pr diff ${prNumber}\` to get the full diff, then check for:
 // --- Run -------------------------------------------------------------------
 
 try {
-  const result = await Agent.prompt(prompt, {
-    apiKey,
-    cloud: {
-      repos: [{ url: `https://github.com/${repo}` }],
-      autoCreatePR: false,
-      skipReviewerRequest: true,
-    },
-  });
+  const result = await Agent.prompt(prompt, buildCursorCloudOptions(apiKey!, repo));
 
   if (result.status === "error") {
     console.error(`\n❌ Agent run failed. Check the Cursor dashboard for details.`);

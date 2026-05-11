@@ -4,9 +4,6 @@
 
 | ID | Status | Priority | Question | Source note | Blocks |
 |---|---|---:|---|---|---|
-| Q-021 | open | 3 | Is email verification required before a founder's first access to the signed-in web app after signup? If yes, a "check your inbox" intermediate state must be added and the sign-up flow becomes two-step. If no, signup leads directly to the signed-in dashboard. | FA-account-session redefinition (2026-05-10) | `account-session--sign-up-sign-in` UX states; slice promotion to `ready-for-user-stories` |
-| Q-022 | open | 2 | What is the expected product behavior when a founder's session expires during an active clarification or PRD editing session — is unsaved in-progress work preserved (requiring auto-save or draft recovery across FAs), or is data loss on expiry acceptable for v0? | FA-account-session redefinition (2026-05-10) | `account-session--session-persistence-protected-routes` acceptance outcome; cross-FA dependencies (PRD versioning, guided clarification) |
-| Q-023 | open | 4 | Is profile editing (display name, password change, email change) a v0 requirement for the account-session Feature Area, or is it deferred to a future release? If required, a third scope slice must be defined for this FA. | FA-account-session redefinition (2026-05-10) | FA-account-session completeness; whether a third scope slice is needed |
 
 ## Answered
 
@@ -40,3 +37,8 @@ Rules:
 - Ask one open question at a time.
 - Lowest priority number first, then lowest ID.
 - Do not keep duplicate open + answered rows for the same question.
+
+<!-- Answered 2026-05-11 (loop-unblock session) -->
+| Q-021 | 2026-05-11 | Is email verification required before a founder's first access? | **No email verification for v0.** Signup leads directly to the signed-in dashboard. Rationale: open self-serve acquisition requires minimum friction; fraud/abuse risk acceptable at v0 scale; email verification can be added as a future improvement. Password reset (forgot-password) is **included** in the sign-up/sign-in slice as a standard email-based reset flow — no additional human decision required. | sign-up-sign-in slice: remove Q-021 blocker + password-reset-scope blocker; promote to `ready-for-user-stories`. |
+| Q-022 | 2026-05-11 | What happens to in-progress work when a session expires? | **Data loss on session expiry is acceptable for v0.** Session expires → redirect to sign-in with return URL preserved. No auto-save or draft recovery required in this slice. If auto-save is needed it belongs to the PRD versioning or guided clarification FA, not here. Cross-FA dependency unchanged. | session-persistence slice: remove Q-022 blocker; promote to `ready-for-user-stories`. |
+| Q-023 | 2026-05-11 | Is profile editing a v0 requirement or deferred? | **Deferred post-v0.** No third scope slice needed for FA-account-session. Profile editing (display name, password change, email change) is a future slice candidate. | FA-account-session: retain "Profile settings — candidate-deferred" in Candidate Scope Slices table. |

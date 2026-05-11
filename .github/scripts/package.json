@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@cursor/sdk": "latest",
-    "tsx": "latest"
+    "@cursor/sdk": "1.0.12",
+    "tsx": "^4.21.0"
   }
 }

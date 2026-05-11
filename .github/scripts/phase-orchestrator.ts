@@ -1,4 +1,5 @@
 import { Agent, CursorAgentError } from "@cursor/sdk";
+import { buildCursorCloudOptions } from "./cursor-sdk-options";
 import fs from "node:fs";
 import path from "node:path";
 import { execSync, execFileSync } from "node:child_process";
@@ -41,7 +42,7 @@ if (!repo) {
 
 const ORCHESTRATOR_BRANCH_RULES = `## Orchestrator branch rules (mandatory)
 
-A **draft tracking PR already exists**: PR #{TRACKING_PR_NUMBER}, head \`{TRACKING_PR_BRANCH}\` → base \`main\`. Automation **only auto-merges that PR** (and stacked dependents via pr-cascade.yml). Commits that exist only on PRs that target \`main\` directly will **not** be included when the tracking PR merges.
+A **draft tracking PR already exists**: PR #{TRACKING_PR_NUMBER}, head \`{TRACKING_PR_BRANCH}\` → base \`{TRACKING_BASE}\`. Automation **only auto-merges that PR** (and stacked dependents via pr-cascade.yml). Commits that exist only on PRs that target \`main\` directly will **not** be included when the tracking PR merges.
 
 - **Primary branch:** check out and push **all** implementation work to \`{TRACKING_PR_BRANCH}\` (\`git fetch origin && git checkout {TRACKING_PR_BRANCH}\`). The open draft PR will grow to include your diff.
 - **Merge target for this tracking PR:** base branch is \`{TRACKING_BASE}\` (often \`main\`; for large epics set repo variable \`ORCHESTRATOR_TRACKING_BASE\` to e.g. \`feature/my-epic\` so sub-tasks merge into the integration branch one-by-one, then merge \`feature/my-epic\` → \`main\` when done).
@@ -153,24 +154,180 @@ If blocked:
   - Update the tracking PR description with the blocker: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
   - Commit + push docs/state/ files
   - STOP — do not call gh pr ready`,
+
+  "fa-account-session-slice2": `Read docs/state/HANDOFF.md first, then:
+  - docs/product/feature-areas/account-session.md (FA boundaries)
+  - docs/product/scope-slices/account-session--session-persistence-protected-routes.md (slice definition)
+  - .cursor/rules/76-better-auth.mdc (auth implementation rules)
+  - .cursor/rules/77-nextjs.mdc (Next.js App Router patterns)
+
+PREREQUISITE CHECK: verify that Slice 1 (sign-up/sign-in) is complete:
+  - apps/web/app/(auth)/sign-up/page.tsx exists OR apps/web/app/sign-up/page.tsx exists
+  - packages/auth/src/guards.ts exports requireSession and requireUser
+  If any are missing, set docs/state/status.json -> fa_account_session.slice2 = "blocked" + blocker message, and STOP.
+
+Governance step: if docs/execution/user-stories/account-session--session-persistence--protected-routes.md does NOT exist, create it now:
+  - User story covering: middleware route protection, protected-route redirect with return URL, explicit sign-out, session expiry redirect, public routes allowlist
+  - Use template at .cursor/templates/execution/user-story.template.md
+  Then create docs/execution/plans/account-session--session-persistence--protected-routes.plan.md
+  - Touched files: apps/web/middleware.ts, apps/web/app/(dashboard)/layout.tsx (or equivalent), any sign-out action
+  - Use template at .cursor/templates/execution/implementation-plan.template.md
+
+Execute FA-account-session, Slice 2: session persistence and protected routes.
+Key behaviors:
+- Middleware (apps/web/middleware.ts): protect signed-in routes; redirect to /sign-in?from=<url> when no session
+- Public routes allowlist: /sign-up, /sign-in, /api/auth/*, /share/* remain accessible without session
+- Sign-out server action: destroys session, redirects to /sign-in
+- Session persistence handled by better-auth JWT (7-day default, already configured in packages/auth/)
+Architecture: middleware uses requireSession from @repo/auth; sign-out uses better-auth client; Result<T,E> throughout.
+Open draft PRs stacked on \`{TRACKING_PR_BRANCH}\`.
+
+When done:
+  - Set docs/state/status.json -> fa_account_session.slice2 = "complete" and commit + push on \`{TRACKING_PR_BRANCH}\`
+  - Run: gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
+If blocked:
+  - Set fa_account_session.slice2 = "blocked" and fa_account_session.blocker = "<one-line reason>"
+  - Write "Current Blocker" in docs/state/HANDOFF.md
+  - Update tracking PR description: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
+  - Commit + push docs/state/ files
+  - STOP — do not call gh pr ready`,
+
+  "cursor-self-improve": `Read docs/state/HANDOFF.md first, then read .cursor/rules/80-change-policy.mdc and .cursor/commands/improve-config.md.
+
+Your task: audit the .cursor/ governance system and apply improvements. This is a meta-improvement pass to keep the governance system current for Phase 4 feature areas.
+
+Steps:
+1. Scan .cursor/rules/*.mdc — check for:
+   - References to commands, agents, skills, or paths that no longer exist
+   - Priority bands in execution-loop.mdc §4 that still reflect FA statuses accurately
+   - Any v0 FAs that need updated status references
+2. Scan .cursor/agents/execution/*.md — check for:
+   - Agent files referencing outdated model slugs (verify against Cursor documented list)
+   - Missing agent coverage for Phase 4 FAs (project-workspace, prd-versioning, guided-clarification)
+3. Scan .cursor/skills/execution/*/SKILL.md — check for:
+   - Missing skills for upcoming FAs (e.g., add-page-route is present; verify add-usecase and add-driving-endpoint cover the patterns needed)
+4. Update execution-loop.mdc §4 priority bands if any FA status has changed (account-session is now partially done; dashboard-shell is now validated)
+5. Apply improvements using /improve-config semantics — write only .cursor/** files
+6. Add an entry to docs/EXECUTION_LOG.md logging this governance audit
+
+Commit all improvements:
+  git add .cursor/ docs/EXECUTION_LOG.md
+  git commit -m "ci: governance self-improvement audit Phase 4 [skip ci]"
+  git push
+
+When done:
+  - Set docs/state/status.json -> cursor_self_improve.status = "complete" and commit + push on \`{TRACKING_PR_BRANCH}\`
+  - Run: gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
+If blocked:
+  - Set cursor_self_improve.status = "blocked" and cursor_self_improve.blocker = "<one-line reason>"
+  - STOP — do not call gh pr ready`,
+
+  "fa-dashboard-shell-slice1": `Read docs/state/HANDOFF.md first, then:
+  - docs/product/feature-areas/dashboard-shell.md (FA boundaries)
+  - docs/product/scope-slices/dashboard-shell--signed-in-home.md (slice definition)
+  - docs/prd/PRD.md §"Global Product Picture", §"MVP Completeness Checklist (under construction)", §"Out of Scope"
+  - .cursor/rules/77-nextjs.mdc (Next.js App Router patterns)
+  - .cursor/rules/72-hexagonal-boundaries.mdc
+
+PREREQUISITE CHECK: verify that account-session FA is sufficiently complete:
+  - apps/web/middleware.ts exists (session protection)
+  - packages/auth/src/guards.ts exists
+  If missing, set docs/state/status.json -> fa_dashboard_shell.slice1 = "blocked" + blocker message, and STOP.
+
+Governance step: if docs/execution/user-stories/dashboard-shell--signed-in-home--orientation.md does NOT exist, create it:
+  - User story ACs: /dashboard route exists and is protected; founder sees navigation toward projects/PRD; non-v0 areas labeled as under construction; no 404 on first load
+  - Use .cursor/templates/execution/user-story.template.md
+  Then create docs/execution/plans/dashboard-shell--signed-in-home--orientation.plan.md
+  - Touched files: apps/web/app/(dashboard)/page.tsx or apps/web/app/dashboard/page.tsx, layout files, navigation component
+  - Use .cursor/templates/execution/implementation-plan.template.md
+
+Execute FA-dashboard-shell, Slice 1: signed-in home orientation.
+Key behaviors to implement:
+- /dashboard route (protected via middleware): founder's post-sign-in landing page
+- Navigation structure to PRD workflows and project workspace (links, not full implementations)
+- "Under construction" labels for deferred roadmap areas (services, feature split, Cursor packaging, user stories, test-first delivery)
+- Clean, simple layout — this is the shell that future FAs will plug into; keep it minimal and extensible
+Architecture: Next.js App Router server components; requireSession from @repo/auth for layout guard; Result<T,E> for any server actions.
+Open draft PRs stacked on \`{TRACKING_PR_BRANCH}\`.
+
+When done:
+  - Set docs/state/status.json -> fa_dashboard_shell.slice1 = "complete" and commit + push on \`{TRACKING_PR_BRANCH}\`
+  - Run: gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
+If blocked:
+  - Set fa_dashboard_shell.slice1 = "blocked" and fa_dashboard_shell.blocker = "<one-line reason>"
+  - Write "Current Blocker" in docs/state/HANDOFF.md
+  - Update tracking PR: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
+  - Commit + push docs/state/ files
+  - STOP — do not call gh pr ready`,
+
+  "fa-dashboard-shell-slice2": `Read docs/state/HANDOFF.md first, then:
+  - docs/product/feature-areas/dashboard-shell.md (FA boundaries)
+  - docs/product/scope-slices/dashboard-shell--under-construction-placeholders.md (slice definition)
+  - docs/prd/PRD.md §"Out of Scope", §"MVP Completeness Checklist (under construction)"
+  - .cursor/rules/77-nextjs.mdc
+
+PREREQUISITE CHECK: verify Slice 1 (signed-in home) is complete:
+  - apps/web/app/(dashboard)/page.tsx or apps/web/app/dashboard/page.tsx exists
+  If missing, set docs/state/status.json -> fa_dashboard_shell.slice2 = "blocked" + blocker message, and STOP.
+
+Governance step: if docs/execution/user-stories/dashboard-shell--under-construction--placeholders.md does NOT exist, create it:
+  - ACs: all non-v0 roadmap areas have visible under-construction labels; no 404 links; labels are non-interactive or show a tooltip; founder understands v0 scope clearly
+  Then create docs/execution/plans/dashboard-shell--under-construction--placeholders.plan.md
+
+Execute FA-dashboard-shell, Slice 2: under-construction placeholders.
+Key behaviors to implement:
+- Placeholder UI for each non-v0 roadmap area: services/feature split, Cursor packaging, user stories, test-first delivery, architecture analysis
+- Consistent visual treatment: "Under construction" or "Coming soon" label; non-interactive or shows a tooltip
+- No dead links or 404s when founder interacts with placeholder areas
+Architecture: static Next.js components; no server-side data fetching needed; purely presentational.
+Open draft PRs stacked on \`{TRACKING_PR_BRANCH}\`.
+
+When done:
+  - Set docs/state/status.json -> fa_dashboard_shell.slice2 = "complete" and commit + push on \`{TRACKING_PR_BRANCH}\`
+  - Run: gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
+If blocked:
+  - Set fa_dashboard_shell.slice2 = "blocked" and fa_dashboard_shell.blocker = "<one-line reason>"
+  - Write "Current Blocker" in docs/state/HANDOFF.md
+  - Update tracking PR: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
+  - Commit + push docs/state/ files
+  - STOP — do not call gh pr ready`,
 };
 
-// Human-readable titles for the tracking PRs
+// Human-readable titles for the tracking PRs (optional overrides; slice steps synthesize titles)
 const PHASE_TITLES: Record<string, string> = {
   "phase3-p0": "chore(orchestrator): [tracking] phase3-p0 — Turborepo scaffold",
   "phase3-p1": "chore(orchestrator): [tracking] phase3-p1 — package extraction",
   "phase3-p2": "chore(orchestrator): [tracking] phase3-p2 — Drizzle migration",
   "phase3-p3": "chore(orchestrator): [tracking] phase3-p3 — better-auth migration",
   "fa-account-session": "chore(orchestrator): [tracking] fa-account-session — sign-up/sign-in",
+  "fa-account-session-slice2": "chore(orchestrator): [tracking] fa-account-session-slice2 — session persistence",
+  "cursor-self-improve": "chore(orchestrator): [tracking] cursor-self-improve — governance audit",
+  "fa-dashboard-shell-slice1": "chore(orchestrator): [tracking] fa-dashboard-shell-slice1 — signed-in home",
+  "fa-dashboard-shell-slice2": "chore(orchestrator): [tracking] fa-dashboard-shell-slice2 — under-construction",
 };
 
+function getTrackingTitle(stepRow: PipelineStepRow): string {
+  const custom = PHASE_TITLES[stepRow.id];
+  if (custom) return custom;
+  if (stepRow.workload.kind === "slice") {
+    const slug = path.basename(stepRow.workload.scopeSliceFile, ".md");
+    return `chore(orchestrator): [tracking] ${stepRow.id} — ${slug}`;
+  }
+  return `chore(orchestrator): [tracking] ${stepRow.id}`;
+}
+
 // ---------------------------------------------------------------------------
-// Status file
+// Status file + orchestration.pipeline.json schema
 // ---------------------------------------------------------------------------
 
 type PhaseStatus = "not-started" | "in-progress" | "complete" | "blocked";
 
 interface StatusJson {
+  /** Canonical per-step state for the orchestration pipeline (preferred). Legacy phase3 / fa_* fields stay in sync for bundled steps. */
+  orchestration?: {
+    steps?: Record<string, PhaseStatus>;
+    blocker?: string;
+  };
   phase3?: {
     p0?: PhaseStatus;
     p1?: PhaseStatus;
@@ -186,6 +343,110 @@ interface StatusJson {
 }
 
 const STATUS_PATH = path.join(process.cwd(), "docs/state/status.json");
+const PIPELINE_PATH = path.join(process.cwd(), "docs/state/orchestration.pipeline.json");
+
+interface PipelineWorkloadBundled {
+  kind: "bundled";
+  promptKey: string;
+}
+
+interface PipelineWorkloadSlice {
+  kind: "slice";
+  title: string;
+  featureAreaFile: string;
+  scopeSliceFile: string;
+  userStoryFile: string | null;
+  planFile: string | null;
+  notes?: string;
+}
+
+interface PipelineStepRow {
+  id: string;
+  dependsOn: string[];
+  workload: PipelineWorkloadBundled | PipelineWorkloadSlice;
+}
+
+interface PipelineConfig {
+  version: number;
+  steps: PipelineStepRow[];
+}
+
+let pipelineMemo: PipelineConfig | undefined;
+
+function loadPipeline(): PipelineConfig {
+  if (pipelineMemo) return pipelineMemo;
+  if (!fs.existsSync(PIPELINE_PATH)) {
+    console.error("❌ Missing docs/state/orchestration.pipeline.json — add it under docs/state/ so CI can schedule work.");
+    process.exit(1);
+  }
+  try {
+    pipelineMemo = JSON.parse(fs.readFileSync(PIPELINE_PATH, "utf8")) as PipelineConfig;
+  } catch (e) {
+    console.error("❌ Invalid JSON in docs/state/orchestration.pipeline.json:", e);
+    process.exit(1);
+  }
+  if (!pipelineMemo?.steps?.length) {
+    console.error("❌ orchestration.pipeline.json must define a non-empty steps[] array.");
+    process.exit(1);
+  }
+  return pipelineMemo!;
+}
+
+function pipelineStepById(stepId: string): PipelineStepRow {
+  const row = loadPipeline().steps.find((s) => s.id === stepId);
+  if (!row) {
+    console.error(`❌ Step "${stepId}" is not listed in docs/state/orchestration.pipeline.json`);
+    process.exit(1);
+  }
+  return row!;
+}
+
+/** Resolve status for a pipeline step: canonical orchestration map first, then legacy fields (bundled steps). */
+function resolveStepStatus(status: StatusJson, stepId: string): PhaseStatus | undefined {
+  const c = status.orchestration?.steps?.[stepId];
+  if (c !== undefined) return c;
+  switch (stepId) {
+    case "phase3-p0":
+      return status.phase3?.p0;
+    case "phase3-p1":
+      return status.phase3?.p1;
+    case "phase3-p2":
+      return status.phase3?.p2;
+    case "phase3-p3":
+      return status.phase3?.p3;
+    case "fa-account-session":
+      return status.fa_account_session?.slice1;
+    default:
+      return undefined;
+  }
+}
+
+/** Write canonical + legacy (when applicable) step state in-memory (caller persists status.json). */
+function writeCanonicalStepState(status: StatusJson, stepId: string, value: PhaseStatus): void {
+  if (!status.orchestration) status.orchestration = {};
+  if (!status.orchestration.steps) status.orchestration.steps = {};
+  status.orchestration.steps[stepId] = value;
+
+  switch (stepId) {
+    case "phase3-p0":
+      status.phase3 = { ...status.phase3, p0: value };
+      break;
+    case "phase3-p1":
+      status.phase3 = { ...status.phase3, p1: value };
+      break;
+    case "phase3-p2":
+      status.phase3 = { ...status.phase3, p2: value };
+      break;
+    case "phase3-p3":
+      status.phase3 = { ...status.phase3, p3: value };
+      break;
+    case "fa-account-session":
+      status.fa_account_session = { ...status.fa_account_session, slice1: value };
+      break;
+    default:
+      break;
+  }
+}
 
 function readStatus(): StatusJson | null {
   if (!fs.existsSync(STATUS_PATH)) {
@@ -197,6 +458,7 @@ function readStatus(): StatusJson | null {
   } catch (err) {
     console.error("❌ Failed to parse docs/state/status.json:", err);
     process.exit(1);
+    throw err;
   }
 }
 
@@ -209,56 +471,44 @@ function writeStatus(updated: StatusJson): void {
 // ---------------------------------------------------------------------------
 
 function determineNextStep(status: StatusJson): string | null {
-  const p3 = status.phase3 ?? {};
-  const fa = status.fa_account_session ?? {};
+  const cfg = loadPipeline();
 
-  const allPhaseStatuses = [p3.p0, p3.p1, p3.p2, p3.p3, fa.slice1];
-  if (allPhaseStatuses.some((s) => s === "in-progress")) {
-    console.log("⏳ A phase is already in-progress — another agent may be running. Holding.");
+  const inProgressIds = cfg.steps.filter((s) => resolveStepStatus(status, s.id) === "in-progress").map((s) => s.id);
+  if (inProgressIds.length > 0) {
+    console.log(`⏳ Step(s) in-progress (${inProgressIds.join(", ")}) — another agent may be running. Holding.`);
     return null;
   }
 
-  // Ordered pipeline — blocked steps are skipped, not halted on.
-  // Dependencies: p0 → p1 → p2 → p3 → fa-account-session
-  // A blocked dependency blocks its dependents too.
-  const pipeline: { key: string; status: PhaseStatus | undefined; dependsOn: string[] }[] = [
-    { key: "phase3-p0", status: p3.p0, dependsOn: [] },
-    { key: "phase3-p1", status: p3.p1, dependsOn: ["phase3-p0"] },
-    { key: "phase3-p2", status: p3.p2, dependsOn: ["phase3-p1"] },
-    { key: "phase3-p3", status: p3.p3, dependsOn: ["phase3-p2"] },
-    { key: "fa-account-session", status: fa.slice1, dependsOn: ["phase3-p3"] },
-  ];
-
-  const statusMap = new Map(pipeline.map((s) => [s.key, s.status]));
   const blocked: string[] = [];
 
-  for (const step of pipeline) {
-    if (step.status === "complete") continue;
+  const statusMap = new Map<string, PhaseStatus | undefined>();
+  for (const s of cfg.steps) statusMap.set(s.id, resolveStepStatus(status, s.id));
 
-    if (step.status === "blocked") {
-      console.log(`⏭️  Skipping "${step.key}" (blocked). Will try next eligible step.`);
-      blocked.push(step.key);
+  for (const row of cfg.steps) {
+    const stepKey = row.id;
+    const stepStatus = statusMap.get(stepKey);
+
+    if (stepStatus === "complete") continue;
+
+    if (stepStatus === "blocked") {
+      console.log(`⏭️  Skipping "${stepKey}" (blocked). Will try next eligible step.`);
+      blocked.push(stepKey);
       continue;
     }
 
-    // Check if any dependency is not complete (incomplete or blocked)
-    const unmetDep = step.dependsOn.find((dep) => {
-      const depStatus = statusMap.get(dep);
-      return depStatus !== "complete";
-    });
-
+    const unmetDep = row.dependsOn.find((dep) => statusMap.get(dep) !== "complete");
     if (unmetDep) {
       const depStatus = statusMap.get(unmetDep);
       if (depStatus === "blocked") {
-        console.log(`⏭️  Skipping "${step.key}" (dependency "${unmetDep}" is blocked).`);
-        blocked.push(step.key);
+        console.log(`⏭️  Skipping "${stepKey}" (dependency "${unmetDep}" is blocked).`);
+        blocked.push(stepKey);
       } else {
-        console.log(`⏭️  Skipping "${step.key}" (dependency "${unmetDep}" is ${depStatus ?? "not-started"}).`);
+        console.log(`⏭️  Skipping "${stepKey}" (dependency "${unmetDep}" is ${depStatus ?? "not-started"}).`);
       }
       continue;
     }
 
-    return step.key;
+    return stepKey;
   }
 
   if (blocked.length > 0) {
@@ -286,15 +536,37 @@ function gitExec(cmd: string): void {
   execSync(`git ${cmd}`, { stdio: "inherit" });
 }
 
+function ensureOnTrackingMergeBaseBranch(): void {
+  gitExec(`fetch origin`);
+  try {
+    gitExec(`checkout ${trackingBase}`);
+    gitExec(`pull origin ${trackingBase} --ff-only`);
+    return;
+  } catch {
+    /* try detach from remote */
+  }
+  try {
+    gitExec(`checkout -B ${trackingBase} origin/${trackingBase}`);
+  } catch (e2) {
+    console.error(
+      `❌ Could not check out orchestrator merge base '${trackingBase}'. Ensure the branch exists on origin.`,
+    );
+    throw e2;
+  }
+}
+
 interface TrackingPR {
   number: number;
   branch: string;
   url: string;
 }
 
-function openTrackingPR(step: string): TrackingPR {
+function openTrackingPR(stepRow: PipelineStepRow): TrackingPR {
+  const step = stepRow.id;
+  ensureOnTrackingMergeBaseBranch();
+
   const branch = `orchestrator/tracking-${step}-${Date.now()}`;
-  const title = PHASE_TITLES[step] ?? `chore(orchestrator): [tracking] ${step}`;
+  const title = getTrackingTitle(stepRow);
 
   gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
   gitExec(`config user.name "github-actions[bot]"`);
@@ -340,8 +612,11 @@ function openTrackingPR(step: string): TrackingPR {
   // Clean up temp body file
   try { fs.unlinkSync(bodyFile); } catch { /* ignore */ }
 
-  // Stay on main in this CI clone; prompts direct the Cursor agent to checkout {TRACKING_PR_BRANCH}.
-  gitExec(`checkout main`);
+  try {
+    gitExec(`checkout ${trackingBase}`);
+  } catch {
+    gitExec(`checkout main`);
+  }
 
   console.log(`📋 Tracking PR #${prNumber} opened (draft): ${prUrl}`);
   return { number: prNumber, branch, url: prUrl };
@@ -362,13 +637,9 @@ function readStatusFromGitRev(revLike: string): StatusJson | null {
 }
 
 function getInProgressStep(s: StatusJson): string | null {
-  const p3 = s.phase3 ?? {};
-  const fa = s.fa_account_session ?? {};
-  if (p3.p0 === "in-progress") return "phase3-p0";
-  if (p3.p1 === "in-progress") return "phase3-p1";
-  if (p3.p2 === "in-progress") return "phase3-p2";
-  if (p3.p3 === "in-progress") return "phase3-p3";
-  if (fa.slice1 === "in-progress") return "fa-account-session";
+  for (const row of loadPipeline().steps) {
+    if (resolveStepStatus(s, row.id) === "in-progress") return row.id;
+  }
   return null;
 }
 
@@ -408,48 +679,60 @@ function findDraftTrackingPR(step: string): TrackingPR | null {
   return null;
 }
 
-function phaseCompleteOnStatus(step: string, st: StatusJson): boolean {
-  switch (step) {
-    case "phase3-p0": return st.phase3?.p0 === "complete";
-    case "phase3-p1": return st.phase3?.p1 === "complete";
-    case "phase3-p2": return st.phase3?.p2 === "complete";
-    case "phase3-p3": return st.phase3?.p3 === "complete";
-    case "fa-account-session": return st.fa_account_session?.slice1 === "complete";
-    default: return false;
-  }
+function phaseCompleteOnStatus(stepId: string, st: StatusJson): boolean {
+  return resolveStepStatus(st, stepId) === "complete";
 }
 
-function phaseBlockedOnStatus(step: string, st: StatusJson): boolean {
-  switch (step) {
-    case "phase3-p0": return st.phase3?.p0 === "blocked";
-    case "phase3-p1": return st.phase3?.p1 === "blocked";
-    case "phase3-p2": return st.phase3?.p2 === "blocked";
-    case "phase3-p3": return st.phase3?.p3 === "blocked";
-    case "fa-account-session": return st.fa_account_session?.slice1 === "blocked";
-    default: return false;
-  }
+function phaseBlockedOnStatus(stepId: string, st: StatusJson): boolean {
+  return resolveStepStatus(st, stepId) === "blocked";
 }
 
-function applyBlockedMirror(mainS: StatusJson, remoteS: StatusJson, step: string): void {
-  switch (step) {
+function applyBlockedMirror(mainS: StatusJson, remoteS: StatusJson, stepId: string): void {
+  const blockerFromRemote =
+    remoteS.orchestration?.blocker ?? remoteS.phase3?.blocker ?? remoteS.fa_account_session?.blocker;
+
+  if (!mainS.orchestration) mainS.orchestration = {};
+  mainS.orchestration.steps ??= {};
+  mainS.orchestration.steps[stepId] = "blocked";
+  if (blockerFromRemote) mainS.orchestration.blocker = blockerFromRemote;
+
+  switch (stepId) {
     case "phase3-p0":
-      mainS.phase3 = { ...mainS.phase3, p0: "blocked", blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker };
+      mainS.phase3 = {
+        ...mainS.phase3,
+        p0: "blocked",
+        blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker ?? blockerFromRemote,
+      };
       break;
     case "phase3-p1":
-      mainS.phase3 = { ...mainS.phase3, p1: "blocked", blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker };
+      mainS.phase3 = {
+        ...mainS.phase3,
+        p1: "blocked",
+        blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker ?? blockerFromRemote,
+      };
       break;
     case "phase3-p2":
-      mainS.phase3 = { ...mainS.phase3, p2: "blocked", blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker };
+      mainS.phase3 = {
+        ...mainS.phase3,
+        p2: "blocked",
+        blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker ?? blockerFromRemote,
+      };
       break;
     case "phase3-p3":
-      mainS.phase3 = { ...mainS.phase3, p3: "blocked", blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker };
+      mainS.phase3 = {
+        ...mainS.phase3,
+        p3: "blocked",
+        blocker: remoteS.phase3?.blocker ?? mainS.phase3?.blocker ?? blockerFromRemote,
+      };
       break;
     case "fa-account-session":
       mainS.fa_account_session = {
         ...mainS.fa_account_session,
         slice1: "blocked",
-        blocker: remoteS.fa_account_session?.blocker ?? mainS.fa_account_session?.blocker,
+        blocker: remoteS.fa_account_session?.blocker ?? mainS.fa_account_session?.blocker ?? blockerFromRemote,
       };
+      break;
+    default:
       break;
   }
 }
@@ -482,24 +765,17 @@ function syncBlockedFromRemoteToMain(step: string, remoteRev: string): boolean {
 // Mark in-progress + status commit (on main, before opening tracking PR)
 // ---------------------------------------------------------------------------
 
-function markInProgress(status: StatusJson, step: string): void {
-  switch (step) {
-    case "phase3-p0": status.phase3 = { ...status.phase3, p0: "in-progress" }; break;
-    case "phase3-p1": status.phase3 = { ...status.phase3, p1: "in-progress" }; break;
-    case "phase3-p2": status.phase3 = { ...status.phase3, p2: "in-progress" }; break;
-    case "phase3-p3": status.phase3 = { ...status.phase3, p3: "in-progress" }; break;
-    case "fa-account-session": status.fa_account_session = { ...status.fa_account_session, slice1: "in-progress" }; break;
-  }
-
+function markInProgress(status: StatusJson, stepId: string): void {
+  writeCanonicalStepState(status, stepId, "in-progress");
   writeStatus(status);
 
   try {
     gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
     gitExec(`config user.name "github-actions[bot]"`);
     gitExec(`add docs/state/status.json`);
-    gitExec(`commit -m "chore(orchestrator): mark ${step} as in-progress [skip ci]"`);
+    gitExec(`commit -m "chore(orchestrator): mark ${stepId} as in-progress [skip ci]"`);
     gitExec(`push`);
-    console.log(`📝 docs/state/status.json updated: ${step} → in-progress`);
+    console.log(`📝 docs/state/status.json updated: ${stepId} → in-progress`);
   } catch (err) {
     console.warn("⚠️  Could not commit status update (non-fatal):", err);
   }
@@ -509,7 +785,7 @@ function markInProgress(status: StatusJson, step: string): void {
 // Reset in-progress back to not-started (on failure / timeout)
 // ---------------------------------------------------------------------------
 
-function resetInProgress(step: string): void {
+function resetInProgress(stepId: string): void {
   try {
     gitExec(`checkout main`);
     gitExec(`pull origin main --ff-only`);
@@ -518,21 +794,16 @@ function resetInProgress(step: string): void {
   const current = readStatus();
   if (!current) return;
 
-  switch (step) {
-    case "phase3-p0": if (current.phase3?.p0 === "in-progress") current.phase3.p0 = "not-started"; break;
-    case "phase3-p1": if (current.phase3?.p1 === "in-progress") current.phase3.p1 = "not-started"; break;
-    case "phase3-p2": if (current.phase3?.p2 === "in-progress") current.phase3.p2 = "not-started"; break;
-    case "phase3-p3": if (current.phase3?.p3 === "in-progress") current.phase3.p3 = "not-started"; break;
-    case "fa-account-session": if (current.fa_account_session?.slice1 === "in-progress") current.fa_account_session.slice1 = "not-started"; break;
-  }
+  if (resolveStepStatus(current, stepId) !== "in-progress") return;
+  writeCanonicalStepState(current, stepId, "not-started");
 
   writeStatus(current);
 
   try {
     gitExec(`add docs/state/status.json`);
-    gitExec(`commit -m "chore(orchestrator): reset ${step} from in-progress to not-started (agent failed) [skip ci]"`);
+    gitExec(`commit -m "chore(orchestrator): reset ${stepId} from in-progress to not-started (agent failed) [skip ci]"`);
     gitExec(`push`);
-    console.log(`🔄 Reset ${step} → not-started (will retry on next cron).`);
+    console.log(`🔄 Reset ${stepId} → not-started (will retry on next cron).`);
   } catch (err) {
     console.warn("⚠️  Could not commit status reset (non-fatal):", err);
   }
@@ -571,10 +842,24 @@ const PHASE_REQUIREMENTS: Record<string, PhaseRequirements> = {
     rules: ["76-better-auth.mdc", "77-nextjs.mdc"],
     commands: ["implement", "review"],
   },
+  /** Preflight baseline for dynamically declared slice rows */
+  __slice__: {
+    agents: ["architect", "implementer", "reviewer", "domain-guardian"],
+    skills: ["add-usecase", "add-zod-contract", "add-route-handler"],
+    rules: ["70-execution-bridge.mdc", "72-hexagonal-boundaries.mdc", "73-result-rop.mdc", "74-contracts-zod.mdc", "77-nextjs.mdc"],
+    commands: ["plan", "implement", "review"],
+  },
 };
 
+function preflightRequirementsForStep(stepId: string): PhaseRequirements | undefined {
+  if (stepId !== "__slice__" && stepId in PHASE_REQUIREMENTS) return PHASE_REQUIREMENTS[stepId];
+  const row = pipelineStepById(stepId);
+  if (row.workload.kind === "slice") return PHASE_REQUIREMENTS.__slice__;
+  return undefined;
+}
+
 async function runPreflight(nextStep: string): Promise<boolean> {
-  const requirements = PHASE_REQUIREMENTS[nextStep];
+  const requirements = preflightRequirementsForStep(nextStep);
   if (!requirements) {
     console.log(`✅ Preflight: no .cursor/ requirements for "${nextStep}" — proceeding.`);
     return true;
@@ -629,14 +914,7 @@ When done, commit with:
   git push`.trim();
 
   try {
-    const result = await Agent.prompt(setupPrompt, {
-      apiKey: apiKey!,
-      cloud: {
-        repos: [{ url: `https://github.com/${repo}` }],
-        autoCreatePR: false,
-        skipReviewerRequest: true,
-      },
-    });
+    const result = await Agent.prompt(setupPrompt, buildCursorCloudOptions(apiKey!, repo!));
 
     if (result.status === "error") {
       console.error(`❌ Preflight setup agent failed for "${nextStep}".`);
@@ -654,25 +932,96 @@ When done, commit with:
   }
 }
 
-function buildOrchestratorPrompt(step: string, trackingPR: TrackingPR, remediate: boolean): string {
-  const tmpl = PHASE_PROMPTS[step];
+function canonicalOrchestrationHint(stepId: string): string {
+  return `## Canonical pipeline bookkeeping
+
+Current pipeline step id: \\\`${stepId}\\\`.
+
+Set \\\`docs/state/status.json\\\` → \\\`orchestration.steps["${stepId}"]\\\` to \\\`"complete"\\\` or \\\`"blocked"\\\` before you declare the step done (set \\\`orchestration.blocker\\\` too when blocked). Mirror legacy \\\`phase3.*\\\` / \\\`fa_account_session.*\\\` fields whenever your workload instructions mention them.
+
+`;
+}
+
+function bundledWorkloadMarkdown(promptKey: string): string {
+  const tmpl = PHASE_PROMPTS[promptKey];
   if (!tmpl) {
-    throw new Error(`No PHASE_PROMPTS entry for "${step}"`);
+    throw new Error(`Missing PHASE_PROMPTS entry for bundled promptKey="${promptKey}"`);
   }
+  return tmpl;
+}
+
+function sliceWorkloadMarkdown(stepRow: PipelineStepRow, w: PipelineWorkloadSlice): string {
+  const us = w.userStoryFile?.trim()
+    ? `- User story: \\\`${w.userStoryFile}\\\`\n`
+    : `- User story: if none is linked yet, create one per governance from the Scope Slice once it is ready-for-user-stories — do not silently invent scope beyond the Slice file.\n`;
+  const plan = w.planFile?.trim()
+    ? `- Implementation plan (already approved): \\\`${w.planFile}\\\`\n`
+    : `- Implementation plan: if missing, produce one via /.cursor/commands/plan (\`approved\` required before code). Until then set this step \\\`blocked\\\` + NEED_HUMAN referencing the Slice path.\n`;
+
+  const notes = w.notes?.trim() ? `\nOperator notes — ${w.notes.trim()}\n` : "";
+
+  return `${canonicalOrchestrationHint(stepRow.id)}## Slice workload — ${w.title}
+
+Read \\\`docs/state/HANDOFF.md\\\`, then anchor on:
+
+- Feature Area: \\\`${w.featureAreaFile}\\\`
+- Scope Slice: \\\`${w.scopeSliceFile}\\\`
+
+${us}${plan}
+${notes}
+### Execution rules
+
+1. Respect hex boundaries + RoP + Zod contracts (rules 70, 72–74, 77 as applicable).
+2. Stack concrete implementation PRs on \\\`{TRACKING_PR_BRANCH}\\\` exactly like bundled phases — no orphan drafts to \\\`${trackingBase}\\\`.
+3. \\\`pnpm typecheck\\\` and \\\`pnpm build\\\` must pass on heads you push (plus any Slice-specific gates).
+4. Complete: \\\`orchestration.steps["${stepRow.id}"] = "complete"\\\`, commit \\\`docs/state\\\` on the tracking branch, then \\\`gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}\\\`.
+5. If blocked awaiting a human/policy decision: \\\`blocked\\\`, refresh HANDOFF, **omit** \\\`gh pr ready\\\`.
+
+`;
+}
+
+function workloadMarkdownForRow(stepRow: PipelineStepRow): string {
+  const w = stepRow.workload;
+  if (w.kind === "bundled") return bundledWorkloadMarkdown(w.promptKey);
+  return sliceWorkloadMarkdown(stepRow, w);
+}
+
+function validateRunnableStep(stepId: string): void {
+  const row = pipelineStepById(stepId);
+  if (row.workload.kind === "bundled") {
+    if (!PHASE_PROMPTS[row.workload.promptKey]) {
+      console.error(`❌ PHASE_PROMPTS["${row.workload.promptKey}"] missing for bundled pipeline step "${stepId}"`);
+      process.exit(1);
+    }
+    return;
+  }
+  const cwd = process.cwd();
+  for (const rel of [row.workload.featureAreaFile, row.workload.scopeSliceFile]) {
+    if (!fs.existsSync(path.join(cwd, rel))) {
+      console.error(`❌ Slice step "${stepId}" references missing file: ${rel}`);
+      process.exit(1);
+    }
+  }
+}
+
+function buildOrchestratorPrompt(stepId: string, trackingPR: TrackingPR, remediate: boolean): string {
+  const stepRow = pipelineStepById(stepId);
+  const body = workloadMarkdownForRow(stepRow);
+  const canonical = stepRow.workload.kind === "slice" ? "" : canonicalOrchestrationHint(stepId);
   const remediation = remediate
     ? `## Remediation pass (mandatory context)
 
-Phase **${step}** is **in-progress**. Draft tracking PR **#${trackingPR.number}** (\`${trackingPR.branch}\` → \`${trackingBase}\`) already exists.
-Automation is re-invoking you to **continue** until the phase ships or is explicitly blocked:
+Step **${stepId}** is **in-progress**. Draft tracking PR **#${trackingPR.number}** (\`${trackingPR.branch}\` → \`${trackingBase}\`) already exists.
+Automation is re-invoking you to **continue** until the work merges upstream or you block it cleanly:
 
-- Resolve Merge conflicts — rebase \`${trackingPR.branch}\` onto the latest \`${trackingBase}\`; keep stacked child branches consistent.
-- Fix failing CI, review comments, and branch-protection checks; push to \`${trackingPR.branch}\` (and stacked heads as needed).
-- When fully done: set the matching field in docs/state/status.json to \`"complete"\` on \`${trackingPR.branch}\`, commit, push, then \`gh pr ready ${trackingPR.number} --repo ${repo}\`.
-- If blocked by a human (secrets, product/legal, irreversible decision): set the phase to \`"blocked"\` with \`blocker\` beginning \`NEED_HUMAN:\`, update HANDOFF, do **not** call \`gh pr ready\`. The orchestrator will copy \`blocked\` onto \`main\` and advance to other pipeline work.
+- Rebase/repair \`${trackingPR.branch}\` onto \`${trackingBase}\`; keep stacked dependents consistent.
+- Clear failing CI checks and reviewer feedback with additional commits (push to stacked heads too).
+- Success: \\\`orchestration.steps["${stepId}"]\\\` becomes \\\`complete\\\`, mirror legacy status fields whenever applicable, \\\`git push\\\`, then \\\`gh pr ready ${trackingPR.number} --repo ${repo}\\\`.
+- Human stall: \\\`blocked\\\`, populate \\\`orchestration.blocker\\\` (\`NEED_HUMAN:\` when appropriate), update HANDOFF, **do not** call \\\`gh pr ready\\\`.
 
 `
     : "";
-  return `${remediation}${ORCHESTRATOR_BRANCH_RULES}${tmpl}`
+  return `${remediation}${canonical}${ORCHESTRATOR_BRANCH_RULES}${body}`
     .replace(/\{TRACKING_PR_NUMBER\}/g, String(trackingPR.number))
     .replace(/\{TRACKING_PR_BRANCH\}/g, trackingPR.branch)
     .replace(/\{REPO\}/g, repo!)
@@ -680,18 +1029,12 @@ Automation is re-invoking you to **continue** until the phase ships or is explic
 }
 
 async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: boolean): Promise<void> {
+  validateRunnableStep(step);
   const prompt = buildOrchestratorPrompt(step, trackingPR, remediate);
   console.log(`🚀 Firing Cursor cloud agent for ${step}${remediate ? " (remediation)" : ""}…\n`);
 
   try {
-    const result = await Agent.prompt(prompt, {
-      apiKey: apiKey!,
-      cloud: {
-        repos: [{ url: `https://github.com/${repo}` }],
-        autoCreatePR: false,
-        skipReviewerRequest: true,
-      },
-    });
+    const result = await Agent.prompt(prompt, buildCursorCloudOptions(apiKey!, repo!));
 
     if (result.status === "error") {
       console.error(`\n❌ Agent run for "${step}" failed. Check the Cursor dashboard.`);
@@ -777,6 +1120,7 @@ async function mainOrchestrator(): Promise<void> {
   let status = readStatus();
   if (!status) {
     process.exit(0);
+    return;
   }
 
   const inProg = getInProgressStep(status);
@@ -784,10 +1128,7 @@ async function mainOrchestrator(): Promise<void> {
     const draftPR = findDraftTrackingPR(inProg);
     if (draftPR) {
       console.log(`🔁 Remediation: "${inProg}" in-progress — re-using draft PR #${draftPR.number}.`);
-      if (!PHASE_PROMPTS[inProg]) {
-        console.error(`❌ No prompt defined for step "${inProg}". Add it to PHASE_PROMPTS.`);
-        process.exit(1);
-      }
+      validateRunnableStep(inProg);
       const preflightOk = await runPreflight(inProg);
       if (!preflightOk) {
         console.error(`❌ Preflight failed for "${inProg}". Halting.`);
@@ -803,6 +1144,7 @@ async function mainOrchestrator(): Promise<void> {
     status = readStatus();
     if (!status) {
       process.exit(0);
+      return;
     }
   }
 
@@ -812,10 +1154,7 @@ async function mainOrchestrator(): Promise<void> {
     process.exit(0);
   }
 
-  if (!PHASE_PROMPTS[nextStep]) {
-    console.error(`❌ No prompt defined for step "${nextStep}". Add it to PHASE_PROMPTS.`);
-    process.exit(1);
-  }
+  validateRunnableStep(nextStep);
 
   console.log(`🚀 Next step: ${nextStep}`);
 
@@ -828,7 +1167,7 @@ async function mainOrchestrator(): Promise<void> {
   }
 
   console.log(`\n📋 Opening draft tracking PR for ${nextStep}…`);
-  const trackingPR = openTrackingPR(nextStep);
+  const trackingPR = openTrackingPR(pipelineStepById(nextStep));
   await executeAgentRun(nextStep, trackingPR, false);
 }
 

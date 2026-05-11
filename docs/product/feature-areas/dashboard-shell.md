@@ -6,7 +6,7 @@
 
 ## Status
 
-`exploratory`
+`validated`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -89,16 +89,16 @@ After sign-in, the founder sees a **home base** that orients them toward PRD wor
 
 ## Readiness Verdict
 
-- [ ] PRD source sections read
-- [ ] Product intent stated without technical language
-- [ ] Business objects enumerated
-- [ ] User journeys identified
-- [ ] In-scope / out-of-scope explicitly separated
-- [ ] No unresolved PRD open questions affecting this area
-- [ ] Deferred behaviors explicitly named
-- [ ] Candidate Scope Slices are individually small enough
+- [x] PRD source sections read
+- [x] Product intent stated without technical language
+- [x] Business objects enumerated
+- [x] User journeys identified
+- [x] In-scope / out-of-scope explicitly separated
+- [x] No unresolved PRD open questions affecting this area
+- [x] Deferred behaviors explicitly named
+- [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR SCOPE SLICES — two candidate slices defined.
 
 ---
 
@@ -107,3 +107,4 @@ After sign-in, the founder sees a **home base** that orients them toward PRD wor
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
+| 2026-05-11 | Readiness checklist ticked; status promoted to `validated` — unblocked as part of Phase 4 loop restart | local-agent |

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "description": "Ordered automation queue. bundled = keyed prompts in phase-orchestrator.ts. slice = implement one Scope Slice via tracking PR (merge → schedule/workflow_dispatch → next step). Append slice steps here in Feature Area priority order after migration steps complete.",
+  "steps": [
+    {
+      "id": "phase3-p0",
+      "dependsOn": [],
+      "workload": { "kind": "bundled", "promptKey": "phase3-p0" }
+    },
+    {
+      "id": "phase3-p1",
+      "dependsOn": ["phase3-p0"],
+      "workload": { "kind": "bundled", "promptKey": "phase3-p1" }
+    },
+    {
+      "id": "phase3-p2",
+      "dependsOn": ["phase3-p1"],
+      "workload": { "kind": "bundled", "promptKey": "phase3-p2" }
+    },
+    {
+      "id": "phase3-p3",
+      "dependsOn": ["phase3-p2"],
+      "workload": { "kind": "bundled", "promptKey": "phase3-p3" }
+    },
+    {
+      "id": "fa-account-session",
+      "dependsOn": ["phase3-p3"],
+      "workload": { "kind": "bundled", "promptKey": "fa-account-session" }
+    },
+    {
+      "id": "fa-account-session-slice2",
+      "dependsOn": ["fa-account-session"],
+      "workload": { "kind": "bundled", "promptKey": "fa-account-session-slice2" }
+    },
+    {
+      "id": "fa-dashboard-shell-slice1",
+      "dependsOn": ["fa-account-session"],
+      "workload": {
+        "kind": "slice",
+        "title": "Signed-in home orientation",
+        "featureAreaFile": "docs/product/feature-areas/dashboard-shell.md",
+        "scopeSliceFile": "docs/product/scope-slices/dashboard-shell--signed-in-home.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Dashboard shell slice 1. Protected /dashboard route, navigation toward PRD/projects, under-construction labels for non-v0 areas. Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-dashboard-shell-slice2",
+      "dependsOn": ["fa-dashboard-shell-slice1"],
+      "workload": {
+        "kind": "slice",
+        "title": "Under-construction placeholders",
+        "featureAreaFile": "docs/product/feature-areas/dashboard-shell.md",
+        "scopeSliceFile": "docs/product/scope-slices/dashboard-shell--under-construction-placeholders.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Dashboard shell slice 2. Consistent visual treatment for all deferred roadmap areas. No interactive navigation to non-existent routes. Create user story + plan if not present."
+      }
+    },
+    {
+      "id": "cursor-self-improve",
+      "dependsOn": ["fa-account-session-slice2"],
+      "workload": { "kind": "bundled", "promptKey": "cursor-self-improve" }
+    }
+  ]
+}

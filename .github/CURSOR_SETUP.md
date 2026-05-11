@@ -86,9 +86,9 @@ Watch the Actions tab for live output.
 
 1. A PR merges into `main`.
 2. `pr-cascade.yml` fires on the `closed` + merged event.
-3. It lists all open **draft** PRs whose **base branch** equals the just-merged PR's **head branch**.
-4. For each match it calls `gh pr ready`, which un-drafts the PR.
-5. Un-drafting fires the `ready_for_review` event — triggering `pr-automation.yml` automatically.
+3. It finds open **draft** PRs stacked on the merged head (`--base <merged-head>`), rebases each onto the merge target (`main` / `feature/*`), `gh pr edit --base` to repoint at the merge base, then **`gh pr merge --merge`** straight through the stack.
+
+> **Difference vs old notes:** cascading does **not** call `gh pr ready`; it merges drafts directly so throughput does not depend on the PR-automation reviewer workflow.
 
 **Typical flow for a 3-layer stack:**
 
@@ -101,13 +101,13 @@ main
 
 No secrets beyond the default `GITHUB_TOKEN` are required.
 
----
-
----
-
 ## Phase Orchestrator — autonomous pipeline driver
 
-`.github/workflows/phase-orchestrator.yml` reads `docs/state/status.json`, starts or **continues** phases, and fires a Cursor cloud agent. It runs when a PR merges into **`main`** or a **`feature/*`** integration branch, on a **30-minute schedule**, or via **workflow_dispatch**.
+`.github/workflows/phase-orchestrator.yml` reads `docs/state/status.json` **and** `docs/state/orchestration.pipeline.json` to determine the next runnable step, starts or **continues** that step, and fires a Cursor cloud agent. It runs when a PR merges into **`main`** or a **`feature/*`** integration branch, on a **30-minute schedule**, or via **workflow_dispatch**.
+
+Pipeline order is declarative: migration “bundled” steps (with prompts in `.github/scripts/phase-orchestrator.ts`) and **slice** workloads (Feature Area + Scope Slice file pointers) run in dependency order. When a tracking PR merges, `pr-ready.yml` dispatches the orchestrator again → **merge → next step → loop**. Append new slice rows to `docs/state/orchestration.pipeline.json` after each Feature Area’s slices are prioritized (see `execution-loop.mdc` P0–P4 bands).
+
+Optional **repository variable** `CURSOR_AGENT_MODEL` (Actions → Variables): pass-through to `@cursor/sdk` as `model.id` for orchestrator + PR automation agents.
 
 **Remediation and human blockers:**
 
@@ -118,21 +118,23 @@ No secrets beyond the default `GITHUB_TOKEN` are required.
 **How phases advance:**
 
 1. A PR merges into `main` or `feature/*` (or the schedule / manual run fires).
-2. The orchestrator reads `docs/state/status.json` to find the current phase state.
-3. If the last completed phase's entry is `"complete"`, it advances to the next phase.
-4. It marks the next phase as `"in-progress"` in `status.json` (commits + pushes `[skip ci]`).
-5. It fires `Agent.prompt` with the phase-specific instructions.
-6. The agent does the work and writes `"complete"` back to `status.json` when done.
-7. The next merged PR triggers the cycle again.
+2. The orchestrator reads **`docs/state/orchestration.pipeline.json`** (step order + dependencies) and merges that with `docs/state/status.json` (canonical: `orchestration.steps`, legacy: `phase3` / `fa_account_session` for bundled IDs).
+3. If the next step is complete, it advances; if work is **blocked**, it skips that node and keeps scanning.
+4. It marks the chosen step as **`in-progress`** in `status.json` (commits + pushes `[skip ci]`) and opens a **draft** tracking PR from **`ORCHESTRATOR_TRACKING_BASE`** (default `main`).
+5. It fires `Agent.prompt` with bundled or slice-specific instructions.
+6. The agent finishes, sets **`orchestration.steps["<id>"] = "complete"`** (plus legacy fields when applicable), runs `gh pr ready` on the tracking PR.
+7. `pr-ready.yml` merges that PR and **re-dispatches** this workflow so the next slice/phase starts.
 
 **Phase chain:**
 
 ```
-phase3-p0 (Turborepo scaffold)
-  → phase3-p1 (package extraction)
-  → phase3-p2 (Drizzle migration)
-  → phase3-p3 (better-auth migration)
-  → fa-account-session (sign-up / sign-in)
+docs/state/orchestration.pipeline.json   (append slice steps per FA priority)
+  → phase3-p0 (bundled)
+  → phase3-p1 (bundled)
+  → phase3-p2 (bundled)
+  → phase3-p3 (bundled)
+  → fa-account-session (bundled / legacy status mirror)
+  → … additional { "workload": { "kind": "slice", … } } rows …
 ```
 
 **Kill switch — pause automation instantly:**
@@ -160,7 +162,7 @@ To **resume**:
 | `docs/state/status.json` missing | Logs warning and exits 0 — safe on new repos |
 | Any phase is `"in-progress"` | If an open **draft** tracking PR exists for that step (matching `ORCHESTRATOR_TRACKING_BASE`), a **remediation** agent run is started. If there is **no** such draft, the step is **reset** to `not-started` so the chain can recover. |
 | Any phase is `"blocked"` | That step is **skipped**; the pipeline attempts the next eligible step (dependencies permitting). Prefer `NEED_HUMAN:` in `blocker` text for operator-visible stalls. |
-| `CURSOR_API_KEY` missing | Exits 1 with a clear message |
+| `docs/state/orchestration.pipeline.json` missing | Exits 1 — copy from repo template / define `steps[]` before enabling automation |
 
 ---
 

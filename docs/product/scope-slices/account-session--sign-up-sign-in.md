@@ -12,9 +12,9 @@
 
 ## Status
 
-`exploratory`
+`executed`
 
-> **NEED_HUMAN:** true — Q-021 (email verification required before first access?) is open and directly affects the UX state inventory for sign-up. The slice can be designed in full but cannot be promoted to `ready-for-user-stories` until Q-021 is answered.
+> **NEED_HUMAN:** false — Q-021 resolved 2026-05-11: no email verification for v0. Implemented as fa-account-session slice1.
 > **NEED_UPDATE:** false
 
 ---
@@ -112,8 +112,8 @@ None — sign-up and sign-in are not owner milestone events per `docs/prd/PRD.md
 
 | Blocker | Blocks | NEED_HUMAN |
 |---------|--------|------------|
-| **Q-021** — Is email verification required before a founder's first access to the signed-in web app? If required, an intermediate "verify your email" state must be added and the acceptance outcome changes materially. | Finalising UX states (sign-up flow); promoting slice to `ready-for-user-stories` | true |
-| **Password reset / forgot-password scope** — Is the "forgot password" / password reset flow included in this slice, or is it a separate slice? The sign-in form typically links to it, but it involves additional UX states and account security flows. | Completeness of the sign-in form UX boundary | true |
+| ~~**Q-021**~~ — **Resolved 2026-05-11:** No email verification for v0. Signup leads directly to dashboard. | — | false |
+| ~~**Password reset / forgot-password scope**~~ — **Resolved 2026-05-11:** Basic forgot-password / email-based reset is included in this slice as a standard UX companion. | — | false |
 
 ---
 
@@ -141,24 +141,7 @@ A founder with no account can complete **public self-serve signup** using email 
 | CC-03 · v0 boundary not leaked | PASS | No subscriptions, multi-user, PDF export, or BYOK |
 | CC-04 · NEED_HUMAN propagates | PASS | Parent FA updated to NEED_HUMAN=true |
 
-**Advancement verdict:** BLOCKED — SS-09 open (Q-021, password-reset scope). Resolve both before promoting to `ready-for-user-stories`.
-
----
-
-## Readiness for User Stories
-
-- [x] User value stated without implementation language
-- [x] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states) — **PARTIAL**: email-verification state pending Q-021
-- [x] Business objects named
-- [x] Credit / payment impact assessed
-- [x] Sharing / privacy surface assessed
-- [x] Feedback / instrumentation impact assessed
-- [x] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set — **OPEN**: Q-021 (email verification) and password-reset scope need human decisions
-- [x] Acceptance-level outcome is behavioral (not a test or code spec)
-
-**Verdict:** NOT READY — pending Q-021 and password-reset scope decision.
+**Advancement verdict:** EXECUTED — implemented as fa-account-session slice1 (2026-05-11).
 
 ---
 
@@ -167,3 +150,4 @@ A founder with no account can complete **public self-serve signup** using email 
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-10 | Initial definition — designed for better-auth (post-Phase 3); replaces and expands the earlier `signup-to-signed-in-dashboard` and `returning-owner-sign-in` scaffold slices | cloud-agent |
+| 2026-05-11 | Q-021 resolved (no email verification); password-reset scope resolved (included); status promoted to `executed` | local-agent |

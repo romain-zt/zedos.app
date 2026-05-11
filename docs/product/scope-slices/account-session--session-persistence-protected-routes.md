@@ -12,9 +12,9 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
-> **NEED_HUMAN:** true — Q-022 (what happens to in-progress draft data when a session expires mid-clarification?) is open. The answer may materially expand this slice's scope (requiring auto-save or a draft-recovery mechanism) or confirm that data loss on expiry is acceptable v0 behavior.
+> **NEED_HUMAN:** false — Q-022 resolved 2026-05-11: data loss on session expiry is acceptable for v0.
 > **NEED_UPDATE:** false
 
 ---
@@ -115,7 +115,7 @@ None — session persistence and route protection are not owner milestone events
 
 | Blocker | Blocks | NEED_HUMAN |
 |---------|--------|------------|
-| **Q-022** — What is the expected product behavior when a founder's session expires during an active clarification session — is unsaved in-progress work preserved, or is loss acceptable for v0? If preservation is required, auto-save or draft recovery must be scoped (likely in the PRD versioning or guided clarification FA, not here), but the inter-FA dependency changes scope. | Finalising the acceptance-level outcome; cross-FA dependency mapping | true |
+| ~~**Q-022**~~ — **Resolved 2026-05-11:** Data loss on session expiry is acceptable for v0. Session expires → redirect to sign-in with return URL. No auto-save or draft recovery in this slice. | — | false |
 | **Route inventory** — The full list of protected vs public routes depends on what FAs and surfaces have been defined. As of this writing, the dashboard, project workspace, PRD editor, and question history are protected; sign-up, sign-in, and public share links are public. This list is incomplete until FA-dashboard-shell and FA-project-workspace are refined. | Completeness of the protected-route list; edge cases in the UX states for "public route no session required" | false — informational; can be refined without human decision, but should be revisited before promotion |
 
 ---
@@ -144,7 +144,7 @@ A founder with a valid session can navigate across any signed-in area of the web
 | CC-03 · v0 boundary not leaked | PASS | No subscriptions, multi-user, multi-device management, or BYOK |
 | CC-04 · NEED_HUMAN propagates | PASS | Parent FA updated to NEED_HUMAN=true |
 
-**Advancement verdict:** BLOCKED — SS-09 open (Q-022). Resolve Q-022 and confirm route inventory before promoting to `ready-for-user-stories`.
+**Advancement verdict:** CLEAR — all checks pass. Q-022 resolved 2026-05-11. Route inventory is informational; not a blocker.
 
 ---
 
@@ -158,10 +158,10 @@ A founder with a valid session can navigate across any signed-in area of the web
 - [x] Sharing / privacy surface assessed
 - [x] Feedback / instrumentation impact assessed
 - [x] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set — **OPEN**: Q-022 (session expiry + in-progress data behavior) needs human decision
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set — Q-022 resolved 2026-05-11
 - [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY — pending Q-022.
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -170,3 +170,4 @@ A founder with a valid session can navigate across any signed-in area of the web
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-10 | Initial definition — designed for better-auth (post-Phase 3); covers session persistence, protected-route redirect, and sign-out as one coherent slice | cloud-agent |
+| 2026-05-11 | Q-022 resolved (data loss acceptable v0); status promoted to `ready-for-user-stories`; NEED_HUMAN cleared | local-agent |
