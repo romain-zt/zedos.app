@@ -10,7 +10,7 @@ datasource db {
 model User {
   id                    String   @id @default(cuid())
   email                 String   @unique
-  passwordHash          String   @map("password_hash")
+  passwordHash          String?  @map("password_hash")
   name                  String
   creditBalance         Int      @default(0) @map("credit_balance")
   starterCreditsGranted Boolean  @default(false) @map("starter_credits_granted")
