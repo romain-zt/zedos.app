@@ -19,6 +19,7 @@ describe('MintReadOnlyShareLinkUseCase', () => {
       findLatestByProjectId: vi.fn(),
       ensureFirstVersion: vi.fn(),
       mintReadOnlyShareLink: vi.fn().mockResolvedValue(ok(link)),
+      getAnonymousPrdVersionByShareToken: vi.fn(),
     };
     const useCase = new MintReadOnlyShareLinkUseCase(repo);
     const result = await useCase.execute('pv-1', 'user-1');
@@ -33,6 +34,7 @@ describe('MintReadOnlyShareLinkUseCase', () => {
       findLatestByProjectId: vi.fn(),
       ensureFirstVersion: vi.fn(),
       mintReadOnlyShareLink: vi.fn().mockResolvedValue(err(new NotFoundError('PRD version not found'))),
+      getAnonymousPrdVersionByShareToken: vi.fn(),
     };
     const useCase = new MintReadOnlyShareLinkUseCase(repo);
     const result = await useCase.execute('bad', 'user-1');

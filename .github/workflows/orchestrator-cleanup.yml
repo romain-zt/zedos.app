@@ -1,0 +1,49 @@
+name: Orchestrator Cleanup
+
+# Runs every hour to keep tracking PRs and pipeline state consistent:
+#   1. Close duplicate tracking PRs for the same step (keeps the best one).
+#   2. Auto-merge stuck "ready" tracking PRs that missed the pr-ready.yml trigger.
+#   3. Reset in-progress steps with no live draft tracking PR back to not-started.
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # every hour on the hour
+  workflow_dispatch:
+    inputs:
+      stale_ready_minutes:
+        description: "Minutes a ready tracking PR must sit before force-merging"
+        required: false
+        default: "30"
+        type: string
+
+concurrency:
+  group: orchestrator-cleanup-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm install --prefix .github/scripts
+
+      - name: Run cleanup
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ORCHESTRATOR_TRACKING_BASE: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+          STALE_READY_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.stale_ready_minutes || '30' }}
+        run: npx --prefix .github/scripts tsx .github/scripts/orchestrator-cleanup.ts

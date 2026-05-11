@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -49,7 +49,11 @@ Anyone with the share link can read the shared PRD content — without being abl
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Loading | Anonymous page mounts; PRD payload is being fetched | A neutral branded loading indicator; no workspace or auth prompts |
+| Success | Enabled share exists for token | Shared PRD version content (structure from stored JSON): title/summary/sections when present; read-only badges; **no** project name, IDs, workspace nav, edit/comment/export, question history |
+| Missing / disabled | Unknown token, revoked link, or disabled row | Friendly “Not available” (or equivalent) without revealing whether another owner’s workspace exists |
+| Bad token | Token path violates length/format rules | Minimal validation feedback; no leakage of internal identifiers |
+| Server error | Upstream/database failure during read | Safe generic failure message; retry implied by refresh only |
 
 ---
 
@@ -57,7 +61,8 @@ Anyone with the share link can read the shared PRD content — without being abl
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| `share_links` | Read | Resolve token → PRD version; must enforce `enabled` |
+| `prd_versions` | Read | Version number, structured content, PRD status, timestamps — **without** joining `projects` |
 
 ---
 
@@ -104,18 +109,18 @@ An anonymous visitor arriving via a valid share link sees the shared PRD content
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES — refined for orchestrator `fa-read-only-sharing--anonymous-read-surface`; promote via `/feature-area promote-slice` when checker CLEAR.
 
 ---
 
@@ -124,3 +129,4 @@ An anonymous visitor arriving via a valid share link sees the shared PRD content
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice read-only-sharing` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Filled UX states + Data Touched; status → `ready-for-user-stories` for execution bridge | — |
