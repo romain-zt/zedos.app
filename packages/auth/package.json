@@ -1,6 +1,6 @@
 {
   "name": "@repo/auth",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
@@ -16,8 +16,7 @@
     "@repo/db": "workspace:*",
     "@repo/result": "workspace:*",
     "bcryptjs": "2.4.3",
-    "better-auth": "^1.6.10",
-    "next-auth": "4.24.11"
+    "better-auth": "^1.6.10"
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
