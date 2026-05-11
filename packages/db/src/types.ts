@@ -8,7 +8,7 @@
 export interface NewUserRow {
   id?: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string | null;
   name: string;
   emailVerified?: boolean;
   image?: string | null;

@@ -24,3 +24,10 @@ test('migration 0002 adds better-auth user columns on users', () => {
   assert.match(sql, /email_verified/i);
   assert.match(sql, /\bimage\b/i);
 });
+
+test('migration 0003 allows null password_hash for better-auth users', () => {
+  const sqlPath = path.join(__dirname, '0003_users_password_hash_nullable.sql');
+  assert.ok(fs.existsSync(sqlPath), `missing migration file: ${sqlPath}`);
+  const sql = fs.readFileSync(sqlPath, 'utf8');
+  assert.match(sql, /password_hash/i);
+});

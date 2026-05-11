@@ -113,7 +113,7 @@ export class DrizzleUserRepository implements IUserRepository {
       id: row.id,
       email: row.email,
       name: row.name || null,
-      passwordHash: row.passwordHash,
+      passwordHash: row.passwordHash ?? '',
       creditBalance: row.creditBalance,
       graceUsed: row.graceUsed,
       starterCreditsGranted: row.starterCreditsGranted,

@@ -28,7 +28,7 @@ export class UserMapper extends Mapper<User, any, UserDTO> {
       id: persistence.id,
       email: persistence.email,
       name: persistence.name,
-      passwordHash: persistence.passwordHash,
+      passwordHash: persistence.passwordHash ?? '',
       creditBalance: persistence.creditBalance,
       graceUsed: persistence.graceUsed,
       starterCreditsGranted: persistence.starterCreditsGranted,

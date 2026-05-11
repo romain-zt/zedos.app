@@ -8,7 +8,11 @@ export const users = pgTable('users', {
   emailVerified: boolean('email_verified').notNull().default(false),
   /** Optional profile image URL (better-auth default user field). */
   image: text('image'),
-  passwordHash: text('password_hash').notNull(),
+  /**
+   * Legacy app hash for hex sign-up flow; null when the user only exists via better-auth
+   * (password lives on `accounts.password`).
+   */
+  passwordHash: text('password_hash'),
   name: text('name').notNull(),
   creditBalance: integer('credit_balance').notNull().default(0),
   starterCreditsGranted: boolean('starter_credits_granted').notNull().default(false),
