@@ -25,7 +25,7 @@
       "fa-services-feature-split--prd-to-feature-split": "complete",
       "fa-user-stories--story-generation-from-feature-split": "complete",
       "fa-test-first-workflows--task-splitting-with-prompts": "complete",
-      "fa-read-only-sharing--anonymous-read-surface": "in-progress",
+      "fa-read-only-sharing--anonymous-read-surface": "complete",
       "fa-owner-milestone-feedback--milestone-detection-and-prompt": "blocked"
     }
   },
@@ -128,7 +128,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Tracking PR #59 (anonymous read surface): mark ready when CI green — gh pr ready 59 --repo romain-zt/zedos.app. Other: PR #56 task-splitting governance if still draft. Parallel: fa-owner-milestone-feedback--milestone-detection-and-prompt. Credits (PR #39) still blocked on PIS.",
+  "next_action": "Anonymous read surface shipped on tracking PR #62 (`orchestrator/tracking-fa-read-only-sharing--anonymous-read-surface-1778529351123`). Mark ready when CI green: gh pr ready 62 --repo romain-zt/zedos.app. Next slice: fa-read-only-sharing--revoke-link-and-noindex. Parallel: fa-owner-milestone-feedback if unblocked. Credits (PR #39) still blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
