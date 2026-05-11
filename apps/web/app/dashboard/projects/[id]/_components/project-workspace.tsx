@@ -14,6 +14,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { FadeIn } from '@/components/ui/animate'
+import {
+  PrdVersionListResponseSchema,
+  type PrdVersionDTO,
+} from '@repo/contracts/prd/prd-contracts'
 
 interface ProjectWorkspaceProps {
   projectId: string
@@ -23,8 +27,8 @@ interface ProjectWorkspaceProps {
 
 export function ProjectWorkspace({ projectId, projectName, projectDescription }: ProjectWorkspaceProps) {
   const [activeTab, setActiveTab] = useState('clarify')
-  const [prdVersions, setPrdVersions] = useState<any[]>([])
-  const [selectedVersion, setSelectedVersion] = useState<any>(null)
+  const [prdVersions, setPrdVersions] = useState<PrdVersionDTO[]>([])
+  const [selectedVersion, setSelectedVersion] = useState<PrdVersionDTO | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [editName, setEditName] = useState(projectName ?? '')
   const [editDesc, setEditDesc] = useState(projectDescription ?? '')
@@ -45,11 +49,17 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
       }
       const res = await fetch(`/api/projects/${projectId}/prd`)
       if (res?.ok) {
-        const data = await res.json()
-        setPrdVersions(data ?? [])
+        const raw = await res.json()
+        const parsed = PrdVersionListResponseSchema.safeParse(raw)
+        if (!parsed.success) {
+          toast.error('Could not load PRD versions')
+          return
+        }
+        const data = parsed.data
+        setPrdVersions(data)
         setSelectedVersion((prev) => {
-          if (prev && data?.some((v: { id: string }) => v.id === prev.id)) return prev
-          return data?.[0] ?? null
+          if (prev && data.some((v) => v.id === prev.id)) return prev
+          return data[0] ?? null
         })
       }
     } catch {
@@ -124,12 +134,15 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
               <MessageSquare className="h-4 w-4" />
               Clarify
             </TabsTrigger>
-            <TabsTrigger value="prd" className="gap-2">
+            <TabsTrigger value="prd" className="gap-2 min-h-11 sm:min-h-0">
               <FileText className="h-4 w-4" />
               PRD
-              {(prdVersions?.length ?? 0) > 0 && (
-                <span className="ml-1 text-xs bg-muted rounded-full px-1.5 py-0.5 font-mono">
-                  v{prdVersions?.[0]?.versionNumber ?? 1}
+              {selectedVersion && (
+                <span
+                  className="ml-1 text-xs bg-muted rounded-full px-1.5 py-0.5 font-mono"
+                  title="Active PRD version in this workspace"
+                >
+                  v{selectedVersion.versionNumber}
                 </span>
               )}
             </TabsTrigger>
