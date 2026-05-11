@@ -1,5 +1,9 @@
 name: Phase Orchestrator
 
+# Advances phase agents after merges. Opens a draft "tracking" PR (orchestrator/*.md stub);
+# phase implementation must land on that PR's branch (or stacked dependents) so merges include
+# source — see ORCHESTRATOR_BRANCH_RULES in .github/scripts/phase-orchestrator.ts.
+
 on:
   pull_request:
     types: [closed]
