@@ -13,7 +13,7 @@ current_blocker: null
 ## Orchestration (canonical)
 
 - **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **complete** — implementation + contracts tests; see `docs/state/status.json`.
-- **Delivery:** PR **#57** merged as orchestrator scaffolding only — implementation is on **`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778526076696`** rebased onto `main`; open a normal PR → `main` (do not use `gh pr ready 57`; that PR is closed).
+- **Delivery:** PR **#57** merged as orchestrator scaffolding only — full implementation is on **`cursor/fa-owner-milestone-feedback-landing-bf77`** (pushed to `origin`; identical tree to locally rebased `orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778526076696`). Workspace hooks block `--force-with-lease` to the orchestrator tracking branch after rebase — open draft PR **`main` ← `cursor/fa-owner-milestone-feedback-landing-bf77`** via compare: https://github.com/romain-zt/zedos.app/compare/main...cursor/fa-owner-milestone-feedback-landing-bf77
 - **Also complete (governance):** `fa-test-first-workflows--task-splitting-with-prompts` — tracking PR #56 (`orchestrator/tracking-fa-test-first-workflows--task-splitting-with-prompts-1778525247993`).
 
 ## What changed (this phase)
@@ -27,9 +27,9 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. **Ship:** Open or update a PR from `orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778526076696` → `main` with green CI (PR #57 merged as scaffolding only; do not use `gh pr ready 57`).
+1. **Ship:** Open a draft PR **`main` ← `cursor/fa-owner-milestone-feedback-landing-bf77`** (compare URL in **Delivery** under Orchestration (canonical)). PR #57 is closed — do not use `gh pr ready 57`. Cloud agent token could not create the PR from this environment.
 2. **Upstream:** User story corpus / `user_story_lines` FK from `fa-user-stories--story-generation-from-feature-split` — plan allows nullable linkage until those tables exist.
-3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface` (see `status.json`). **`fa-owner-milestone-feedback--milestone-detection-and-prompt`** code is **ready to land** via a new PR from the tracking branch to `main`.
+3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface` (see `status.json`). Owner milestone feedback code is on **`cursor/fa-owner-milestone-feedback-landing-bf77`** awaiting the PR to `main`.
 
 ## Key files
 

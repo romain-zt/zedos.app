@@ -130,7 +130,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Open PR to main for owner milestone implementation (PR #57 merged as tracking-only): branch `orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778526076696` rebased on main. Credits (PR #39) still blocked on PIS.",
+  "next_action": "Open draft PR main ← cursor/fa-owner-milestone-feedback-landing-bf77 (https://github.com/romain-zt/zedos.app/compare/main...cursor/fa-owner-milestone-feedback-landing-bf77). PR #57 merged tracking-only; force-push to orchestrator tracking branch blocked by workspace hook. Credits (PR #39) still blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
