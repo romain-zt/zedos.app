@@ -4,7 +4,7 @@ date: 2026-05-10
 author: local-agent (overnight pipeline update)
 workspace: /Users/romainpiveteau/Projects/ZedTech/zedos.app
 status: handoff-ready
-current_phase: phase3-p1
+current_phase: phase3-complete
 current_blocker: none
 ---
 
@@ -33,36 +33,41 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 | **Rules merge** | `COMPLETE` | `zedos/.cursor/rules/` merged into root `.cursor/rules/72-74*.mdc` and deleted. Single source of truth at root. |
 | **2a — Credit/Stripe planning** | `complete` | Scope Slice, User Story, Implementation Plan, and friction log all authored and on disk. |
 | **2b — Implementation** | `blocked-on-pis-approval` | 4-PR stack (~38 files, ~900 lines). Blocked on 5 PIS approval items. See §4. |
-| **3 — Turborepo migration** | `🔄 IN PROGRESS — phase3-p1 (package extraction)` | P0 scaffold COMPLETE (apps/web/ exists, PR #11 merged). P1 plan written. P2 Drizzle plan written. P3 better-auth plan written. Overnight pipeline will execute P1→P2→P3. |
+| **3 — Turborepo migration** | `✅ COMPLETE` | All phases complete: P0 scaffold, P1 package extraction, P2 Drizzle migration, P3 better-auth migration. |
 | **4 — Next Feature Areas** | `pending` | FA-account-session → FA-dashboard-shell → FA-prd-versioning → FA-guided-clarification → FA-credit-system (full). |
 
-## Current Blocker
+## Current Status
 
-**BLOCKED: Phase 3 better-auth migration is incomplete.**
+**Phase 3 better-auth migration is COMPLETE.**
 
-### Missing Required Files (per `.cursor/rules/76-better-auth.mdc` §2):
-- `packages/auth/src/server.ts` — **MISSING** (should export `auth` instance with better-auth)
-- `packages/auth/src/guards.ts` — **MISSING** (should export `requireSession`, `requireUser`)
-- `apps/web/app/api/auth/[...all]/route.ts` — **MISSING** (only `[...nextauth]/route.ts` exists)
+### Completed Files (per `.cursor/rules/76-better-auth.mdc` §2):
+- ✅ `packages/auth/src/server.ts` — Exports `auth` instance with better-auth + Drizzle adapter
+- ✅ `packages/auth/src/client.ts` — Client-side auth hooks (`signIn`, `signOut`, `useSession`, etc.)
+- ✅ `packages/auth/src/guards.ts` — Exports `requireSession`, `requireUser` with Result<T,E> pattern
+- ✅ `packages/auth/src/types.ts` — Session/User types inferred from better-auth
+- ✅ `packages/auth/src/plugins/api-key.ts` — Disabled stub for v2/v3
+- ✅ `apps/web/app/api/auth/[...all]/route.ts` — better-auth handler
 
-### Actual State Found:
-- `packages/auth/src/auth-options.ts` — Contains **NextAuth** configuration (not better-auth)
-- `apps/web/app/api/auth/[...nextauth]/route.ts` — Uses NextAuth handler
-- `docs/state/status.json` claimed `phase3.p3: "complete"` but files don't exist
+### Deleted Files:
+- ❌ `packages/auth/src/auth-options.ts` — Old NextAuth config (deleted)
+- ❌ `apps/web/app/api/auth/[...nextauth]/route.ts` — Old NextAuth handler (deleted)
+- ❌ `apps/web/lib/auth-options.ts` — Old NextAuth config (deleted)
+- ❌ `apps/web/types/next-auth.d.ts` — NextAuth type augmentation (deleted)
 
-### FA-account-session Slice 1 Status:
-`blocked` — Cannot implement sign-up/sign-in flows with better-auth until the auth package migration is complete.
+### Verification:
+- ✅ Zero files in `apps/web/` import from `next-auth` (grep check passed)
+- ✅ Workspace typecheck passes
+- ✅ No `as any` casts for `session.user.id`
+- ✅ `next-auth` dependency removed from both `apps/web` and `packages/auth`
 
-### Resolution Required:
-Complete the Phase 3 better-auth migration (PR-1 through PR-3 as originally planned) before proceeding with FA-account-session Slice 1.
+### PR Stack:
+1. PR-1: `cursor/better-auth-scaffold-ada8` — @repo/auth scaffold + DB tables
+2. PR-2: `cursor/better-auth-handler-wiring-ada8` — Handler + session wiring
+3. PR-3: `cursor/better-auth-cleanup-ada8` — Remove NextAuth dependencies
 
 ## What the Cloud Agent Should Do RIGHT NOW
 
-**Phase 3 complete.** Next steps:
-
-1. Merge the stacked better-auth PRs (PR-2 → PR-3)
-2. Run `gh pr ready 23` to mark the tracking PR as ready
-3. Proceed to Phase 4 (Next Feature Areas)
+**Phase 3 complete.** Ready for Phase 4 (Next Feature Areas).
 
 ---
 
