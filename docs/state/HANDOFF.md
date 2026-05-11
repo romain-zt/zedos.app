@@ -13,7 +13,7 @@ current_blocker: null
 ## Orchestration (canonical)
 
 - **Pipeline step** `fa-project-workspace--list-and-open-project`: **complete** (see `docs/state/status.json`).
-- **Tracking PR:** #41 — `orchestrator/tracking-fa-project-workspace--list-and-open-project-1778509983393` → `main`. Mark ready when CI green: `gh pr ready 41 --repo romain-zt/zedos.app`.
+- **Tracking PR:** #42 — `orchestrator/tracking-fa-project-workspace--list-and-open-project-1778510377279` → `main`. Mark ready when CI green: `gh pr ready 42 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 

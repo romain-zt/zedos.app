@@ -95,7 +95,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "fa-project-workspace--list-and-open-project-complete-mark-pr-41-ready; parallel: orch-credit-system slice still blocked on PIS (PR #39, docs/state/status.json pis_blockers)",
+  "next_action": "fa-project-workspace--list-and-open-project-complete-mark-pr-42-ready; parallel: orch-credit-system slice still blocked on PIS (PR #39, docs/state/status.json pis_blockers)",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
