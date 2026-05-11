@@ -275,8 +275,8 @@
         "title": "Task splitting with prompts",
         "featureAreaFile": "docs/product/feature-areas/test-first-workflows.md",
         "scopeSliceFile": "docs/product/scope-slices/test-first-workflows--task-splitting-with-prompts.md",
-        "userStoryFile": null,
-        "planFile": null,
+        "userStoryFile": "docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md",
+        "planFile": "docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md",
         "notes": "FG-POST-PRD-V1 — governance step: user story + plan if not present before implementing."
       }
     },
