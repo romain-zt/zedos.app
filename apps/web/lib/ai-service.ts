@@ -100,23 +100,26 @@ export function createBufferedStreamingResponse(
             const lines = partialRead.split('\n')
             partialRead = lines.pop() ?? ''
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              if (data === '[DONE]') {
-                try {
-                  await Promise.resolve(onComplete(buffer))
-                } catch (e: any) {
-                  console.error('onComplete error:', e)
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6)
+                if (data !== '' && data !== '[DONE]') {
+                  try {
+                    const parsed = JSON.parse(data)
+                    const delta = parsed?.choices?.[0]?.delta?.content
+                    if (typeof delta === 'string') buffer += delta
+                  } catch {
+                    /* partial chunk — skip */
+                  }
                 }
               }
             }
           }
           if (buffer) {
             try {
-              await onComplete(buffer)
-            } catch {
-              /* best-effort */
+              await Promise.resolve(onComplete(buffer))
+            } catch (e: unknown) {
+              console.error('onComplete error:', e)
             }
             const finalData = JSON.stringify({ status: 'completed', result: buffer })
             controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
@@ -129,18 +132,6 @@ export function createBufferedStreamingResponse(
         } finally {
           controller.close()
         }
-        // If we reach here without [DONE], still complete
-        if (buffer) {
-          try { await Promise.resolve(onComplete(buffer)) } catch {}
-          const finalData = JSON.stringify({ status: 'completed', result: buffer })
-          controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
-        }
-      } catch (error: any) {
-        console.error('Buffered stream error:', error)
-        const errData = JSON.stringify({ status: 'error', message: error?.message ?? 'Stream failed' })
-        controller.enqueue(encoder.encode(`data: ${errData}\n\n`))
-      } finally {
-        controller.close()
       }
 
       void run()

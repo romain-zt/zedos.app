@@ -159,12 +159,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       responseFormat: { type: 'json_object' },
     })
 
-    const stream = createBufferedStreamingResponse(aiResponse, async (result: string) => {
+    const founderAnswer = message ?? (decisionResponse ? JSON.stringify(decisionResponse) : null)
+
+    const persistAfterValidStream = async (result: string) => {
       try {
         const raw = JSON.parse(result)
         const validated = ClarifyAiResponseSchema.safeParse(raw)
         if (!validated.success) {
-          console.error('Clarify AI response validation failed:', validated.error.flatten())
+          console.error('Clarify: stream schema validation failed', validated.error.flatten())
           return
         }
         const ai = validated.data
@@ -174,43 +176,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           prdVersionId: prdVersionIdResolved,
           structuredQuestion: ai.message,
           availableOptions: ai.decision_ui,
-          founderAnswer: message ?? (decisionResponse ? JSON.stringify(decisionResponse) : null),
+          founderAnswer,
           aiInterpretation: ai.reasoning,
           prdImpact: ai.prd_section_affected,
           questionType: ai.suggested_credit_type,
         }
         await db.insert(questionHistory).values(qhInsert)
       } catch (e: unknown) {
-        console.error('Failed to save question history:', e)
-      }
-      const validated = ClarificationStreamJsonSchema.safeParse(raw)
-      if (!validated.success) {
-        console.error('Clarify stream: schema validation failed before side effects', validated.error.flatten())
-        return
-      }
-      const ai = validated.data
-      try {
-        await deductCredits(userId, opType, {
-          projectId: params.id,
-          prdVersionId: prdVersionId ?? undefined,
-        })
-      } catch (e: unknown) {
-        console.error('Clarify: credit deduction failed after validated AI response', e)
-        return
-      }
-      const insertResult = await questionHistoryRepository.create({
-        projectId: params.id,
-        prdVersionId: prdVersionId ?? null,
-        structuredQuestion: ai.message,
-        availableOptions: ai.decision_ui,
-        founderAnswer,
-        optionalComment: optionalComment ?? null,
-        aiInterpretation: ai.reasoning,
-        prdImpact: ai.prd_section_affected,
-        questionType: ai.suggested_credit_type,
-      })
-      if (insertResult.isErr()) {
-        console.error('Clarify: failed to persist question history', insertResult.error)
+        console.error('Clarify: failed to persist question history', e)
       }
     }
 
