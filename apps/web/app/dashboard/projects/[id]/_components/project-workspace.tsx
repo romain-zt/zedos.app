@@ -34,16 +34,28 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
 
   const fetchVersions = useCallback(async () => {
     try {
+      const ensure = await fetch(`/api/projects/${projectId}/prd`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      if (!ensure.ok) {
+        if (ensure.status !== 401) toast.error('Could not initialize PRD version')
+        return
+      }
       const res = await fetch(`/api/projects/${projectId}/prd`)
       if (res?.ok) {
         const data = await res.json()
         setPrdVersions(data ?? [])
-        if ((data?.length ?? 0) > 0 && !selectedVersion) {
-          setSelectedVersion(data[0])
-        }
+        setSelectedVersion((prev) => {
+          if (prev && data?.some((v: { id: string }) => v.id === prev.id)) return prev
+          return data?.[0] ?? null
+        })
       }
-    } catch {}
-  }, [projectId, selectedVersion])
+    } catch {
+      toast.error('Could not load PRD versions')
+    }
+  }, [projectId])
 
   useEffect(() => {
     fetchVersions()

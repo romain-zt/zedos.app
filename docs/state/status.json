@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-11",
-  "current_phase": "fa-project-workspace--switch-active-project-complete",
+  "current_phase": "fa-prd-versioning--create-or-capture-prd-version-complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -17,7 +17,7 @@
       "fa-project-workspace--create-project": "complete",
       "fa-project-workspace--list-and-open-project": "complete",
       "fa-project-workspace--switch-active-project": "complete",
-      "fa-prd-versioning--create-or-capture-prd-version": "in-progress"
+      "fa-prd-versioning--create-or-capture-prd-version": "complete"
     }
   },
   "cursor_self_improve": {
@@ -38,6 +38,9 @@
     "create_project": "complete",
     "list_and_open_project": "complete",
     "switch_active_project": "complete"
+  },
+  "fa_prd_versioning": {
+    "create_or_capture_prd_version": "complete"
   },
   "fa_dashboard_shell": {
     "slice1": "complete",
@@ -98,7 +101,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "fa-project-workspace--switch-active-project-complete-mark-pr-44-ready; parallel: orch-credit-system slice still blocked on PIS (PR #39, docs/state/status.json pis_blockers)",
+  "next_action": "fa-prd-versioning--create-or-capture-prd-version-complete-mark-pr-45-ready; parallel: orch-credit-system slice still blocked on PIS (PR #39, docs/state/status.json pis_blockers)",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
@@ -159,9 +162,9 @@
     }
   },
   "active_artifacts": {
-    "scope_slice": "docs/product/scope-slices/project-workspace--switch-active-project.md",
-    "user_story": "docs/execution/user-stories/project-workspace--switch-active-project--v0.md",
-    "implementation_plan": "docs/execution/plans/project-workspace--switch-active-project--v0.plan.md",
+    "scope_slice": "docs/product/scope-slices/prd-versioning--create-or-capture-prd-version.md",
+    "user_story": "docs/execution/user-stories/prd-versioning--create-or-capture-prd-version--v0.md",
+    "implementation_plan": "docs/execution/plans/prd-versioning--create-or-capture-prd-version--v0.plan.md",
     "parallel_blocked_slice": "docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md"
   },
   "feature_areas_count": 10,
