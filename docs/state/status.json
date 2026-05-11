@@ -14,7 +14,8 @@
       "fa-dashboard-shell-slice2": "complete",
       "cursor-self-improve": "complete",
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": "blocked",
-      "fa-project-workspace--create-project": "complete"
+      "fa-project-workspace--create-project": "complete",
+      "fa-project-workspace--list-and-open-project": "in-progress"
     }
   },
   "cursor_self_improve": {
