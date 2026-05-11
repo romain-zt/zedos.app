@@ -8,3 +8,4 @@ export * from './feedback';
 export * from './share';
 export * from './adrs';
 export * from './auth';
+export * from './feature-split';
