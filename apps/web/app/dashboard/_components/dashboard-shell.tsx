@@ -10,12 +10,10 @@ import {
   LayoutDashboard,
   FolderOpen,
   Coins,
-  Settings,
   LogOut,
   PanelLeft,
   Zap,
   Construction,
-  FileText,
   GitBranch,
   Users,
   BarChart3,
@@ -29,11 +27,11 @@ const NAV_ITEMS = [
 ]
 
 const UNDER_CONSTRUCTION = [
-  { label: 'User Stories', icon: Users },
-  { label: 'Services Split', icon: GitBranch },
-  { label: 'Cursor Artifacts', icon: Zap },
-  { label: 'Analytics', icon: BarChart3 },
-]
+  { label: 'Services / feature split', icon: GitBranch },
+  { label: 'Cursor packaging', icon: Zap },
+  { label: 'User stories & delivery', icon: Users },
+  { label: 'Test-first workflows', icon: BarChart3 },
+] as const
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession() || {}
@@ -77,7 +75,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
           {/* Nav */}
           <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-            {NAV_ITEMS.map((item: any) => {
+            {NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href))
               return (
                 <button
@@ -99,7 +97,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="pt-4 pb-2">
               <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Coming Soon</p>
             </div>
-            {UNDER_CONSTRUCTION.map((item: any) => (
+            {UNDER_CONSTRUCTION.map((item) => (
               <div
                 key={item.label}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground/50 cursor-not-allowed"
