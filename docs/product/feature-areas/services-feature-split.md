@@ -87,7 +87,7 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| PRD-to-feature-split | Founder generates a first-pass feature split from a stable PRD version and can review or adjust the proposed clusters. | exploratory |
+| PRD-to-feature-split | Founder generates a first-pass feature split from a stable PRD version and can review or adjust the proposed clusters. | ready-for-user-stories |
 
 ---
 

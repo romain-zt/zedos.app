@@ -64,7 +64,7 @@ After the founder has split their product into feature groups, Zedos helps them 
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| Services / feature split FA | exploratory | A defined feature split is required as the input for user story generation |
+| Services / feature split FA | validated | A defined feature split is required as the input for user story generation |
 
 ---
 
@@ -87,7 +87,7 @@ After the founder has split their product into feature groups, Zedos helps them 
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Story generation from feature split | Founder generates a first set of user stories for a feature group and can review or adjust them before moving to task-level breakdown. | exploratory |
+| Story generation from feature split | Founder generates a first set of user stories for a feature group and can review or adjust them before moving to task-level breakdown. | ready-for-user-stories |
 
 ---
 

@@ -67,7 +67,7 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| User stories FA | exploratory | A set of user stories is required as input for task splitting |
+| User stories FA | validated | A set of user stories is required as input for task splitting |
 
 ---
 
@@ -90,7 +90,7 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Task splitting with prompts | Founder breaks a user story into tasks and receives a Cursor-ready prompt for each, producing a story ready for implementation. | exploratory |
+| Task splitting with prompts | Founder breaks a user story into tasks and receives a Cursor-ready prompt for each, producing a story ready for implementation. | ready-for-user-stories |
 
 ---
 
