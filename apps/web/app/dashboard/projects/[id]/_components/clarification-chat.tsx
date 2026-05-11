@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,6 +13,7 @@ import {
 import { DecisionCard } from './decision-card'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
+import { selectComingUpSections } from './coming-up-sections'
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -270,6 +271,8 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
     }
   }
 
+  const comingUpSections = useMemo(() => selectComingUpSections(messages ?? [], 3), [messages])
+
   return (
     <div className="flex flex-col h-[calc(100vh-240px)] min-h-[500px]">
       {/* Messages */}
@@ -341,6 +344,22 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
 
       {/* Input area */}
       <div className="border-t pt-4 space-y-3">
+        {comingUpSections.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Coming up</p>
+            <div className="flex flex-wrap gap-2">
+              {comingUpSections.map((label) => (
+                <Badge
+                  key={label}
+                  variant="secondary"
+                  className="text-xs font-normal max-w-full truncate sm:max-w-[14rem]"
+                >
+                  {label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex gap-2">
           <Textarea
             placeholder="Type your response or add context..."

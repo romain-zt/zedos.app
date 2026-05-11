@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-guided-clarification--contextual-tab-refinement-complete
+current_phase: fa-guided-clarification--question-preview-and-progress-score-complete
 current_blocker: null
 ---
 
@@ -12,14 +12,14 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-guided-clarification--contextual-tab-refinement`: **complete**. Contextual refinement sheet on PRD / Architecture / History tabs; `POST /api/projects/[id]/clarify` with `Refine [<label>]:` prefix; unit tests for panel + SSE helpers.
-- **Tracking PR:** **#65** — `orchestrator/tracking-fa-guided-clarification--contextual-tab-refinement-1778530148115` → `main`. Mark ready when CI green: `gh pr ready 65 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-guided-clarification--question-preview-and-progress-score`: **complete**. Question-based readiness score API (`GET /api/projects/[id]/readiness-score`) with Drizzle-backed `computeReadinessScoreDto`, Zod outbound validation; Clarify tab "Coming up" chips from loaded message history (`prd_section_affected` / `prdImpact`); readiness badge consumes new contract.
+- **Tracking PR:** **#67** — `orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778531025744` → `main`. Promote when CI green: `gh pr ready 67 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **User story:** `docs/execution/user-stories/guided-clarification--contextual-tab-refinement--v0.md`
-- **Implementation plan:** `docs/execution/plans/guided-clarification--contextual-tab-refinement--v0.plan.md`
-- **Code:** `ContextualRefinementPanel` (Sheet), triggers in `PrdViewer`, `ArchitecturePanel`, `QuestionHistoryPanel`; state in `ProjectWorkspace`; Vitest + happy-dom + `@vitejs/plugin-react` for `contextual-refinement-panel.test.tsx`.
+- **User story:** `docs/execution/user-stories/guided-clarification--question-preview-and-progress-score--v0.md`
+- **Implementation plan:** `docs/execution/plans/guided-clarification--question-preview-and-progress-score--v0.plan.md`
+- **Code:** `packages/contracts` — `PRD_SECTIONS`, `QuestionReadinessScoreResponseSchema`, `computeReadinessScoreDto`; `apps/web` — `readiness-score-data.ts`, thin `readiness-score/route.ts`, `coming-up-sections.ts`, `ClarificationChat` chips, `ReadinessScoreBadge`; Vitest for route + chat + contract tests.
 
 ## Still blocked elsewhere
 
@@ -28,12 +28,9 @@ current_blocker: null
 ## Next action for autonomous agent
 
 1. **`fa-read-only-sharing--revoke-link-and-noindex`** (in-progress in `orchestration.steps`).
-2. **`fa-guided-clarification--question-preview-and-progress-score`** (depends on contextual tab refinement).
-3. **Parallel:** `fa-owner-milestone-feedback--milestone-detection-and-prompt` if unstacked.
-4. **`fa-test-first-workflows--task-splitting-with-prompts`** tracking PR **#56** if still pending readiness.
+2. **Parallel:** `fa-owner-milestone-feedback--milestone-detection-and-prompt` if unstacked — still blocked pending slice refinement per `status.json`.
+3. **`fa-test-first-workflows--task-splitting-with-prompts`** tracking PR **#56** if still pending readiness.
 
-## Key files (this slice)
+## Key files (prior slice retained)
 
-- Scope slice: `docs/product/scope-slices/guided-clarification--contextual-tab-refinement.md`
-- User story: `docs/execution/user-stories/guided-clarification--contextual-tab-refinement--v0.md`
-- Plan: `docs/execution/plans/guided-clarification--contextual-tab-refinement--v0.plan.md`
+- Contextual refinement: Scope slice `docs/product/scope-slices/guided-clarification--contextual-tab-refinement.md`; tracking PR **#65** branch above.
