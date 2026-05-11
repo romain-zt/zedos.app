@@ -85,7 +85,7 @@ The founder can organize work into **multiple projects** (each a container for a
 |-------|-------------|--------|
 | Create project | Founder creates a new project container and can proceed to PRD work inside it. | complete |
 | List and open project | Founder finds an existing project and opens it to resume work. | complete |
-| Switch active project | Founder moves between projects without losing account context. | exploratory |
+| Switch active project | Founder moves between projects without losing account context. | complete |
 
 ---
 

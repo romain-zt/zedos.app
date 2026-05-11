@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -46,7 +46,11 @@ While working inside a project, founder can navigate to a different project with
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Loading | Project list for the switcher is fetching | Trigger shows loading / disabled until first successful response or error |
+| Success | List returned | Header control shows current project name; menu lists other owned projects |
+| List error | GET /api/projects fails | Inline message + retry (same behavior family as list-and-open slice) |
+| Empty list | Owner has no projects (edge) | Menu explains no projects; primary recovery remains dashboard / create flow |
+| Selection | User picks another project | Client navigates to that project's workspace URL; session unchanged |
 
 ---
 
@@ -54,7 +58,7 @@ While working inside a project, founder can navigate to a different project with
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| Project | Read (list by owner) | Same source as list-and-open: signed-in owner's project list via existing API |
 
 ---
 
@@ -80,8 +84,8 @@ None — project switching is not a defined milestone trigger in PRD v1.
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| Account & session | Feature Area | pending | Owner identity required; session must persist across project context switch |
-| `list-and-open-project` | Scope Slice | exploratory | The set of projects to switch to is the same as the owner's project list |
+| Account & session | Feature Area | complete | Session must persist across navigation |
+| `list-and-open-project` | Scope Slice | complete | Project list semantics and `/api/projects` behavior |
 
 ---
 
@@ -101,18 +105,18 @@ A signed-in founder working inside one project can select a different owned proj
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -121,3 +125,4 @@ A signed-in founder working inside one project can select a different owned proj
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice project-workspace` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX/data/deps for story-ready + orchestrated execution | Cloud agent |

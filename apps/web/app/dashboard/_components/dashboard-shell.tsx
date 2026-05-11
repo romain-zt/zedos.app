@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { CreditBadge } from '@/components/credit-badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DEFERRED_ROADMAP_PLACEHOLDERS } from '../_lib/deferred-roadmap-placeholders'
+import { ProjectSwitcher } from './project-switcher'
 import {
   LayoutDashboard,
   FolderOpen,
@@ -44,6 +45,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const userName = session?.user?.name ?? 'Founder'
   const userInitial = userName?.charAt(0)?.toUpperCase() ?? 'F'
+  const workspaceProjectId =
+    pathname?.match(/^\/dashboard\/projects\/([^/]+)$/)?.[1] ?? null
 
   return (
     <div className="min-h-screen bg-background">
@@ -165,7 +168,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           >
             <PanelLeft className="h-5 w-5" />
           </Button>
-          <div className="flex-1" />
+          {workspaceProjectId ? (
+            <div className="min-w-0 flex-1 flex justify-start">
+              <ProjectSwitcher activeProjectId={workspaceProjectId} />
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
           <CreditBadge />
         </header>
 
