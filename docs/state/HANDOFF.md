@@ -1,10 +1,10 @@
 ---
 type: state-handoff
-date: 2026-05-10
-author: local-agent (overnight pipeline update)
-workspace: /Users/romainpiveteau/Projects/ZedTech/zedos.app
+date: 2026-05-11
+author: cloud-agent (orchestrator pipeline)
+workspace: /workspace
 status: handoff-ready
-current_phase: phase3-complete
+current_phase: phase4-dashboard-shell-slice1-complete
 current_blocker: none
 ---
 
@@ -34,61 +34,28 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 | **2a — Credit/Stripe planning** | `complete` | Scope Slice, User Story, Implementation Plan, and friction log all authored and on disk. |
 | **2b — Implementation** | `blocked-on-pis-approval` | 4-PR stack (~38 files, ~900 lines). Blocked on 5 PIS approval items. See §4. |
 | **3 — Turborepo migration** | `✅ COMPLETE` | All phases complete: P0 scaffold, P1 package extraction, P2 Drizzle migration, P3 better-auth migration. |
-| **4 — Next Feature Areas** | `pending` | FA-account-session → FA-dashboard-shell → FA-prd-versioning → FA-guided-clarification → FA-credit-system (full). |
+| **4 — Next Feature Areas** | `in-progress` | Account & session slices complete; **FA-dashboard-shell slice 1 (signed-in home orientation)** complete; next orchestration step: `fa-dashboard-shell-slice2` (not started) unless reprioritized. See `docs/state/status.json`. |
+
+## Orchestration (canonical)
+
+- **Pipeline bookkeeping:** `docs/state/status.json` — `orchestration.steps["fa-dashboard-shell-slice1"]` = `complete`; `next_action` = `dashboard-shell-slice1-complete-proceed-slice2-or-next-fa`; `orchestration_blocker` = `null`.
+- **Tracking PR:** PR #36, head `orchestrator/tracking-fa-dashboard-shell-slice1-1778497686772` → base `main` (mark ready when slice verification passes; do not use orphan PRs to `main` for this phase).
 
 ## Current Blocker
 
-**FA-account-session Slice 1 is BLOCKED.**
-
-The prerequisite check for implementing account-session sign-up/sign-in flows has failed:
-
-| Required file | Status |
-|---|---|
-| `packages/auth/src/server.ts` | ❌ MISSING |
-| `packages/auth/src/guards.ts` | ❌ MISSING |
-| `apps/web/app/api/auth/[...all]/route.ts` | ❌ MISSING |
-
-Despite `status.json` claiming `phase3.p3 = "complete"`, the codebase still uses NextAuth:
-- `packages/auth/src/auth-options.ts` exports NextAuth configuration
-- `apps/web/app/api/auth/[...nextauth]/route.ts` mounts the NextAuth handler
-- No better-auth installation exists in `packages/auth/`
-
-**Resolution required:** Complete Phase 3 P3 (better-auth migration) before FA-account-session Slice 1 can proceed.
+**None** for dashboard shell slice 1. Phase 3 (Turborepo + Drizzle + better-auth) and FA-account-session (both slices) are **complete** per `status.json`. Phase 2b (credits implementation) remains **blocked on PIS approval** (unrelated to this slice).
 
 ---
 
-## Current Status
+## Phase 3 / auth verification (reference)
 
-**Phase 3 better-auth migration is INCOMPLETE — blocking FA-account-session.**
-
-### Completed Files (per `.cursor/rules/76-better-auth.mdc` §2):
-- ✅ `packages/auth/src/server.ts` — Exports `auth` instance with better-auth + Drizzle adapter
-- ✅ `packages/auth/src/client.ts` — Client-side auth hooks (`signIn`, `signOut`, `useSession`, etc.)
-- ✅ `packages/auth/src/guards.ts` — Exports `requireSession`, `requireUser` with Result<T,E> pattern
-- ✅ `packages/auth/src/types.ts` — Session/User types inferred from better-auth
-- ✅ `packages/auth/src/plugins/api-key.ts` — Disabled stub for v2/v3
-- ✅ `apps/web/app/api/auth/[...all]/route.ts` — better-auth handler
-
-### Deleted Files:
-- ❌ `packages/auth/src/auth-options.ts` — Old NextAuth config (deleted)
-- ❌ `apps/web/app/api/auth/[...nextauth]/route.ts` — Old NextAuth handler (deleted)
-- ❌ `apps/web/lib/auth-options.ts` — Old NextAuth config (deleted)
-- ❌ `apps/web/types/next-auth.d.ts` — NextAuth type augmentation (deleted)
-
-### Verification:
-- ✅ Zero files in `apps/web/` import from `next-auth` (grep check passed)
-- ✅ Workspace typecheck passes
-- ✅ No `as any` casts for `session.user.id`
-- ✅ `next-auth` dependency removed from both `apps/web` and `packages/auth`
-
-### PR Stack:
-1. PR-1: `cursor/better-auth-scaffold-ada8` — @repo/auth scaffold + DB tables
-2. PR-2: `cursor/better-auth-handler-wiring-ada8` — Handler + session wiring
-3. PR-3: `cursor/better-auth-cleanup-ada8` — Remove NextAuth dependencies
+better-auth + Drizzle are in place under `packages/auth` and `apps/web/app/api/auth/[...all]/route.ts`. NextAuth paths were removed. See `status.json` `phase3` / `fa_account_session` mirror fields.
 
 ## What the Cloud Agent Should Do RIGHT NOW
 
-**Phase 3 complete.** Ready for Phase 4 (Next Feature Areas).
+1. Confirm `pnpm typecheck` and `pnpm build` are green on the tracking branch.
+2. Proceed with **dashboard shell slice 2** (`fa-dashboard-shell-slice2`) or the next eligible orchestration task per `docs/state/orchestration.pipeline.json` / product priority.
+3. Phase 2b / PIS blockers (§4) remain unchanged until explicit approvals.
 
 ---
 
