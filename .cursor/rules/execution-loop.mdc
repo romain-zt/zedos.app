@@ -84,6 +84,19 @@ When rebuilding from Feature Area / Scope Slice files:
 
 Derive **`SS-*`** row priority from its parent Feature Area’s band.
 
+### §4.1 Phase 4 execution snapshot (orchestration mirrors)
+
+Bands above are **stable product sequencing**. Day-to-day slice completion is mirrored in **`docs/state/status.json`** (e.g. **`phase3.*`**, **`fa_account_session.*`**, **`fa_dashboard_shell.*`**, **`orchestration.steps`**).
+
+| FA (queue ID) | Band | Snapshot (reconcile with `status.json` + `docs/product/feature-areas/*.md`) |
+|---------------|------|--------------------------------------------------------------------------------|
+| `FA-account-session` | P0 | Both account-session slices orchestrated as **complete**; further slices or polish **stay P0** until `WORK_QUEUE` / artifacts move the FA. |
+| `FA-dashboard-shell` | P0 | FA **validated**; dashboard shell slices 1–2 **complete** per **`fa_dashboard_shell`** mirrors — additional shell UX remains **P0** inventory. |
+| `FA-project-workspace`, `FA-prd-versioning` | P1 | Frontier **after** idle/eligible **P0** work — Plans pair with **Phase 4 routing** agents in `.cursor/agents/execution/README.md`. |
+| `FA-guided-clarification`, lower bands | P2–P4 | Unchanged band semantics; same reconciliation rule. |
+
+If **`WORK_QUEUE`** and **`status.json`** diverge, **`scan`** (§2) rebuilds from **`docs/product/**`** artifacts first; orchestration mirrors are telemetry unless backed by those files.
+
 ---
 
 ## 5. Selection priority order (checks **a–j**)
@@ -92,7 +105,7 @@ When choosing the **next eligible** queue row (after excluding rows blocked per 
 
 **a.** If `docs/EXECUTION_LOCK.md` indicates **`stale: true`** → follow §8 stale handling before selecting new work.
 
-**b.** Rows with **`NEED_UPDATE: true`** at **artifact or workflow** scope (see §14) — surface in `POINTS_OF_ATTENTION`; block **their** subtree until resolved or explicitly deferred in queue + log.
+**b.** Rows with **`NEED_UPDATE: true`** at **artifact or workflow** scope (see §12 invariant 4) — surface in `POINTS_OF_ATTENTION`; block **their** subtree until resolved or explicitly deferred in queue + log.
 
 **c.** Rows in **`active`** matching a valid non-stale lock (§7) continue until the logged step completes or the lock is released.
 

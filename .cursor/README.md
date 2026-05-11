@@ -55,6 +55,7 @@ The bridge is governed by `.cursor/rules/70-execution-bridge.mdc` — the single
 | `/pr` | Open or update a PR | GitHub PR |
 | `/babysit` | Keep PR merge-ready | PR comments triaged, conflicts resolved, CI fixed |
 | `/split` | Reorganize oversized work | Multiple PRs |
+| `/evol` / `/bug` | Product evolution / bug intake | Queue + logs after approval (`80-change-policy.mdc`) |
 | `/improve-config` | Improve `.cursor/` itself | `.cursor/**` |
 
 ---
@@ -76,7 +77,7 @@ The bridge is governed by `.cursor/rules/70-execution-bridge.mdc` — the single
 ├── commands/
 │   ├── prd.md, prd-init.md, prd-questions.md   (discovery commands)
 │   ├── feature-area.md, execute-prd.md         (decomposition commands)
-│   └── plan.md, implement.md, review.md, fix.md, commit.md, pr.md, babysit.md, split.md, explore.md, improve-config.md  (execution commands)
+│   └── plan.md, implement.md, review.md, fix.md, commit.md, pr.md, babysit.md, split.md, explore.md, evol.md, bug.md, improve-config.md  (execution commands)
 ├── hooks.json
 ├── hooks/
 │   ├── README.md                       (hook contract documentation)
@@ -152,7 +153,7 @@ Per the documented Cursor model slugs:
 
 - `claude-opus-4-7-thinking-xhigh` — Lead-style multi-file synthesis (`prd-lead`, `feature-area-lead`, `architect`, `implementer`, `monorepo-analyst`)
 - `claude-4.6-opus-high-thinking` — Researcher (`prd-researcher`)
-- `claude-4.6-sonnet-medium-thinking` — Domain specialists (`bugfix`, `improver`, `drizzle-persistence`, `nextjs-routes`, `auth-better-auth`, `event-contracts`)
+- `claude-4.6-sonnet-medium-thinking` — Domain specialists (`bugfix`, `improver`, `drizzle-persistence`, `nextjs-routes`, `auth-better-auth`, `event-contracts`, `fa-project-workspace`, `fa-prd-versioning`, `fa-guided-clarification`)
 - `gpt-5.5-medium` — Adversarial pattern matchers (`prd-challenger`, `scope-critic`, `reviewer`, `domain-guardian`, `security-pii`)
 - `composer-2-fast` — Fast deterministic checks (`verifier`, `test-runner`, `monorepo-explorer`)
 
