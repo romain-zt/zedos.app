@@ -237,6 +237,18 @@ export function QuestionHistoryPanel({
                       ) : null}
                       <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
                       <span className="text-[11px] text-muted-foreground">{formatDecisionWhen(q.createdAt)}</span>
+                      {onOpenRefinement && q.founderAnswer ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs gap-1.5 mt-0.5"
+                          onClick={() => onOpenRefinement(`question: "${q.structuredQuestion}"`)}
+                        >
+                          <MessageSquare className="h-3 w-3" />
+                          Revise
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
 
