@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-user-stories--story-generation-from-feature-split-governance-complete
+current_phase: fa-test-first-workflows--task-splitting-with-prompts-governance-complete
 current_blocker: null
 ---
 
@@ -12,28 +12,27 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-user-stories--story-generation-from-feature-split`: **complete** (governance: user story + implementation plan authored; see `docs/state/status.json`).
-- **Tracking PR:** #53 — `orchestrator/tracking-fa-user-stories--story-generation-from-feature-split-1778525001967` → `main`. Mark ready when CI green: `gh pr ready 53 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-test-first-workflows--task-splitting-with-prompts`: **complete** (governance: user story + approved implementation plan; registry updated — see `docs/state/status.json`).
+- **Tracking PR:** #56 — `orchestrator/tracking-fa-test-first-workflows--task-splitting-with-prompts-1778525247993` → `main`. Mark ready when CI green: `gh pr ready 56 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **Execution bridge:** User story `docs/execution/user-stories/user-stories--story-generation-from-feature-split--v0.md` (`ready-for-implementation`).
-- **Implementation plan:** `docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md` (`proposed`; human **approval** required before `/implement` and any source edits per 70-execution-bridge).
-- **Pipeline registry:** `docs/state/orchestration.pipeline.json` now links the slice row to the story and plan paths.
+- **User story:** `docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md` (`ready-for-implementation`).
+- **Implementation plan:** `docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md` (`approved` — orchestrator pipeline; implementation proceeds under Patch Intent Summary per execution bridge).
+- **Pipeline registry:** `docs/state/orchestration.pipeline.json` links this slice to the story and plan paths.
 
 ## Still blocked elsewhere
 
-- **Credits slice** `orch-credit-system--ledger-concurrency-and-stripe-webhook` remains **blocked** on PIS + plan approval (PR #39 / tracking branch); see `status.json` `phases.2b` and `pis_blockers`.
+- **Credits slice** `orch-credit-system--ledger-concurrency-and-stripe-webhook` remains **blocked** on PIS + plan approval (PR #39); see `status.json` `phases.2b` and `pis_blockers`.
 
 ## Next action for autonomous agent
 
-1. **Implementation:** Review and **approve** the plan (checkbox + chat), produce PIS, then implement stacked PRs on the tracking branch per plan §Approach and 79-pr sizing.
-2. **Upstream coordination:** User stories persistence FK assumes **feature split** tables from `fa-services-feature-split--prd-to-feature-split` land first (or adjust migration numbers).
-3. **Next FG-POST-PRD-V1 slice (depends on this):** `fa-test-first-workflows--task-splitting-with-prompts` in `docs/state/orchestration.pipeline.json`.
-4. Credits slice only after human `approved` on each PIS item.
+1. **Implementation:** Run `/implement` against the plan with explicit PIS `approved`; ship stacked PRs on the tracking branch per plan §Approach and PR sizing (79).
+2. **Upstream:** User story corpus / `user_story_lines` FK from `fa-user-stories--story-generation-from-feature-split` — plan allows nullable linkage until those tables exist.
+3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface`, `fa-owner-milestone-feedback--milestone-detection-and-prompt` (see `orchestration.steps`).
 
 ## Key files (this slice)
 
-- Scope slice: `docs/product/scope-slices/user-stories--story-generation-from-feature-split.md`
-- User story: `docs/execution/user-stories/user-stories--story-generation-from-feature-split--v0.md`
-- Plan: `docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md`
+- Scope slice: `docs/product/scope-slices/test-first-workflows--task-splitting-with-prompts.md`
+- User story: `docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md`
+- Plan: `docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md`
