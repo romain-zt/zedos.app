@@ -45,13 +45,41 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
 
   useEffect(() => { scrollToBottom() }, [messages, scrollToBottom])
 
-  // Auto-start clarification
+  // Load existing history on mount; auto-start only when there are no prior messages.
   useEffect(() => {
-    if (!hasStarted.current) {
-      hasStarted.current = true
+    if (hasStarted.current) return
+    hasStarted.current = true
+
+    const loadHistory = async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/questions`)
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data) && data.length > 0) {
+            const historic: Message[] = []
+            for (const q of data) {
+              const parsed: any = { message: q.structuredQuestion }
+              if (q.availableOptions) parsed.decision_ui = q.availableOptions
+              if (q.aiInterpretation) parsed.reasoning = q.aiInterpretation
+              if (q.prdImpact) parsed.prd_section_affected = q.prdImpact
+              historic.push({ role: 'assistant', content: q.structuredQuestion, parsed })
+              if (q.founderAnswer) {
+                historic.push({ role: 'user', content: q.founderAnswer })
+              }
+            }
+            setMessages(historic)
+            return
+          }
+        }
+      } catch {
+        // Fall through to auto-start on error
+      }
+      // No history (or fetch failed) — start a fresh clarification session
       sendMessage(null, null)
     }
-  }, [])
+
+    loadHistory()
+  }, [projectId])
 
   const sendMessage = async (userMessage: string | null, decisionResponse: any | null) => {
     if (streaming) return

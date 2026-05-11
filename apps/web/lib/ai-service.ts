@@ -81,7 +81,7 @@ export function createStreamingResponse(aiResponse: Response): ReadableStream {
 
 export function createBufferedStreamingResponse(
   aiResponse: Response,
-  onComplete: (result: string) => void
+  onComplete: (result: string) => Promise<void> | void
 ): ReadableStream {
   return new ReadableStream({
     async start(controller) {
@@ -104,7 +104,7 @@ export function createBufferedStreamingResponse(
               const data = line.slice(6)
               if (data === '[DONE]') {
                 try {
-                  onComplete(buffer)
+                  await Promise.resolve(onComplete(buffer))
                 } catch (e: any) {
                   console.error('onComplete error:', e)
                 }
@@ -126,7 +126,7 @@ export function createBufferedStreamingResponse(
         }
         // If we reach here without [DONE], still complete
         if (buffer) {
-          try { onComplete(buffer) } catch {}
+          try { await Promise.resolve(onComplete(buffer)) } catch {}
           const finalData = JSON.stringify({ status: 'completed', result: buffer })
           controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
         }

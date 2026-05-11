@@ -31,13 +31,24 @@ describe('ProjectDomainService', () => {
       expect(r.filledCount).toBe(0);
     });
 
-    it('returns unstable for partial content', () => {
-      const r = ProjectDomainService.checkPrdStability({ overview: 'yes', problem: 'yes' });
+    // Legacy flat-key format tests (backward-compat path)
+    it('returns unstable for partial flat-key content (< 4 sections)', () => {
+      const r = ProjectDomainService.checkPrdStability({ vision: 'yes', target_users: 'yes' });
       expect(r.isStable).toBe(false);
       expect(r.filledCount).toBe(2);
     });
 
-    it('returns stable when all 8 sections filled', () => {
+    it('returns stable for flat-key content with >= 4 sections filled', () => {
+      const content: Record<string, string> = {};
+      for (const s of ProjectDomainService.requiredPrdSections.slice(0, 4)) {
+        content[s] = 'filled';
+      }
+      const r = ProjectDomainService.checkPrdStability(content);
+      expect(r.isStable).toBe(true);
+      expect(r.filledCount).toBe(4);
+    });
+
+    it('returns stable when all 8 flat-key sections filled', () => {
       const content: Record<string, string> = {};
       for (const s of ProjectDomainService.requiredPrdSections) {
         content[s] = 'filled';
@@ -47,7 +58,7 @@ describe('ProjectDomainService', () => {
       expect(r.filledCount).toBe(8);
     });
 
-    it('empty string sections are not counted', () => {
+    it('empty string flat-key sections are not counted', () => {
       const content: Record<string, string> = {};
       for (const s of ProjectDomainService.requiredPrdSections) {
         content[s] = '';
@@ -55,6 +66,57 @@ describe('ProjectDomainService', () => {
       const r = ProjectDomainService.checkPrdStability(content);
       expect(r.isStable).toBe(false);
       expect(r.filledCount).toBe(0);
+    });
+
+    // AI-generated sections-array format tests
+    it('counts sections from AI-format sections array by id', () => {
+      const content = {
+        title: 'My PRD',
+        version_summary: 'v1',
+        sections: [
+          { id: 'vision', title: 'Vision', content: 'We solve X for Y' },
+          { id: 'target_users', title: 'Users', content: 'Founders' },
+          { id: 'core_features', title: 'Features', content: 'AI PRD' },
+          { id: 'user_journeys', title: 'Journeys', content: 'Signup → clarify → PRD' },
+        ],
+      };
+      const r = ProjectDomainService.checkPrdStability(content);
+      expect(r.filledCount).toBe(4);
+      expect(r.isStable).toBe(true);
+    });
+
+    it('sections-array: empty content strings are not counted', () => {
+      const content = {
+        sections: [
+          { id: 'vision', content: '' },
+          { id: 'target_users', content: '   ' },
+        ],
+      };
+      const r = ProjectDomainService.checkPrdStability(content);
+      expect(r.filledCount).toBe(0);
+      expect(r.isStable).toBe(false);
+    });
+
+    it('sections-array: unknown section ids do not count toward required', () => {
+      const content = {
+        sections: [
+          { id: 'some_unknown_section', content: 'foobar' },
+          { id: 'vision', content: 'Product vision here' },
+        ],
+      };
+      const r = ProjectDomainService.checkPrdStability(content);
+      expect(r.filledCount).toBe(1);
+      expect(r.isStable).toBe(false);
+    });
+
+    it('sections-array: full AI PRD with all 8 sections is stable', () => {
+      const sections = ProjectDomainService.requiredPrdSections.map((id) => ({
+        id,
+        content: 'Some content',
+      }));
+      const r = ProjectDomainService.checkPrdStability({ sections });
+      expect(r.filledCount).toBe(8);
+      expect(r.isStable).toBe(true);
     });
   });
 

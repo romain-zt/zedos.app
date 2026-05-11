@@ -7,16 +7,23 @@
 
 import { Project, ProjectPhase } from './project';
 
+// These IDs match the section `id` values produced by the AI PRD generation prompt.
 const PRD_REQUIRED_SECTIONS = [
-  'overview',
-  'problem',
-  'users',
-  'journeys',
-  'objects',
-  'scope',
+  'vision',
+  'target_users',
+  'core_features',
+  'user_journeys',
+  'technical',
+  'success_metrics',
+  'out_of_scope',
   'risks',
-  'metrics',
 ] as const;
+
+/**
+ * Minimum number of filled sections required to consider a PRD "stable"
+ * and eligible for architecture phase unlock.
+ */
+const MIN_STABLE_THRESHOLD = 4;
 
 export class ProjectDomainService {
   /**
@@ -53,13 +60,30 @@ export class ProjectDomainService {
       return { isStable: false, filledCount: 0, totalRequired: PRD_REQUIRED_SECTIONS.length };
     }
 
-    const filledCount = PRD_REQUIRED_SECTIONS.filter((section) => {
-      const val = prdContent[section];
-      return val && (typeof val === 'string' ? val.trim().length > 0 : true);
-    }).length;
+    let filledCount: number;
+
+    // AI-generated content stores sections in a `sections` array with an `id` field.
+    const rawSections = prdContent['sections'];
+    if (Array.isArray(rawSections) && rawSections.length > 0) {
+      const filledIds = new Set(
+        (rawSections as Array<Record<string, unknown>>)
+          .filter((s) => {
+            const content = s['content'];
+            return typeof content === 'string' && content.trim().length > 0;
+          })
+          .map((s) => s['id'])
+      );
+      filledCount = PRD_REQUIRED_SECTIONS.filter((id) => filledIds.has(id)).length;
+    } else {
+      // Legacy / flat-key format: top-level keys match section names directly.
+      filledCount = PRD_REQUIRED_SECTIONS.filter((section) => {
+        const val = prdContent[section];
+        return val && (typeof val === 'string' ? val.trim().length > 0 : true);
+      }).length;
+    }
 
     return {
-      isStable: filledCount === PRD_REQUIRED_SECTIONS.length,
+      isStable: filledCount >= MIN_STABLE_THRESHOLD,
       filledCount,
       totalRequired: PRD_REQUIRED_SECTIONS.length,
     };

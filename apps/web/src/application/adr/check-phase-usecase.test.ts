@@ -20,8 +20,8 @@ const makePrdRepo = (prd: any = null) => ({
 });
 
 const fullContent = {
-  overview: 'x', problem: 'x', users: 'x', journeys: 'x',
-  objects: 'x', scope: 'x', risks: 'x', metrics: 'x',
+  vision: 'x', target_users: 'x', core_features: 'x', user_journeys: 'x',
+  technical: 'x', success_metrics: 'x', out_of_scope: 'x', risks: 'x',
 };
 
 describe('CheckPhaseUseCase', () => {
