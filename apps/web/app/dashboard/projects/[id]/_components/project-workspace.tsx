@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ClarificationChat } from './clarification-chat'
 import { PrdViewer } from './prd-viewer'
@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { FadeIn } from '@/components/ui/animate'
+import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
 import {
   PrdVersionListResponseSchema,
   type PrdVersionDTO,
@@ -35,6 +36,8 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
   const [saving, setSaving] = useState(false)
   const [phase, setPhase] = useState('intake')
   const [loadingPhase, setLoadingPhase] = useState(true)
+  const skipReopenAfterGenerateRef = useRef(false)
+  const [reopenFeedbackOpen, setReopenFeedbackOpen] = useState(false)
 
   const fetchVersions = useCallback(async () => {
     try {
@@ -88,9 +91,32 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
   }, [projectId])
 
   const handlePrdGenerated = useCallback(() => {
+    skipReopenAfterGenerateRef.current = true
     fetchVersions()
     setActiveTab('prd')
   }, [fetchVersions])
+
+  const handleTabChange = (next: string) => {
+    const prev = activeTab
+    setActiveTab(next)
+    if (next !== 'prd' || prev === 'prd') return
+    if (prdVersions.length === 0) return
+
+    if (skipReopenAfterGenerateRef.current && prev === 'clarify') {
+      skipReopenAfterGenerateRef.current = false
+      return
+    }
+    skipReopenAfterGenerateRef.current = false
+
+    try {
+      const k = `zedos:milestone-prd-reopened:${projectId}`
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(k)) return
+      sessionStorage.setItem(k, '1')
+    } catch {
+      /* ignore */
+    }
+    setReopenFeedbackOpen(true)
+  }
 
   const handleSaveSettings = async () => {
     setSaving(true)
@@ -127,7 +153,7 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         </div>
       </FadeIn>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <div className="flex items-center justify-between mb-4">
           <TabsList>
             <TabsTrigger value="clarify" className="gap-2">
@@ -162,6 +188,7 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
           <ClarificationChat
             projectId={projectId}
             prdVersionId={selectedVersion?.id ?? null}
+            existingPrdVersionCount={prdVersions.length}
             onPrdGenerated={handlePrdGenerated}
           />
         </TabsContent>
@@ -188,6 +215,16 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
           />
         </TabsContent>
       </Tabs>
+
+      <MilestoneFeedbackModal
+        open={reopenFeedbackOpen}
+        onClose={() => setReopenFeedbackOpen(false)}
+        projectId={projectId}
+        prdVersionId={selectedVersion?.id ?? null}
+        milestoneType="prd_reopened"
+        title="Welcome back to your PRD"
+        description="Quick feedback helps improve the reading experience."
+      />
 
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>

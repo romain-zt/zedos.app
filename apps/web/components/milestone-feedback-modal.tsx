@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Star, ThumbsUp, ThumbsDown, X } from 'lucide-react'
 import { toast } from 'sonner'
+import type { OwnerMilestoneType } from '@repo/contracts/feedback'
+import { MilestoneFeedbackPostResponseSchema } from '@repo/contracts/feedback'
 
 interface MilestoneFeedbackModalProps {
   open: boolean
   onClose: () => void
   projectId: string
   prdVersionId?: string | null
-  milestoneType: string
+  milestoneType: OwnerMilestoneType | ''
   title: string
   description: string
 }
@@ -32,9 +34,10 @@ export function MilestoneFeedbackModal({
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async () => {
+    if (!milestoneType) return
     setSubmitting(true)
     try {
-      await fetch('/api/feedback', {
+      const res = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -46,6 +49,16 @@ export function MilestoneFeedbackModal({
           comment: comment.trim() || null,
         }),
       })
+      if (!res.ok) {
+        toast.error('Failed to submit feedback')
+        return
+      }
+      const raw: unknown = await res.json()
+      const out = MilestoneFeedbackPostResponseSchema.safeParse(raw)
+      if (!out.success) {
+        toast.error('Invalid feedback response')
+        return
+      }
       toast.success('Thanks for your feedback!')
       onClose()
     } catch {

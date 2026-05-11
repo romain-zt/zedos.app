@@ -15,6 +15,7 @@ import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
 import { ShareLinkMintResponseSchema, ShareLinkSummarySchema } from '@repo/contracts/share/mint'
+import type { OwnerMilestoneType } from '@repo/contracts/feedback'
 
 interface PrdViewerProps {
   projectId: string
@@ -32,7 +33,7 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
   const [sharing, setSharing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
-  const [feedbackType, setFeedbackType] = useState('')
+  const [feedbackType, setFeedbackType] = useState<OwnerMilestoneType | ''>('')
 
   // Check for existing share link
   useEffect(() => {

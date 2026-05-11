@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -47,7 +47,14 @@ After specific owner actions, a lightweight skippable feedback prompt appears �
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Idle / no prompt | Between milestones; user on anonymous share surface; or milestone already had feedback for same (user, project, milestone type, optional version) | Normal product UI; no feedback chrome |
+| Prompt visible | Immediately after a detected owner milestone | Lightweight modal or overlay with optional star rating and comment; clear dismiss / close without submitting |
+| Submitting | User chose to send feedback | Short in-flight affordance; control disabled or loading |
+| Submit success | Server accepted feedback | Confirmation toast or inline success; prompt closes |
+| Submit error (transient) | Network or server failure | Recoverable error message; user can retry or dismiss |
+| Submit duplicate | Same milestone feedback already recorded for this user | Non-blocking acknowledgment; prompt can close (no second row required) |
+| Reopen throttled | `prd_reopened` already prompted once this browser session | No second reopen prompt until a new session (session-scoped suppression only) |
+| Post-generate suppress | User just finished “Generate PRD” and lands on PRD tab | No immediate `prd_reopened` prompt (avoid double prompt with `prd_created` / `prd_updated_after_clarification`) |
 
 ---
 
@@ -55,7 +62,11 @@ After specific owner actions, a lightweight skippable feedback prompt appears �
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| **Project** (business) | read (implicit) | Milestones are scoped to `projectId`; owner session only |
+| **PRD version** (business) | read | Optional `prdVersionId` on submission; used for create/update/reopen/shared context |
+| **Milestone feedback row** (`milestone_feedback`) | insert (downstream of prompt) | Persisted only when owner submits via capture path tied to this slice’s API; duplicate key / constraint yields duplicate response — full persistence semantics belong to `feedback-capture-and-attribution` |
+| **Read-only share link** (business) | read | `prd_shared` fires when owner mints a new share link for a version |
+| **Browser session** (`sessionStorage`) | read / write | Optional key per project to limit `prd_reopened` noise within a session |
 
 ---
 
@@ -84,8 +95,8 @@ This slice **is** the feedback surface entry point. It detects milestones and su
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
 | PRD versioning | Feature Area | validated | "First PRD version created" and "PRD version updated" milestones originate from version events |
-| `mint-read-only-link` | Scope Slice | exploratory | "PRD shared" milestone originates from link creation |
-| `feedback-capture-and-attribution` | Scope Slice | exploratory | Prompt must connect to capture slice to record the response |
+| `mint-read-only-link` | Scope Slice | complete | "PRD shared" milestone originates from link creation |
+| `feedback-capture-and-attribution` | Scope Slice | exploratory | Durable attribution and capture polish; this slice only detects milestones + surfaces the prompt and posts to existing feedback API |
 
 ---
 
@@ -105,18 +116,18 @@ After each of the four defined owner milestone events, the signed-in founder see
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -125,3 +136,4 @@ After each of the four defined owner milestone events, the signed-in founder see
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice owner-milestone-feedback` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX states, data touched, dependency status (`mint-read-only-link` complete); promoted to `ready-for-user-stories` | cloud-agent (orchestrator) |

@@ -26,7 +26,7 @@
       "fa-user-stories--story-generation-from-feature-split": "complete",
       "fa-test-first-workflows--task-splitting-with-prompts": "complete",
       "fa-read-only-sharing--anonymous-read-surface": "in-progress",
-      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "not-started"
+      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "complete"
     }
   },
   "cursor_self_improve": {

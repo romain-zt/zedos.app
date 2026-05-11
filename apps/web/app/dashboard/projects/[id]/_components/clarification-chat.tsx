@@ -13,6 +13,7 @@ import {
 import { DecisionCard } from './decision-card'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
+import type { OwnerMilestoneType } from '@repo/contracts/feedback'
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -24,16 +25,23 @@ interface Message {
 interface ClarificationChatProps {
   projectId: string
   prdVersionId: string | null
+  /** Number of PRD versions before this session's Generate PRD completes (used for milestone type). */
+  existingPrdVersionCount: number
   onPrdGenerated: () => void
 }
 
-export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: ClarificationChatProps) {
+export function ClarificationChat({
+  projectId,
+  prdVersionId,
+  existingPrdVersionCount,
+  onPrdGenerated,
+}: ClarificationChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [generatingPrd, setGeneratingPrd] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
-  const [feedbackMilestone, setFeedbackMilestone] = useState('')
+  const [feedbackMilestone, setFeedbackMilestone] = useState<OwnerMilestoneType | ''>('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const hasStarted = useRef(false)
 
@@ -246,9 +254,10 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
               const parsed = JSON.parse(line.slice(6))
               if (parsed?.status === 'completed') {
                 toast.success('PRD generated!')
+                const milestone =
+                  existingPrdVersionCount > 0 ? 'prd_updated_after_clarification' : 'prd_created'
                 onPrdGenerated()
-                // Trigger milestone feedback
-                setFeedbackMilestone('prd_created')
+                setFeedbackMilestone(milestone)
                 setShowFeedback(true)
               }
             } catch {}
