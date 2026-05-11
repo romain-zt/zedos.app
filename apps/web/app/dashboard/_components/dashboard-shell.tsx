@@ -6,6 +6,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { CreditBadge } from '@/components/credit-badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { DEFERRED_ROADMAP_PLACEHOLDERS } from '../_lib/deferred-roadmap-placeholders'
 import {
   LayoutDashboard,
   FolderOpen,
@@ -17,8 +19,10 @@ import {
   GitBranch,
   Users,
   BarChart3,
+  Boxes,
   X,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -26,12 +30,13 @@ const NAV_ITEMS = [
   { href: '/dashboard/credits', label: 'Credits', icon: Coins },
 ]
 
-const UNDER_CONSTRUCTION = [
-  { label: 'Services / feature split', icon: GitBranch },
-  { label: 'Cursor packaging', icon: Zap },
-  { label: 'User stories & delivery', icon: Users },
-  { label: 'Test-first workflows', icon: BarChart3 },
-] as const
+const PLACEHOLDER_ICONS: Record<string, LucideIcon> = {
+  'services-feature-split': GitBranch,
+  'cursor-packaging': Zap,
+  'user-stories-delivery': Users,
+  'test-first-workflows': BarChart3,
+  'architecture-analysis': Boxes,
+}
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession() || {}
@@ -44,6 +49,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
+      <TooltipProvider delayDuration={400}>
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -95,18 +101,36 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             })}
 
             <div className="pt-4 pb-2">
-              <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Coming Soon</p>
+              <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Under construction
+              </p>
             </div>
-            {UNDER_CONSTRUCTION.map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground/50 cursor-not-allowed"
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-                <Construction className="h-3 w-3 ml-auto" />
-              </div>
-            ))}
+            {DEFERRED_ROADMAP_PLACEHOLDERS.map((item) => {
+              const Icon = PLACEHOLDER_ICONS[item.id] ?? Construction
+              return (
+                <Tooltip key={item.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground',
+                        'border border-dashed border-muted-foreground/25 bg-muted/20',
+                        'cursor-help text-left min-h-11 touch-manipulation',
+                        'hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                      )}
+                      aria-label={`${item.title} — under construction, not available in v0`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 opacity-80" />
+                      <span className="flex-1 min-w-0 leading-snug">{item.title}</span>
+                      <Construction className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[240px] text-xs sm:text-sm">
+                    {item.tooltip}
+                  </TooltipContent>
+                </Tooltip>
+              )
+            })}
           </nav>
 
           {/* User */}
@@ -152,6 +176,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      </TooltipProvider>
     </div>
   )
 }
