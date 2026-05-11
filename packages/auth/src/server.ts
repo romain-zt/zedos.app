@@ -13,7 +13,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { toNextJsHandler } from 'better-auth/next-js';
-import { db } from '@repo/db';
+import { db, grantStarterCreditsIfNeeded } from '@repo/db';
 import * as schema from '@repo/db/schema';
 
 function resolveAuthBaseURL(): string | undefined {
@@ -31,6 +31,22 @@ const authBaseURL = resolveAuthBaseURL();
 export const auth = betterAuth({
   ...(authSecret ? { secret: authSecret } : {}),
   ...(authBaseURL ? { baseURL: authBaseURL } : {}),
+
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (created) => {
+          try {
+            const id = created?.id;
+            if (typeof id !== 'string' || !id) return;
+            await grantStarterCreditsIfNeeded(id);
+          } catch (e) {
+            console.error('[Better Auth] starter credits grant failed:', e);
+          }
+        },
+      },
+    },
+  },
 
   database: drizzleAdapter(db, {
     provider: 'pg',
