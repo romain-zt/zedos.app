@@ -260,8 +260,8 @@
         "title": "Story generation from feature split",
         "featureAreaFile": "docs/product/feature-areas/user-stories.md",
         "scopeSliceFile": "docs/product/scope-slices/user-stories--story-generation-from-feature-split.md",
-        "userStoryFile": null,
-        "planFile": null,
+        "userStoryFile": "docs/execution/user-stories/user-stories--story-generation-from-feature-split--v0.md",
+        "planFile": "docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md",
         "notes": "FG-POST-PRD-V1 — governance step: user story + plan if not present before implementing."
       }
     },
