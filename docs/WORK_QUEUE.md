@@ -4,10 +4,12 @@ Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc`
 
 | ID | Type | Parent | Status | Priority | NEED_HUMAN | NEED_UPDATE | Blocked By | Next Action |
 |---|---|---|---|:---:|:---:|:---:|---|---|
-| FA-account-session | Feature Area | | ready | P0 | false | false | | `/feature-area check` on Scope Slices; `/feature-area refine-slice` per exploratory slice |
-| SS-account-session--signup-to-signed-in-dashboard | Scope Slice | FA-account-session | exploratory | P0 | false | false | | `/feature-area refine-slice docs/product/scope-slices/account-session--signup-to-signed-in-dashboard.md` |
-| SS-account-session--returning-owner-sign-in | Scope Slice | FA-account-session | exploratory | P0 | false | false | | `/feature-area refine-slice docs/product/scope-slices/account-session--returning-owner-sign-in.md` |
-| FA-dashboard-shell | Feature Area | | exploratory | P0 | false | false | | `/feature-area validate dashboard-shell` |
+| FA-account-session | Feature Area | | ready | P0 | false | false | | Implementation in-progress via orchestrator |
+| SS-account-session--sign-up-sign-in | Scope Slice | FA-account-session | done | P0 | false | false | | Implemented as fa-account-session slice1 |
+| SS-account-session--session-persistence | Scope Slice | FA-account-session | ready | P0 | false | false | | `/implement` via orchestrator phase `fa-account-session-slice2` |
+| FA-dashboard-shell | Feature Area | | ready | P0 | false | false | | Validated 2026-05-11; scope slices scaffolded |
+| SS-dashboard-shell--signed-in-home | Scope Slice | FA-dashboard-shell | ready | P0 | false | false | | `/implement` via orchestrator phase `fa-dashboard-shell-slice1` (depends on fa-account-session) |
+| SS-dashboard-shell--under-construction | Scope Slice | FA-dashboard-shell | ready | P0 | false | false | | `/implement` via orchestrator phase `fa-dashboard-shell-slice2` (depends on slice1) |
 | FA-project-workspace | Feature Area | | exploratory | P1 | false | false | | `/feature-area validate project-workspace` |
 | FA-prd-versioning | Feature Area | | exploratory | P1 | false | false | | `/feature-area validate prd-versioning` |
 | FA-guided-clarification | Feature Area | | exploratory | P2 | true | false | B-001;B-002 | Resolve B-001/B-002 (`BLOCKERS.md` + Feature Area); then `/feature-area validate guided-clarification` |

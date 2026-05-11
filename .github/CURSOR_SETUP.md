@@ -107,7 +107,7 @@ No secrets beyond the default `GITHUB_TOKEN` are required.
 
 Pipeline order is declarative: migration “bundled” steps (with prompts in `.github/scripts/phase-orchestrator.ts`) and **slice** workloads (Feature Area + Scope Slice file pointers) run in dependency order. When a tracking PR merges, `pr-ready.yml` dispatches the orchestrator again → **merge → next step → loop**. Append new slice rows to `docs/state/orchestration.pipeline.json` after each Feature Area’s slices are prioritized (see `execution-loop.mdc` P0–P4 bands).
 
-Optional **repository variable** `CURSOR_AGENT_MODEL` (Actions → Variables): pass-through to `@cursor/sdk` as `model.id` for orchestrator + PR automation agents.
+**Repository variable** `CURSOR_AGENT_MODEL` (Actions → Variables) overrides the default **`composer-2`** SDK model (`model.id`) for orchestrator + PR automation. If unset or empty, scripts use Composer 2.
 
 **Remediation and human blockers:**
 
