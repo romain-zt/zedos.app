@@ -6,8 +6,9 @@ import { useRouter, usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { CreditBadge } from '@/components/credit-badge'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DEFERRED_ROADMAP_PLACEHOLDERS } from '../_lib/deferred-roadmap-placeholders'
+import type { DeferredRoadmapPlaceholder } from '../_lib/deferred-roadmap-placeholders'
+import { RoadmapItemModal } from './roadmap-item-modal'
 import { ProjectSwitcher } from './project-switcher'
 import {
   LayoutDashboard,
@@ -42,6 +43,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [roadmapModal, setRoadmapModal] = useState<DeferredRoadmapPlaceholder | null>(null)
 
   const userName = session?.user?.name ?? 'Founder'
   const userInitial = userName?.charAt(0)?.toUpperCase() ?? 'F'
