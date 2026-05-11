@@ -6,10 +6,11 @@
     "p0": "complete",
     "p1": "complete",
     "p2": "complete",
-    "p3": "complete"
+    "p3": "incomplete-blocking-account-session"
   },
   "fa_account_session": {
-    "slice1": "in-progress"
+    "slice1": "blocked",
+    "blocker": "Phase 3 better-auth migration incomplete: packages/auth/src/server.ts, packages/auth/src/guards.ts, apps/web/app/api/auth/[...all]/route.ts missing. Codebase still uses NextAuth."
   },
   "pis_approved": false,
   "pis_blockers_count": 5,
@@ -66,7 +67,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "phase3-complete-ready-for-phase4",
+  "next_action": "complete-phase3-p3-better-auth-migration",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",

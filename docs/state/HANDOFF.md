@@ -36,9 +36,30 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 | **3 — Turborepo migration** | `✅ COMPLETE` | All phases complete: P0 scaffold, P1 package extraction, P2 Drizzle migration, P3 better-auth migration. |
 | **4 — Next Feature Areas** | `pending` | FA-account-session → FA-dashboard-shell → FA-prd-versioning → FA-guided-clarification → FA-credit-system (full). |
 
+## Current Blocker
+
+**FA-account-session Slice 1 is BLOCKED.**
+
+The prerequisite check for implementing account-session sign-up/sign-in flows has failed:
+
+| Required file | Status |
+|---|---|
+| `packages/auth/src/server.ts` | ❌ MISSING |
+| `packages/auth/src/guards.ts` | ❌ MISSING |
+| `apps/web/app/api/auth/[...all]/route.ts` | ❌ MISSING |
+
+Despite `status.json` claiming `phase3.p3 = "complete"`, the codebase still uses NextAuth:
+- `packages/auth/src/auth-options.ts` exports NextAuth configuration
+- `apps/web/app/api/auth/[...nextauth]/route.ts` mounts the NextAuth handler
+- No better-auth installation exists in `packages/auth/`
+
+**Resolution required:** Complete Phase 3 P3 (better-auth migration) before FA-account-session Slice 1 can proceed.
+
+---
+
 ## Current Status
 
-**Phase 3 better-auth migration is COMPLETE.**
+**Phase 3 better-auth migration is INCOMPLETE — blocking FA-account-session.**
 
 ### Completed Files (per `.cursor/rules/76-better-auth.mdc` §2):
 - ✅ `packages/auth/src/server.ts` — Exports `auth` instance with better-auth + Drizzle adapter
