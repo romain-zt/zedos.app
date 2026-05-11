@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "description": "Queued steps for Orchestration Planner workflow. Each element matches orchestration.pipeline.json steps[] shape. dependsOn must reference an id already in orchestration.pipeline.json or an id defined earlier in this steps array. On run, new ids are appended to the pipeline, orchestration.steps[id] is set to not-started when missing, then committed. Optionally clear this steps array after success.",
+  "steps": []
+}

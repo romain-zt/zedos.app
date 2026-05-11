@@ -1,0 +1,56 @@
+name: Orchestration Planner
+
+# Appends steps from docs/state/orchestration.planner-queue.json into
+# docs/state/orchestration.pipeline.json, seeds status for new ids, pushes,
+# then optionally dispatches Phase Orchestrator.
+
+on:
+  workflow_dispatch:
+    inputs:
+      clear_planner_queue:
+        description: "After a successful append, reset orchestration.planner-queue.json steps to []"
+        required: false
+        default: false
+        type: boolean
+      trigger_orchestrator:
+        description: "Run Phase Orchestrator after push (workflow_dispatch)"
+        required: false
+        default: true
+        type: boolean
+
+concurrency:
+  group: orchestration-planner-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm install --prefix .github/scripts
+
+      - name: Append planner queue to pipeline
+        env:
+          PLANNER_CLEAR_QUEUE: ${{ inputs.clear_planner_queue && '1' || '' }}
+        run: npx --prefix .github/scripts tsx .github/scripts/orchestration-planner.ts
+
+      - name: Dispatch Phase Orchestrator
+        if: ${{ inputs.trigger_orchestrator }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run phase-orchestrator.yml \
+            --repo "${{ github.repository }}" \
+            -f reason="after orchestration planner (${{ github.run_id }})"
