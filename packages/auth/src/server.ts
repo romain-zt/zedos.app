@@ -16,7 +16,22 @@ import { toNextJsHandler } from 'better-auth/next-js';
 import { db } from '@repo/db';
 import * as schema from '@repo/db/schema';
 
+function resolveAuthBaseURL(): string | undefined {
+  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return undefined;
+}
+
+const authSecret =
+  process.env.BETTER_AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+const authBaseURL = resolveAuthBaseURL();
+
 export const auth = betterAuth({
+  ...(authSecret ? { secret: authSecret } : {}),
+  ...(authBaseURL ? { baseURL: authBaseURL } : {}),
+
   database: drizzleAdapter(db, {
     provider: 'pg',
     usePlural: true,
@@ -64,8 +79,11 @@ export const auth = betterAuth({
   },
 
   trustedOrigins: [
-    process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-  ].filter(Boolean),
+    authBaseURL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXTAUTH_URL,
+    'http://localhost:3000',
+  ].filter(Boolean) as string[],
 
 });
 
