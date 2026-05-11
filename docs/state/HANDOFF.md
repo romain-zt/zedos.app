@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-project-workspace--list-and-open-project-complete
+current_phase: fa-project-workspace--switch-active-project-complete
 current_blocker: null
 ---
 
@@ -12,14 +12,14 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-project-workspace--list-and-open-project`: **complete** (see `docs/state/status.json`).
-- **Tracking PR:** #42 — `orchestrator/tracking-fa-project-workspace--list-and-open-project-1778510377279` → `main`. Mark ready when CI green: `gh pr ready 42 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-project-workspace--switch-active-project`: **complete** (see `docs/state/status.json`).
+- **Tracking PR:** #44 — `orchestrator/tracking-fa-project-workspace--switch-active-project-1778510579921` → `main`. Mark ready when CI green: `gh pr ready 44 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **Product:** Scope slice `docs/product/scope-slices/project-workspace--list-and-open-project.md` refined to `ready-for-user-stories`; FA `project-workspace.md` marks “List and open project” slice **complete**.
-- **Execution:** User story `docs/execution/user-stories/project-workspace--list-and-open-project--v0.md` + plan `docs/execution/plans/project-workspace--list-and-open-project--v0.plan.md` (executed).
-- **App:** Dashboard and Projects pages show explicit **list load errors** with **retry** (no silent empty list on `GET /api/projects` failure). Project workspace `open` path uses `GetProjectUseCase` + repository (no page-level Prisma). `GetProjectUseCase` typed to `Result<Project, …>` with unit tests.
+- **Product:** Scope slice `docs/product/scope-slices/project-workspace--switch-active-project.md` refined to `ready-for-user-stories` then executed; FA `project-workspace.md` marks “Switch active project” slice **complete**.
+- **Execution:** User story `docs/execution/user-stories/project-workspace--switch-active-project--v0.md` + plan `docs/execution/plans/project-workspace--switch-active-project--v0.plan.md` (executed).
+- **App:** Dashboard header shows a **project switcher** on `/dashboard/projects/[id]` — lists owned projects via `GET /api/projects`, retry on failure, navigates with `router.push` (session unchanged).
 
 ## Still blocked elsewhere
 
@@ -27,13 +27,12 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. Pick the next eligible `orchestration.steps` row in `docs/state/orchestration.pipeline.json` (e.g. `switch-active-project` in project workspace FA).
+1. Pick the next eligible `orchestration.steps` row in `docs/state/orchestration.pipeline.json` (per orchestrator routing).
 2. Credits slice only after human `approved` on each PIS item.
 
 ## Key files (this slice)
 
-- Scope slice: `docs/product/scope-slices/project-workspace--list-and-open-project.md`
-- User story: `docs/execution/user-stories/project-workspace--list-and-open-project--v0.md`
-- Plan: `docs/execution/plans/project-workspace--list-and-open-project--v0.plan.md`
-- UI: `apps/web/app/dashboard/page.tsx`, `apps/web/app/dashboard/projects/page.tsx`, `apps/web/app/dashboard/projects/[id]/page.tsx`
-- Application: `apps/web/src/application/project/get-project-usecase.ts`, `get-project-usecase.test.ts`
+- Scope slice: `docs/product/scope-slices/project-workspace--switch-active-project.md`
+- User story: `docs/execution/user-stories/project-workspace--switch-active-project--v0.md`
+- Plan: `docs/execution/plans/project-workspace--switch-active-project--v0.plan.md`
+- UI: `apps/web/app/dashboard/_components/project-switcher.tsx`, `apps/web/app/dashboard/_components/dashboard-shell.tsx`
