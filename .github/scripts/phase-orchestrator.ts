@@ -1166,6 +1166,15 @@ async function mainOrchestrator(): Promise<void> {
     process.exit(2);
   }
 
+  // Idempotency guard: if a concurrent orchestrator run already opened a draft PR
+  // for this step (race between push-trigger and manual dispatch), reuse it.
+  const existingPR = findDraftTrackingPR(nextStep);
+  if (existingPR) {
+    console.log(`♻️  Reusing existing draft tracking PR #${existingPR.number} for "${nextStep}" (concurrent run guard).`);
+    await executeAgentRun(nextStep, existingPR, false);
+    return;
+  }
+
   console.log(`\n📋 Opening draft tracking PR for ${nextStep}…`);
   const trackingPR = openTrackingPR(pipelineStepById(nextStep));
   await executeAgentRun(nextStep, trackingPR, false);
