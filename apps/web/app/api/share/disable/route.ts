@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { requireUser } from '@repo/auth'
+import { requireUser } from '@repo/auth/guards'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {

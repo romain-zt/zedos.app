@@ -7,6 +7,6 @@
  * No business logic — just forwards to auth.handler per 76-better-auth.mdc §2.
  */
 
-import { auth, toNextJsHandler } from '@repo/auth';
+import { auth, toNextJsHandler } from '@repo/auth/server';
 
 export const { GET, POST } = toNextJsHandler(auth);

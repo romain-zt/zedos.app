@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { requireUser } from '@repo/auth'
+import { requireUser } from '@repo/auth/guards'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
 import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { requireUser } from '@repo/auth';
+import { requireUser } from '@repo/auth/guards';
 import { PrismaCreditsRepository } from '@infrastructure/persistence/credits-repository';
 import { prisma } from '@/lib/prisma';
 import { ApplicationError } from '@shared/errors/application-error';

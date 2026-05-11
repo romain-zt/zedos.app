@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import { requireUser } from '@repo/auth'
+import { requireUser } from '@repo/auth/guards'
 import { prisma } from '@/lib/prisma'
 import { ProjectWorkspace } from './_components/project-workspace'
 

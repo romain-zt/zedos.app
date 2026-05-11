@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { requireUser } from '@repo/auth'
+import { requireUser } from '@repo/auth/guards'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'
 import { GetAdrUseCase } from '@application/adr/get-adr-usecase'

@@ -1,22 +1,16 @@
 /**
  * @repo/auth — better-auth authentication package
  *
- * This package provides:
- * - auth: The better-auth instance (server-only)
- * - authClient: The auth client for React components
- * - guards: requireSession, requireUser, requireApiKey helpers
- * - types: Session, User, UnauthorizedError types
+ * Server-only imports (auth instance, guards) must use subpath imports:
+ *   import { auth, toNextJsHandler } from '@repo/auth/server'
+ *   import { requireSession, requireUser } from '@repo/auth/guards'
  *
- * Legacy NextAuth exports are maintained for backwards compatibility
- * during the migration period and will be removed in PR-3.
+ * Client imports are safe from the root or subpath:
+ *   import { authClient, signIn, signUp } from '@repo/auth'
+ *   import { authClient } from '@repo/auth/client'
  */
 
-export { auth, toNextJsHandler } from './server';
-export type { Auth } from './server';
-
 export { authClient, signIn, signUp, signOut, useSession, getSession } from './client';
-
-export { requireSession, requireUser, requireApiKey } from './guards';
 
 export type { Session, User, UnauthorizedError, ApiKey } from './types';
 export { createUnauthorizedError } from './types';
