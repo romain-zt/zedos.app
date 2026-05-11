@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -47,7 +47,11 @@ Signed-in founder can browse the full decision log in their private workspace �
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Loading | History tab opened; first fetch in flight | Skeleton placeholders |
+| Empty | No decision rows for this project | Explainer that decisions from clarification appear here |
+| Success | At least one row returned | Scrollable list; each entry shows all six structured fields + PRD version association when present |
+| Error | Network failure or non-OK response | Short message + retry affordance |
+| Stale refresh | User returns to History tab after clarification | List refetches so new decisions appear without full page reload |
 
 ---
 
@@ -55,7 +59,8 @@ Signed-in founder can browse the full decision log in their private workspace �
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| Question history (structured decision entries) | Read | Existing GET `/api/projects/:id/questions`; owner-only via session + project ownership |
+| PRD version metadata | Read (client) | Workspace already loads PRD versions; used only to label `prdVersionId` in the history list |
 
 ---
 
@@ -81,7 +86,7 @@ None — viewing question history is not a defined milestone trigger in PRD v1.
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| `persist-structured-decision-entries` | Scope Slice | exploratory | Entries must be stored before they can be browsed |
+| `persist-structured-decision-entries` | Scope Slice | complete | Entries must be stored before they can be browsed |
 | Project workspace | Feature Area | validated | History is scoped per project and PRD context |
 
 ---
@@ -102,18 +107,18 @@ A signed-in founder can open their question history in the private workspace and
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -122,3 +127,5 @@ A signed-in founder can open their question history in the private workspace and
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice question-history` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX/Data/dependencies; marked ready-for-user-stories for History tab execution | — |
+| 2026-05-11 | Implementation complete (v0 History tab UI); orchestration step complete | — |
