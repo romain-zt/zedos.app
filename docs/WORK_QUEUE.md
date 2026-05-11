@@ -18,3 +18,7 @@ Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc`
 | FA-owner-milestone-feedback | Feature Area | | exploratory | P3 | false | false | | `/feature-area validate owner-milestone-feedback` |
 | FA-credit-system | Feature Area | | exploratory | P4 | true | false | B-003;B-004 | Resolve B-003/B-004 (`BLOCKERS.md` + Feature Area); then `/feature-area validate credit-system` |
 | FA-payments | Feature Area | | exploratory | P4 | false | false | | `/feature-area validate payments` |
+| FA-services-feature-split | Feature Area | — | candidate | P1 | false | false | | `/prd update` (activate FG-POST-PRD-V1) then `/feature-area validate services-feature-split` |
+| FA-user-stories | Feature Area | — | candidate | P1 | false | false | | `/prd update` (activate FG-POST-PRD-V1) then `/feature-area validate user-stories` |
+| FA-test-first-workflows | Feature Area | — | candidate | P2 | false | false | | `/prd update` (activate FG-POST-PRD-V1) then `/feature-area validate test-first-workflows` |
+| FA-delivery | Feature Area | — | candidate | P2 | true | false | export-format-TBD | Resolve export format blocker, then `/feature-area validate delivery` |
