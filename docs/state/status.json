@@ -22,7 +22,8 @@
       "fa-question-history--persist-structured-decision-entries": "complete",
       "fa-question-history--owner-views-question-history": "complete",
       "fa-read-only-sharing--mint-read-only-link": "complete",
-      "fa-services-feature-split--prd-to-feature-split": "complete"
+      "fa-services-feature-split--prd-to-feature-split": "complete",
+      "fa-user-stories--story-generation-from-feature-split": "in-progress"
     }
   },
   "cursor_self_improve": {
