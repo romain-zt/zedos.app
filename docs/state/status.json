@@ -109,7 +109,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Tracking PR #49 (question-history owner views): mark ready when CI green; pick next eligible step in docs/state/orchestration.pipeline.json; parallel: orch-credit-system still blocked on PIS (PR #39)",
+  "next_action": "Tracking PR #50 (question-history owner views): merged tracking branch aligns orchestration bookkeeping with main; pick next eligible step in docs/state/orchestration.pipeline.json; parallel: orch-credit-system still blocked on PIS (PR #39)",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {

@@ -13,7 +13,7 @@ current_blocker: null
 ## Orchestration (canonical)
 
 - **Pipeline step** `fa-question-history--owner-views-question-history`: **complete** (see `docs/state/status.json`).
-- **Tracking PR:** #49 — `orchestrator/tracking-fa-question-history--owner-views-question-history-1778523883291` → `main`. Mark ready when CI green: `gh pr ready 49 --repo romain-zt/zedos.app`.
+- **Tracking PR:** #50 — `orchestrator/tracking-fa-question-history--owner-views-question-history-1778524117797` → `main`. Mark ready when CI green: `gh pr ready 50 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
