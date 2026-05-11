@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: phase4-dashboard-shell-slice1-complete
+current_phase: phase4-dashboard-shell-slice2-complete
 current_blocker: none
 ---
 
@@ -34,12 +34,12 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 | **2a — Credit/Stripe planning** | `complete` | Scope Slice, User Story, Implementation Plan, and friction log all authored and on disk. |
 | **2b — Implementation** | `blocked-on-pis-approval` | 4-PR stack (~38 files, ~900 lines). Blocked on 5 PIS approval items. See §4. |
 | **3 — Turborepo migration** | `✅ COMPLETE` | All phases complete: P0 scaffold, P1 package extraction, P2 Drizzle migration, P3 better-auth migration. |
-| **4 — Next Feature Areas** | `in-progress` | Account & session slices complete; **FA-dashboard-shell slice 1 (signed-in home orientation)** complete; next orchestration step: `fa-dashboard-shell-slice2` (not started) unless reprioritized. See `docs/state/status.json`. |
+| **4 — Next Feature Areas** | `in-progress` | Account & session slices complete; **FA-dashboard-shell slice 1 + slice 2 (under-construction placeholders)** complete; next orchestration step per `docs/state/status.json` / product priority. |
 
 ## Orchestration (canonical)
 
-- **Pipeline bookkeeping:** `docs/state/status.json` — `orchestration.steps["fa-dashboard-shell-slice1"]` = `complete`; `next_action` = `dashboard-shell-slice1-complete-proceed-slice2-or-next-fa`; `orchestration_blocker` = `null`.
-- **Tracking PR:** PR #36, head `orchestrator/tracking-fa-dashboard-shell-slice1-1778497686772` → base `main` (mark ready when slice verification passes; do not use orphan PRs to `main` for this phase).
+- **Pipeline bookkeeping:** `docs/state/status.json` — `orchestration.steps["fa-dashboard-shell-slice2"]` = `complete`; `next_action` = `dashboard-shell-slice2-complete-proceed-prd-versioning-or-next-fa`; `orchestration_blocker` = `null`.
+- **Tracking PR:** PR #37, head `orchestrator/tracking-fa-dashboard-shell-slice2-1778498120608` → base `main` (mark ready when verification passes).
 
 ## Current Blocker
 
@@ -54,7 +54,7 @@ better-auth + Drizzle are in place under `packages/auth` and `apps/web/app/api/a
 ## What the Cloud Agent Should Do RIGHT NOW
 
 1. Confirm `pnpm typecheck` and `pnpm build` are green on the tracking branch.
-2. Proceed with **dashboard shell slice 2** (`fa-dashboard-shell-slice2`) or the next eligible orchestration task per `docs/state/orchestration.pipeline.json` / product priority.
+2. Proceed with the next eligible orchestration task (e.g. `FA-prd-versioning` P1) per `docs/state/orchestration.pipeline.json` / product priority.
 3. Phase 2b / PIS blockers (§4) remain unchanged until explicit approvals.
 
 ---

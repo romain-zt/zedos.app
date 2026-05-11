@@ -7,15 +7,10 @@ import type { ProjectWithCounts } from '@domain/project/project-repository'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { DEFERRED_ROADMAP_PLACEHOLDERS } from './_lib/deferred-roadmap-placeholders'
 import { FolderOpen, Plus, FileText, ArrowRight, Sparkles, Construction, Info } from 'lucide-react'
 import { FadeIn, SlideIn, Stagger, StaggerItem } from '@/components/ui/animate'
-
-const DEFERRED_AREAS = [
-  { title: 'Services / feature split', detail: 'Post-PRD pipeline structure' },
-  { title: 'Cursor packaging', detail: 'Exporting work to your editor' },
-  { title: 'User stories & delivery', detail: 'Beyond the PRD document' },
-  { title: 'Test-first workflows', detail: 'Automated quality gates' },
-] as const
 
 export default function DashboardPage() {
   const { data: session } = useSession() || {}
@@ -122,17 +117,28 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ul className="grid gap-3 sm:grid-cols-2">
-              {DEFERRED_AREAS.map((item) => (
-                <li
-                  key={item.title}
-                  className="rounded-lg border bg-muted/30 px-4 py-3 text-sm"
-                >
-                  <p className="font-medium text-foreground">{item.title}</p>
-                  <p className="text-muted-foreground mt-0.5">{item.detail}</p>
-                  <p className="text-xs text-muted-foreground/80 mt-2 flex items-center gap-1">
-                    <Construction className="h-3 w-3 shrink-0" />
-                    Coming later
-                  </p>
+              {DEFERRED_ROADMAP_PLACEHOLDERS.map((item) => (
+                <li key={item.id} className="list-none">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        tabIndex={0}
+                        role="note"
+                        className="rounded-lg border border-dashed border-muted-foreground/25 bg-muted/20 px-4 py-3 text-sm min-h-[44px] cursor-help outline-none touch-manipulation hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label={`${item.title} — under construction, not available in v0`}
+                      >
+                        <p className="font-medium text-foreground">{item.title}</p>
+                        <p className="text-muted-foreground mt-0.5">{item.summary}</p>
+                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+                          <Construction className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          Under construction
+                        </p>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[min(280px,calc(100vw-2rem))] text-xs sm:text-sm">
+                      {item.tooltip}
+                    </TooltipContent>
+                  </Tooltip>
                 </li>
               ))}
             </ul>
