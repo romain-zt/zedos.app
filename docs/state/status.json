@@ -57,7 +57,8 @@
     "owner_views_question_history": "complete"
   },
   "fa_read_only_sharing": {
-    "mint_read_only_link": "complete"
+    "mint_read_only_link": "complete",
+    "anonymous_read_surface": "complete"
   },
   "fa_services_feature_split": {
     "prd_to_feature_split": "complete"

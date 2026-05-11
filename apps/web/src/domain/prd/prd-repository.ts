@@ -2,7 +2,12 @@
  * PRD Repository Port
  */
 
-import { MintedShareLink, PrdVersion, PrdVersionWithRelations } from './prd';
+import {
+  AnonymousSharedPrdReadModel,
+  MintedShareLink,
+  PrdVersion,
+  PrdVersionWithRelations,
+} from './prd';
 import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 
@@ -27,4 +32,12 @@ export interface IPrdRepository {
     prdVersionId: string,
     ownerUserId: string
   ): Promise<Result<MintedShareLink, ApplicationError>>;
+
+  /**
+   * Resolves an enabled share token to the linked PRD version content only.
+   * Does not load project name, project id, or question history.
+   */
+  findAnonymousSharedPrdByToken(
+    token: string
+  ): Promise<Result<AnonymousSharedPrdReadModel, ApplicationError>>;
 }

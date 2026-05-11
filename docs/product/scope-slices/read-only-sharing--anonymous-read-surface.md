@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -49,7 +49,11 @@ Anyone with the share link can read the shared PRD content — without being abl
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Loading | Page opened, share API in flight | Spinner and “Loading PRD…” |
+| Success (content) | Valid enabled token; PRD JSON loads | Read-only header, document title from shared content (or default), version badge, sections or raw JSON fallback — no project name, workspace nav, or owner tools |
+| Error (not found) | Token unknown, link disabled, or server 404-equivalent | “Not available” card with generic message |
+| Error (bad token path) | Malformed or empty token segment | Validation error surfaced as not available / invalid link |
+| Error (network / parse) | Network failure or response does not match contract | Generic load failure |
 
 ---
 
@@ -57,7 +61,9 @@ Anyone with the share link can read the shared PRD content — without being abl
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| Read-only share link (`share_links` + linked `prd_versions`) | Read | Resolve token → enabled link → load `versionNumber` + `content` JSON only; no join to `projects`; no question history |
+| Anonymous HTTP API | Read | `GET` returns contract-validated `{ versionNumber, content }` only |
+| Public `/share/[token]` page | Read | Renders stored PRD payload; robots noindex (existing) |
 
 ---
 
@@ -83,8 +89,8 @@ None — anonymous viewers do not receive feedback prompts in v0 (Hard v0 exclus
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| `mint-read-only-link` | Scope Slice | exploratory | A valid share link must exist for the anonymous surface to be reachable |
-| PRD versioning | Feature Area | validated | Share surface must reference a versioned content state |
+| `mint-read-only-link` | Scope Slice | complete (`fa-read-only-sharing--mint-read-only-link`) | A valid enabled share token must exist to reach this surface |
+| PRD versioning | Feature Area | validated | Share resolves to a persisted PRD version row |
 
 ---
 
@@ -104,18 +110,18 @@ An anonymous visitor arriving via a valid share link sees the shared PRD content
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named (share link, PRD version content)
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -124,3 +130,4 @@ An anonymous visitor arriving via a valid share link sees the shared PRD content
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice read-only-sharing` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX states, data touched, dependencies; promoted to `ready-for-user-stories` | cloud-agent |

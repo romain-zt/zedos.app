@@ -1,38 +1,38 @@
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
-import { NextRequest, NextResponse } from 'next/server'
-import { db, shareLinks, prdVersions, projects, eq } from '@repo/db'
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  AnonymousSharedPrdResponseSchema,
+  ShareLinkTokenPathSchema,
+} from '@repo/contracts/share/anonymous-read';
+import { GetAnonymousSharedPrdUseCase } from '@application/prd';
+import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository';
+import { createLogger } from '@shared/observability/logger';
+
+const logger = createLogger({ service: 'share-read-route' });
 
 export async function GET(_request: NextRequest, { params }: { params: { token: string } }) {
-  try {
-    const [row] = await db
-      .select({
-        enabled: shareLinks.enabled,
-        versionNumber: prdVersions.versionNumber,
-        content: prdVersions.content,
-        status: prdVersions.status,
-        createdAt: prdVersions.createdAt,
-        projectName: projects.name,
-      })
-      .from(shareLinks)
-      .innerJoin(prdVersions, eq(shareLinks.prdVersionId, prdVersions.id))
-      .innerJoin(projects, eq(prdVersions.projectId, projects.id))
-      .where(eq(shareLinks.token, params.token))
-      .limit(1)
-
-    if (!row || !row.enabled) {
-      return NextResponse.json({ error: 'Share link not found or disabled' }, { status: 404 })
-    }
-
-    return NextResponse.json({
-      projectName: row.projectName ?? 'Untitled Project',
-      versionNumber: row.versionNumber ?? 1,
-      content: row.content ?? null,
-      status: row.status ?? 'draft',
-      createdAt: row.createdAt,
-    })
-  } catch (error: any) {
-    console.error('Share GET error:', error)
-    return NextResponse.json({ error: 'Failed to fetch shared PRD' }, { status: 500 })
+  const parsedToken = ShareLinkTokenPathSchema.safeParse(params.token);
+  if (!parsedToken.success) {
+    return NextResponse.json({ error: 'Invalid share link' }, { status: 400 });
   }
+
+  const useCase = new GetAnonymousSharedPrdUseCase(new PrismaPrdRepository());
+  const result = await useCase.execute(parsedToken.data);
+  if (result.isErr()) {
+    const e = result.error;
+    return NextResponse.json({ error: e.message }, { status: e.statusCode });
+  }
+
+  const read = result.unwrap();
+  const out = AnonymousSharedPrdResponseSchema.safeParse({
+    versionNumber: read.versionNumber,
+    content: read.content,
+  });
+  if (!out.success) {
+    logger.error('Anonymous share outbound validation failed', out.error.flatten());
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+
+  return NextResponse.json(out.data);
 }

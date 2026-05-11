@@ -22,6 +22,15 @@ export interface PrdVersionWithRelations extends PrdVersion {
   questionHistoryCount: number;
 }
 
+/**
+ * Minimal PRD payload for anonymous share viewers — excludes project/workspace identifiers
+ * and internal version metadata (no ids, no owner, no question history).
+ */
+export interface AnonymousSharedPrdReadModel {
+  versionNumber: number;
+  content: Record<string, unknown> | null;
+}
+
 /** Persisted read-only share artifact for a PRD version (owner-minted) */
 export interface MintedShareLink {
   id: string;

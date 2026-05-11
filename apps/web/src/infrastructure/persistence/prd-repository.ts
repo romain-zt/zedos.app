@@ -4,7 +4,13 @@
 
 import crypto from 'node:crypto';
 import { IPrdRepository } from '@domain/prd/prd-repository';
-import { MintedShareLink, PrdVersion, PrdVersionWithRelations, PrdStatus } from '@domain/prd/prd';
+import {
+  AnonymousSharedPrdReadModel,
+  MintedShareLink,
+  PrdVersion,
+  PrdVersionWithRelations,
+  PrdStatus,
+} from '@domain/prd/prd';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, DatabaseError, NotFoundError } from '@shared/errors/application-error';
 import {
@@ -209,6 +215,35 @@ export class DrizzlePrdRepository implements IPrdRepository {
     } catch (error) {
       logger.error('mintReadOnlyShareLink failed', error);
       return err(new DatabaseError('Failed to create share link'));
+    }
+  }
+
+  async findAnonymousSharedPrdByToken(
+    token: string
+  ): Promise<Result<AnonymousSharedPrdReadModel, ApplicationError>> {
+    try {
+      const [row] = await db
+        .select({
+          enabled: shareLinks.enabled,
+          versionNumber: prdVersions.versionNumber,
+          content: prdVersions.content,
+        })
+        .from(shareLinks)
+        .innerJoin(prdVersions, eq(shareLinks.prdVersionId, prdVersions.id))
+        .where(eq(shareLinks.token, token))
+        .limit(1);
+
+      if (!row || !row.enabled) {
+        return err(new NotFoundError('Share link not found or disabled'));
+      }
+
+      return ok({
+        versionNumber: row.versionNumber ?? 1,
+        content: row.content as Record<string, unknown> | null,
+      }) as Result<AnonymousSharedPrdReadModel, ApplicationError>;
+    } catch (error) {
+      logger.error('findAnonymousSharedPrdByToken failed', error);
+      return err(new DatabaseError('Failed to fetch shared PRD'));
     }
   }
 }
