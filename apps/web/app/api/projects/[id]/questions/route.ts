@@ -1,15 +1,15 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { headers } from 'next/headers'
+import { requireUser } from '@repo/auth/guards'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = (session.user as any).id
+    const userResult = await requireUser(headers())
+    if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const userId = userResult.unwrap().id
 
     const project = await prisma.project.findFirst({ where: { id: params.id, userId } })
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })

@@ -1,29 +1,19 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
-import { prisma } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { requireUser } from '@repo/auth/guards'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
 import { CheckPhaseUseCase } from '@application/adr/check-phase-usecase'
-
-async function resolveUserId(session: any): Promise<string | null> {
-  if ((session?.user as any)?.id) return (session.user as any).id
-  if (session?.user?.email) {
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    return user?.id || null
-  }
-  return null
-}
 
 export async function POST(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions)
-  const userId = await resolveUserId(session)
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userResult = await requireUser(headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = userResult.unwrap().id
 
   const projectRepo = new PrismaProjectRepository()
   const prdRepo = new PrismaPrdRepository()

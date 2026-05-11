@@ -1,17 +1,16 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
-import { prisma } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { requireUser } from '@repo/auth/guards'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
 import { GetPrdVersionsUseCase } from '@application/prd/get-prd-versions-usecase'
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+  const userResult = await requireUser(headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = userResult.unwrap().id
 
   const projectRepo = new PrismaProjectRepository()
   const prdRepo = new PrismaPrdRepository()

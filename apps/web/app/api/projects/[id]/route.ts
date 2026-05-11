@@ -1,22 +1,18 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { headers } from 'next/headers'
+import { requireUser } from '@repo/auth/guards'
 import { prisma } from '@/lib/prisma'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { GetProjectUseCase } from '@application/project/get-project-usecase'
 import { UpdateProjectUseCase } from '@application/project/update-project-usecase'
 import { DeleteProjectUseCase } from '@application/project/delete-project-usecase'
 
-function getSessionUserId(session: any): string | null {
-  return session?.user?.id || null
-}
-
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  const userId = getSessionUserId(session)
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userResult = await requireUser(await headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = userResult.unwrap().id
 
   const repo = new PrismaProjectRepository(prisma)
 
@@ -34,9 +30,9 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  const userId = getSessionUserId(session)
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userResult = await requireUser(await headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = userResult.unwrap().id
 
   const body = await request.json()
   const repo = new PrismaProjectRepository(prisma)
@@ -56,9 +52,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  const userId = getSessionUserId(session)
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userResult = await requireUser(await headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = userResult.unwrap().id
 
   const repo = new PrismaProjectRepository(prisma)
   const useCase = new DeleteProjectUseCase(repo)

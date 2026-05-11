@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signUp, signIn } from '@repo/auth'
 import { useRouter } from 'next/navigation'
 import { AuthLayout } from '@/components/layouts/auth-layout'
 import { Button } from '@/components/ui/button'
@@ -30,23 +30,21 @@ export default function SignupPage() {
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), email: email.toLowerCase().trim(), password }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data?.error ?? 'Signup failed')
-        return
-      }
-      // Auto sign in
-      const result = await signIn('credentials', {
-        redirect: false,
+      const signUpResult = await signUp.email({
+        name: name.trim(),
         email: email.toLowerCase().trim(),
         password,
       })
-      if (result?.error) {
+      if (signUpResult.error) {
+        toast.error(signUpResult.error.message ?? 'Signup failed')
+        return
+      }
+      // Auto sign in
+      const result = await signIn.email({
+        email: email.toLowerCase().trim(),
+        password,
+      })
+      if (result.error) {
         toast.error('Account created but login failed. Please sign in.')
         router.replace('/login')
       } else {

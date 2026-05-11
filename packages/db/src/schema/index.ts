@@ -7,3 +7,4 @@ export * from './purchases';
 export * from './feedback';
 export * from './share';
 export * from './adrs';
+export * from './auth';
