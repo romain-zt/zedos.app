@@ -13,7 +13,7 @@
       "fa-dashboard-shell-slice1": "complete",
       "fa-dashboard-shell-slice2": "complete",
       "cursor-self-improve": "complete",
-      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "in-progress"
+      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "blocked"
     }
   },
   "cursor_self_improve": {
