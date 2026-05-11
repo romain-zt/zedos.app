@@ -5,36 +5,66 @@
     {
       "id": "phase3-p0",
       "dependsOn": [],
-      "workload": { "kind": "bundled", "promptKey": "phase3-p0" }
+      "workload": {
+        "kind": "bundled",
+        "promptKey": "phase3-p0"
+      }
     },
     {
       "id": "phase3-p1",
-      "dependsOn": ["phase3-p0"],
-      "workload": { "kind": "bundled", "promptKey": "phase3-p1" }
+      "dependsOn": [
+        "phase3-p0"
+      ],
+      "workload": {
+        "kind": "bundled",
+        "promptKey": "phase3-p1"
+      }
     },
     {
       "id": "phase3-p2",
-      "dependsOn": ["phase3-p1"],
-      "workload": { "kind": "bundled", "promptKey": "phase3-p2" }
+      "dependsOn": [
+        "phase3-p1"
+      ],
+      "workload": {
+        "kind": "bundled",
+        "promptKey": "phase3-p2"
+      }
     },
     {
       "id": "phase3-p3",
-      "dependsOn": ["phase3-p2"],
-      "workload": { "kind": "bundled", "promptKey": "phase3-p3" }
+      "dependsOn": [
+        "phase3-p2"
+      ],
+      "workload": {
+        "kind": "bundled",
+        "promptKey": "phase3-p3"
+      }
     },
     {
       "id": "fa-account-session",
-      "dependsOn": ["phase3-p3"],
-      "workload": { "kind": "bundled", "promptKey": "fa-account-session" }
+      "dependsOn": [
+        "phase3-p3"
+      ],
+      "workload": {
+        "kind": "bundled",
+        "promptKey": "fa-account-session"
+      }
     },
     {
       "id": "fa-account-session-slice2",
-      "dependsOn": ["fa-account-session"],
-      "workload": { "kind": "bundled", "promptKey": "fa-account-session-slice2" }
+      "dependsOn": [
+        "fa-account-session"
+      ],
+      "workload": {
+        "kind": "bundled",
+        "promptKey": "fa-account-session-slice2"
+      }
     },
     {
       "id": "fa-dashboard-shell-slice1",
-      "dependsOn": ["fa-account-session"],
+      "dependsOn": [
+        "fa-account-session"
+      ],
       "workload": {
         "kind": "slice",
         "title": "Signed-in home orientation",
@@ -47,7 +77,9 @@
     },
     {
       "id": "fa-dashboard-shell-slice2",
-      "dependsOn": ["fa-dashboard-shell-slice1"],
+      "dependsOn": [
+        "fa-dashboard-shell-slice1"
+      ],
       "workload": {
         "kind": "slice",
         "title": "Under-construction placeholders",
@@ -60,8 +92,28 @@
     },
     {
       "id": "cursor-self-improve",
-      "dependsOn": ["fa-account-session-slice2"],
-      "workload": { "kind": "bundled", "promptKey": "cursor-self-improve" }
+      "dependsOn": [
+        "fa-account-session-slice2"
+      ],
+      "workload": {
+        "kind": "bundled",
+        "promptKey": "cursor-self-improve"
+      }
+    },
+    {
+      "id": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
+      "dependsOn": [
+        "cursor-self-improve"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Make the credit ledger concurrency-safe and route credit grants through a Stripe webhook",
+        "featureAreaFile": "docs/product/feature-areas/credit-system.md",
+        "scopeSliceFile": "docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
+      }
     }
   ]
 }

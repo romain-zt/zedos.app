@@ -12,7 +12,8 @@
       "fa-account-session-slice2": "complete",
       "fa-dashboard-shell-slice1": "complete",
       "fa-dashboard-shell-slice2": "complete",
-      "cursor-self-improve": "complete"
+      "cursor-self-improve": "complete",
+      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "not-started"
     }
   },
   "cursor_self_improve": {
