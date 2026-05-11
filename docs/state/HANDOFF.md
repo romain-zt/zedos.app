@@ -12,7 +12,7 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-guided-clarification--question-preview-and-progress-score`: **complete**. Question-coverage readiness (`QuestionCoverageReadinessScoreResponseSchema` + Drizzle `questionHistory` / `prdVersions`), Clarify tab “Coming up” chips from assistant `prd_section_affected`, badge parses new API shape. Tracking PR **#69** → `main`.
+- **Pipeline step** `fa-guided-clarification--question-preview-and-progress-score`: **complete**. Question-coverage readiness (`QuestionCoverageReadinessScoreResponseSchema` + Drizzle `questionHistory` / `prdVersions`), Clarify tab "Coming up" chips from assistant `prd_section_affected`, readiness badge parses API shape and shows **—** on failure. Tracking PR **#70** → `main`.
 - **Prior:** Read-only sharing revoke + noindex (**#68**) — complete per prior handoff.
 
 ## What changed (this phase)
@@ -29,7 +29,7 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. **PR #69** — confirm CI green; `gh pr ready 69 --repo romain-zt/zedos.app` if not already.
+1. **PR #70** — draft cleared to ready for review after verification (`gh pr ready 70 --repo romain-zt/zedos.app`); confirm CI green on head.
 2. **Next pipeline step** — read `docs/state/orchestration.pipeline.json` + `status.json` `orchestration.steps` for the next `not-started` / eligible item.
 3. **Parallel:** owner-milestone-feedback if unblocked.
 

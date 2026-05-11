@@ -80,8 +80,8 @@
   "fa_guided_clarification": {
     "contextual_tab_refinement": "complete",
     "question_preview_and_progress_score": "complete",
-    "tracking_pr": 69,
-    "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532092532"
+    "tracking_pr": 70,
+    "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532809796"
   },
   "fa_owner_milestone_feedback": {
     "milestone_detection_and_prompt": "blocked",
@@ -145,7 +145,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Guided clarification question-preview + Drizzle readiness score shipped on tracking PR #69 (`orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532092532`). Mark ready when CI green: `gh pr ready 69 --repo romain-zt/zedos.app`. Pick next eligible step from `docs/state/orchestration.pipeline.json`. Parallel: `fa-owner-milestone-feedback--milestone-detection-and-prompt` if unblocked. Credits (PR #39) still blocked on PIS.",
+  "next_action": "Guided clarification question-preview slice complete; tracking PR #70 marked ready for review when CI green. Next: `docs/state/orchestration.pipeline.json` + `orchestration.steps` for next eligible item. Parallel: owner-milestone-feedback if unblocked. Credits (PR #39) still blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {

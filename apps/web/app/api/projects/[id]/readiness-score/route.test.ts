@@ -99,4 +99,18 @@ describe('GET /api/projects/[id]/readiness-score', () => {
     expect(Array.isArray(body.coveredSections)).toBe(true)
     expect(Array.isArray(body.remainingSections)).toBe(true)
   })
+
+  it('returns score 0 when no answered questions and no rows', async () => {
+    setupSelectChain({
+      projectRows: [{ id: 'p1' }],
+      qRows: [],
+      prdCountRows: [{ c: 0 }],
+    })
+    const res = await GET(new Request('http://localhost'), { params: { id: 'p1' } })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.score).toBe(0)
+    expect(body.answered).toBe(0)
+    expect(body.remaining).toBe(8)
+  })
 })
