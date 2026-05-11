@@ -113,7 +113,11 @@ None.
 
 ## Dependencies Added
 
-None.
+| Package | Scope | Reason |
+|---------|--------|--------|
+| `happy-dom` | `apps/web` devDependency | Vitest DOM environment for `contextual-refinement-panel.test.tsx` (plan Tests section). |
+| `@vitejs/plugin-react` | `apps/web` devDependency | Transforms JSX in imported `.tsx` modules during Vitest (Rolldown/Vite pipeline). |
+| `@testing-library/react` | `apps/web` devDependency | `fireEvent` for controlled textarea updates in `contextual-refinement-panel.test.tsx`. |
 
 ---
 

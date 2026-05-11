@@ -16,6 +16,7 @@ interface QuestionHistoryPanelProps {
   projectId: string
   prdVersions: PrdVersionDTO[]
   isTabActive: boolean
+  onOpenRefinement?: (payload: { label: string; prdVersionId: string | null }) => void
 }
 
 function formatDecisionWhen(createdAt: Date) {
@@ -85,7 +86,12 @@ function AvailableOptionsBlock({ row }: { row: QuestionHistoryRow }) {
   )
 }
 
-export function QuestionHistoryPanel({ projectId, prdVersions, isTabActive }: QuestionHistoryPanelProps) {
+export function QuestionHistoryPanel({
+  projectId,
+  prdVersions,
+  isTabActive,
+  onOpenRefinement,
+}: QuestionHistoryPanelProps) {
   const [rows, setRows] = useState<QuestionHistoryRow[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -213,6 +219,22 @@ export function QuestionHistoryPanel({ projectId, prdVersions, isTabActive }: Qu
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0 text-right">
+                      {onOpenRefinement ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="min-h-11 text-xs"
+                          onClick={() =>
+                            onOpenRefinement({
+                              label: q.structuredQuestion,
+                              prdVersionId: q.prdVersionId,
+                            })
+                          }
+                        >
+                          Revise
+                        </Button>
+                      ) : null}
                       <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
                       <span className="text-[11px] text-muted-foreground">{formatDecisionWhen(q.createdAt)}</span>
                     </div>

@@ -7,6 +7,7 @@ import { PrdViewer } from './prd-viewer'
 import { QuestionHistoryPanel } from './question-history'
 import { ArchitecturePanel } from './architecture-panel'
 import { ReadinessScoreBadge } from './readiness-score-badge'
+import { ContextualRefinementPanel } from './contextual-refinement-panel'
 import { MessageSquare, FileText, History, Settings, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,6 +36,19 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
   const [saving, setSaving] = useState(false)
   const [phase, setPhase] = useState('intake')
   const [loadingPhase, setLoadingPhase] = useState(true)
+  const [refinement, setRefinement] = useState<{
+    isOpen: boolean
+    label: string
+    prdVersionId: string | null
+  }>({ isOpen: false, label: '', prdVersionId: null })
+
+  const openRefinement = useCallback((payload: { label: string; prdVersionId: string | null }) => {
+    setRefinement({ isOpen: true, ...payload })
+  }, [])
+
+  const closeRefinement = useCallback(() => {
+    setRefinement((r) => ({ ...r, isOpen: false }))
+  }, [])
 
   const fetchVersions = useCallback(async () => {
     try {
@@ -173,11 +187,17 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
             selectedVersion={selectedVersion}
             onSelectVersion={setSelectedVersion}
             onRefresh={fetchVersions}
+            onOpenRefinement={openRefinement}
           />
         </TabsContent>
 
         <TabsContent value="architecture" className="mt-4">
-          <ArchitecturePanel projectId={projectId} phase={phase} />
+          <ArchitecturePanel
+            projectId={projectId}
+            phase={phase}
+            activePrdVersionId={selectedVersion?.id ?? null}
+            onOpenRefinement={openRefinement}
+          />
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
@@ -185,9 +205,18 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
             projectId={projectId}
             prdVersions={prdVersions}
             isTabActive={activeTab === 'history'}
+            onOpenRefinement={openRefinement}
           />
         </TabsContent>
       </Tabs>
+
+      <ContextualRefinementPanel
+        projectId={projectId}
+        prdVersionId={refinement.prdVersionId}
+        contextLabel={refinement.label}
+        isOpen={refinement.isOpen}
+        onClose={closeRefinement}
+      />
 
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
