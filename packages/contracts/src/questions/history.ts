@@ -12,6 +12,8 @@ export const PRD_SECTIONS = [
   'Open Questions',
 ] as const satisfies readonly string[];
 
+export type PrdSection = (typeof PRD_SECTIONS)[number];
+
 const PRD_SECTION_SET = new Set<string>(PRD_SECTIONS);
 
 /** HTTP shape for GET /api/projects/:id/readiness-score (question-coverage formula; distinct from ADR readiness). */
@@ -112,31 +114,10 @@ export const QuestionHistoryListResponseSchema = z.array(QuestionHistoryRowSchem
 
 export type QuestionHistoryRow = z.infer<typeof QuestionHistoryRowSchema>;
 
-/** Canonical PRD sections for clarification coverage / readiness score */
-export const PRD_SECTIONS = [
-  'Product Vision',
-  'Target Users',
-  'Core Features',
-  'User Journeys',
-  'Technical Constraints',
-  'Success Metrics',
-  'Out of Scope',
-  'Open Questions',
-] as const satisfies readonly string[];
+/** Same shape as question-coverage readiness HTTP DTO; kept as a separate export for call sites that name it “readiness”. */
+export const QuestionReadinessScoreResponseSchema = QuestionCoverageReadinessScoreResponseSchema;
 
-export type PrdSection = (typeof PRD_SECTIONS)[number];
-
-export const QuestionReadinessScoreResponseSchema = z.object({
-  score: z.number().int().min(0).max(100),
-  answered: z.number().int().min(0),
-  remaining: z.number().int().min(0),
-  coveredSections: z.array(z.string()),
-  remainingSections: z.array(z.string()),
-});
-
-export type QuestionReadinessScoreResponse = z.infer<typeof QuestionReadinessScoreResponseSchema>;
-
-const canonicalSectionSet = new Set<string>(PRD_SECTIONS as unknown as string[]);
+export type QuestionReadinessScoreResponse = QuestionCoverageReadinessScoreResponse;
 
 /**
  * Pure readiness DTO from answered question counts and distinct canonical `prdImpact` coverage.
@@ -152,7 +133,7 @@ export function computeReadinessScoreDto(input: {
   for (const raw of input.answeredPrdImpacts) {
     if (raw == null) continue;
     const s = String(raw).trim();
-    if (canonicalSectionSet.has(s)) covered.add(s);
+    if (PRD_SECTION_SET.has(s)) covered.add(s);
   }
 
   const coveredSections = PRD_SECTIONS.filter((s) => covered.has(s));

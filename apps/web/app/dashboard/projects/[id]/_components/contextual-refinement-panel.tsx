@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Send, HelpCircle, Loader2 } from 'lucide-react'
+import { Send, HelpCircle, Loader2, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 /** Exported for unit tests — matches POST /clarify body shape (no decisionResponse). */
@@ -90,6 +90,7 @@ export interface ContextualRefinementPanelProps {
   contextLabel: string
   isOpen: boolean
   onClose: () => void
+  onPrdUpdated?: () => void
 }
 
 export function ContextualRefinementPanel({
@@ -98,11 +99,14 @@ export function ContextualRefinementPanel({
   contextLabel,
   isOpen,
   onClose,
+  onPrdUpdated,
 }: ContextualRefinementPanelProps) {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<StreamMessage[]>([])
   const [streaming, setStreaming] = useState(false)
   const [creditsBlocked, setCreditsBlocked] = useState(false)
+  const [hasAiResponse, setHasAiResponse] = useState(false)
+  const [updatingPrd, setUpdatingPrd] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -110,6 +114,8 @@ export function ContextualRefinementPanel({
       setMessages([])
       setStreaming(false)
       setCreditsBlocked(false)
+      setHasAiResponse(false)
+      setUpdatingPrd(false)
     }
   }, [isOpen, contextLabel, prdVersionId])
 
@@ -203,6 +209,7 @@ export function ContextualRefinementPanel({
                 }
                 return updated
               })
+              setHasAiResponse(true)
             } else if (parsed?.status === 'error') {
               toast.error(parsed?.message ?? 'AI error')
             }
@@ -245,6 +252,62 @@ export function ContextualRefinementPanel({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       void send()
+    }
+  }
+
+  const handleUpdatePrd = async () => {
+    setUpdatingPrd(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/generate-prd`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      if (res.status === 402) {
+        const data = (await res.json().catch(() => ({}))) as { message?: string }
+        toast.error(data?.message ?? 'Insufficient credits to update PRD')
+        return
+      }
+
+      if (!res.ok) {
+        toast.error('Failed to update PRD')
+        return
+      }
+
+      const reader = res.body?.getReader()
+      const decoder = new TextDecoder()
+      let partial = ''
+
+      while (reader) {
+        const { done, value } = await reader.read()
+        if (done) break
+        partial += decoder.decode(value, { stream: true })
+        const lines = partial.split('\n')
+        partial = lines.pop() ?? ''
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const parsed = JSON.parse(line.slice(6)) as { status?: string }
+            if (parsed?.status === 'completed') {
+              toast.success('PRD updated')
+              onPrdUpdated?.()
+              onClose()
+              return
+            }
+            if (parsed?.status === 'error') {
+              toast.error('PRD update failed')
+              return
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    } catch {
+      toast.error('Failed to update PRD')
+    } finally {
+      setUpdatingPrd(false)
     }
   }
 
@@ -298,36 +361,65 @@ export function ContextualRefinementPanel({
         </ScrollArea>
 
         <div className="p-4 border-t space-y-2 mt-auto">
-          <Textarea
-            placeholder="What would you like to change or clarify?"
-            value={input}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={3}
-            className="resize-none text-base min-h-[88px]"
-            disabled={streaming || creditsBlocked}
-            aria-label="Refinement message"
-          />
-          <div className="flex justify-between gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11"
-              onClick={handleClose}
-            >
-              Close
-            </Button>
-            <Button
-              type="button"
-              className="min-h-11 min-w-[44px]"
-              onClick={() => void send()}
-              disabled={!input.trim() || streaming || creditsBlocked}
-              aria-label="Send refinement"
-            >
-              <Send className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Send</span>
-            </Button>
-          </div>
+          {hasAiResponse ? (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11 flex-1"
+                onClick={handleClose}
+                disabled={updatingPrd}
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                className="min-h-11 flex-1"
+                onClick={() => void handleUpdatePrd()}
+                disabled={updatingPrd}
+              >
+                {updatingPrd ? (
+                  <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 sm:mr-2" />
+                )}
+                <span className="hidden sm:inline">{updatingPrd ? 'Updating…' : 'Update PRD'}</span>
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Textarea
+                placeholder="What would you like to change or clarify?"
+                value={input}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                rows={3}
+                className="resize-none text-base min-h-[88px]"
+                disabled={streaming || creditsBlocked}
+                aria-label="Refinement message"
+              />
+              <div className="flex justify-between gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-11"
+                  onClick={handleClose}
+                >
+                  Close
+                </Button>
+                <Button
+                  type="button"
+                  className="min-h-11 min-w-[44px]"
+                  onClick={() => void send()}
+                  disabled={!input.trim() || streaming || creditsBlocked}
+                  aria-label="Send refinement"
+                >
+                  <Send className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Send</span>
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </SheetContent>
     </Sheet>

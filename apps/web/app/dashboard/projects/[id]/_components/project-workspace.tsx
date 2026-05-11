@@ -216,6 +216,7 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         contextLabel={refinement.label}
         isOpen={refinement.isOpen}
         onClose={closeRefinement}
+        onPrdUpdated={fetchVersions}
       />
 
       {/* Settings Dialog */}
