@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-question-history--owner-views-question-history-complete
+current_phase: fa-read-only-sharing--mint-read-only-link-complete
 current_blocker: null
 ---
 
@@ -12,15 +12,15 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-question-history--owner-views-question-history`: **complete** (see `docs/state/status.json`).
-- **Tracking PR:** #50 — `orchestrator/tracking-fa-question-history--owner-views-question-history-1778524117797` → `main`. Mark ready when CI green: `gh pr ready 50 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-read-only-sharing--mint-read-only-link`: **complete** (see `docs/state/status.json`).
+- **Tracking PR:** #51 — `orchestrator/tracking-fa-read-only-sharing--mint-read-only-link-1778524252604` → `main`. Mark ready when CI green: `gh pr ready 51 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **Product:** Scope slice `docs/product/scope-slices/question-history--owner-views-question-history.md` refined to `ready-for-user-stories` and FA `question-history.md` marks **Owner views question history** **complete**.
-- **Execution:** User story `docs/execution/user-stories/question-history--owner-views-question-history--v0.md` + plan `docs/execution/plans/question-history--owner-views-question-history--v0.plan.md` (executed).
-- **App:** History tab loads question history with `QuestionHistoryListResponseSchema` on the client; displays structured question, decision UI options, founder answer, optional comment, AI interpretation, PRD impact, PRD version label (from workspace version list), timestamps; loading / empty / error+retry; refetch when History tab is active and manual refresh.
-- **Coordination:** Anonymous share surface unchanged (no history there).
+- **Product:** Scope slice `docs/product/scope-slices/read-only-sharing--mint-read-only-link.md` refined to `ready-for-user-stories` (UX states + data touched + readiness checklist).
+- **Execution:** User story `docs/execution/user-stories/read-only-sharing--mint-read-only-link--v0.md` + plan `docs/execution/plans/read-only-sharing--mint-read-only-link--v0.plan.md` (executed).
+- **Contracts:** `packages/contracts/src/share/mint.ts` — `CreateShareLinkRequestSchema`, `ShareLinkMintResponseSchema`, `ShareLinkSummarySchema`; PRD DTO uses summary schema.
+- **App:** `MintReadOnlyShareLinkUseCase` + `DrizzlePrdRepository.mintReadOnlyShareLink` (ownership, idempotent active link); `POST /api/share/create` thin route with zod in/out; `prd-viewer.tsx` validates mint response with `ShareLinkMintResponseSchema` and surfaces API errors.
 
 ## Still blocked elsewhere
 
@@ -28,13 +28,14 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. Pick the next eligible `orchestration.steps` row in `docs/state/orchestration.pipeline.json`.
+1. **Next eligible slice (depends on mint):** `fa-read-only-sharing--anonymous-read-surface` in `docs/state/orchestration.pipeline.json`.
 2. Credits slice only after human `approved` on each PIS item.
 
 ## Key files (this slice)
 
-- Scope slice: `docs/product/scope-slices/question-history--owner-views-question-history.md`
-- User story: `docs/execution/user-stories/question-history--owner-views-question-history--v0.md`
-- Plan: `docs/execution/plans/question-history--owner-views-question-history--v0.plan.md`
-- UI: `apps/web/app/dashboard/projects/[id]/_components/question-history.tsx`, `project-workspace.tsx`
-- API (unchanged): `apps/web/app/api/projects/[id]/questions/route.ts`
+- Scope slice: `docs/product/scope-slices/read-only-sharing--mint-read-only-link.md`
+- User story: `docs/execution/user-stories/read-only-sharing--mint-read-only-link--v0.md`
+- Plan: `docs/execution/plans/read-only-sharing--mint-read-only-link--v0.plan.md`
+- API: `apps/web/app/api/share/create/route.ts`
+- UI: `apps/web/app/dashboard/projects/[id]/_components/prd-viewer.tsx`
+- Repository: `apps/web/src/infrastructure/persistence/prd-repository.ts` (`mintReadOnlyShareLink`)

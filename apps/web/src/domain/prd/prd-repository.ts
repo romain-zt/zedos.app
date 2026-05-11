@@ -2,7 +2,7 @@
  * PRD Repository Port
  */
 
-import { PrdVersion, PrdVersionWithRelations } from './prd';
+import { MintedShareLink, PrdVersion, PrdVersionWithRelations } from './prd';
 import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 
@@ -17,4 +17,14 @@ export interface IPrdRepository {
     projectId: string,
     content: Record<string, unknown> | null
   ): Promise<Result<{ created: boolean; version: PrdVersion }, ApplicationError>>;
+
+  /**
+   * Ensures an active read-only share link exists for the PRD version.
+   * Returns the existing enabled link or creates one; 404-equivalent when the version is missing
+   * or not owned by the user.
+   */
+  mintReadOnlyShareLink(
+    prdVersionId: string,
+    ownerUserId: string
+  ): Promise<Result<MintedShareLink, ApplicationError>>;
 }

@@ -5,6 +5,7 @@
  */
 
 import { z } from 'zod';
+import { ShareLinkSummarySchema } from '../share/mint';
 
 /** Optional body when capturing the first in-project PRD version (v1 draft). */
 export const CreateOrCapturePrdVersionRequestSchema = z.object({
@@ -36,11 +37,7 @@ export const PrdVersionDTOSchema = z.object({
   status: z.string(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
-  shareLinks: z.array(z.object({
-    id: z.string(),
-    token: z.string(),
-    enabled: z.boolean(),
-  })).optional(),
+  shareLinks: z.array(ShareLinkSummarySchema).optional(),
   questionHistoryCount: z.number().optional(),
 });
 

@@ -12,3 +12,4 @@ export * from './project';
 export * from './prd';
 export * from './adr';
 export * from './questions/history';
+export * from './share';

@@ -2,13 +2,15 @@
  * Drizzle PRD Repository Adapter
  */
 
+import crypto from 'node:crypto';
 import { IPrdRepository } from '@domain/prd/prd-repository';
-import { PrdVersion, PrdVersionWithRelations, PrdStatus } from '@domain/prd/prd';
+import { MintedShareLink, PrdVersion, PrdVersionWithRelations, PrdStatus } from '@domain/prd/prd';
 import { Result, ok, err } from '@repo/result';
-import { ApplicationError, DatabaseError } from '@shared/errors/application-error';
+import { ApplicationError, DatabaseError, NotFoundError } from '@shared/errors/application-error';
 import {
   db,
   prdVersions,
+  projects,
   shareLinks,
   questionHistory,
   eq,
@@ -153,6 +155,60 @@ export class DrizzlePrdRepository implements IPrdRepository {
     } catch (error) {
       logger.error('Failed to ensure first PRD version', error);
       return err(new DatabaseError('Failed to ensure first PRD version'));
+    }
+  }
+
+  async mintReadOnlyShareLink(
+    prdVersionId: string,
+    ownerUserId: string
+  ): Promise<Result<MintedShareLink, ApplicationError>> {
+    try {
+      const [prdVersion] = await db
+        .select({ id: prdVersions.id, projectUserId: projects.userId })
+        .from(prdVersions)
+        .innerJoin(projects, eq(prdVersions.projectId, projects.id))
+        .where(eq(prdVersions.id, prdVersionId))
+        .limit(1);
+
+      if (!prdVersion || prdVersion.projectUserId !== ownerUserId) {
+        return err(new NotFoundError('PRD version not found'));
+      }
+
+      const [existing] = await db
+        .select()
+        .from(shareLinks)
+        .where(and(eq(shareLinks.prdVersionId, prdVersionId), eq(shareLinks.enabled, true)))
+        .limit(1);
+
+      if (existing) {
+        return ok({
+          id: existing.id,
+          prdVersionId: existing.prdVersionId,
+          token: existing.token,
+          enabled: existing.enabled,
+          createdAt: existing.createdAt,
+          disabledAt: existing.disabledAt ?? null,
+        }) as Result<MintedShareLink, ApplicationError>;
+      }
+
+      const token = crypto.randomBytes(16).toString('hex');
+      const [inserted] = await db.insert(shareLinks).values({ prdVersionId, token }).returning();
+
+      if (!inserted) {
+        return err(new DatabaseError('Failed to create share link'));
+      }
+
+      return ok({
+        id: inserted.id,
+        prdVersionId: inserted.prdVersionId,
+        token: inserted.token,
+        enabled: inserted.enabled,
+        createdAt: inserted.createdAt,
+        disabledAt: inserted.disabledAt ?? null,
+      }) as Result<MintedShareLink, ApplicationError>;
+    } catch (error) {
+      logger.error('mintReadOnlyShareLink failed', error);
+      return err(new DatabaseError('Failed to create share link'));
     }
   }
 }
