@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-11",
-  "current_phase": "fa-read-only-sharing--anonymous-read-surface-complete",
+  "current_phase": "fa-guided-clarification--contextual-tab-refinement-complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -28,7 +28,7 @@
       "fa-read-only-sharing--anonymous-read-surface": "complete",
       "fa-owner-milestone-feedback--milestone-detection-and-prompt": "blocked",
       "fa-read-only-sharing--revoke-link-and-noindex": "in-progress",
-      "fa-guided-clarification--contextual-tab-refinement": "in-progress"
+      "fa-guided-clarification--contextual-tab-refinement": "complete"
     }
   },
   "cursor_self_improve": {
@@ -137,7 +137,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Anonymous read surface shipped on tracking PR #63 (`orchestrator/tracking-fa-read-only-sharing--anonymous-read-surface-1778529529339`). Mark ready when CI green: gh pr ready 63 --repo romain-zt/zedos.app. Next slice: fa-read-only-sharing--revoke-link-and-noindex. Parallel: fa-owner-milestone-feedback if unblocked. Credits (PR #39) still blocked on PIS.",
+  "next_action": "Contextual tab refinement shipped on tracking PR #65 (`orchestrator/tracking-fa-guided-clarification--contextual-tab-refinement-1778530148115`). Mark ready when CI green: gh pr ready 65 --repo romain-zt/zedos.app. Continue: fa-read-only-sharing--revoke-link-and-noindex (in-progress). Next guided-clarification slice: fa-guided-clarification--question-preview-and-progress-score. Parallel: fa-owner-milestone-feedback if unblocked. Credits (PR #39) still blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {

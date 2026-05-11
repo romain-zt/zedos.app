@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-read-only-sharing--anonymous-read-surface-complete
+current_phase: fa-guided-clarification--contextual-tab-refinement-complete
 current_blocker: null
 ---
 
@@ -12,15 +12,14 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-read-only-sharing--anonymous-read-surface`: **complete**. Anonymous `/share/[token]` reads enabled share rows joined only to `prd_versions` (no project/workspace fields). API + UI use `AnonymousSharedPrdResponseSchema`; errors are generic.
-- **Tracking PR:** **#63** — `orchestrator/tracking-fa-read-only-sharing--anonymous-read-surface-1778529529339` → `main`. Mark ready when CI green: `gh pr ready 63 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-guided-clarification--contextual-tab-refinement`: **complete**. Contextual refinement sheet on PRD / Architecture / History tabs; `POST /api/projects/[id]/clarify` with `Refine [<label>]:` prefix; unit tests for panel + SSE helpers.
+- **Tracking PR:** **#65** — `orchestrator/tracking-fa-guided-clarification--contextual-tab-refinement-1778530148115` → `main`. Mark ready when CI green: `gh pr ready 65 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **User story:** `docs/execution/user-stories/read-only-sharing--anonymous-read-surface--v0.md` (`ready-for-implementation`).
-- **Implementation plan:** `docs/execution/plans/read-only-sharing--anonymous-read-surface--v0.plan.md` (`approved`).
-- **Pipeline registry:** `docs/state/orchestration.pipeline.json` links this slice to the story and plan paths.
-- **Code:** `GetAnonymousSharedPrdUseCase`, Drizzle anonymous read path, contracts + tests, `GET /api/share/[token]`, share UI (`loading.tsx`, `error.tsx`, contract-validated client fetch).
+- **User story:** `docs/execution/user-stories/guided-clarification--contextual-tab-refinement--v0.md`
+- **Implementation plan:** `docs/execution/plans/guided-clarification--contextual-tab-refinement--v0.plan.md`
+- **Code:** `ContextualRefinementPanel` (Sheet), triggers in `PrdViewer`, `ArchitecturePanel`, `QuestionHistoryPanel`; state in `ProjectWorkspace`; Vitest + happy-dom + `@vitejs/plugin-react` for `contextual-refinement-panel.test.tsx`.
 
 ## Still blocked elsewhere
 
@@ -28,11 +27,13 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. **`fa-read-only-sharing--revoke-link-and-noindex`** (depends on this step) — or **parallel:** `fa-owner-milestone-feedback--milestone-detection-and-prompt` (see `orchestration.steps`).
-2. **`fa-test-first-workflows--task-splitting-with-prompts`** tracking PR **#56** if still pending readiness.
+1. **`fa-read-only-sharing--revoke-link-and-noindex`** (in-progress in `orchestration.steps`).
+2. **`fa-guided-clarification--question-preview-and-progress-score`** (depends on contextual tab refinement).
+3. **Parallel:** `fa-owner-milestone-feedback--milestone-detection-and-prompt` if unstacked.
+4. **`fa-test-first-workflows--task-splitting-with-prompts`** tracking PR **#56** if still pending readiness.
 
 ## Key files (this slice)
 
-- Scope slice: `docs/product/scope-slices/read-only-sharing--anonymous-read-surface.md`
-- User story: `docs/execution/user-stories/read-only-sharing--anonymous-read-surface--v0.md`
-- Plan: `docs/execution/plans/read-only-sharing--anonymous-read-surface--v0.plan.md`
+- Scope slice: `docs/product/scope-slices/guided-clarification--contextual-tab-refinement.md`
+- User story: `docs/execution/user-stories/guided-clarification--contextual-tab-refinement--v0.md`
+- Plan: `docs/execution/plans/guided-clarification--contextual-tab-refinement--v0.plan.md`

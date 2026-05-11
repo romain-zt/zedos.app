@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Lock, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react'
+import { Lock, ArrowRight, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ArchitecturePanelProps {
   projectId: string
   phase: string
+  activePrdVersionId: string | null
+  onOpenRefinement?: (payload: { label: string; prdVersionId: string | null }) => void
 }
 
 const ADR_SLOTS = [
@@ -29,7 +31,12 @@ const ADR_SLOTS = [
   { number: 13, title: 'Legal/GDPR', description: 'Cookies, privacy, data export, retention' },
 ]
 
-export function ArchitecturePanel({ projectId, phase }: ArchitecturePanelProps) {
+export function ArchitecturePanel({
+  projectId,
+  phase,
+  activePrdVersionId,
+  onOpenRefinement,
+}: ArchitecturePanelProps) {
   const [adrs, setAdrs] = useState<any[]>([])
   const [isLocked, setIsLocked] = useState(phase === 'intake')
   const [unlocking, setUnlocking] = useState(false)
@@ -179,14 +186,14 @@ export function ArchitecturePanel({ projectId, phase }: ArchitecturePanelProps) 
               return (
                 <div
                   key={slot.number}
-                  className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50"
+                  className="flex items-center justify-between gap-2 rounded-lg border p-3 hover:bg-gray-50"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       {isComplete ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
                       ) : (
-                        <AlertCircle className="h-4 w-4 text-gray-400" />
+                        <AlertCircle className="h-4 w-4 text-gray-400 flex-shrink-0" />
                       )}
                       <div>
                         <div className="font-medium text-sm">{`ADR-${slot.number.toString().padStart(2, '0')}: ${slot.title}`}</div>
@@ -194,9 +201,28 @@ export function ArchitecturePanel({ projectId, phase }: ArchitecturePanelProps) 
                       </div>
                     </div>
                   </div>
-                  <Badge variant={isComplete ? 'default' : 'outline'}>
-                    {isComplete ? 'Complete' : 'Draft'}
-                  </Badge>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {onOpenRefinement ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-11 w-11 sm:h-8 sm:w-8 text-muted-foreground"
+                        aria-label={`Refine ${slot.title}`}
+                        onClick={() =>
+                          onOpenRefinement({
+                            label: `ADR-${slot.number.toString().padStart(2, '0')}: ${slot.title}`,
+                            prdVersionId: activePrdVersionId,
+                          })
+                        }
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                    ) : null}
+                    <Badge variant={isComplete ? 'default' : 'outline'}>
+                      {isComplete ? 'Complete' : 'Draft'}
+                    </Badge>
+                  </div>
                 </div>
               )
             })}

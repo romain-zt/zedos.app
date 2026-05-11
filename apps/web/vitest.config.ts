@@ -1,12 +1,14 @@
 import { mergeConfig, defineConfig } from "vitest/config";
 import { baseConfig } from "@repo/vitestconfig/base";
+import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default mergeConfig(
   baseConfig,
   defineConfig({
+    plugins: [react()],
     test: {
-      include: ["src/**/*.test.ts"],
+      include: ["src/**/*.test.ts", "app/**/*.test.ts", "app/**/*.test.tsx"],
     },
     resolve: {
       alias: {
