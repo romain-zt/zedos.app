@@ -1,14 +1,21 @@
 name: Auto-rebase on Conflict
 
-# After every push to main, find open PRs that now have merge conflicts
-# and automatically rebase them — keeping the overnight chain unblocked.
+# Two triggers keep open PRs conflict-free:
+#  • push to main  → scan every open PR for conflicts and rebase all of them
+#  • ready_for_review → rebase only the PR that just became ready (fast path)
 
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [ready_for_review]
 
 jobs:
   auto-rebase:
+    # Skip draft PRs that aren't transitioning to ready (push trigger sees all)
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,36 +35,24 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
-      - name: Rebase all conflicted open PRs
+      - name: Rebase conflicted PR(s)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-          # Find all open PRs (non-draft too) that target main and have conflicts
-          CONFLICTED=$(gh pr list \
-            --repo "$REPO" \
-            --state open \
-            --base main \
-            --json number,headRefName,mergeable \
-            --jq '.[] | select(.mergeable == "CONFLICTING") | "\(.number) \(.headRefName)"')
-
-          if [ -z "$CONFLICTED" ]; then
-            echo "✅ No conflicted PRs found."
-            exit 0
-          fi
-
-          echo "Conflicted PRs to rebase:"
-          echo "$CONFLICTED"
-
-          while IFS= read -r line; do
-            PR_NUM=$(echo "$line" | awk '{print $1}')
-            PR_BRANCH=$(echo "$line" | awk '{print $2}')
+          rebase_pr() {
+            local PR_NUM="$1"
+            local BRANCH="$2"
             echo ""
-            echo "━━━ PR #$PR_NUM ($PR_BRANCH) ━━━"
+            echo "━━━ PR #$PR_NUM ($BRANCH) ━━━"
 
-            git fetch origin "$PR_BRANCH"
-            git checkout "$PR_BRANCH"
-            git pull origin "$PR_BRANCH" --ff-only 2>/dev/null || true
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH" --ff-only 2>/dev/null || true
 
             if ! git rebase origin/main -X ours; then
               # pnpm-lock.yaml: always regenerate
@@ -83,8 +78,58 @@ jobs:
               git commit -m "chore: regenerate pnpm-lock.yaml after rebase [skip ci]" || true
             fi
 
-            git push --force-with-lease origin "$PR_BRANCH"
+            git push --force-with-lease origin "$BRANCH"
             echo "✅ PR #$PR_NUM rebased and pushed"
 
             git checkout main
-          done <<< "$CONFLICTED"
+          }
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            # ready_for_review fast path: check only this PR
+            echo "🔍 PR #$PR_NUMBER just became ready — checking for conflicts…"
+
+            MERGEABLE=$(gh pr view "$PR_NUMBER" \
+              --repo "$REPO" \
+              --json mergeable \
+              --jq '.mergeable')
+
+            # GitHub needs a moment to compute mergeability on fresh PRs
+            if [ "$MERGEABLE" = "UNKNOWN" ]; then
+              echo "Mergeability unknown — waiting 10s for GitHub to compute…"
+              sleep 10
+              MERGEABLE=$(gh pr view "$PR_NUMBER" \
+                --repo "$REPO" \
+                --json mergeable \
+                --jq '.mergeable')
+            fi
+
+            if [ "$MERGEABLE" = "CONFLICTING" ]; then
+              echo "⚠️  Conflicts detected — auto-rebasing PR #$PR_NUMBER"
+              rebase_pr "$PR_NUMBER" "$PR_BRANCH"
+            else
+              echo "✅ PR #$PR_NUMBER is conflict-free (mergeable=$MERGEABLE). Nothing to do."
+            fi
+
+          else
+            # push to main: scan all open PRs for conflicts
+            CONFLICTED=$(gh pr list \
+              --repo "$REPO" \
+              --state open \
+              --base main \
+              --json number,headRefName,mergeable \
+              --jq '.[] | select(.mergeable == "CONFLICTING") | "\(.number) \(.headRefName)"')
+
+            if [ -z "$CONFLICTED" ]; then
+              echo "✅ No conflicted PRs found."
+              exit 0
+            fi
+
+            echo "Conflicted PRs to rebase:"
+            echo "$CONFLICTED"
+
+            while IFS= read -r line; do
+              PR_NUM=$(echo "$line" | awk '{print $1}')
+              BRANCH=$(echo "$line" | awk '{print $2}')
+              rebase_pr "$PR_NUM" "$BRANCH"
+            done <<< "$CONFLICTED"
+          fi
