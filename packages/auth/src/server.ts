@@ -12,6 +12,7 @@
 
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { toNextJsHandler } from 'better-auth/next-js';
 import { db } from '@repo/db';
 import * as schema from '@repo/db/schema';
 
@@ -69,3 +70,5 @@ export const auth = betterAuth({
 });
 
 export type Auth = typeof auth;
+
+export { toNextJsHandler };

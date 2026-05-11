@@ -8,8 +8,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-options';
+import { headers } from 'next/headers';
+import { requireUser } from '@repo/auth';
 import { PrismaCreditsRepository } from '@infrastructure/persistence/credits-repository';
 import { prisma } from '@/lib/prisma';
 import { ApplicationError } from '@shared/errors/application-error';
@@ -17,11 +17,11 @@ import { ApplicationError } from '@shared/errors/application-error';
 export async function GET() {
   try {
     // 1. Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const userResult = await requireUser(await headers());
+    if (userResult.isErr()) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const userId = (session.user as any).id;
+    const userId = userResult.unwrap().id;
 
     // 2. Instantiate repository
     const creditsRepository = new PrismaCreditsRepository(prisma);

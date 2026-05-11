@@ -11,7 +11,7 @@
  * during the migration period and will be removed in PR-3.
  */
 
-export { auth } from './server';
+export { auth, toNextJsHandler } from './server';
 export type { Auth } from './server';
 
 export { authClient, signIn, signUp, signOut, useSession, getSession } from './client';
@@ -22,5 +22,3 @@ export type { Session, User, UnauthorizedError, ApiKey } from './types';
 export { createUnauthorizedError } from './types';
 
 export { API_KEY_PLUGIN_ENABLED, apiKeyPluginConfig } from './plugins/api-key';
-
-export { authOptions } from './auth-options';

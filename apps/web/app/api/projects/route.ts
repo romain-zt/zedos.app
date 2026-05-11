@@ -1,8 +1,8 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
+import { headers } from 'next/headers'
+import { requireUser } from '@repo/auth'
 import { prisma } from '@/lib/prisma'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { ListProjectsUseCase } from '@application/project/list-projects-usecase'
@@ -10,9 +10,9 @@ import { CreateProjectUseCase } from '@application/project/create-project-usecas
 import { CreateProjectRequestSchema } from '@contracts/project/project-contracts'
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+  const userResult = await requireUser(await headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = userResult.unwrap().id
 
   const repo = new PrismaProjectRepository(prisma)
   const useCase = new ListProjectsUseCase(repo)
@@ -26,9 +26,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+  const userResult = await requireUser(await headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = userResult.unwrap().id
 
   const body = await request.json()
   const parsed = CreateProjectRequestSchema.safeParse(body)

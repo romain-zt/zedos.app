@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn } from '@repo/auth'
 import { useRouter } from 'next/navigation'
 import { AuthLayout } from '@/components/layouts/auth-layout'
 import { Button } from '@/components/ui/button'
@@ -25,12 +25,11 @@ export default function LoginPage() {
     }
     setLoading(true)
     try {
-      const result = await signIn('credentials', {
-        redirect: false,
+      const result = await signIn.email({
         email: email.toLowerCase().trim(),
         password,
       })
-      if (result?.error) {
+      if (result.error) {
         toast.error('Invalid email or password')
       } else {
         router.replace('/dashboard')

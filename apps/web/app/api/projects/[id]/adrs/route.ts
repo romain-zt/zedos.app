@@ -1,25 +1,16 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
-import { prisma } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { requireUser } from '@repo/auth'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'
 import { ListAdrsUseCase } from '@application/adr/list-adrs-usecase'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id || ''
-
-  // Fallback: use email-based lookup if id not in session
-  let resolvedUserId = userId
-  if (!resolvedUserId && session.user?.email) {
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    resolvedUserId = user.id
-  }
+  const userResult = await requireUser(await headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const resolvedUserId = userResult.unwrap().id
 
   const projectRepo = new PrismaProjectRepository()
   const adrRepo = new PrismaAdrRepository()

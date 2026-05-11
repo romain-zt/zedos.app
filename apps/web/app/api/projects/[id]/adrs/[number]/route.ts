@@ -1,30 +1,20 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth-options'
-import { prisma } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { requireUser } from '@repo/auth'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'
 import { GetAdrUseCase } from '@application/adr/get-adr-usecase'
 import { UpdateAdrUseCase } from '@application/adr/update-adr-usecase'
 
-async function resolveUserId(session: any): Promise<string | null> {
-  if ((session?.user as any)?.id) return (session.user as any).id
-  if (session?.user?.email) {
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-    return user?.id || null
-  }
-  return null
-}
-
 export async function GET(
   req: Request,
   { params }: { params: { id: string; number: string } }
 ) {
-  const session = await getServerSession(authOptions)
-  const userId = await resolveUserId(session)
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userResult = await requireUser(await headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = userResult.unwrap().id
 
   const adrNumber = parseInt(params.number, 10)
   const projectRepo = new PrismaProjectRepository()
@@ -43,9 +33,9 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string; number: string } }
 ) {
-  const session = await getServerSession(authOptions)
-  const userId = await resolveUserId(session)
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userResult = await requireUser(await headers())
+  if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = userResult.unwrap().id
 
   const body = await req.json()
   const adrNumber = parseInt(params.number, 10)
