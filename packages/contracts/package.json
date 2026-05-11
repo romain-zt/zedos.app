@@ -19,7 +19,9 @@
     "./ai/decision-ui": "./src/ai/decision-ui.ts",
     "./ai/generate-prd-stream": "./src/ai/generate-prd-stream.ts",
     "./questions": "./src/questions/history.ts",
-    "./questions/history": "./src/questions/history.ts"
+    "./questions/history": "./src/questions/history.ts",
+    "./feedback": "./src/feedback/index.ts",
+    "./feedback/submit": "./src/feedback/submit.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

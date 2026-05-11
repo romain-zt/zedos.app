@@ -101,49 +101,9 @@ export function createBufferedStreamingResponse(
   return new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder()
-
-        try {
-          while (true) {
-            const { done, value } = await (reader as ReadableStreamDefaultReader<Uint8Array>).read()
-            if (done) break
-            partialRead += decoder.decode(value, { stream: true })
-            const lines = partialRead.split('\n')
-            partialRead = lines.pop() ?? ''
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6)
-                if (data !== '' && data !== '[DONE]') {
-                  try {
-                    const parsed = JSON.parse(data)
-                    const delta = parsed?.choices?.[0]?.delta?.content
-                    if (typeof delta === 'string') buffer += delta
-                  } catch {
-                    /* partial chunk — skip */
-                  }
-                }
-              }
-            }
-          }
-          if (buffer) {
-            try {
-              await Promise.resolve(onComplete(buffer))
-            } catch (e: unknown) {
-              console.error('onComplete error:', e)
-            }
-            const finalData = JSON.stringify({ status: 'completed', result: buffer })
-            controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
-          }
-        } catch (error: unknown) {
-          console.error('Buffered stream error:', error)
-          const message = error instanceof Error ? error.message : 'Stream failed'
-          const errData = JSON.stringify({ status: 'error', message })
-          controller.enqueue(encoder.encode(`data: ${errData}\n\n`))
-        } finally {
-          controller.close()
-        }
+      const send = (payload: Record<string, unknown>) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`))
       }
-
       const safeClose = () => {
         try {
           controller.close()
