@@ -19,7 +19,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+  const callbackUrl =
+    searchParams.get('callbackUrl') ??
+    searchParams.get('from') ??
+    '/dashboard'
 
   useEffect(() => {
     if (!isPending && session) {

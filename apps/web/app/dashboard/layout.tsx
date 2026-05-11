@@ -9,7 +9,7 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const sessionResult = await requireSession(await headers())
-  if (sessionResult.isErr()) redirect('/login')
+  if (sessionResult.isErr()) redirect('/sign-in')
 
   return <DashboardShell>{children}</DashboardShell>
 }

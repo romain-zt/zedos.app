@@ -122,7 +122,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <p className="text-xs text-muted-foreground truncate">{session?.user?.email ?? ''}</p>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
+                onClick={() => signOut({ callbackUrl: '/sign-in' })}
                 className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 title="Sign out"
               >

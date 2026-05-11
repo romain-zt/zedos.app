@@ -6,7 +6,7 @@ import { ProjectWorkspace } from './_components/project-workspace'
 
 export default async function ProjectPage({ params }: { params: { id: string } }) {
   const userResult = await requireUser(headers())
-  if (userResult.isErr()) redirect('/login')
+  if (userResult.isErr()) redirect('/sign-in')
   const userId = userResult.unwrap().id
 
   const project = await prisma.project.findFirst({
