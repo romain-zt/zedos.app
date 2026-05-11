@@ -51,6 +51,9 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
     return comingUpPrdSectionsFromAssistantParsed(sections, 3)
   }, [messages])
 
+  const showReadyToGenerateHint =
+    comingUpSections.length === 0 && (messages ?? []).some((m) => m.role === 'assistant')
+
   useEffect(() => { scrollToBottom() }, [messages, scrollToBottom])
 
   // Load existing history on mount; auto-start only when there are no prior messages.
@@ -363,6 +366,11 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
               ))}
             </div>
           </div>
+        )}
+        {showReadyToGenerateHint && (
+          <p className="text-xs text-muted-foreground">
+            Ready to generate PRD — every canonical section has had a question in this workspace.
+          </p>
         )}
         <div className="flex gap-2">
           <Textarea
