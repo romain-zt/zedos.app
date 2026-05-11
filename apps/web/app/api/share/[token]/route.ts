@@ -1,38 +1,57 @@
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
-import { NextRequest, NextResponse } from 'next/server'
-import { db, shareLinks, prdVersions, projects, eq } from '@repo/db'
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  AnonymousSharedPrdResponseSchema,
+  ShareReadTokenParamSchema,
+} from '@repo/contracts/share/anonymous-read';
+import { GetAnonymousSharedPrdUseCase } from '@application/prd/get-anonymous-shared-prd-usecase';
+import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository';
+import {
+  ApplicationError,
+  DatabaseError,
+  ExternalServiceError,
+  NotFoundError,
+} from '@shared/errors/application-error';
+
+function mapApplicationError(error: ApplicationError) {
+  if (error instanceof NotFoundError) {
+    return NextResponse.json({ error: 'Not available' }, { status: 404 });
+  }
+  const status =
+    typeof error.statusCode === 'number' && error.statusCode >= 400 && error.statusCode < 600
+      ? error.statusCode
+      : 500;
+  return NextResponse.json({ error: 'Something went wrong' }, { status });
+}
 
 export async function GET(_request: NextRequest, { params }: { params: { token: string } }) {
-  try {
-    const [row] = await db
-      .select({
-        enabled: shareLinks.enabled,
-        versionNumber: prdVersions.versionNumber,
-        content: prdVersions.content,
-        status: prdVersions.status,
-        createdAt: prdVersions.createdAt,
-        projectName: projects.name,
-      })
-      .from(shareLinks)
-      .innerJoin(prdVersions, eq(shareLinks.prdVersionId, prdVersions.id))
-      .innerJoin(projects, eq(prdVersions.projectId, projects.id))
-      .where(eq(shareLinks.token, params.token))
-      .limit(1)
-
-    if (!row || !row.enabled) {
-      return NextResponse.json({ error: 'Share link not found or disabled' }, { status: 404 })
-    }
-
-    return NextResponse.json({
-      projectName: row.projectName ?? 'Untitled Project',
-      versionNumber: row.versionNumber ?? 1,
-      content: row.content ?? null,
-      status: row.status ?? 'draft',
-      createdAt: row.createdAt,
-    })
-  } catch (error: any) {
-    console.error('Share GET error:', error)
-    return NextResponse.json({ error: 'Failed to fetch shared PRD' }, { status: 500 })
+  const tokenParsed = ShareReadTokenParamSchema.safeParse(params.token);
+  if (!tokenParsed.success) {
+    return NextResponse.json({ error: 'Invalid link' }, { status: 400 });
   }
+
+  const useCase = new GetAnonymousSharedPrdUseCase(new PrismaPrdRepository());
+  const result = await useCase.execute(tokenParsed.data);
+  if (result.isErr()) {
+    const e = result.error;
+    if (!(e instanceof NotFoundError || e instanceof ExternalServiceError || e instanceof DatabaseError)) {
+      console.error('Share GET:', e);
+    }
+    return mapApplicationError(e);
+  }
+
+  const snap = result.unwrap();
+  const out = AnonymousSharedPrdResponseSchema.safeParse({
+    versionNumber: snap.versionNumber,
+    content: snap.content,
+    status: snap.status,
+    createdAt: snap.createdAt,
+  });
+  if (!out.success) {
+    console.error('Share GET outbound validation', out.error.flatten());
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+  }
+
+  return NextResponse.json(out.data);
 }

@@ -4,9 +4,20 @@
 
 import crypto from 'node:crypto';
 import { IPrdRepository } from '@domain/prd/prd-repository';
-import { MintedShareLink, PrdVersion, PrdVersionWithRelations, PrdStatus } from '@domain/prd/prd';
+import {
+  AnonymousSharedPrdSnapshot,
+  MintedShareLink,
+  PrdVersion,
+  PrdVersionWithRelations,
+  PrdStatus,
+} from '@domain/prd/prd';
 import { Result, ok, err } from '@repo/result';
-import { ApplicationError, DatabaseError, NotFoundError } from '@shared/errors/application-error';
+import {
+  ApplicationError,
+  DatabaseError,
+  ExternalServiceError,
+  NotFoundError,
+} from '@shared/errors/application-error';
 import {
   db,
   prdVersions,
@@ -19,6 +30,7 @@ import {
   sql,
   type NewPrdVersion,
 } from '@repo/db';
+import { AnonymousSharedPrdResponseSchema } from '@repo/contracts/share/anonymous-read';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'PrdRepository' });
@@ -209,6 +221,63 @@ export class DrizzlePrdRepository implements IPrdRepository {
     } catch (error) {
       logger.error('mintReadOnlyShareLink failed', error);
       return err(new DatabaseError('Failed to create share link'));
+    }
+  }
+
+  async getAnonymousPrdVersionByShareToken(
+    token: string
+  ): Promise<Result<AnonymousSharedPrdSnapshot, ApplicationError>> {
+    try {
+      const [row] = await db
+        .select({
+          enabled: shareLinks.enabled,
+          versionNumber: prdVersions.versionNumber,
+          content: prdVersions.content,
+          status: prdVersions.status,
+          createdAt: prdVersions.createdAt,
+        })
+        .from(shareLinks)
+        .innerJoin(prdVersions, eq(shareLinks.prdVersionId, prdVersions.id))
+        .where(eq(shareLinks.token, token))
+        .limit(1);
+
+      if (!row || !row.enabled) {
+        return err(new NotFoundError('Share link not found or disabled'));
+      }
+
+      const rawContent = row.content;
+      const content =
+        rawContent !== null &&
+        typeof rawContent === 'object' &&
+        rawContent !== null &&
+        !Array.isArray(rawContent)
+          ? (rawContent as Record<string, unknown>)
+          : null;
+
+      const candidate = {
+        versionNumber: row.versionNumber ?? 1,
+        content,
+        status: (row.status ?? 'draft') as PrdStatus,
+        createdAt: row.createdAt,
+      };
+
+      const parsed = AnonymousSharedPrdResponseSchema.safeParse(candidate);
+      if (!parsed.success) {
+        logger.error('Anonymous shared PRD snapshot failed contract parse', parsed.error.flatten());
+        return err(
+          new ExternalServiceError('database', 'Shared PRD snapshot failed validation', 502)
+        );
+      }
+
+      return ok({
+        versionNumber: parsed.data.versionNumber,
+        content: parsed.data.content,
+        status: parsed.data.status as PrdStatus,
+        createdAt: parsed.data.createdAt,
+      });
+    } catch (error) {
+      logger.error('getAnonymousPrdVersionByShareToken failed', error);
+      return err(new DatabaseError('Failed to load shared PRD'));
     }
   }
 }

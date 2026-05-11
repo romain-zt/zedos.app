@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-11",
-  "current_phase": "fa-test-first-workflows--task-splitting-with-prompts-governance-complete",
+  "current_phase": "fa-read-only-sharing--anonymous-read-surface-complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -57,7 +57,8 @@
     "owner_views_question_history": "complete"
   },
   "fa_read_only_sharing": {
-    "mint_read_only_link": "complete"
+    "mint_read_only_link": "complete",
+    "anonymous_read_surface": "complete"
   },
   "fa_services_feature_split": {
     "prd_to_feature_split": "complete"
@@ -127,7 +128,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Tracking PR #56 (task-splitting governance): mark ready when CI green — gh pr ready 56 --repo romain-zt/zedos.app. Runtime implementation follows approved plan `docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md` (stacked PRs on this branch). Parallel in-progress slices: fa-read-only-sharing--anonymous-read-surface, fa-owner-milestone-feedback--milestone-detection-and-prompt. Credits (PR #39) still blocked on PIS.",
+  "next_action": "Tracking PR #59 (anonymous read surface): mark ready when CI green — gh pr ready 59 --repo romain-zt/zedos.app. Other: PR #56 task-splitting governance if still draft. Parallel: fa-owner-milestone-feedback--milestone-detection-and-prompt. Credits (PR #39) still blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
