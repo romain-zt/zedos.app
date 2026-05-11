@@ -7,7 +7,7 @@ import type { ProjectWithCounts } from '@domain/project/project-repository'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DEFERRED_ROADMAP_PLACEHOLDERS } from './_lib/deferred-roadmap-placeholders'
 import { FolderOpen, Plus, FileText, ArrowRight, Sparkles, Construction, Info, AlertTriangle, RefreshCw } from 'lucide-react'
 import { FadeIn, SlideIn, Stagger, StaggerItem } from '@/components/ui/animate'
@@ -130,6 +130,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ul className="grid gap-3 sm:grid-cols-2">
+              <TooltipProvider>
               {DEFERRED_ROADMAP_PLACEHOLDERS.map((item) => (
                 <li key={item.id} className="list-none">
                   <Tooltip>
@@ -154,6 +155,7 @@ export default function DashboardPage() {
                   </Tooltip>
                 </li>
               ))}
+              </TooltipProvider>
             </ul>
           </CardContent>
         </Card>
