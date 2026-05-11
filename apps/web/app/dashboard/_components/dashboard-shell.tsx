@@ -182,7 +182,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
-      </TooltipProvider>
     </div>
   )
 }
