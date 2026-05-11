@@ -1,7 +1,7 @@
 import { Agent, CursorAgentError } from "@cursor/sdk";
 import fs from "node:fs";
 import path from "node:path";
-import { execSync } from "node:child_process";
+import { execSync, execFileSync } from "node:child_process";
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -31,11 +31,21 @@ if (!repo) {
 // ---------------------------------------------------------------------------
 // Phase prompts
 // ---------------------------------------------------------------------------
-// Each prompt receives a `{TRACKING_PR_NUMBER}` and `{TRACKING_PR_BRANCH}`
-// placeholder that the orchestrator fills in before firing the agent.
+// Each prompt receives `{TRACKING_PR_NUMBER}`, `{TRACKING_PR_BRANCH}`, and `{REPO}`
+// placeholders that the orchestrator fills in before firing the agent.
 // The agent MUST call `gh pr ready {TRACKING_PR_NUMBER}` as its final act
 // to signal completion and trigger the next orchestrator run via
 // the pr-ready.yml workflow.
+
+const ORCHESTRATOR_BRANCH_RULES = `## Orchestrator branch rules (mandatory)
+
+A **draft tracking PR already exists**: PR #{TRACKING_PR_NUMBER}, head \`{TRACKING_PR_BRANCH}\` → base \`main\`. Automation **only auto-merges that PR** (and stacked dependents via pr-cascade.yml). Commits that exist only on PRs that target \`main\` directly will **not** be included when the tracking PR merges.
+
+- **Primary branch:** check out and push **all** implementation work to \`{TRACKING_PR_BRANCH}\` (\`git fetch origin && git checkout {TRACKING_PR_BRANCH}\`). The open draft PR will grow to include your diff.
+- **Multiple PRs for this phase:** stack them — first additional PR must use \`gh pr create --base {TRACKING_PR_BRANCH} ...\` (draft). Each next PR uses \`--base\` = the **previous** feature branch name. Never open phase work as a standalone PR to \`main\` unless it is stacked this way.
+- **status.json / HANDOFF.md:** commit them on \`{TRACKING_PR_BRANCH}\` with the rest of the phase so they merge with the code.
+
+`;
 
 const PHASE_PROMPTS: Record<string, string> = {
   "phase3-p0": `Read docs/state/HANDOFF.md and docs/execution/plans/turborepo-migration--phase-0-scaffold.plan.md.
@@ -43,15 +53,15 @@ Execute Phase 3 Phase 0: scaffold the Turborepo root.
 - Add root package.json, pnpm-workspace.yaml, turbo.jsonc, .changeset/, .npmrc, tsconfig.base.json
 - Move zedos/nextjs_space/ → apps/web/
 - Verify the app still builds after the move: pnpm typecheck && pnpm build must pass
-Open draft PRs for each logical unit (PR P0-a workspace init, PR P0-b CI hygiene).
+If you split into multiple PRs (e.g. P0-a workspace init, P0-b CI hygiene), stack them on \`{TRACKING_PR_BRANCH}\` as described in the branch rules above — do not open parallel drafts to \`main\` only.
 When all PRs are open and gates pass:
-  - Set docs/state/status.json -> phase3.p0 = "complete" and commit + push
+  - Set docs/state/status.json -> phase3.p0 = "complete" and commit + push on \`{TRACKING_PR_BRANCH}\`
   - Run: gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
 If blocked at any point:
   - Set docs/state/status.json -> phase3.p0 = "blocked" and phase3.blocker = "<one-line reason>"
   - Write a "Current Blocker" section in docs/state/HANDOFF.md
   - Update the tracking PR description with the blocker: gh pr edit {TRACKING_PR_NUMBER} --repo {REPO} --body "BLOCKED: <reason>"
-  - Commit + push docs/state/status.json and docs/state/HANDOFF.md
+  - Commit + push docs/state/status.json and docs/state/HANDOFF.md on \`{TRACKING_PR_BRANCH}\`
   - STOP — do not call gh pr ready`,
 
   "phase3-p1": `Read docs/state/HANDOFF.md first, then read docs/execution/plans/turborepo-migration--phase-1-package-extraction.plan.md.
@@ -59,13 +69,13 @@ The plan contains exact file paths for every operation. Follow it precisely.
 
 Execute Phase 3 Phase 1: extract @repo/result, @repo/contracts, @repo/db, @repo/auth from apps/web/.
 Extraction order matters (dependency order): result → contracts → db → auth.
-Open one draft PR per package. After each PR passes pnpm typecheck && pnpm build, open the next.
-The pr-cascade.yml workflow will un-draft each PR when the previous merges.
+Open one draft PR per package, each stacked on \`{TRACKING_PR_BRANCH}\` or the previous package branch (never orphan drafts to \`main\` only). After each PR passes pnpm typecheck && pnpm build, open the next.
+The pr-cascade.yml workflow will rebase and merge stacked drafts when the parent branch merges.
 
 Architecture rules in .cursor/rules/ apply — especially 72-hexagonal-boundaries.mdc and 73-result-rop.mdc.
 
 When all 4 PRs are open and the final verification gate passes:
-  - Set docs/state/status.json -> phase3.p1 = "complete" and commit + push on main (not on a branch)
+  - Set docs/state/status.json -> phase3.p1 = "complete" and commit + push on \`{TRACKING_PR_BRANCH}\`
   - Run: gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
 If blocked at any point:
   - Set docs/state/status.json -> phase3.p1 = "blocked" and phase3.blocker = "<one-line reason>"
@@ -84,7 +94,7 @@ After each PR: pnpm typecheck && pnpm build must pass before opening the next.
 Also run: drizzle-kit check (must exit 0 against the database after PR-1).
 
 When all PRs are open and final gate passes:
-  - Set docs/state/status.json -> phase3.p2 = "complete" and commit + push on main
+  - Set docs/state/status.json -> phase3.p2 = "complete" and commit + push on \`{TRACKING_PR_BRANCH}\`
   - Run: gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
 If blocked:
   - Set phase3.p2 = "blocked" and phase3.blocker = "<one-line reason>"
@@ -103,7 +113,7 @@ Session shape: session.user.id must be string (not string | undefined) — no as
 The API-key plugin stub must exist in packages/auth/src/plugins/api-key.ts (disabled).
 
 When all PRs are open and final gate passes (including the grep check):
-  - Set docs/state/status.json -> phase3.p3 = "complete" and commit + push on main
+  - Set docs/state/status.json -> phase3.p3 = "complete" and commit + push on \`{TRACKING_PR_BRANCH}\`
   - Run: gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
 If blocked:
   - Set phase3.p3 = "blocked" and phase3.blocker = "<one-line reason>"
@@ -128,10 +138,10 @@ PREREQUISITE CHECK: before implementing, verify that Phase 3 better-auth is comp
 Execute FA-account-session, Slice 1: sign-up and sign-in flows using better-auth.
 Implement the 12 Acceptance Criteria from the user story (skip AC-11 and AC-12 which are PENDING human decisions).
 Architecture: route handlers → use-cases → @repo/auth; use Result<T,E> throughout.
-Open draft PRs per the user story test plan.
+Open draft PRs per the user story test plan, stacked on \`{TRACKING_PR_BRANCH}\` (or the previous branch in the stack) — not as unrelated PRs to \`main\` only.
 
 When done:
-  - Set docs/state/status.json -> fa_account_session.slice1 = "complete" and commit + push on main
+  - Set docs/state/status.json -> fa_account_session.slice1 = "complete" and commit + push on \`{TRACKING_PR_BRANCH}\`
   - Run: gh pr ready {TRACKING_PR_NUMBER} --repo {REPO}
 If blocked:
   - Set fa_account_session.slice1 = "blocked" and fa_account_session.blocker = "<one-line reason>"
@@ -258,9 +268,11 @@ function determineNextStep(status: StatusJson): string | null {
 // ---------------------------------------------------------------------------
 // Tracking PR
 // ---------------------------------------------------------------------------
-// Opens a draft PR on a throwaway branch whose only purpose is to carry the
-// "phase is running" signal. When the agent calls `gh pr ready <n>`, the
-// pr-ready.yml workflow fires, merges it, and triggers this orchestrator again.
+// Opens a draft PR on the phase's tracking branch. The docs/state/tracking/
+// stub bootstraps the branch; agents must push all implementation commits here
+// (see ORCHESTRATOR_BRANCH_RULES) or stack dependent draft PRs on this branch.
+// When `gh pr ready` runs, pr-ready.yml merges the tracking branch; stacked
+// work is advanced by pr-cascade.yml after each merge.
 
 function gh(cmd: string): string {
   return execSync(`gh ${cmd}`, { encoding: "utf8" }).trim();
@@ -323,11 +335,25 @@ function openTrackingPR(step: string): TrackingPR {
   // Clean up temp body file
   try { fs.unlinkSync(bodyFile); } catch { /* ignore */ }
 
-  // Return to main so the agent can commit on main
+  // Stay on main in this CI clone; prompts direct the Cursor agent to checkout {TRACKING_PR_BRANCH}.
   gitExec(`checkout main`);
 
   console.log(`📋 Tracking PR #${prNumber} opened (draft): ${prUrl}`);
   return { number: prNumber, branch, url: prUrl };
+}
+
+/** Read docs/state/status.json at rev like origin/my-branch */
+function readStatusFromGitRev(revLike: string): StatusJson | null {
+  try {
+    const spec = `${revLike}:docs/state/status.json`;
+    const raw = execFileSync("git", ["show", spec], {
+      encoding: "utf8",
+      maxBuffer: 4 * 1024 * 1024,
+    });
+    return JSON.parse(raw) as StatusJson;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -548,8 +574,9 @@ console.log(`\n📋 Opening draft tracking PR for ${nextStep}…`);
 const trackingPR = openTrackingPR(nextStep);
 
 // 4. Inject tracking PR info into the prompt
-const prompt = promptTemplate
+const prompt = `${ORCHESTRATOR_BRANCH_RULES}${promptTemplate}`
   .replace(/\{TRACKING_PR_NUMBER\}/g, String(trackingPR.number))
+  .replace(/\{TRACKING_PR_BRANCH\}/g, trackingPR.branch)
   .replace(/\{REPO\}/g, repo!);
 
 console.log(`🚀 Firing Cursor cloud agent for ${nextStep}…\n`);
@@ -576,9 +603,17 @@ try {
   // The SDK may return "success" even if the agent didn't complete all required
   // steps. We verify two hard post-conditions before claiming victory:
   //   1. Tracking PR is no longer a draft (agent called `gh pr ready`)
-  //   2. Phase status in status.json was updated to "complete"
+  //   2. Phase status in status.json on the **tracking branch** is "complete"
   // ---------------------------------------------------------------------------
   console.log(`\n🔍 Verifying post-agent conditions for "${nextStep}"…`);
+
+  try {
+    gitExec(`fetch origin ${trackingPR.branch}`);
+  } catch {
+    console.warn(`⚠️  git fetch origin ${trackingPR.branch} failed — status check may fail.`);
+  }
+
+  const remoteRev = `origin/${trackingPR.branch}`;
 
   // 1. Check tracking PR draft state
   let trackingPRIsDraft = true;
@@ -601,8 +636,8 @@ try {
     process.exit(2);
   }
 
-  // 2. Check status.json was updated to "complete"
-  const freshStatus = readStatus();
+  // 2. Check status.json on the tracking branch (CI checkout is not the agent's clone)
+  const freshStatus = readStatusFromGitRev(remoteRev);
   let phaseIsComplete = false;
   if (freshStatus) {
     switch (nextStep) {
@@ -615,8 +650,8 @@ try {
   }
 
   if (!phaseIsComplete) {
-    console.error(`\n❌ Post-agent check FAILED: docs/state/status.json still shows "${nextStep}" as not "complete".`);
-    console.error(`   The agent did not update the status file.`);
+    console.error(`\n❌ Post-agent check FAILED: docs/state/status.json on '${remoteRev}' does not show "${nextStep}" as "complete".`);
+    console.error(`   The agent must commit the updated status on '${trackingPR.branch}' together with the phase work.`);
     console.error(`   Tracking PR #${trackingPR.number} state: ${trackingPRIsDraft ? "draft" : "ready"}.`);
     resetInProgress(nextStep);
     process.exit(2);
