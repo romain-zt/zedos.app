@@ -114,6 +114,232 @@
         "planFile": null,
         "notes": "Auto-appended from docs/prd PRD Flow Inventory + orchestration.prd-flow-map.json. Create user story + plan if not present before implementing."
       }
+    },
+    {
+      "id": "fa-project-workspace--create-project",
+      "dependsOn": [
+        "fa-dashboard-shell-slice2"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Create project",
+        "featureAreaFile": "docs/product/feature-areas/project-workspace.md",
+        "scopeSliceFile": "docs/product/scope-slices/project-workspace--create-project.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-project-workspace--list-and-open-project",
+      "dependsOn": [
+        "fa-project-workspace--create-project"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "List and open project",
+        "featureAreaFile": "docs/product/feature-areas/project-workspace.md",
+        "scopeSliceFile": "docs/product/scope-slices/project-workspace--list-and-open-project.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-project-workspace--switch-active-project",
+      "dependsOn": [
+        "fa-project-workspace--list-and-open-project"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Switch active project",
+        "featureAreaFile": "docs/product/feature-areas/project-workspace.md",
+        "scopeSliceFile": "docs/product/scope-slices/project-workspace--switch-active-project.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-prd-versioning--create-or-capture-prd-version",
+      "dependsOn": [
+        "fa-project-workspace--create-project"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Create or capture PRD version",
+        "featureAreaFile": "docs/product/feature-areas/prd-versioning.md",
+        "scopeSliceFile": "docs/product/scope-slices/prd-versioning--create-or-capture-prd-version.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-prd-versioning--browse-and-switch-prd-versions",
+      "dependsOn": [
+        "fa-prd-versioning--create-or-capture-prd-version"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Browse and switch PRD versions",
+        "featureAreaFile": "docs/product/feature-areas/prd-versioning.md",
+        "scopeSliceFile": "docs/product/scope-slices/prd-versioning--browse-and-switch-prd-versions.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-question-history--persist-structured-decision-entries",
+      "dependsOn": [
+        "fa-project-workspace--create-project"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Persist structured decision entries",
+        "featureAreaFile": "docs/product/feature-areas/question-history.md",
+        "scopeSliceFile": "docs/product/scope-slices/question-history--persist-structured-decision-entries.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing. Runtime dependency on guided-clarification FA (NEED_HUMAN) does not block pipeline execution — orchestrator should note coordination risk."
+      }
+    },
+    {
+      "id": "fa-question-history--owner-views-question-history",
+      "dependsOn": [
+        "fa-question-history--persist-structured-decision-entries"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Owner views question history",
+        "featureAreaFile": "docs/product/feature-areas/question-history.md",
+        "scopeSliceFile": "docs/product/scope-slices/question-history--owner-views-question-history.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-read-only-sharing--mint-read-only-link",
+      "dependsOn": [
+        "fa-prd-versioning--create-or-capture-prd-version"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Mint read-only link",
+        "featureAreaFile": "docs/product/feature-areas/read-only-sharing.md",
+        "scopeSliceFile": "docs/product/scope-slices/read-only-sharing--mint-read-only-link.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-read-only-sharing--anonymous-read-surface",
+      "dependsOn": [
+        "fa-read-only-sharing--mint-read-only-link"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Anonymous read surface",
+        "featureAreaFile": "docs/product/feature-areas/read-only-sharing.md",
+        "scopeSliceFile": "docs/product/scope-slices/read-only-sharing--anonymous-read-surface.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing. Strict privacy boundary: no workspace, history, or owner nav must leak to anonymous surface."
+      }
+    },
+    {
+      "id": "fa-read-only-sharing--revoke-link-and-noindex",
+      "dependsOn": [
+        "fa-read-only-sharing--anonymous-read-surface"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Revoke link and noindex",
+        "featureAreaFile": "docs/product/feature-areas/read-only-sharing.md",
+        "scopeSliceFile": "docs/product/scope-slices/read-only-sharing--revoke-link-and-noindex.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-owner-milestone-feedback--milestone-detection-and-prompt",
+      "dependsOn": [
+        "fa-prd-versioning--create-or-capture-prd-version",
+        "fa-read-only-sharing--mint-read-only-link"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Milestone detection and prompt",
+        "featureAreaFile": "docs/product/feature-areas/owner-milestone-feedback.md",
+        "scopeSliceFile": "docs/product/scope-slices/owner-milestone-feedback--milestone-detection-and-prompt.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing. Requires prd-versioning and sharing milestone events to exist."
+      }
+    },
+    {
+      "id": "fa-owner-milestone-feedback--feedback-capture-and-attribution",
+      "dependsOn": [
+        "fa-owner-milestone-feedback--milestone-detection-and-prompt"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Feedback capture and attribution",
+        "featureAreaFile": "docs/product/feature-areas/owner-milestone-feedback.md",
+        "scopeSliceFile": "docs/product/scope-slices/owner-milestone-feedback--feedback-capture-and-attribution.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-payments--manual-credit-pack-checkout",
+      "dependsOn": [
+        "orch-credit-system--ledger-concurrency-and-stripe-webhook"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Manual credit pack checkout",
+        "featureAreaFile": "docs/product/feature-areas/payments.md",
+        "scopeSliceFile": "docs/product/scope-slices/payments--manual-credit-pack-checkout.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing. Blocked until orch-credit-system completes."
+      }
+    },
+    {
+      "id": "fa-payments--auto-reload-opt-in-and-outcomes",
+      "dependsOn": [
+        "fa-payments--manual-credit-pack-checkout"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Auto-reload opt-in and outcomes",
+        "featureAreaFile": "docs/product/feature-areas/payments.md",
+        "scopeSliceFile": "docs/product/scope-slices/payments--auto-reload-opt-in-and-outcomes.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
+    },
+    {
+      "id": "fa-payments--tax-and-vat-legibility",
+      "dependsOn": [
+        "fa-payments--manual-credit-pack-checkout"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Tax and VAT legibility",
+        "featureAreaFile": "docs/product/feature-areas/payments.md",
+        "scopeSliceFile": "docs/product/scope-slices/payments--tax-and-vat-legibility.md",
+        "userStoryFile": null,
+        "planFile": null,
+        "notes": "Governance step: create user story + plan if not present before implementing."
+      }
     }
   ]
 }
