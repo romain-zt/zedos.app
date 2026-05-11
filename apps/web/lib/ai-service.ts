@@ -94,9 +94,14 @@ function extractUpstreamDeltaContent(ssePayload: string): string | null {
   }
 }
 
+/** Success/failure after buffering upstream SSE — drives final SSE envelope to the client. */
+export type BufferedAiStreamPersistResult = { ok: true } | { ok: false; message: string }
+
 export function createBufferedStreamingResponse(
   aiResponse: Response,
-  onComplete: (result: string) => Promise<void> | void
+  onComplete: (
+    result: string
+  ) => Promise<BufferedAiStreamPersistResult> | BufferedAiStreamPersistResult
 ): ReadableStream {
   return new ReadableStream({
     async start(controller) {
@@ -166,12 +171,19 @@ export function createBufferedStreamingResponse(
         if (trimmed.length === 0) {
           send({ status: 'error', message: 'Empty AI response' })
         } else {
+          let persistOutcome: BufferedAiStreamPersistResult
           try {
-            await Promise.resolve(onComplete(buffer))
+            persistOutcome = await Promise.resolve(onComplete(buffer))
           } catch (e: unknown) {
             console.error('onComplete error:', e)
+            const message = e instanceof Error ? e.message : 'Persist failed'
+            persistOutcome = { ok: false, message }
           }
-          send({ status: 'completed', result: buffer })
+          if (persistOutcome.ok === false) {
+            send({ status: 'error', message: persistOutcome.message })
+          } else {
+            send({ status: 'completed', result: buffer })
+          }
         }
       } catch (error: unknown) {
         console.error('Buffered stream error:', error)

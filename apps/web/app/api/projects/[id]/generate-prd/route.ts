@@ -151,24 +151,43 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     })
 
     const stream = createBufferedStreamingResponse(aiResponse, async (result: string) => {
+      let raw: unknown
       try {
-        const raw = JSON.parse(result)
-        const validated = GeneratePrdAiResponseSchema.safeParse(raw)
-        if (!validated.success) {
-          console.error('Generate PRD AI response validation failed:', validated.error.flatten())
-          return
+        raw = JSON.parse(result)
+      } catch {
+        console.error('Generate PRD: streamed buffer is not valid JSON')
+        return { ok: false as const, message: 'Invalid AI response' }
+      }
+      const validated = GeneratePrdAiResponseSchema.safeParse(raw)
+      if (!validated.success) {
+        console.error('Generate PRD AI response validation failed:', validated.error.flatten())
+        return { ok: false as const, message: 'Invalid AI response shape' }
+      }
+
+      try {
+        const deductResult = await deductCredits(userId, 'prd_generation', { projectId: params.id })
+        if (!deductResult.success) {
+          console.error('Generate PRD: credit deduction did not succeed')
+          return { ok: false as const, message: 'Could not deduct credits for this operation' }
         }
-        await deductCredits(userId, 'prd_generation', { projectId: params.id })
-        const prdInsert: PrdVersionInsert = {
-          projectId: params.id,
-          versionNumber: nextVersionNumber,
-          content: validated.data,
-          status: 'generated',
-        }
+      } catch (e: unknown) {
+        console.error('Generate PRD: credit deduction threw', e)
+        return { ok: false as const, message: 'Credit deduction failed' }
+      }
+
+      const prdInsert: PrdVersionInsert = {
+        projectId: params.id,
+        versionNumber: nextVersionNumber,
+        content: validated.data,
+        status: 'generated',
+      }
+      try {
         await db.insert(prdVersions).values(prdInsert)
       } catch (e: unknown) {
         console.error('Failed to save PRD version:', e)
+        return { ok: false as const, message: 'Failed to save PRD version' }
       }
+      return { ok: true as const }
     })
 
     return new Response(stream, {
@@ -178,8 +197,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         Connection: 'keep-alive',
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Generate PRD error:', error)
-    return NextResponse.json({ error: error?.message ?? 'PRD generation failed' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : 'PRD generation failed'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

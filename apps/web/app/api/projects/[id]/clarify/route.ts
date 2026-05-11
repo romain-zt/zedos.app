@@ -7,7 +7,11 @@ import { db, projects, questionHistory, eq, and, asc, type QuestionHistoryInsert
 import { ClarifyAiResponseSchema } from '@repo/contracts/ai/clarify-stream'
 import { ClarifyPostBodySchema } from '@repo/contracts/questions/history'
 import { checkCredits, deductCredits, OperationType } from '@/lib/credits'
-import { callAI, createBufferedStreamingResponse, type AIMessage } from '@/lib/ai-service'
+import {
+  callAI,
+  createBufferedStreamingResponse,
+  type AIMessage,
+} from '@/lib/ai-service'
 
 const SYSTEM_PROMPT = `You are Zedos, an expert product strategist helping solo founders turn vague product ideas into clear, versioned PRDs (Product Requirements Documents).
 
@@ -162,34 +166,54 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const founderAnswer = message ?? (decisionResponse ? JSON.stringify(decisionResponse) : null)
 
     const persistAfterValidStream = async (result: string) => {
+      let raw: unknown
       try {
-        const raw = JSON.parse(result)
-        const validated = ClarifyAiResponseSchema.safeParse(raw)
-        if (!validated.success) {
-          console.error('Clarify: stream schema validation failed', validated.error.flatten())
-          return
-        }
-        const ai = validated.data
-        try {
-          await deductCredits(userId, opType, { projectId: params.id, prdVersionId: prdVersionIdResolved ?? undefined })
-        } catch (e: unknown) {
-          console.error('Clarify: credit deduction failed after validated AI response', e)
-          return
-        }
-        const qhInsert: QuestionHistoryInsert = {
+        raw = JSON.parse(result)
+      } catch {
+        console.error('Clarify: streamed buffer is not valid JSON')
+        return { ok: false as const, message: 'Invalid AI response' }
+      }
+      const validated = ClarifyAiResponseSchema.safeParse(raw)
+      if (!validated.success) {
+        console.error('Clarify: stream schema validation failed', validated.error.flatten())
+        return { ok: false as const, message: 'Invalid AI response shape' }
+      }
+      const ai = validated.data
+
+      try {
+        const deductResult = await deductCredits(userId, opType, {
           projectId: params.id,
-          prdVersionId: prdVersionIdResolved,
-          structuredQuestion: ai.message,
-          availableOptions: ai.decision_ui,
-          founderAnswer,
-          aiInterpretation: ai.reasoning,
-          prdImpact: ai.prd_section_affected,
-          questionType: ai.suggested_credit_type,
+          prdVersionId: prdVersionIdResolved ?? undefined,
+        })
+        if (!deductResult.success) {
+          console.error('Clarify: credit deduction did not succeed after validated AI response')
+          return { ok: false as const, message: 'Could not deduct credits for this operation' }
         }
+      } catch (e: unknown) {
+        console.error('Clarify: credit deduction threw after validated AI response', e)
+        return { ok: false as const, message: 'Credit deduction failed' }
+      }
+
+      const qhInsert: QuestionHistoryInsert = {
+        projectId: params.id,
+        prdVersionId: prdVersionIdResolved,
+        structuredQuestion: ai.message,
+        availableOptions: ai.decision_ui,
+        founderAnswer,
+        aiInterpretation: ai.reasoning,
+        prdImpact: ai.prd_section_affected,
+        questionType: ai.suggested_credit_type,
+      }
+      try {
         await db.insert(questionHistory).values(qhInsert)
       } catch (e: unknown) {
         console.error('Clarify: failed to persist question history', e)
+        return {
+          ok: false as const,
+          message: 'Failed to save clarification turn',
+        }
       }
+      return { ok: true as const }
     }
 
     const stream = createBufferedStreamingResponse(aiResponse, persistAfterValidStream)
