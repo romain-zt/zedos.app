@@ -13,7 +13,13 @@
     "./payments": "./src/payments/index.ts",
     "./project": "./src/project/index.ts",
     "./prd": "./src/prd/index.ts",
-    "./adr": "./src/adr/index.ts"
+    "./adr": "./src/adr/index.ts",
+    "./ai": "./src/ai/index.ts",
+    "./ai/clarify-stream": "./src/ai/clarify-stream.ts",
+    "./ai/decision-ui": "./src/ai/decision-ui.ts",
+    "./ai/generate-prd-stream": "./src/ai/generate-prd-stream.ts",
+    "./questions": "./src/questions/history.ts",
+    "./questions/history": "./src/questions/history.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-11",
-  "current_phase": "fa-prd-versioning--browse-and-switch-prd-versions-complete",
+  "current_phase": "fa-question-history--persist-structured-decision-entries-complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -19,7 +19,7 @@
       "fa-project-workspace--switch-active-project": "complete",
       "fa-prd-versioning--create-or-capture-prd-version": "complete",
       "fa-prd-versioning--browse-and-switch-prd-versions": "complete",
-      "fa-question-history--persist-structured-decision-entries": "in-progress"
+      "fa-question-history--persist-structured-decision-entries": "complete"
     }
   },
   "cursor_self_improve": {
@@ -44,6 +44,9 @@
   "fa_prd_versioning": {
     "create_or_capture_prd_version": "complete",
     "browse_and_switch_prd_versions": "complete"
+  },
+  "fa_question_history": {
+    "persist_structured_decision_entries": "complete"
   },
   "fa_dashboard_shell": {
     "slice1": "complete",
@@ -104,7 +107,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "fa-prd-versioning--browse-and-switch-prd-versions-complete-mark-pr-46-ready; parallel: orch-credit-system slice still blocked on PIS (PR #39, docs/state/status.json pis_blockers)",
+  "next_action": "fa-question-history--persist-structured-decision-entries-complete-mark-pr-48-ready; next eligible slice: fa-question-history--owner-views-question-history (or parallel frontier per orchestration.pipeline.json); parallel: orch-credit-system still blocked on PIS (PR #39)",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
@@ -165,9 +168,9 @@
     }
   },
   "active_artifacts": {
-    "scope_slice": "docs/product/scope-slices/prd-versioning--browse-and-switch-prd-versions.md",
-    "user_story": "docs/execution/user-stories/prd-versioning--browse-and-switch-prd-versions--v0.md",
-    "implementation_plan": "docs/execution/plans/prd-versioning--browse-and-switch-prd-versions--v0.plan.md",
+    "scope_slice": "docs/product/scope-slices/question-history--persist-structured-decision-entries.md",
+    "user_story": "docs/execution/user-stories/question-history--persist-structured-decision-entries--v0.md",
+    "implementation_plan": "docs/execution/plans/question-history--persist-structured-decision-entries--v0.plan.md",
     "parallel_blocked_slice": "docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md"
   },
   "feature_areas_count": 10,

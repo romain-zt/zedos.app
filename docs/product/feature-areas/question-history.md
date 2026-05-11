@@ -83,7 +83,7 @@ The founder keeps a **structured, owner-private log** of product decisions: each
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Persist structured decision entries | Each decision writes/updates the six-field structured record (not raw chat). | exploratory |
+| Persist structured decision entries | Each decision writes/updates the six-field structured record (not raw chat). | complete |
 | Owner views question history | Signed-in owner can browse/search the log in the private workspace contextually. | exploratory |
 
 ---

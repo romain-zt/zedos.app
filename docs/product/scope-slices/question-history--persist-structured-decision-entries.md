@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -46,7 +46,13 @@ Every product decision made during the clarification flow produces a structured,
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Clarification turn completes successfully | The guided clarification flow finishes one assistant turn with valid structured JSON | The founder sees the streamed guidance as today; **behind the scenes** a new structured row appears for this project (and optional PRD version context) without storing a raw chat transcript. |
+| Clarification request invalid | The client sends a malformed clarify payload | The API responds with **400** and validation details; **no** credit deduction and **no** history row. |
+| Insufficient credits | Credit check fails before calling the model | **402** with balance/cost; **no** new history row. |
+| AI response invalid (schema) | The model returns JSON that does not match the clarify contract | Stream may still show; **no** credit deduction and **no** `question_history` insert (logged server-side). |
+| Question history list (owner GET) | Owner opens data that loads `/api/projects/:id/questions` | Ordered list of structured entries; legacy/invalid `available_options` in DB surfaces as **null** options in the API (coerced), not arbitrary JSON. |
+| History list server bug | DB row shape drifts from the outbound contract | **500** generic error; details logged server-side (outbound zod failure). |
+| Empty history | New project, no decisions yet | **Empty array** from the list endpoint; clarify flow unchanged. |
 
 ---
 
@@ -54,7 +60,10 @@ Every product decision made during the clarification flow produces a structured,
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| `question_history` (Postgres / Drizzle) | **Insert** on successful clarify turn | Populates structured question, optional **decision UI** JSON (`available_options`), founder answer / decision payload, AI interpretation, PRD impact, `question_type`, optional `prd_version_id`. |
+| `question_history` | **Read** for GET list and for clarify context window | List: project-scoped, ascending by `created_at`. Clarify: last N rows feed model context (existing behavior). |
+| Credits ledger (existing) | **Deduct** only after valid AI JSON | Deduction runs **after** `ClarifyAiResponseSchema` passes; invalid AI output does not burn credits for that completion path. |
+| `prd_versions` (related AI path) | **Insert** after valid generate-PRD JSON | `GeneratePrdAiResponseSchema` validated before deduct + insert (same side-effect ordering rule as clarify). |
 
 ---
 
@@ -101,18 +110,18 @@ When a product decision moment occurs in the clarification flow, a structured en
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -121,3 +130,4 @@ When a product decision moment occurs in the clarification flow, a structured en
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice question-history` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX States, Data Touched; promoted to `ready-for-user-stories` | cloud-agent |

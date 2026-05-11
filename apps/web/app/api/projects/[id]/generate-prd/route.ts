@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { db, projects, questionHistory, prdVersions, eq, and, asc, desc, type PrdVersionInsert } from '@repo/db'
+import { GeneratePrdAiResponseSchema } from '@repo/contracts/ai/generate-prd-stream'
 import { checkCredits, deductCredits } from '@/lib/credits'
 import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
 
@@ -141,8 +142,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       })
     }
 
-    await deductCredits(userId, 'prd_generation', { projectId: params.id })
-
     const aiResponse = await callAI({
       messages,
       stream: true,
@@ -153,25 +152,22 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const stream = createBufferedStreamingResponse(aiResponse, async (result: string) => {
       try {
-        const parsed = JSON.parse(result)
+        const raw = JSON.parse(result)
+        const validated = GeneratePrdAiResponseSchema.safeParse(raw)
+        if (!validated.success) {
+          console.error('Generate PRD AI response validation failed:', validated.error.flatten())
+          return
+        }
+        await deductCredits(userId, 'prd_generation', { projectId: params.id })
         const prdInsert: PrdVersionInsert = {
           projectId: params.id,
           versionNumber: nextVersionNumber,
-          content: parsed,
+          content: validated.data,
           status: 'generated',
         }
         await db.insert(prdVersions).values(prdInsert)
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error('Failed to save PRD version:', e)
-        try {
-          const prdInsertRaw: PrdVersionInsert = {
-            projectId: params.id,
-            versionNumber: nextVersionNumber,
-            content: { raw: result },
-            status: 'generated',
-          }
-          await db.insert(prdVersions).values(prdInsertRaw)
-        } catch {}
       }
     })
 

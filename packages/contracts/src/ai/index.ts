@@ -1,4 +1,3 @@
-/**
- * AI contracts — placeholder for guided-clarification FA
- */
-export {};
+export * from './clarify-stream';
+export * from './decision-ui';
+export * from './generate-prd-stream';

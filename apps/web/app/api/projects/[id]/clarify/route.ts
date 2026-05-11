@@ -3,9 +3,11 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { db, projects, questionHistory, prdVersions, eq, and, asc, desc, type QuestionHistoryInsert } from '@repo/db'
+import { db, projects, questionHistory, eq, and, asc, type QuestionHistoryInsert } from '@repo/db'
+import { ClarifyAiResponseSchema } from '@repo/contracts/ai/clarify-stream'
+import { ClarifyPostBodySchema } from '@repo/contracts/questions/history'
 import { checkCredits, deductCredits, OperationType } from '@/lib/credits'
-import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
+import { callAI, createBufferedStreamingResponse, type AIMessage } from '@/lib/ai-service'
 
 const SYSTEM_PROMPT = `You are Zedos, an expert product strategist helping solo founders turn vague product ideas into clear, versioned PRDs (Product Requirements Documents).
 
@@ -75,13 +77,26 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
-    const body = await request.json()
-    const { message, decisionResponse, prdVersionId } = body ?? {}
+    const rawBody = await request.json().catch(() => ({}))
+    const bodyParsed = ClarifyPostBodySchema.safeParse(rawBody ?? {})
+    if (!bodyParsed.success) {
+      return NextResponse.json({ error: 'Invalid input', details: bodyParsed.error.flatten() }, { status: 400 })
+    }
+    const { message, decisionResponse, prdVersionId } = bodyParsed.data
+    const prdVersionIdResolved = prdVersionId === undefined ? null : prdVersionId
+
+    const decisionType =
+      typeof decisionResponse === 'object' &&
+      decisionResponse !== null &&
+      'type' in decisionResponse &&
+      typeof (decisionResponse as { type: unknown }).type === 'string'
+        ? (decisionResponse as { type: string }).type
+        : undefined
 
     let opType: OperationType = 'clarification'
-    if (decisionResponse?.type === 'mini_form' || decisionResponse?.type === 'modal_form') {
+    if (decisionType === 'mini_form' || decisionType === 'modal_form') {
       opType = 'mini_form'
-    } else if (decisionResponse) {
+    } else if (decisionResponse !== undefined) {
       opType = 'decision'
     }
 
@@ -102,7 +117,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       .orderBy(asc(questionHistory.createdAt))
       .limit(20)
 
-    const messages: Array<{ role: string; content: string }> = [
+    const messages: AIMessage[] = [
       { role: 'system', content: SYSTEM_PROMPT },
       {
         role: 'user',
@@ -134,30 +149,35 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     messages.push({ role: 'user', content: userMessage })
 
     const aiResponse = await callAI({
-      messages: messages as any,
+      messages,
       stream: true,
       maxTokens: 2000,
       temperature: 0.7,
       responseFormat: { type: 'json_object' },
     })
 
-    await deductCredits(userId, opType, { projectId: params.id, prdVersionId })
-
     const stream = createBufferedStreamingResponse(aiResponse, async (result: string) => {
       try {
-        const parsed = JSON.parse(result)
+        const raw = JSON.parse(result)
+        const validated = ClarifyAiResponseSchema.safeParse(raw)
+        if (!validated.success) {
+          console.error('Clarify AI response validation failed:', validated.error.flatten())
+          return
+        }
+        const ai = validated.data
+        await deductCredits(userId, opType, { projectId: params.id, prdVersionId: prdVersionIdResolved })
         const qhInsert: QuestionHistoryInsert = {
           projectId: params.id,
-          prdVersionId: prdVersionId ?? null,
-          structuredQuestion: parsed?.message ?? result,
-          availableOptions: parsed?.decision_ui ?? null,
+          prdVersionId: prdVersionIdResolved,
+          structuredQuestion: ai.message,
+          availableOptions: ai.decision_ui,
           founderAnswer: message ?? (decisionResponse ? JSON.stringify(decisionResponse) : null),
-          aiInterpretation: parsed?.reasoning ?? null,
-          prdImpact: parsed?.prd_section_affected ?? null,
-          questionType: parsed?.suggested_credit_type ?? 'clarification',
+          aiInterpretation: ai.reasoning,
+          prdImpact: ai.prd_section_affected,
+          questionType: ai.suggested_credit_type,
         }
         await db.insert(questionHistory).values(qhInsert)
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error('Failed to save question history:', e)
       }
     })
