@@ -170,7 +170,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           return
         }
         const ai = validated.data
-        await deductCredits(userId, opType, { projectId: params.id, prdVersionId: prdVersionIdResolved })
+        try {
+          await deductCredits(userId, opType, { projectId: params.id, prdVersionId: prdVersionIdResolved ?? undefined })
+        } catch (e: unknown) {
+          console.error('Clarify: credit deduction failed after validated AI response', e)
+          return
+        }
         const qhInsert: QuestionHistoryInsert = {
           projectId: params.id,
           prdVersionId: prdVersionIdResolved,
