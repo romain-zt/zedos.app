@@ -1,21 +1,18 @@
-name: Auto-rebase on Conflict
+name: Auto-rebase — pnpm-lock.yaml only
 
-# Two triggers keep open PRs conflict-free:
-#  • push to main  → scan every open PR for conflicts and rebase all of them
-#  • ready_for_review → rebase only the PR that just became ready (fast path)
+# Handles one mechanical case: a PR's pnpm-lock.yaml is out of date after
+# a push to main. Regenerates and pushes. Content-file conflicts are handled
+# by conflict-resolver.yml (Cursor Agent) which resolves them intelligently
+# instead of blindly taking one side.
 
 on:
-  push:
-    branches: [main]
   pull_request:
     types: [ready_for_review]
 
 jobs:
-  auto-rebase:
-    # Skip draft PRs that aren't transitioning to ready (push trigger sees all)
-    if: >-
-      github.event_name == 'push' ||
-      github.event.pull_request.draft == false
+  regenerate-lockfile:
+    # Only run for non-draft PRs becoming ready
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -23,10 +20,13 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_BRANCH: ${{ github.event.pull_request.head.ref }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
@@ -35,101 +35,25 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
-      - name: Rebase conflicted PR(s)
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+      - name: Regenerate pnpm-lock.yaml if stale
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-          rebase_pr() {
-            local PR_NUM="$1"
-            local BRANCH="$2"
-            echo ""
-            echo "━━━ PR #$PR_NUM ($BRANCH) ━━━"
+          git fetch origin main
 
-            git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-            git pull origin "$BRANCH" --ff-only 2>/dev/null || true
-
-            if ! git rebase origin/main -X ours; then
-              # pnpm-lock.yaml: always regenerate
-              if git diff --name-only --diff-filter=U | grep -q "pnpm-lock.yaml"; then
-                rm -f pnpm-lock.yaml
-                git checkout --ours . 2>/dev/null || true
-                git add -A
-                GIT_EDITOR=true git rebase --continue || true
-              fi
-
-              # Remaining conflicts: branch wins
-              while git diff --name-only --diff-filter=U | grep -q .; do
-                git diff --name-only --diff-filter=U | xargs git checkout --ours
-                git add -A
-                GIT_EDITOR=true git rebase --continue || break
-              done
-            fi
-
-            # Regenerate lock file
+          # Only proceed if pnpm-lock.yaml would conflict or is behind main
+          if git diff --name-only origin/main...HEAD | grep -q "pnpm-lock.yaml"; then
+            echo "🔄 pnpm-lock.yaml is diverged — regenerating…"
             pnpm install --frozen-lockfile=false --silent 2>/dev/null || true
-            if [ -n "$(git diff --name-only pnpm-lock.yaml)" ]; then
+            if [ -n "$(git status --porcelain pnpm-lock.yaml)" ]; then
               git add pnpm-lock.yaml
-              git commit -m "chore: regenerate pnpm-lock.yaml after rebase [skip ci]" || true
-            fi
-
-            git push --force-with-lease origin "$BRANCH"
-            echo "✅ PR #$PR_NUM rebased and pushed"
-
-            git checkout main
-          }
-
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            # ready_for_review fast path: check only this PR
-            echo "🔍 PR #$PR_NUMBER just became ready — checking for conflicts…"
-
-            MERGEABLE=$(gh pr view "$PR_NUMBER" \
-              --repo "$REPO" \
-              --json mergeable \
-              --jq '.mergeable')
-
-            # GitHub needs a moment to compute mergeability on fresh PRs
-            if [ "$MERGEABLE" = "UNKNOWN" ]; then
-              echo "Mergeability unknown — waiting 10s for GitHub to compute…"
-              sleep 10
-              MERGEABLE=$(gh pr view "$PR_NUMBER" \
-                --repo "$REPO" \
-                --json mergeable \
-                --jq '.mergeable')
-            fi
-
-            if [ "$MERGEABLE" = "CONFLICTING" ]; then
-              echo "⚠️  Conflicts detected — auto-rebasing PR #$PR_NUMBER"
-              rebase_pr "$PR_NUMBER" "$PR_BRANCH"
+              git commit -m "chore: regenerate pnpm-lock.yaml [skip ci]"
+              git push origin "$PR_BRANCH"
+              echo "✅ pnpm-lock.yaml regenerated and pushed."
             else
-              echo "✅ PR #$PR_NUMBER is conflict-free (mergeable=$MERGEABLE). Nothing to do."
+              echo "✅ pnpm-lock.yaml already up to date."
             fi
-
           else
-            # push to main: scan all open PRs for conflicts
-            CONFLICTED=$(gh pr list \
-              --repo "$REPO" \
-              --state open \
-              --base main \
-              --json number,headRefName,mergeable \
-              --jq '.[] | select(.mergeable == "CONFLICTING") | "\(.number) \(.headRefName)"')
-
-            if [ -z "$CONFLICTED" ]; then
-              echo "✅ No conflicted PRs found."
-              exit 0
-            fi
-
-            echo "Conflicted PRs to rebase:"
-            echo "$CONFLICTED"
-
-            while IFS= read -r line; do
-              PR_NUM=$(echo "$line" | awk '{print $1}')
-              BRANCH=$(echo "$line" | awk '{print $2}')
-              rebase_pr "$PR_NUM" "$BRANCH"
-            done <<< "$CONFLICTED"
+            echo "✅ pnpm-lock.yaml is not diverged — nothing to do."
           fi
