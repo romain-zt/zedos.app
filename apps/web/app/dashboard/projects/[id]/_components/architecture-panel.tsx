@@ -147,14 +147,14 @@ export function ArchitecturePanel({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg bg-blue-50 p-4">
-                <div className="text-sm font-medium text-blue-900">Product Clarity</div>
-                <div className="text-2xl font-bold text-blue-600">{score.productClarity.points}/10</div>
-                <div className="text-xs text-blue-700">{score.productClarity.percentage}% complete</div>
+                <div className="text-sm font-medium text-blue-900">Clarification Coverage</div>
+                <div className="text-2xl font-bold text-blue-600">{score.score}%</div>
+                <div className="text-xs text-blue-700">{score.answered} question{score.answered !== 1 ? 's' : ''} answered</div>
               </div>
               <div className="rounded-lg bg-purple-50 p-4">
-                <div className="text-sm font-medium text-purple-900">Architecture Boundaries</div>
-                <div className="text-2xl font-bold text-purple-600">{score.architectureBoundaries.points}/15</div>
-                <div className="text-xs text-purple-700">{score.architectureBoundaries.percentage}% complete</div>
+                <div className="text-sm font-medium text-purple-900">PRD Sections</div>
+                <div className="text-2xl font-bold text-purple-600">{score.coveredSections?.length ?? 0}/8</div>
+                <div className="text-xs text-purple-700">{score.remaining} section{score.remaining !== 1 ? 's' : ''} remaining</div>
               </div>
             </div>
             <p className="text-xs text-gray-600">
