@@ -13,7 +13,7 @@ current_blocker: null
 ## Orchestration (canonical)
 
 - **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **complete** — implementation + contracts tests; see `docs/state/status.json`.
-- **Tracking PR:** #57 — `orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778526076696` → `main`. Mark ready when CI green: `gh pr ready 57 --repo romain-zt/zedos.app`.
+- **Delivery:** PR **#57** merged as orchestrator scaffolding only — implementation is on **`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778526076696`** rebased onto `main`; open a normal PR → `main` (do not use `gh pr ready 57`; that PR is closed).
 - **Also complete (governance):** `fa-test-first-workflows--task-splitting-with-prompts` — tracking PR #56 (`orchestrator/tracking-fa-test-first-workflows--task-splitting-with-prompts-1778525247993`).
 
 ## What changed (this phase)
@@ -27,9 +27,9 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. **Implementation:** Run `/implement` against the plan with explicit PIS `approved`; ship stacked PRs on the tracking branch per plan §Approach and PR sizing (79).
+1. **Ship:** Open or update a PR from `orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778526076696` → `main` with green CI (PR #57 merged as scaffolding only; do not use `gh pr ready 57`).
 2. **Upstream:** User story corpus / `user_story_lines` FK from `fa-user-stories--story-generation-from-feature-split` — plan allows nullable linkage until those tables exist.
-3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface` (still in progress). **`fa-owner-milestone-feedback--milestone-detection-and-prompt`** is **complete** — tracking PR #57; mark ready: `gh pr ready 57 --repo romain-zt/zedos.app`.
+3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface` (see `status.json`). **`fa-owner-milestone-feedback--milestone-detection-and-prompt`** code is **ready to land** via a new PR from the tracking branch to `main`.
 
 ## Key files
 

@@ -4,7 +4,7 @@
 
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, DatabaseError } from '@shared/errors/application-error';
-import { db, questionHistory, eq, asc, type NewQuestionHistoryRow } from '@repo/db';
+import { db, questionHistory, eq, asc, type NewQuestionHistory } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'QuestionHistoryRepository' });
@@ -46,7 +46,7 @@ export class DrizzleQuestionHistoryRepository {
     }
   }
 
-  async create(data: NewQuestionHistoryRow): Promise<Result<void, ApplicationError>> {
+  async create(data: NewQuestionHistory): Promise<Result<void, ApplicationError>> {
     try {
       await db.insert(questionHistory).values(data);
       return ok(undefined);
