@@ -64,3 +64,77 @@ export interface CreditTransactionInsert {
   correlationId?: string | null;
   createdAt?: Date;
 }
+
+// PrdVersion insert type
+export interface PrdVersionInsert {
+  id?: string;
+  projectId: string;
+  versionNumber: number;
+  content?: unknown | null;
+  status?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// QuestionHistory insert type
+export interface QuestionHistoryInsert {
+  id?: string;
+  projectId: string;
+  prdVersionId?: string | null;
+  structuredQuestion: string;
+  availableOptions?: unknown | null;
+  founderAnswer?: string | null;
+  optionalComment?: string | null;
+  aiInterpretation?: string | null;
+  prdImpact?: string | null;
+  questionType?: string;
+  createdAt?: Date;
+}
+
+// ShareLink insert type
+export interface ShareLinkInsert {
+  id?: string;
+  prdVersionId: string;
+  token: string;
+  enabled?: boolean;
+  createdAt?: Date;
+  disabledAt?: Date | null;
+}
+
+// ShareLink update type
+export interface ShareLinkUpdate {
+  enabled?: boolean;
+  disabledAt?: Date | null;
+}
+
+// Purchase insert type
+export interface PurchaseInsert {
+  id?: string;
+  userId: string;
+  packSize: number;
+  amountEur: number;
+  stripePaymentIntentId?: string | null;
+  stripeSessionId?: string | null;
+  status?: string;
+  createdAt?: Date;
+}
+
+// Purchase update type
+export interface PurchaseUpdate {
+  stripeSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
+  status?: string;
+}
+
+// MilestoneFeedback insert type
+export interface MilestoneFeedbackInsert {
+  id?: string;
+  userId: string;
+  projectId: string;
+  prdVersionId?: string | null;
+  milestoneType: string;
+  ratingType?: string;
+  ratingValue?: number | null;
+  comment?: string | null;
+  createdAt?: Date;
+}

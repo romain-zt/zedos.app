@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { prisma } from '@/lib/prisma'
+import { db, projects, questionHistory, prdVersions, eq, and, asc, desc, type QuestionHistoryInsert } from '@repo/db'
 import { checkCredits, deductCredits, OperationType } from '@/lib/credits'
 import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
 
@@ -67,15 +67,17 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const userId = userResult.unwrap().id
 
-    const project = await prisma.project.findFirst({
-      where: { id: params.id, userId },
-    })
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, userId)))
+      .limit(1)
+
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
     const body = await request.json()
     const { message, decisionResponse, prdVersionId } = body ?? {}
 
-    // Determine operation type based on context
     let opType: OperationType = 'clarification'
     if (decisionResponse?.type === 'mini_form' || decisionResponse?.type === 'modal_form') {
       opType = 'mini_form'
@@ -83,7 +85,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       opType = 'decision'
     }
 
-    // Credit check
     const creditCheck = await checkCredits(userId, opType)
     if (!creditCheck.allowed) {
       return NextResponse.json({
@@ -94,14 +95,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       }, { status: 402 })
     }
 
-    // Fetch conversation history
-    const history = await prisma.questionHistory.findMany({
-      where: { projectId: params.id },
-      orderBy: { createdAt: 'asc' },
-      take: 20,
-    })
+    const history = await db
+      .select()
+      .from(questionHistory)
+      .where(eq(questionHistory.projectId, params.id))
+      .orderBy(asc(questionHistory.createdAt))
+      .limit(20)
 
-    // Build messages for AI
     const messages: Array<{ role: string; content: string }> = [
       { role: 'system', content: SYSTEM_PROMPT },
       {
@@ -110,7 +110,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       },
     ]
 
-    // Add conversation history
     for (const q of (history ?? [])) {
       messages.push({
         role: 'assistant',
@@ -124,7 +123,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       }
     }
 
-    // Add current input
     let userMessage = ''
     if (decisionResponse) {
       userMessage = `Decision response: ${JSON.stringify(decisionResponse)}${message ? `\nAdditional comment: ${message}` : ''}`
@@ -135,7 +133,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
     messages.push({ role: 'user', content: userMessage })
 
-    // Call AI with streaming and JSON response
     const aiResponse = await callAI({
       messages: messages as any,
       stream: true,
@@ -144,29 +141,22 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       responseFormat: { type: 'json_object' },
     })
 
-    // Deduct credits
-    const deduction = await deductCredits(userId, opType, {
-      projectId: params.id,
-      prdVersionId,
-    })
+    await deductCredits(userId, opType, { projectId: params.id, prdVersionId })
 
-    // Stream response back with buffering
     const stream = createBufferedStreamingResponse(aiResponse, async (result: string) => {
-      // Save question history on completion
       try {
         const parsed = JSON.parse(result)
-        await prisma.questionHistory.create({
-          data: {
-            projectId: params.id,
-            prdVersionId: prdVersionId ?? null,
-            structuredQuestion: parsed?.message ?? result,
-            availableOptions: parsed?.decision_ui ?? null,
-            founderAnswer: message ?? (decisionResponse ? JSON.stringify(decisionResponse) : null),
-            aiInterpretation: parsed?.reasoning ?? null,
-            prdImpact: parsed?.prd_section_affected ?? null,
-            questionType: parsed?.suggested_credit_type ?? 'clarification',
-          },
-        })
+        const qhInsert: QuestionHistoryInsert = {
+          projectId: params.id,
+          prdVersionId: prdVersionId ?? null,
+          structuredQuestion: parsed?.message ?? result,
+          availableOptions: parsed?.decision_ui ?? null,
+          founderAnswer: message ?? (decisionResponse ? JSON.stringify(decisionResponse) : null),
+          aiInterpretation: parsed?.reasoning ?? null,
+          prdImpact: parsed?.prd_section_affected ?? null,
+          questionType: parsed?.suggested_credit_type ?? 'clarification',
+        }
+        await db.insert(questionHistory).values(qhInsert)
       } catch (e: any) {
         console.error('Failed to save question history:', e)
       }

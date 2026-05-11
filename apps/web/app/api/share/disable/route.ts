@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { prisma } from '@/lib/prisma'
+import { db, shareLinks, prdVersions, projects, eq, sql } from '@repo/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,19 +18,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Share link ID is required' }, { status: 400 })
     }
 
-    const shareLink = await prisma.shareLink.findUnique({
-      where: { id: shareLinkId },
-      include: { prdVersion: { include: { project: { select: { userId: true } } } } },
-    })
+    // Verify ownership via join: shareLink → prdVersion → project → userId
+    const [shareLink] = await db
+      .select({ id: shareLinks.id, projectUserId: projects.userId })
+      .from(shareLinks)
+      .innerJoin(prdVersions, eq(shareLinks.prdVersionId, prdVersions.id))
+      .innerJoin(projects, eq(prdVersions.projectId, projects.id))
+      .where(eq(shareLinks.id, shareLinkId))
+      .limit(1)
 
-    if (!shareLink || shareLink.prdVersion?.project?.userId !== userId) {
+    if (!shareLink || shareLink.projectUserId !== userId) {
       return NextResponse.json({ error: 'Share link not found' }, { status: 404 })
     }
 
-    const updated = await prisma.shareLink.update({
-      where: { id: shareLinkId },
-      data: { enabled: false, disabledAt: new Date() },
-    })
+    await db.execute(sql`UPDATE share_links SET enabled = false, disabled_at = NOW() WHERE id = ${shareLinkId}`)
+    const [updated] = await db
+      .select()
+      .from(shareLinks)
+      .where(eq(shareLinks.id, shareLinkId))
+      .limit(1)
 
     return NextResponse.json(updated)
   } catch (error: any) {

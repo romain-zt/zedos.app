@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { prisma } from '@/lib/prisma'
+import { db, purchases, users, eq, sql } from '@repo/db'
 import { addCredits } from '@/lib/credits'
 import Stripe from 'stripe'
 
@@ -41,32 +41,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid session metadata' }, { status: 400 })
     }
 
-    // Check if already processed
-    const purchase = await prisma.purchase.findUnique({ where: { id: purchaseId } })
+    const [purchase] = await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.id, purchaseId))
+      .limit(1)
+
     if (!purchase) {
       return NextResponse.json({ error: 'Purchase not found' }, { status: 404 })
     }
+
     if (purchase.status === 'completed') {
-      // Already processed
-      const user = await prisma.user.findUnique({ where: { id: userId } })
+      const [user] = await db
+        .select({ creditBalance: users.creditBalance })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1)
       return NextResponse.json({ balance: user?.creditBalance ?? 0, alreadyProcessed: true })
     }
 
-    // Add credits
     const newBalance = await addCredits(userId, packSize, 'purchase', {
       purchaseId,
       stripeSessionId: sessionId,
       packSize,
     })
 
-    // Update purchase status
-    await prisma.purchase.update({
-      where: { id: purchaseId },
-      data: {
-        status: 'completed',
-        stripePaymentIntentId: (checkoutSession as any).payment_intent as string ?? null,
-      },
-    })
+    const paymentIntent = (checkoutSession as any).payment_intent as string | null ?? null
+    await db.execute(
+      sql`UPDATE purchases SET status = 'completed', stripe_payment_intent_id = ${paymentIntent} WHERE id = ${purchaseId}`
+    )
 
     return NextResponse.json({ balance: newBalance, creditsAdded: packSize })
   } catch (error: any) {

@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { db, users, creditTransactions, eq, sql, type UserUpdate, type CreditTransactionInsert } from '@repo/db'
 
 export type OperationType =
   | 'clarification'
@@ -33,7 +33,12 @@ export async function checkCredits(
   userId: string,
   operationType: OperationType
 ): Promise<CreditCheckResult> {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
+  const [user] = await db
+    .select({ creditBalance: users.creditBalance, graceUsed: users.graceUsed })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+
   if (!user) {
     return {
       allowed: false,
@@ -49,30 +54,25 @@ export async function checkCredits(
   const balance = user.creditBalance
   const graceUsed = user.graceUsed
 
-  // Has enough credits
   if (balance >= cost) {
     return { allowed: true, currentBalance: balance, cost, wouldUseGrace: false, graceAlreadyUsed: graceUsed }
   }
 
-  // Not enough credits - check grace
   if (!graceUsed) {
-    // First-circuit grace: allow if overage would be within ceiling
     const overage = cost - balance
     if (overage <= GRACE_CEILING) {
       return { allowed: true, currentBalance: balance, cost, wouldUseGrace: true, graceAlreadyUsed: false }
-    } else {
-      return {
-        allowed: false,
-        reason: `This operation costs ${cost} credits but you only have ${balance}. The projected overage exceeds the ${GRACE_CEILING}-credit grace limit. Please add credits to continue.`,
-        currentBalance: balance,
-        cost,
-        wouldUseGrace: false,
-        graceAlreadyUsed: false,
-      }
+    }
+    return {
+      allowed: false,
+      reason: `This operation costs ${cost} credits but you only have ${balance}. The projected overage exceeds the ${GRACE_CEILING}-credit grace limit. Please add credits to continue.`,
+      currentBalance: balance,
+      cost,
+      wouldUseGrace: false,
+      graceAlreadyUsed: false,
     }
   }
 
-  // Grace already used - block at zero
   return {
     allowed: false,
     reason: `Insufficient credits. You have ${balance} credits but this operation costs ${cost}. Please add credits to continue.`,
@@ -86,92 +86,100 @@ export async function checkCredits(
 export async function deductCredits(
   userId: string,
   operationType: OperationType,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): Promise<{ success: boolean; newBalance: number; graceActivated: boolean }> {
   const cost = getCreditCost(operationType)
 
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (!user) return { success: false, newBalance: 0, graceActivated: false }
+  const result = await db.transaction(async (tx) => {
+    const rows = await tx.execute(
+      sql`SELECT id, credit_balance, grace_used FROM users WHERE id = ${userId} FOR UPDATE`
+    )
+    const user = (rows as unknown as Array<{ id: string; credit_balance: number; grace_used: boolean }>)[0]
+    if (!user) return null
 
-  const newBalance = user.creditBalance - cost
-  const graceActivated = newBalance < 0 && !user.graceUsed
+    const newBalance = user.credit_balance - cost
+    const graceActivated = newBalance < 0 && !user.grace_used
 
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: userId },
-      data: {
-        creditBalance: newBalance,
-        ...(graceActivated ? { graceUsed: true } : {}),
-      },
-    }),
-    prisma.creditTransaction.create({
-      data: {
-        userId,
-        type: 'consumption',
-        amount: -cost,
-        balanceAfter: newBalance,
-        operationType,
-        metadata: metadata ?? {},
-      },
-    }),
-  ])
+    const updateData: UserUpdate = {
+      creditBalance: newBalance,
+      ...(graceActivated ? { graceUsed: true } : {}),
+    }
+    await tx.update(users).set(updateData).where(eq(users.id, userId))
 
-  return { success: true, newBalance, graceActivated }
+    const txData: CreditTransactionInsert = {
+      userId,
+      type: 'consumption',
+      amount: -cost,
+      balanceAfter: newBalance,
+      operationType,
+      metadata: metadata ?? {},
+    }
+    await tx.insert(creditTransactions).values(txData)
+
+    return { newBalance, graceActivated }
+  })
+
+  if (!result) return { success: false, newBalance: 0, graceActivated: false }
+  return { success: true, newBalance: result.newBalance, graceActivated: result.graceActivated }
 }
 
 export async function addCredits(
   userId: string,
   amount: number,
   type: 'grant' | 'purchase' | 'auto_reload',
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): Promise<number> {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (!user) throw new Error('User not found')
+  return db.transaction(async (tx) => {
+    const rows = await tx.execute(
+      sql`SELECT id, credit_balance FROM users WHERE id = ${userId} FOR UPDATE`
+    )
+    const user = (rows as unknown as Array<{ id: string; credit_balance: number }>)[0]
+    if (!user) throw new Error('User not found')
 
-  const newBalance = user.creditBalance + amount
+    const newBalance = user.credit_balance + amount
 
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: userId },
-      data: { creditBalance: newBalance },
-    }),
-    prisma.creditTransaction.create({
-      data: {
-        userId,
-        type,
-        amount,
-        balanceAfter: newBalance,
-        metadata: metadata ?? {},
-      },
-    }),
-  ])
+    const updateData: UserUpdate = { creditBalance: newBalance }
+    await tx.update(users).set(updateData).where(eq(users.id, userId))
 
-  return newBalance
+    const txData: CreditTransactionInsert = {
+      userId,
+      type,
+      amount,
+      balanceAfter: newBalance,
+      metadata: metadata ?? {},
+    }
+    await tx.insert(creditTransactions).values(txData)
+
+    return newBalance
+  })
 }
 
 export async function grantStarterCredits(userId: string): Promise<boolean> {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
+  const [user] = await db
+    .select({ creditBalance: users.creditBalance, starterCreditsGranted: users.starterCreditsGranted })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+
   if (!user || user.starterCreditsGranted) return false
 
   const starterAmount = parseInt(process.env.STARTER_CREDITS ?? '20', 10)
   const newBalance = user.creditBalance + starterAmount
 
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: userId },
-      data: { creditBalance: newBalance, starterCreditsGranted: true },
-    }),
-    prisma.creditTransaction.create({
-      data: {
-        userId,
-        type: 'grant',
-        amount: starterAmount,
-        balanceAfter: newBalance,
-        operationType: 'starter_grant',
-        metadata: { reason: 'New account starter credits' },
-      },
-    }),
-  ])
+  await db.transaction(async (tx) => {
+    const updateData: UserUpdate = { creditBalance: newBalance, starterCreditsGranted: true }
+    await tx.update(users).set(updateData).where(eq(users.id, userId))
+
+    const txData: CreditTransactionInsert = {
+      userId,
+      type: 'grant',
+      amount: starterAmount,
+      balanceAfter: newBalance,
+      operationType: 'starter_grant',
+      metadata: { reason: 'New account starter credits' },
+    }
+    await tx.insert(creditTransactions).values(txData)
+  })
 
   return true
 }

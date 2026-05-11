@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { prisma } from '@/lib/prisma'
+import { db, purchases, eq, sql, type PurchaseInsert } from '@repo/db'
 import { getCreditPacks } from '@/lib/config'
 import Stripe from 'stripe'
 
@@ -32,17 +32,12 @@ export async function POST(request: NextRequest) {
 
     const origin = request.headers.get('origin') ?? ''
 
-    // Create purchase record
-    const purchase = await prisma.purchase.create({
-      data: {
-        userId,
-        packSize: pack.size,
-        amountEur: pack.priceEur,
-        status: 'pending',
-      },
-    })
+    const purchaseInsert: PurchaseInsert = { userId, packSize: pack.size, amountEur: pack.priceEur, status: 'pending' }
+    const [purchase] = await db
+      .insert(purchases)
+      .values(purchaseInsert)
+      .returning()
 
-    // Create Stripe Checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -54,7 +49,7 @@ export async function POST(request: NextRequest) {
               name: `Zedos ${pack.label} Pack - ${pack.size} Credits`,
               description: pack.description,
             },
-            unit_amount: pack.priceEur * 100, // cents
+            unit_amount: pack.priceEur * 100,
           },
           quantity: 1,
         },
@@ -68,11 +63,8 @@ export async function POST(request: NextRequest) {
       cancel_url: `${origin}/dashboard/credits?canceled=true`,
     })
 
-    // Update purchase with stripe session id
-    await prisma.purchase.update({
-      where: { id: purchase.id },
-      data: { stripeSessionId: checkoutSession.id },
-    })
+    const sessionUpdate = sql`UPDATE purchases SET stripe_session_id = ${checkoutSession.id} WHERE id = ${purchase.id}`
+    await db.execute(sessionUpdate)
 
     return NextResponse.json({ url: checkoutSession.url })
   } catch (error: any) {

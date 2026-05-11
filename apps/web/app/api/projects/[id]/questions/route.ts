@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { prisma } from '@/lib/prisma'
+import { db, projects, questionHistory, eq, and, asc } from '@repo/db'
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -11,13 +11,19 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const userId = userResult.unwrap().id
 
-    const project = await prisma.project.findFirst({ where: { id: params.id, userId } })
+    const [project] = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, userId)))
+      .limit(1)
+
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
-    const questions = await prisma.questionHistory.findMany({
-      where: { projectId: params.id },
-      orderBy: { createdAt: 'asc' },
-    })
+    const questions = await db
+      .select()
+      .from(questionHistory)
+      .where(eq(questionHistory.projectId, params.id))
+      .orderBy(asc(questionHistory.createdAt))
 
     return NextResponse.json(questions)
   } catch (error: any) {

@@ -3,8 +3,8 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { prisma } from '@/lib/prisma'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
+import { db, projects, prdVersions, questionHistory, eq, and, desc, sql } from '@repo/db'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
 import { GetProjectUseCase } from '@application/project/get-project-usecase'
 import { UpdateProjectUseCase } from '@application/project/update-project-usecase'
 import { DeleteProjectUseCase } from '@application/project/delete-project-usecase'
@@ -14,19 +14,30 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = userResult.unwrap().id
 
-  const repo = new PrismaProjectRepository(prisma)
-
-  // Use the full query with includes for backwards compat with frontend
-  const project = await prisma.project.findFirst({
-    where: { id: params.id, userId },
-    include: {
-      prdVersions: { orderBy: { versionNumber: 'desc' } },
-      _count: { select: { questionHistory: true } },
-    },
-  })
+  const [project] = await db
+    .select()
+    .from(projects)
+    .where(and(eq(projects.id, params.id), eq(projects.userId, userId)))
+    .limit(1)
 
   if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-  return NextResponse.json(project)
+
+  const prdVersionRows = await db
+    .select()
+    .from(prdVersions)
+    .where(eq(prdVersions.projectId, params.id))
+    .orderBy(desc(prdVersions.versionNumber))
+
+  const [countRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(questionHistory)
+    .where(eq(questionHistory.projectId, params.id))
+
+  return NextResponse.json({
+    ...project,
+    prdVersions: prdVersionRows,
+    _count: { questionHistory: Number(countRow?.count ?? 0) },
+  })
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -35,7 +46,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const userId = userResult.unwrap().id
 
   const body = await request.json()
-  const repo = new PrismaProjectRepository(prisma)
+  const repo = new DrizzleProjectRepository()
   const useCase = new UpdateProjectUseCase(repo)
   const result = await useCase.execute({
     projectId: params.id,
@@ -56,7 +67,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
   if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = userResult.unwrap().id
 
-  const repo = new PrismaProjectRepository(prisma)
+  const repo = new DrizzleProjectRepository()
   const useCase = new DeleteProjectUseCase(repo)
   const result = await useCase.execute(params.id, userId)
 

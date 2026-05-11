@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { prisma } from '@/lib/prisma'
+import { db, projects, questionHistory, prdVersions, eq, and, asc, desc, type PrdVersionInsert } from '@repo/db'
 import { checkCredits, deductCredits } from '@/lib/credits'
 import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
 
@@ -88,12 +88,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const userId = userResult.unwrap().id
 
-    const project = await prisma.project.findFirst({
-      where: { id: params.id, userId },
-    })
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, params.id), eq(projects.userId, userId)))
+      .limit(1)
+
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
-    // Credit check
     const creditCheck = await checkCredits(userId, 'prd_generation')
     if (!creditCheck.allowed) {
       return NextResponse.json({
@@ -104,21 +106,22 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       }, { status: 402 })
     }
 
-    // Fetch all question history for this project
-    const history = await prisma.questionHistory.findMany({
-      where: { projectId: params.id },
-      orderBy: { createdAt: 'asc' },
-    })
+    const history = await db
+      .select()
+      .from(questionHistory)
+      .where(eq(questionHistory.projectId, params.id))
+      .orderBy(asc(questionHistory.createdAt))
 
-    // Get current version number
-    const lastVersion = await prisma.prdVersion.findFirst({
-      where: { projectId: params.id },
-      orderBy: { versionNumber: 'desc' },
-    })
+    const [lastVersion] = await db
+      .select({ versionNumber: prdVersions.versionNumber, content: prdVersions.content })
+      .from(prdVersions)
+      .where(eq(prdVersions.projectId, params.id))
+      .orderBy(desc(prdVersions.versionNumber))
+      .limit(1)
+
     const nextVersionNumber = (lastVersion?.versionNumber ?? 0) + 1
     const isUpdate = nextVersionNumber > 1
 
-    // Build context from question history
     const clarificationSummary = (history ?? []).map((q: any) => {
       return `Q: ${q.structuredQuestion}\nA: ${q.founderAnswer ?? 'Not answered'}\nImpact: ${q.prdImpact ?? 'General'}`
     }).join('\n\n')
@@ -138,10 +141,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       })
     }
 
-    // Deduct credits
     await deductCredits(userId, 'prd_generation', { projectId: params.id })
 
-    // Call AI
     const aiResponse = await callAI({
       messages,
       stream: true,
@@ -153,26 +154,23 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const stream = createBufferedStreamingResponse(aiResponse, async (result: string) => {
       try {
         const parsed = JSON.parse(result)
-        await prisma.prdVersion.create({
-          data: {
-            projectId: params.id,
-            versionNumber: nextVersionNumber,
-            content: parsed,
-            status: 'generated',
-          },
-        })
+        const prdInsert: PrdVersionInsert = {
+          projectId: params.id,
+          versionNumber: nextVersionNumber,
+          content: parsed,
+          status: 'generated',
+        }
+        await db.insert(prdVersions).values(prdInsert)
       } catch (e: any) {
         console.error('Failed to save PRD version:', e)
-        // Still save as raw text
         try {
-          await prisma.prdVersion.create({
-            data: {
-              projectId: params.id,
-              versionNumber: nextVersionNumber,
-              content: { raw: result },
-              status: 'generated',
-            },
-          })
+          const prdInsertRaw: PrdVersionInsert = {
+            projectId: params.id,
+            versionNumber: nextVersionNumber,
+            content: { raw: result },
+            status: 'generated',
+          }
+          await db.insert(prdVersions).values(prdInsertRaw)
         } catch {}
       }
     })
