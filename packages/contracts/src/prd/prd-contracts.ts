@@ -19,7 +19,7 @@ export const CapturedPrdVersionResponseSchema = z.object({
     id: z.string(),
     projectId: z.string(),
     versionNumber: z.number().int().positive(),
-    content: z.any().nullable(),
+    content: z.record(z.unknown()).nullable(),
     status: z.string(),
     createdAt: z.coerce.date(),
     updatedAt: z.coerce.date(),
