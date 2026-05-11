@@ -13,7 +13,7 @@ current_blocker: null
 ## Orchestration (canonical)
 
 - **Pipeline step** `fa-guided-clarification--contextual-tab-refinement`: **complete**. Contextual refinement sheet on PRD / Architecture / History tabs; `POST /api/projects/[id]/clarify` with `Refine [<label>]:` prefix; unit tests for panel + SSE helpers.
-- **Tracking PR:** **#65** — `orchestrator/tracking-fa-guided-clarification--contextual-tab-refinement-1778530148115` → `main`. Mark ready when CI green: `gh pr ready 65 --repo romain-zt/zedos.app`.
+- **Tracking PR:** **#66** — `orchestrator/tracking-fa-guided-clarification--contextual-tab-refinement-1778530992544` → `main`. Mark ready when CI green: `gh pr ready 66 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
