@@ -33,6 +33,15 @@ export interface IPrdRepository {
     ownerUserId: string
   ): Promise<Result<MintedShareLink, ApplicationError>>;
 
+  /**
+   * Disables a share link when it exists and belongs to the owner's project.
+   * Idempotent when already disabled. 404-equivalent when missing or not owned.
+   */
+  revokeReadOnlyShareLink(
+    shareLinkId: string,
+    ownerUserId: string
+  ): Promise<Result<MintedShareLink, ApplicationError>>;
+
   /** Enabled share token only; must not touch projects or owner-scoped tables. */
   getAnonymousPrdVersionByShareToken(
     token: string

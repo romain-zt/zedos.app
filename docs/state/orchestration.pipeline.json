@@ -335,8 +335,8 @@
         "title": "Revoke link and noindex",
         "featureAreaFile": "docs/product/feature-areas/read-only-sharing.md",
         "scopeSliceFile": "docs/product/scope-slices/read-only-sharing--revoke-link-and-noindex.md",
-        "userStoryFile": null,
-        "planFile": null,
+        "userStoryFile": "docs/execution/user-stories/read-only-sharing--revoke-link-and-noindex--v0.md",
+        "planFile": "docs/execution/plans/read-only-sharing--revoke-link-and-noindex--v0.plan.md",
         "notes": "Governance step: create user story + plan if not present before implementing."
       }
     },

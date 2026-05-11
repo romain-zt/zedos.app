@@ -3,6 +3,7 @@
  */
 
 import crypto from 'node:crypto';
+import type { PgUpdateSetSource } from 'drizzle-orm/pg-core/query-builders/update';
 import { IPrdRepository } from '@domain/prd/prd-repository';
 import {
   AnonymousSharedPrdSnapshot,
@@ -204,7 +205,10 @@ export class DrizzlePrdRepository implements IPrdRepository {
       }
 
       const token = crypto.randomBytes(16).toString('hex');
-      const [inserted] = await db.insert(shareLinks).values({ prdVersionId, token }).returning();
+      const [inserted] = await db
+        .insert(shareLinks)
+        .values({ prdVersionId, token, enabled: true })
+        .returning();
 
       if (!inserted) {
         return err(new DatabaseError('Failed to create share link'));
@@ -221,6 +225,75 @@ export class DrizzlePrdRepository implements IPrdRepository {
     } catch (error) {
       logger.error('mintReadOnlyShareLink failed', error);
       return err(new DatabaseError('Failed to create share link'));
+    }
+  }
+
+  async revokeReadOnlyShareLink(
+    shareLinkId: string,
+    ownerUserId: string
+  ): Promise<Result<MintedShareLink, ApplicationError>> {
+    try {
+      const [row] = await db
+        .select({
+          id: shareLinks.id,
+          prdVersionId: shareLinks.prdVersionId,
+          token: shareLinks.token,
+          enabled: shareLinks.enabled,
+          createdAt: shareLinks.createdAt,
+          disabledAt: shareLinks.disabledAt,
+          projectUserId: projects.userId,
+        })
+        .from(shareLinks)
+        .innerJoin(prdVersions, eq(shareLinks.prdVersionId, prdVersions.id))
+        .innerJoin(projects, eq(prdVersions.projectId, projects.id))
+        .where(eq(shareLinks.id, shareLinkId))
+        .limit(1);
+
+      if (!row || row.projectUserId !== ownerUserId) {
+        return err(new NotFoundError('Share link not found'));
+      }
+
+      const toMinted = (): MintedShareLink => ({
+        id: row.id,
+        prdVersionId: row.prdVersionId,
+        token: row.token,
+        enabled: row.enabled,
+        createdAt: row.createdAt,
+        disabledAt: row.disabledAt ?? null,
+      });
+
+      if (!row.enabled) {
+        return ok(toMinted());
+      }
+
+      const disabledAt = new Date();
+      /* Drizzle 0.38: nullable columns without defaults are omitted from `$inferInsert` keys, so
+       * `PgUpdateSetSource` does not list `disabledAt`; the cast matches the actual UPDATE shape. */
+      const revokeRowPatch = {
+        enabled: false as const,
+        disabledAt,
+      } as PgUpdateSetSource<typeof shareLinks>;
+      const [updated] = await db
+        .update(shareLinks)
+        .set(revokeRowPatch)
+        .where(and(eq(shareLinks.id, shareLinkId), eq(shareLinks.enabled, true)))
+        .returning();
+
+      if (!updated) {
+        return err(new DatabaseError('Failed to disable share link'));
+      }
+
+      return ok({
+        id: updated.id,
+        prdVersionId: updated.prdVersionId,
+        token: updated.token,
+        enabled: updated.enabled,
+        createdAt: updated.createdAt,
+        disabledAt: updated.disabledAt ?? null,
+      });
+    } catch (error) {
+      logger.error('revokeReadOnlyShareLink failed', error);
+      return err(new DatabaseError('Failed to disable share link'));
     }
   }
 
