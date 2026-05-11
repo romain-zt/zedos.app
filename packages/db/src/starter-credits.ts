@@ -1,17 +1,21 @@
 /**
  * One-shot starter credit grant for new accounts (better-auth hook + manual backfills).
  * Mirrors legacy SignUpUseCase + DrizzleCreditsRepository grant semantics.
+ *
+ * Uses parameterized `sql` for writes so Next/web typecheck stays stable (see Drizzle + bundler resolution).
  */
 
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
 import { db } from './client';
-import { creditTransactions, users } from './schema';
 
 export async function grantStarterCreditsIfNeeded(userId: string): Promise<void> {
   const starterAmount = parseInt(process.env.STARTER_CREDITS ?? '20', 10);
   if (!Number.isFinite(starterAmount) || starterAmount <= 0) {
     return;
   }
+
+  const metadataJson = JSON.stringify({ reason: 'New account starter credits' });
 
   await db.transaction(async (tx) => {
     const lockedRows = await tx.execute(
@@ -28,21 +32,34 @@ export async function grantStarterCreditsIfNeeded(userId: string): Promise<void>
 
     const newBalance = row.credit_balance + starterAmount;
 
-    await tx
-      .update(users)
-      .set({
-        creditBalance: newBalance,
-        starterCreditsGranted: true,
-      })
-      .where(eq(users.id, userId));
+    await tx.execute(sql`
+      UPDATE users
+      SET
+        credit_balance = ${newBalance},
+        starter_credits_granted = true,
+        updated_at = NOW()
+      WHERE id = ${userId}
+    `);
 
-    await tx.insert(creditTransactions).values({
-      userId,
-      type: 'grant',
-      amount: starterAmount,
-      balanceAfter: newBalance,
-      operationType: 'starter_grant',
-      metadata: { reason: 'New account starter credits' },
-    });
+    await tx.execute(sql`
+      INSERT INTO credit_transactions (
+        id,
+        user_id,
+        type,
+        amount,
+        balance_after,
+        operation_type,
+        metadata
+      )
+      VALUES (
+        ${randomUUID()},
+        ${userId},
+        ${'grant'},
+        ${starterAmount},
+        ${newBalance},
+        ${'starter_grant'},
+        ${metadataJson}::json
+      )
+    `);
   });
 }
