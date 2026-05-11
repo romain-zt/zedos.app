@@ -6,11 +6,11 @@
     "p0": "complete",
     "p1": "complete",
     "p2": "complete",
-    "p3": "in-progress"
+    "p3": "complete"
   },
   "fa_account_session": {
-    "slice1": "blocked",
-    "blocker": "Phase 3 better-auth migration incomplete: packages/auth/src/server.ts, packages/auth/src/guards.ts, apps/web/app/api/auth/[...all]/route.ts missing. Codebase still uses NextAuth."
+    "slice1": "ready",
+    "blocker": null
   },
   "pis_approved": false,
   "pis_blockers_count": 5,
@@ -67,7 +67,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "complete-phase3-p3-better-auth-migration",
+  "next_action": "merge-phase3-prs-then-start-phase4-feature-areas",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -213,13 +213,18 @@
       "implementation_plan_phase3": {
         "path": "docs/execution/plans/turborepo-migration--phase-3-better-auth.plan.md",
         "status": "written",
-        "plan_status": "executed",
+        "plan_status": "complete",
         "approval_status": "executed-by-user-instruction",
         "pr_stack": [
-          "cursor/better-auth-scaffold-ada8",
-          "cursor/better-auth-handler-wiring-ada8",
-          "cursor/better-auth-cleanup-ada8"
-        ]
+          "cursor/better-auth-scaffold-8578",
+          "cursor/better-auth-wiring-8578",
+          "cursor/better-auth-cleanup-8578"
+        ],
+        "verification": {
+          "typecheck": "clean",
+          "grep_check": "zero next-auth references in apps/web or packages/auth"
+        },
+        "completed_at": "2026-05-11"
       }
     },
     "locked_decisions_confirmed": {
