@@ -24,7 +24,8 @@
       "fa-read-only-sharing--mint-read-only-link": "complete",
       "fa-services-feature-split--prd-to-feature-split": "complete",
       "fa-user-stories--story-generation-from-feature-split": "complete",
-      "fa-test-first-workflows--task-splitting-with-prompts": "in-progress"
+      "fa-test-first-workflows--task-splitting-with-prompts": "in-progress",
+      "fa-read-only-sharing--anonymous-read-surface": "in-progress"
     }
   },
   "cursor_self_improve": {
