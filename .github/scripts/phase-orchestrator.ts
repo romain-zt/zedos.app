@@ -15,6 +15,8 @@ const mergedPrNumber = process.env.MERGED_PR_NUMBER ?? "";
 const orchestratorEnabled = process.env.ORCHESTRATOR_ENABLED !== "false";
 /** Open tracking PRs against `main` or a long-lived integration branch, e.g. `feature/my-epic` */
 const trackingBase = (process.env.ORCHESTRATOR_TRACKING_BASE ?? "main").trim() || "main";
+/** When set, the orchestrator runs as a worker for this specific step ID only (dispatched by coordinator). */
+const stepId = process.env.STEP_ID?.trim() || "";
 
 if (!orchestratorEnabled) {
   console.log("⏸️  ORCHESTRATOR_ENABLED=false — paused. Set it to 'true' to resume.");
@@ -470,29 +472,27 @@ function writeStatus(updated: StatusJson): void {
 // State machine
 // ---------------------------------------------------------------------------
 
-function determineNextStep(status: StatusJson): string | null {
+/** Returns all pipeline steps that are ready to execute in parallel.
+ *  A step is "ready" when: all dependsOn are "complete", and the step itself is
+ *  not "complete", "in-progress", or "blocked". In-progress steps are skipped
+ *  (a worker is already running for them) rather than blocking the whole pipeline.
+ */
+function determineReadySteps(status: StatusJson): string[] {
   const cfg = loadPipeline();
-
-  const inProgressIds = cfg.steps.filter((s) => resolveStepStatus(status, s.id) === "in-progress").map((s) => s.id);
-  if (inProgressIds.length > 0) {
-    console.log(`⏳ Step(s) in-progress (${inProgressIds.join(", ")}) — another agent may be running. Holding.`);
-    return null;
-  }
-
-  const blocked: string[] = [];
-
   const statusMap = new Map<string, PhaseStatus | undefined>();
   for (const s of cfg.steps) statusMap.set(s.id, resolveStepStatus(status, s.id));
 
-  for (const row of cfg.steps) {
-    const stepKey = row.id;
-    const stepStatus = statusMap.get(stepKey);
+  const ready: string[] = [];
+  const blocked: string[] = [];
 
-    if (stepStatus === "complete") continue;
+  for (const row of cfg.steps) {
+    const stepStatus = statusMap.get(row.id);
+
+    if (stepStatus === "complete" || stepStatus === "in-progress") continue;
 
     if (stepStatus === "blocked") {
-      console.log(`⏭️  Skipping "${stepKey}" (blocked). Will try next eligible step.`);
-      blocked.push(stepKey);
+      console.log(`⏭️  Skipping "${row.id}" (blocked). Will try next eligible step.`);
+      blocked.push(row.id);
       continue;
     }
 
@@ -500,23 +500,23 @@ function determineNextStep(status: StatusJson): string | null {
     if (unmetDep) {
       const depStatus = statusMap.get(unmetDep);
       if (depStatus === "blocked") {
-        console.log(`⏭️  Skipping "${stepKey}" (dependency "${unmetDep}" is blocked).`);
-        blocked.push(stepKey);
+        console.log(`⏭️  Skipping "${row.id}" (dependency "${unmetDep}" is blocked).`);
+        blocked.push(row.id);
       } else {
-        console.log(`⏭️  Skipping "${stepKey}" (dependency "${unmetDep}" is ${depStatus ?? "not-started"}).`);
+        console.log(`⏭️  Skipping "${row.id}" (dependency "${unmetDep}" is ${depStatus ?? "not-started"}).`);
       }
       continue;
     }
 
-    return stepKey;
+    ready.push(row.id);
   }
 
   if (blocked.length > 0) {
     console.log(`\n🚧 Blocked steps: ${blocked.join(", ")}`);
-    console.log("   No unblocked work available. Check docs/state/status.json for blocker details.");
+    console.log("   Check docs/state/status.json for blocker details.");
   }
 
-  return null;
+  return ready;
 }
 
 // ---------------------------------------------------------------------------
@@ -1115,7 +1115,8 @@ async function mainOrchestrator(): Promise<void> {
   console.log(`   Merged PR     : #${mergedPrNumber}`);
   console.log(`   Head branch   : ${mergedHeadBranch}`);
   console.log(`   Repo          : ${repo}`);
-  console.log(`   Tracking base : ${trackingBase}\n`);
+  console.log(`   Tracking base : ${trackingBase}`);
+  console.log(`   Mode          : ${stepId ? `worker (${stepId})` : "coordinator"}\n`);
 
   let status = readStatus();
   if (!status) {
@@ -1123,61 +1124,112 @@ async function mainOrchestrator(): Promise<void> {
     return;
   }
 
-  const inProg = getInProgressStep(status);
-  if (inProg) {
-    const draftPR = findDraftTrackingPR(inProg);
-    if (draftPR) {
-      console.log(`🔁 Remediation: "${inProg}" in-progress — re-using draft PR #${draftPR.number}.`);
-      validateRunnableStep(inProg);
-      const preflightOk = await runPreflight(inProg);
-      if (!preflightOk) {
-        console.error(`❌ Preflight failed for "${inProg}". Halting.`);
-        process.exit(2);
+  // ---------------------------------------------------------------------------
+  // Worker mode — execute exactly one step (dispatched by coordinator)
+  // ---------------------------------------------------------------------------
+  if (stepId) {
+    const currentStepStatus = resolveStepStatus(status, stepId);
+
+    if (currentStepStatus === "in-progress") {
+      const draftPR = findDraftTrackingPR(stepId);
+      if (draftPR) {
+        console.log(`🔁 Remediation: "${stepId}" in-progress — re-using draft PR #${draftPR.number}.`);
+        validateRunnableStep(stepId);
+        const preflightOk = await runPreflight(stepId);
+        if (!preflightOk) {
+          console.error(`❌ Preflight failed for "${stepId}". Halting.`);
+          process.exit(2);
+        }
+        await executeAgentRun(stepId, draftPR, true);
+        return;
       }
-      await executeAgentRun(inProg, draftPR, true);
+      console.log(
+        `⚠️  Worker: "${stepId}" is in-progress but no open draft tracking PR for base '${trackingBase}'. Resetting.`,
+      );
+      resetInProgress(stepId);
+      status = readStatus();
+      if (!status) { process.exit(0); return; }
+    }
+
+    validateRunnableStep(stepId);
+
+    const preflightOk = await runPreflight(stepId);
+    if (!preflightOk) {
+      console.error(`❌ Preflight failed for "${stepId}". Halting.`);
+      process.exit(2);
+    }
+
+    // Idempotency guard: reuse an existing draft PR opened by a concurrent run.
+    const existingPR = findDraftTrackingPR(stepId);
+    if (existingPR) {
+      console.log(`♻️  Reusing existing draft tracking PR #${existingPR.number} for "${stepId}" (concurrent run guard).`);
+      await executeAgentRun(stepId, existingPR, false);
       return;
     }
-    console.log(
-      `⚠️  "${inProg}" is in-progress on main but no open draft tracking PR for base '${trackingBase}'. Resetting.`,
-    );
-    resetInProgress(inProg);
-    status = readStatus();
-    if (!status) {
-      process.exit(0);
-      return;
+
+    console.log(`\n📋 Opening draft tracking PR for ${stepId}…`);
+    const trackingPR = openTrackingPR(pipelineStepById(stepId));
+    await executeAgentRun(stepId, trackingPR, false);
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Coordinator mode — fan-out across all ready steps
+  // ---------------------------------------------------------------------------
+
+  // 1. Reset orphaned in-progress steps (in-progress but no tracking PR)
+  for (const row of loadPipeline().steps) {
+    if (resolveStepStatus(status, row.id) !== "in-progress") continue;
+    const draftPR = findDraftTrackingPR(row.id);
+    if (!draftPR) {
+      console.log(
+        `⚠️  "${row.id}" is in-progress but has no open draft tracking PR for base '${trackingBase}'. Resetting.`,
+      );
+      resetInProgress(row.id);
     }
   }
 
-  const nextStep = determineNextStep(status);
-  if (!nextStep) {
+  status = readStatus();
+  if (!status) { process.exit(0); return; }
+
+  // 2. Collect in-progress steps that DO have tracking PRs — dispatch remediation workers.
+  const remediationSteps: string[] = [];
+  for (const row of loadPipeline().steps) {
+    if (resolveStepStatus(status, row.id) !== "in-progress") continue;
+    if (findDraftTrackingPR(row.id)) remediationSteps.push(row.id);
+  }
+
+  // 3. Collect all steps whose dependencies are complete and which haven't started.
+  const readySteps = determineReadySteps(status);
+
+  if (readySteps.length === 0 && remediationSteps.length === 0) {
     console.log("🏁 No next automated step. All phases complete or manual decision required.");
     process.exit(0);
   }
 
-  validateRunnableStep(nextStep);
-
-  console.log(`🚀 Next step: ${nextStep}`);
-
-  markInProgress(status, nextStep);
-
-  const preflightOk = await runPreflight(nextStep);
-  if (!preflightOk) {
-    console.error(`❌ Preflight failed for "${nextStep}". Halting.`);
-    process.exit(2);
+  // 4. Validate all ready steps upfront, then mark each in-progress sequentially
+  //    (sequential commits prevent git push races on status.json).
+  for (const step of readySteps) validateRunnableStep(step);
+  for (const step of readySteps) {
+    markInProgress(status, step);
+    status = readStatus() ?? status;
   }
 
-  // Idempotency guard: if a concurrent orchestrator run already opened a draft PR
-  // for this step (race between push-trigger and manual dispatch), reuse it.
-  const existingPR = findDraftTrackingPR(nextStep);
-  if (existingPR) {
-    console.log(`♻️  Reusing existing draft tracking PR #${existingPR.number} for "${nextStep}" (concurrent run guard).`);
-    await executeAgentRun(nextStep, existingPR, false);
-    return;
-  }
+  // 5. Dispatch one worker per step (ready + remediation) — these run as parallel GHA jobs.
+  const toDispatch = [...new Set([...readySteps, ...remediationSteps])];
+  console.log(`\n🔀 Dispatching ${toDispatch.length} parallel worker(s): ${toDispatch.join(", ")}`);
 
-  console.log(`\n📋 Opening draft tracking PR for ${nextStep}…`);
-  const trackingPR = openTrackingPR(pipelineStepById(nextStep));
-  await executeAgentRun(nextStep, trackingPR, false);
+  for (const step of toDispatch) {
+    try {
+      execSync(
+        `gh workflow run phase-orchestrator.yml --repo "${repo}" -f step_id="${step}" -f reason="parallel dispatch (${step})"`,
+        { stdio: "inherit" },
+      );
+      console.log(`  ✅ Dispatched: ${step}`);
+    } catch (err) {
+      console.warn(`  ⚠️  Dispatch failed for "${step}" (non-fatal — next cron will retry):`, err);
+    }
+  }
 }
 
 await mainOrchestrator();

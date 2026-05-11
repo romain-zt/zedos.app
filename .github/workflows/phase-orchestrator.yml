@@ -18,9 +18,15 @@ on:
         description: "Why are you manually triggering?"
         required: false
         default: "manual kickoff"
+      step_id:
+        description: "Specific step to execute — leave blank for coordinator mode (auto-detects all ready steps)"
+        required: false
+        default: ""
 
 concurrency:
-  group: phase-orchestrator-${{ github.repository }}
+  # Workers each get a step-scoped group so they run in parallel.
+  # The coordinator gets its own group to avoid queuing against workers.
+  group: ${{ github.event.inputs.step_id && format('phase-orchestrator-worker-{0}-{1}', github.event.inputs.step_id, github.repository) || format('phase-orchestrator-coordinator-{0}', github.repository) }}
   cancel-in-progress: false
 
 jobs:
@@ -63,4 +69,5 @@ jobs:
           MERGED_PR_TITLE: ${{ github.event.pull_request.title || '' }}
           ORCHESTRATOR_ENABLED: ${{ vars.ORCHESTRATOR_ENABLED || 'true' }}
           ORCHESTRATOR_TRACKING_BASE: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+          STEP_ID: ${{ github.event.inputs.step_id || '' }}
         run: npx tsx .github/scripts/phase-orchestrator.ts
