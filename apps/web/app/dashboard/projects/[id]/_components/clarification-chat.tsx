@@ -13,7 +13,7 @@ import {
 import { DecisionCard } from './decision-card'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
-import { selectComingUpSections } from './coming-up-sections'
+import { comingUpPrdSectionsFromAssistantParsed } from '@repo/contracts/questions/history'
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -43,6 +43,16 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [])
+
+  const comingUpSections = useMemo(() => {
+    const sections = (messages ?? [])
+      .filter((m) => m.role === 'assistant')
+      .map((m) => m.parsed?.prd_section_affected as string | undefined)
+    return comingUpPrdSectionsFromAssistantParsed(sections, 3)
+  }, [messages])
+
+  const showReadyToGenerateHint =
+    comingUpSections.length === 0 && (messages ?? []).some((m) => m.role === 'assistant')
 
   useEffect(() => { scrollToBottom() }, [messages, scrollToBottom])
 
@@ -271,8 +281,6 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
     }
   }
 
-  const comingUpSections = useMemo(() => selectComingUpSections(messages ?? [], 3), [messages])
-
   return (
     <div className="flex flex-col h-[calc(100vh-240px)] min-h-[500px]">
       {/* Messages */}
@@ -345,20 +353,24 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
       {/* Input area */}
       <div className="border-t pt-4 space-y-3">
         {comingUpSections.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Coming up</p>
+          <div
+            className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
+            aria-label="Upcoming PRD sections"
+          >
+            <span className="text-xs font-medium text-muted-foreground shrink-0">Coming up</span>
             <div className="flex flex-wrap gap-2">
               {comingUpSections.map((label) => (
-                <Badge
-                  key={label}
-                  variant="secondary"
-                  className="text-xs font-normal max-w-full truncate sm:max-w-[14rem]"
-                >
+                <Badge key={label} variant="secondary" className="text-xs font-normal max-w-full truncate">
                   {label}
                 </Badge>
               ))}
             </div>
           </div>
+        )}
+        {showReadyToGenerateHint && (
+          <p className="text-xs text-muted-foreground">
+            Ready to generate PRD — every canonical section has had a question in this workspace.
+          </p>
         )}
         <div className="flex gap-2">
           <Textarea

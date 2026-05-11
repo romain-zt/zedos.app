@@ -3,10 +3,11 @@ import { ClarifyAiResponseSchema } from '../ai/clarify-stream';
 import { GeneratePrdAiResponseSchema } from '../ai/generate-prd-stream';
 import {
   ClarifyPostBodySchema,
-  PRD_SECTIONS,
   QuestionHistoryRowSchema,
-  QuestionReadinessScoreResponseSchema,
-  computeReadinessScoreDto,
+  QuestionCoverageReadinessScoreResponseSchema,
+  buildReadinessScoreFromQuestionRows,
+  comingUpPrdSectionsFromAssistantParsed,
+  PRD_SECTIONS,
 } from './history';
 
 describe('ClarifyPostBodySchema', () => {
@@ -79,72 +80,49 @@ describe('QuestionHistoryRowSchema', () => {
   });
 });
 
-describe('PRD_SECTIONS', () => {
-  it('lists eight canonical sections in pipeline order', () => {
-    expect(PRD_SECTIONS).toHaveLength(8);
-    expect(PRD_SECTIONS[0]).toBe('Product Vision');
-    expect(PRD_SECTIONS[7]).toBe('Open Questions');
-  });
-});
+describe('QuestionCoverageReadinessScoreResponseSchema', () => {
+  const valid = {
+    score: 42,
+    answered: 2,
+    remaining: 6,
+    coveredSections: ['Product Vision'],
+    remainingSections: PRD_SECTIONS.filter((s) => s !== 'Product Vision'),
+  };
 
-describe('QuestionReadinessScoreResponseSchema', () => {
-  it('accepts a valid readiness payload', () => {
-    const r = QuestionReadinessScoreResponseSchema.safeParse({
-      score: 75,
-      answered: 10,
-      remaining: 6,
-      coveredSections: ['Product Vision'],
-      remainingSections: ['Target Users'],
-    });
+  it('accepts a shaped readiness payload', () => {
+    const r = QuestionCoverageReadinessScoreResponseSchema.safeParse(valid);
     expect(r.success).toBe(true);
   });
 
-  it('rejects score out of 0–100', () => {
-    const r = QuestionReadinessScoreResponseSchema.safeParse({
-      score: 101,
-      answered: 1,
-      remaining: 0,
-      coveredSections: [],
-      remainingSections: [],
-    });
-    expect(r.success).toBe(false);
-  });
-
-  it('rejects missing fields', () => {
-    const r = QuestionReadinessScoreResponseSchema.safeParse({ score: 50 });
+  it('rejects score out of range', () => {
+    const r = QuestionCoverageReadinessScoreResponseSchema.safeParse({ ...valid, score: 101 });
     expect(r.success).toBe(false);
   });
 });
 
-describe('computeReadinessScoreDto', () => {
-  it('uses answered / (answered + remaining_sections) and ignores non-canonical impacts', () => {
-    const dto = computeReadinessScoreDto({
-      answeredQuestionCount: 8,
-      answeredPrdImpacts: ['Product Vision', 'Not a real section', 'Product Vision'],
-      hasPrdVersion: false,
-    });
-    expect(dto.answered).toBe(8);
-    expect(dto.remaining).toBe(7);
-    expect(dto.coveredSections).toEqual(['Product Vision']);
-    expect(dto.score).toBe(53);
+describe('buildReadinessScoreFromQuestionRows', () => {
+  it('caps score at 95 when no PRD version exists and raw ratio is 100%', () => {
+    const rows = PRD_SECTIONS.map((prdImpact) => ({ founderAnswer: 'y', prdImpact }));
+    const out = buildReadinessScoreFromQuestionRows(rows, false);
+    expect(out.score).toBe(95);
+    expect(out.remaining).toBe(0);
   });
 
-  it('allows 100% when a PRD version exists', () => {
-    const dto = computeReadinessScoreDto({
-      answeredQuestionCount: 20,
-      answeredPrdImpacts: [...PRD_SECTIONS],
-      hasPrdVersion: true,
-    });
-    expect(dto.remaining).toBe(0);
-    expect(dto.score).toBe(100);
+  it('returns 100 when PRD version exists and all sections covered by answered rows', () => {
+    const rows = PRD_SECTIONS.map((prdImpact) => ({ founderAnswer: 'y', prdImpact }));
+    const out = buildReadinessScoreFromQuestionRows(rows, true);
+    expect(out.score).toBe(100);
+  });
+});
+
+describe('comingUpPrdSectionsFromAssistantParsed', () => {
+  it('returns first uncovered canonical sections in order', () => {
+    const up = comingUpPrdSectionsFromAssistantParsed(['Product Vision'], 3);
+    expect(up).toEqual(['Target Users', 'Core Features', 'User Journeys']);
   });
 
-  it('caps at 95 when formula would exceed 100% and no PRD version', () => {
-    const dto = computeReadinessScoreDto({
-      answeredQuestionCount: 20,
-      answeredPrdImpacts: [...PRD_SECTIONS],
-      hasPrdVersion: false,
-    });
-    expect(dto.score).toBe(95);
+  it('ignores non-canonical assistant labels', () => {
+    const up = comingUpPrdSectionsFromAssistantParsed(['Scope', null, 'Product Vision'], 2);
+    expect(up).toEqual(['Target Users', 'Core Features']);
   });
 });

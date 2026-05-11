@@ -1,8 +1,9 @@
 export * from './question-contracts';
 export {
   PRD_SECTIONS,
-  QuestionReadinessScoreResponseSchema,
-  computeReadinessScoreDto,
-  type QuestionReadinessScoreResponse,
-  type PrdSection,
+  QuestionCoverageReadinessScoreResponseSchema,
+  type QuestionCoverageReadinessScoreResponse,
+  type QuestionHistoryReadinessRow,
+  buildReadinessScoreFromQuestionRows,
+  comingUpPrdSectionsFromAssistantParsed,
 } from './history';
