@@ -290,8 +290,8 @@
         "title": "Anonymous read surface",
         "featureAreaFile": "docs/product/feature-areas/read-only-sharing.md",
         "scopeSliceFile": "docs/product/scope-slices/read-only-sharing--anonymous-read-surface.md",
-        "userStoryFile": null,
-        "planFile": null,
+        "userStoryFile": "docs/execution/user-stories/read-only-sharing--anonymous-read-surface--v0.md",
+        "planFile": "docs/execution/plans/read-only-sharing--anonymous-read-surface--v0.plan.md",
         "notes": "Governance step: create user story + plan if not present before implementing. Strict privacy boundary: no workspace, history, or owner nav must leak to anonymous surface."
       }
     },

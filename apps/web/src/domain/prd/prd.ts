@@ -31,3 +31,13 @@ export interface MintedShareLink {
   createdAt: Date;
   disabledAt: Date | null;
 }
+
+/**
+ * Minimal PRD projection for anonymous share readers — no project/workspace identifiers.
+ */
+export interface AnonymousSharedPrdSnapshot {
+  versionNumber: number;
+  content: Record<string, unknown> | null;
+  status: PrdStatus;
+  createdAt: Date;
+}

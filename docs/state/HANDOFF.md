@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-test-first-workflows--task-splitting-with-prompts-governance-complete
+current_phase: fa-read-only-sharing--anonymous-read-surface-complete
 current_blocker: null
 ---
 
@@ -12,14 +12,15 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-test-first-workflows--task-splitting-with-prompts`: **complete** (governance: user story + approved implementation plan; registry updated — see `docs/state/status.json`).
-- **Tracking PR:** #56 — `orchestrator/tracking-fa-test-first-workflows--task-splitting-with-prompts-1778525247993` → `main`. Mark ready when CI green: `gh pr ready 56 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-read-only-sharing--anonymous-read-surface`: **complete**. Anonymous `/share/[token]` reads enabled share rows joined only to `prd_versions` (no project/workspace fields). API + UI use `AnonymousSharedPrdResponseSchema`; errors are generic.
+- **Tracking PR:** #59 — `orchestrator/tracking-fa-read-only-sharing--anonymous-read-surface-1778526778149` → `main`. Mark ready when CI green: `gh pr ready 59 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **User story:** `docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md` (`ready-for-implementation`).
-- **Implementation plan:** `docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md` (`approved` — orchestrator pipeline; implementation proceeds under Patch Intent Summary per execution bridge).
+- **User story:** `docs/execution/user-stories/read-only-sharing--anonymous-read-surface--v0.md` (`ready-for-implementation`).
+- **Implementation plan:** `docs/execution/plans/read-only-sharing--anonymous-read-surface--v0.plan.md` (`approved`).
 - **Pipeline registry:** `docs/state/orchestration.pipeline.json` links this slice to the story and plan paths.
+- **Code:** `GetAnonymousSharedPrdUseCase`, Drizzle anonymous read path, contracts + tests, `GET /api/share/[token]`, share UI (`loading.tsx`, `error.tsx`, contract-validated client fetch).
 
 ## Still blocked elsewhere
 
@@ -27,12 +28,11 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. **Implementation:** Run `/implement` against the plan with explicit PIS `approved`; ship stacked PRs on the tracking branch per plan §Approach and PR sizing (79).
-2. **Upstream:** User story corpus / `user_story_lines` FK from `fa-user-stories--story-generation-from-feature-split` — plan allows nullable linkage until those tables exist.
-3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface`, `fa-owner-milestone-feedback--milestone-detection-and-prompt` (see `orchestration.steps`).
+1. **`fa-read-only-sharing--revoke-link-and-noindex`** (depends on this step) — or **parallel:** `fa-owner-milestone-feedback--milestone-detection-and-prompt` (see `orchestration.steps`).
+2. **`fa-test-first-workflows--task-splitting-with-prompts`** tracking PR **#56** if still pending readiness.
 
 ## Key files (this slice)
 
-- Scope slice: `docs/product/scope-slices/test-first-workflows--task-splitting-with-prompts.md`
-- User story: `docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md`
-- Plan: `docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md`
+- Scope slice: `docs/product/scope-slices/read-only-sharing--anonymous-read-surface.md`
+- User story: `docs/execution/user-stories/read-only-sharing--anonymous-read-surface--v0.md`
+- Plan: `docs/execution/plans/read-only-sharing--anonymous-read-surface--v0.plan.md`
