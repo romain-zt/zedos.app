@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Ordered automation queue. bundled = keyed prompts in phase-orchestrator.ts. slice = implement one Scope Slice via tracking PR (merge → schedule/workflow_dispatch → next step). Append slice steps here in Feature Area priority order after migration steps complete.",
+  "description": "Ordered automation queue. bundled = keyed prompts in phase-orchestrator.ts. slice = implement one Scope Slice via tracking PR. Auto-append slices from docs/prd/PRD.md Flow Inventory + docs/state/orchestration.prd-flow-map.json (workflow orchestration-automation.yml). Manual queue: orchestration.planner-queue.json.",
   "steps": [
     {
       "id": "phase3-p0",

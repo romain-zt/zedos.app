@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "_comment": "Maps normalized docs/prd/PRD.md Flow Inventory rows (v0=Yes) to scope slice files. Keys MUST match output of: npx tsx .github/scripts/sync-prd-orchestration.ts --print-flow-keys. Empty slices[] means PRD flow is acknowledged but no orchestrated slice yet.",
+  "attachAfterStepId": "cursor-self-improve",
+  "flows": {
+    "sign up / sign in": { "slices": [] },
+    "create / list / open projects": { "slices": [] },
+    "chat-driven dynamic decision ui (clarification loop + contextual mini-forms on the fly) + question history structured log": { "slices": [] },
+    "persist and browse prd versions per project": { "slices": [] },
+    "credit ledger, per-operation consumption, first-circuit grace, block at zero (post-grace) unless auto-reload": {
+      "slices": ["docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md"]
+    },
+    "stripe one-time purchase of 100 / 200 / 1000 credit packs": { "slices": [] },
+    "opt-in auto-reload (buy one pack via saved pm; not a subscription)": { "slices": [] },
+    "owner milestone feedback (skippable; anonymous viewers: none)": { "slices": [] },
+    "share: mint read-only url, anonymous read, revoke link, noindex": { "slices": [] }
+  }
+}

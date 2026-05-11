@@ -101,6 +101,8 @@ function validateStepRow(step: PipelineStepRow, index: number): void {
 }
 
 function main(): void {
+  /** CI batch: write JSON only; workflow commits once after PRD sync + planner */
+  const writeOnly = process.env.ORCHESTRATION_WRITE_ONLY === "1" || process.env.ORCHESTRATION_WRITE_ONLY === "true";
   const clearQueue = process.env.PLANNER_CLEAR_QUEUE === "1";
 
   if (!fs.existsSync(PLANNER_QUEUE_PATH)) {
@@ -174,6 +176,12 @@ function main(): void {
   }
 
   const ids = toAppend.map((s) => s.id).join(", ");
+
+  if (writeOnly) {
+    console.log(`✅ Planner (write-only) staged ${toAppend.length} step(s): ${ids}`);
+    process.exit(0);
+  }
+
   gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
   gitExec(`config user.name "github-actions[bot]"`);
   gitExec(`add docs/state/orchestration.pipeline.json docs/state/status.json`);

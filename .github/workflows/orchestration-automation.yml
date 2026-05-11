@@ -1,0 +1,95 @@
+name: Orchestration automation
+
+# Fully automated pipeline refill:
+# 1) Append slice steps from docs/prd/PRD.md Flow Inventory + docs/state/orchestration.prd-flow-map.json
+# 2) Append docs/state/orchestration.planner-queue.json (optional manual overrides)
+# 3) Single commit to docs/state/* when needed
+# 4) Dispatch Phase Orchestrator (cheap no-op when idle)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/prd/PRD.md"
+      - "docs/state/orchestration.prd-flow-map.json"
+      - "docs/state/orchestration.planner-queue.json"
+      - "docs/product/scope-slices/**"
+      - "docs/product/feature-areas/**"
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      prd_sync_strict:
+        description: "Fail if PRD Flow Inventory (v0 Yes) row missing from orchestration.prd-flow-map.json"
+        required: false
+        default: false
+        type: boolean
+      clear_planner_queue:
+        description: "After append, reset orchestration.planner-queue.json steps to []"
+        required: false
+        default: false
+        type: boolean
+      trigger_orchestrator:
+        description: "Dispatch Phase Orchestrator after this workflow"
+        required: false
+        default: true
+        type: boolean
+
+concurrency:
+  group: orchestration-automation-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  sync-and-run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ vars.ORCHESTRATOR_TRACKING_BASE || 'main' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: npm install --prefix .github/scripts
+
+      - name: Sync pipeline from PRD + manifest
+        env:
+          PRD_SYNC_STRICT: ${{ github.event_name == 'workflow_dispatch' && inputs.prd_sync_strict && '1' || '' }}
+        run: npx --prefix .github/scripts tsx .github/scripts/sync-prd-orchestration.ts
+
+      - name: Append manual planner queue (write-only batch)
+        env:
+          ORCHESTRATION_WRITE_ONLY: "1"
+          PLANNER_CLEAR_QUEUE: ${{ github.event_name == 'workflow_dispatch' && inputs.clear_planner_queue && '1' || '' }}
+        run: npx --prefix .github/scripts tsx .github/scripts/orchestration-planner.ts
+
+      - name: Commit docs/state updates
+        id: commit
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add docs/state/
+          if git diff --staged --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️  No docs/state changes — skipping commit."
+          else
+            git commit -m "chore(orchestrator): sync pipeline from PRD + planner queue [skip ci]"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dispatch Phase Orchestrator
+        if: ${{ github.event_name != 'workflow_dispatch' || (inputs.trigger_orchestrator) }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run phase-orchestrator.yml \
+            --repo "${{ github.repository }}" \
+            -f reason="orchestration-automation (${{ github.event_name }} ${{ github.run_id }})"
