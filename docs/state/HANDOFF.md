@@ -4,8 +4,8 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: phase4-dashboard-shell-slice2-complete
-current_blocker: none
+current_phase: orch-credit-system-slice-blocked-pis
+current_blocker: NEED_HUMAN — PIS approval for 5 items (HANDOFF §4); Implementation Plan still proposed
 ---
 
 # Cloud Agent State Handoff
@@ -38,12 +38,12 @@ This document captures the **complete project state** so a Cursor Cloud Agent ca
 
 ## Orchestration (canonical)
 
-- **Pipeline bookkeeping:** `docs/state/status.json` — `orchestration.steps["fa-dashboard-shell-slice2"]` = `complete`; `next_action` = `dashboard-shell-slice2-complete-proceed-prd-versioning-or-next-fa`; `orchestration_blocker` = `null`.
-- **Tracking PR:** PR #37, head `orchestrator/tracking-fa-dashboard-shell-slice2-1778498120608` → base `main` (mark ready when verification passes).
+- **Pipeline bookkeeping:** `docs/state/status.json` — `orchestration.steps["orch-credit-system--ledger-concurrency-and-stripe-webhook"]` = **`blocked`** (awaiting explicit PIS `approved` on §4 items + Implementation Plan promotion from `proposed` → `approved`). `orchestration_blocker` starts with `NEED_HUMAN:`.
+- **Credits tracking PR:** PR **#39**, head `orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778500683893` → base `main`. **Do not** `gh pr ready 39` until the slice is implemented and verified; omit while blocked on PIS.
 
 ## Current Blocker
 
-**None** for dashboard shell slice 1. Phase 3 (Turborepo + Drizzle + better-auth) and FA-account-session (both slices) are **complete** per `status.json`. Phase 2b (credits implementation) remains **blocked on PIS approval** (unrelated to this slice).
+**Orchestrator slice `orch-credit-system--ledger-concurrency-and-stripe-webhook`** is **blocked** until the human replies with explicit **`approved`** for each PIS item in §4 (ids 1–5). Workspace execution policy forbids `/implement` until then. Phase 3 (`phase3.*`) and FA-account-session (`fa_account_session.*`) remain **complete** per `status.json` mirrors.
 
 ---
 
@@ -53,9 +53,9 @@ better-auth + Drizzle are in place under `packages/auth` and `apps/web/app/api/a
 
 ## What the Cloud Agent Should Do RIGHT NOW
 
-1. Confirm `pnpm typecheck` and `pnpm build` are green on the tracking branch.
-2. Proceed with the next eligible orchestration task (e.g. `FA-prd-versioning` P1) per `docs/state/orchestration.pipeline.json` / product priority.
-3. Phase 2b / PIS blockers (§4) remain unchanged until explicit approvals.
+1. **Credits slice:** Obtain explicit PIS **`approved`** per §4 blocker (1–5); promote Implementation Plan from `proposed` to **`approved`** via `/plan` workflow. Then implement on branch `orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778500683893`, stack PRs per orchestrator rules, run `pnpm typecheck` + `pnpm build`, set `orchestration.steps["orch-credit-system--ledger-concurrency-and-stripe-webhook"]` = `complete`, then `gh pr ready 39`.
+2. While blocked: do **not** mark the step `complete` or mark PR #39 ready; keep `orchestration_blocker` as `NEED_HUMAN:…`.
+3. Other frontier work (e.g. P1 FAs) may proceed in parallel only if it does not violate execution locks — this slice stays blocked until §4 is cleared.
 
 ---
 
