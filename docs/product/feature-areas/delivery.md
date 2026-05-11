@@ -1,16 +1,16 @@
 <!--
   Feature Area — scaffolded from approved map + docs/prd/PRD.md
   Activated in PRD v2 (FG-POST-PRD-V1) — post-PRD pipeline brought into active v1 scope.
-  Maps to "Cursor delivery" in FG-POST-PRD-V1; export format requires a product decision (NEED_HUMAN=true).
+  Export format resolved via PD-001: .cursor/ folder structure + WORK_QUEUE-compatible entries.
 -->
 
 # Feature Area: Delivery
 
 ## Status
 
-`exploratory`
+`validated`
 
-> **NEED_HUMAN:** true — export format for Cursor packaging requires a product decision
+> **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 
 ---
@@ -19,7 +19,7 @@
 
 - `docs/prd/PRD.md` § Feature Groups (FG-POST-PRD-V1 — "Cursor delivery"; `exploratory`); § Global Product Picture ("Beyond v0 — FG-POST-PRD-V1: … → Cursor delivery"); § FG-POST-PRD-V1 Sub-components ("Cursor delivery"); § Flow Inventory ("Post-PRD pipeline… | Yes (v1 scope — FG-POST-PRD-V1)")
 - Related open questions: none
-- Related product decisions: none
+- Related product decisions: PD-001 (export format)
 
 ---
 
@@ -79,9 +79,7 @@ After a user story has been broken into tasks with prompts, Zedos **packages and
 
 ## Open Blockers
 
-| Blocker | Blocks | NEED_HUMAN |
-|---------|--------|------------|
-| Export format for Cursor packaging | Exact delivery format (file structure, markdown shape, Cursor-specific conventions) | true — requires product decision before Scope Slices can be fully defined |
+None. Export format resolved by PD-001 (2026-05-11).
 
 ---
 
@@ -104,7 +102,7 @@ After a user story has been broken into tasks with prompts, Zedos **packages and
 - [x] Deferred behaviors explicitly named
 - [ ] Candidate Scope Slices are individually small enough
 
-**Verdict:** PARTIALLY BLOCKED — PRD scope blocker cleared (PRD v2 / FG-POST-PRD-V1). One open NEED_HUMAN blocker remains: export format for Cursor packaging must be decided before Scope Slices can be fully defined.
+**Verdict:** CLEAR — PRD scope confirmed (PRD v2 / FG-POST-PRD-V1). Export format resolved by PD-001. Ready for Scope Slice definition.
 
 ---
 
@@ -114,3 +112,4 @@ After a user story has been broken into tasks with prompts, Zedos **packages and
 |------|--------|--------|
 | 2026-05-11 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) — created as `deferred` per PRD v1 FG-FUTURE; maps to "Cursor packaging" + "tech alignment" from FG-FUTURE | — |
 | 2026-05-11 | Activated — PRD v2 promotes FG-FUTURE → FG-POST-PRD-V1 (active v1 scope); status changed `deferred` → `exploratory`; PRD scope blocker cleared; export format NEED_HUMAN blocker remains | — |
+| 2026-05-11 | Export format resolved via PD-001 (`.cursor/` folder structure + WORK_QUEUE-compatible entries); NEED_HUMAN cleared; status `exploratory` → `validated` | — |

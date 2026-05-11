@@ -18,7 +18,10 @@ Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc`
 | FA-owner-milestone-feedback | Feature Area | | exploratory | P3 | false | false | | `/feature-area validate owner-milestone-feedback` |
 | FA-credit-system | Feature Area | | exploratory | P4 | true | false | B-003;B-004 | Resolve B-003/B-004 (`BLOCKERS.md` + Feature Area); then `/feature-area validate credit-system` |
 | FA-payments | Feature Area | | exploratory | P4 | false | false | | `/feature-area validate payments` |
-| FA-services-feature-split | Feature Area | — | candidate | P1 | false | false | | `/prd update` (activate FG-POST-PRD-V1) then `/feature-area validate services-feature-split` |
-| FA-user-stories | Feature Area | — | candidate | P1 | false | false | | `/prd update` (activate FG-POST-PRD-V1) then `/feature-area validate user-stories` |
-| FA-test-first-workflows | Feature Area | — | candidate | P2 | false | false | | `/prd update` (activate FG-POST-PRD-V1) then `/feature-area validate test-first-workflows` |
-| FA-delivery | Feature Area | — | candidate | P2 | true | false | export-format-TBD | Resolve export format blocker, then `/feature-area validate delivery` |
+| FA-services-feature-split | Feature Area | — | ready | P1 | false | false | | `/implement` via orchestrator phase `fa-services-feature-split--prd-to-feature-split` (awaits `fa-prd-versioning--browse-and-switch-prd-versions`) |
+| SS-services-feature-split--prd-to-feature-split | Scope Slice | FA-services-feature-split | ready | P1 | false | false | | `/implement` via orchestrator — plan present; awaits prd-versioning prerequisite |
+| FA-user-stories | Feature Area | — | ready | P1 | false | false | | `/implement` via orchestrator phase `fa-user-stories--story-generation-from-feature-split` (awaits services-feature-split) |
+| SS-user-stories--story-generation-from-feature-split | Scope Slice | FA-user-stories | ready | P1 | false | false | | `/implement` via orchestrator — plan present; awaits services-feature-split prerequisite |
+| FA-test-first-workflows | Feature Area | — | ready | P2 | false | false | | `/implement` via orchestrator phase `fa-test-first-workflows--task-splitting-with-prompts` (awaits user-stories) |
+| SS-test-first-workflows--task-splitting-with-prompts | Scope Slice | FA-test-first-workflows | ready | P2 | false | false | | `/implement` via orchestrator — plan present; awaits user-stories prerequisite |
+| FA-delivery | Feature Area | — | ready | P2 | false | false | | `/feature-area scaffold-slices delivery` then `/implement` via orchestrator |
