@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-11",
-  "current_phase": "phase4-dashboard-shell-slice2-complete",
+  "current_phase": "phase4-cursor-self-improve-complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -12,8 +12,12 @@
       "fa-account-session-slice2": "complete",
       "fa-dashboard-shell-slice1": "complete",
       "fa-dashboard-shell-slice2": "complete",
-      "cursor-self-improve": "in-progress"
+      "cursor-self-improve": "complete"
     }
+  },
+  "cursor_self_improve": {
+    "status": "complete",
+    "blocker": null
   },
   "phase3": {
     "p0": "complete",
@@ -84,7 +88,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "dashboard-shell-slice2-complete-proceed-prd-versioning-or-next-fa",
+  "next_action": "governance-audit-complete-proceed-p1-fa-or-orchestrator-queue",
   "orchestration_blocker": null,
   "phases": {
     "0": {
@@ -125,8 +129,8 @@
       }
     },
     "4": {
-      "status": "pending",
-      "description": "Next Feature Areas: account-session → dashboard-shell → prd-versioning → guided-clarification → credit-system"
+      "status": "in-progress",
+      "description": "Next Feature Areas: P0 slices shipped (account-session, dashboard-shell shell slices); P1+ frontier per WORK_QUEUE / orchestration"
     },
     "rules_merge": {
       "status": "complete",
@@ -151,9 +155,9 @@
   "scope_slices_count": 3,
   "cursor_artifacts": {
     "rules": 16,
-    "agents": 23,
+    "agents": 26,
     "skills": 22,
-    "commands": 15,
+    "commands": 17,
     "templates": 14,
     "checkers": 4,
     "hooks": 7,

@@ -45,6 +45,13 @@ Like the discovery side, this is **AI-assisted execution governance**, not "AI g
 | Next.js Routes | [`nextjs-routes.md`](./nextjs-routes.md) | App Router specialist — route handlers, server actions, layouts, streaming, error/loading boundaries. |
 | Auth (better-auth) | [`auth-better-auth.md`](./auth-better-auth.md) | better-auth configuration, sessions, providers, API keys (v2/v3 plan). Pre-migration NextAuth bridge. |
 | Event Contracts | [`event-contracts.md`](./event-contracts.md) | zod schema design, contract test fixtures, cross-layer DTO discipline. |
+| FA — Project workspace | [`fa-project-workspace.md`](./fa-project-workspace.md) | Phase 4 **`FA-project-workspace`** router — workspace/project surfaces (**P1**). |
+| FA — PRD versioning | [`fa-prd-versioning.md`](./fa-prd-versioning.md) | Phase 4 **`FA-prd-versioning`** router — versioned PRD + contracts (**P1**). |
+| FA — Guided clarification | [`fa-guided-clarification.md`](./fa-guided-clarification.md) | Phase 4 **`FA-guided-clarification`** router — AI clarification + streaming (**P2**). |
+
+### Phase 4 Feature Area routing
+
+Orchestration and bands live in `.cursor/rules/execution-loop.mdc` §4 and **`docs/state/status.json`**. For **`FA-project-workspace`**, **`FA-prd-versioning`**, and **`FA-guided-clarification`**, the Architect pulls in the matching **`fa-*.md`** router alongside **`domain-guardian`** so Plans name the right specialists early (Domain specialists table above).
 
 ## Operating principle
 

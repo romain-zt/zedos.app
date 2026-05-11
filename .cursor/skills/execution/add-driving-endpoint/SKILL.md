@@ -14,6 +14,7 @@ For new use cases, use `add-usecase` first; for new route handlers / actions spe
 
 - A use case exists in `application/<context>/` and needs an additional caller.
 - Examples: an existing use case is now also called from a CLI script, a server action wraps a route's logic, a webhook handler dispatches to an existing use case.
+- **Phase 4:** Extra HTTP entry points for the same clarification or workspace use case — coordinate with `.cursor/agents/execution/fa-guided-clarification.md` or `fa-project-workspace.md` when the FA is explicit in the Scope Slice.
 
 ## Read first
 

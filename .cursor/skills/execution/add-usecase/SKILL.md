@@ -13,6 +13,7 @@ Use when the Plan adds a use case under `application/<context>/<operation>.useca
 - The Plan's `Layers Affected` includes `application`.
 - The Plan's `Touched Files` lists a new `*.usecase.ts` file.
 - A route, action, or page needs to perform a multi-step operation with side effects.
+- **Phase 4:** Workspace/project flows (`FA-project-workspace`) and clarification pipelines (`FA-guided-clarification`) almost always land here before adding endpoints — pair with `.cursor/agents/execution/fa-project-workspace.md` or `fa-guided-clarification.md` at Plan time.
 
 ## Read first
 

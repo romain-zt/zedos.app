@@ -15,13 +15,14 @@ alwaysApply: false
 
 ## 1. Purpose
 
-zedos is migrating from a single Next.js app at `zedos/nextjs_space/` to a Turborepo (Phase 3 of `docs/retro/zedos-monorepo-retro.md`). Every execution-side artifact — agents, skills, commands, hooks — must work in **both** layouts without rewriting.
+zedos moved from a single Next.js app at `zedos/nextjs_space/` to Turborepo (**Phase 3 shipped** — see `docs/state/status.json`). Execution-side artifacts must remain coherent across **legacy** paths until `zedos/nextjs_space/` is deleted.
 
 This rule documents:
 
-1. The current (pre-migration) layout — what exists today
-2. The target (post-migration) layout — what Phase 3 will produce
-3. The cross-layout aliasing rules — how paths in plans, hooks, and rules stay valid in both worlds
+1. **Layout authority** — which paths are canonical for new Plans (**§2**)
+2. **Legacy pre-migration tree** — archive reference (**§3**)
+3. **Post-migration tree** — `apps/web/` + `packages/**` (**§4**)
+4. **Cross-layout aliasing** — globs and Plans until legacy removal (**§5**)
 
 This rule complements:
 
@@ -31,7 +32,13 @@ This rule complements:
 
 ---
 
-## 2. Pre-migration layout (today)
+## 2. Layout authority (Phase 3 shipped)
+
+Phase 3 is **complete** per **`docs/state/status.json`** (`phase3.p0`–`p3`). **Authoritative paths for new Implementation Plans** are **`apps/web/**`** and **`packages/**`** (and **`services/**`** when introduced). The tree below under **`zedos/nextjs_space/`** is **legacy reference** only until removed — cite **`apps/web/`** in new **`Touched Files`** lists unless a narrow maintenance PR explicitly targets legacy paths.
+
+---
+
+## 3. Pre-migration layout (legacy reference)
 
 ```
 zedos.app/                                       (workspace root)
@@ -69,7 +76,7 @@ zedos.app/                                       (workspace root)
 
 ---
 
-## 3. Post-migration layout (target)
+## 4. Post-migration layout (target)
 
 ```
 zedos.app/                                       (workspace root)
@@ -119,11 +126,11 @@ These are not re-litigated. Implementation Plans assume them.
 
 ---
 
-## 4. Cross-layout aliasing
+## 5. Cross-layout aliasing
 
-Every artifact under `.cursor/` that refers to source paths must resolve under both layouts. The conventions:
+Every artifact under `.cursor/` that refers to source paths must resolve under both layouts until **`zedos/nextjs_space/`** is deleted. The conventions:
 
-### 4.1 Globs in rules
+### 5.1 Globs in rules
 
 Use multi-pattern globs that cover both layouts. Example for "any TypeScript source file":
 
@@ -138,11 +145,11 @@ globs:
   - services/**/*.ts
 ```
 
-### 4.2 Forbidden / allowed lists in EXECUTION_LOCK
+### 5.2 Forbidden / allowed lists in EXECUTION_LOCK
 
 The `forbidden_files` list in `.cursor/rules/execution-loop.mdc` §8 covers both layouts simultaneously. Plans and PIS authors must list `allowed_files` explicitly using **the layout in effect at the time of writing** — never aspirational paths.
 
-### 4.3 Citing layers in Implementation Plans
+### 5.3 Citing layers in Implementation Plans
 
 Plans cite layers by **name**, not by path:
 
@@ -150,7 +157,7 @@ Plans cite layers by **name**, not by path:
 
 The Plan's `Touched Files` section then lists the **exact paths under the current layout**. Post-migration, a Plan written pre-migration is invalidated and must be regenerated.
 
-### 4.4 ESLint boundaries config across layouts
+### 5.4 ESLint boundaries config across layouts
 
 | Layout | Boundaries plugin location | Active scope |
 |---|---|---|
@@ -159,7 +166,7 @@ The Plan's `Touched Files` section then lists the **exact paths under the curren
 
 ---
 
-## 5. What this rule does NOT govern
+## 6. What this rule does NOT govern
 
 - Whether and when the migration runs — that's a product/leadership decision documented in `docs/retro/zedos-monorepo-retro.md`.
 - The exact migration sequence (Phase 0–4) — see the same retro for the full plan.
@@ -167,12 +174,12 @@ The Plan's `Touched Files` section then lists the **exact paths under the curren
 
 ---
 
-## 6. When this rule is invalidated
+## 7. When this rule is invalidated
 
 This rule is invalidated and must be re-authored when:
 
-- The migration completes and `zedos/nextjs_space/` is removed → drop §2 entirely.
-- A new top-level layout emerges (e.g. multiple `apps/`, services that ship independently) → expand §3.
-- The locked stack decisions in §3 change (e.g. Drizzle is replaced) → update the rule + every dependent rule.
+- The migration completes and `zedos/nextjs_space/` is removed → drop §3 (legacy pre-migration tree) and tighten §5 to post-migration paths only.
+- A new top-level layout emerges (e.g. multiple `apps/`, services that ship independently) → expand §4.
+- The locked stack decisions in §4 change (e.g. Drizzle is replaced) → update the rule + every dependent rule.
 
 Until then: the layout described here is canonical. New layouts proposed in Plans without updating this rule first are invalid.
