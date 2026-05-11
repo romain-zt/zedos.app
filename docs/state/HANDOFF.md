@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-guided-clarification--contextual-tab-refinement-complete
+current_phase: fa-read-only-sharing--revoke-link-and-noindex-complete
 current_blocker: null
 ---
 
@@ -12,28 +12,30 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-guided-clarification--contextual-tab-refinement`: **complete**. Contextual refinement sheet on PRD / Architecture / History tabs; `POST /api/projects/[id]/clarify` with `Refine [<label>]:` prefix; unit tests for panel + SSE helpers.
-- **Tracking PR:** **#66** — `orchestrator/tracking-fa-guided-clarification--contextual-tab-refinement-1778530992544` → `main`. Mark ready when CI green: `gh pr ready 66 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-read-only-sharing--revoke-link-and-noindex`: **complete**. Zod disable request + outbound row validation on `POST /api/share/disable`; share page `metadata.robots` noindex/nofollow regression test; scope slice refined to `ready-for-user-stories`; user story + implementation plan recorded under `docs/execution/`.
+- **Tracking PR:** **#68** — `orchestrator/tracking-fa-read-only-sharing--revoke-link-and-noindex-1778531718589` → `main`. Mark ready when CI green: `gh pr ready 68 --repo romain-zt/zedos.app`.
 
 ## What changed (this phase)
 
-- **User story:** `docs/execution/user-stories/guided-clarification--contextual-tab-refinement--v0.md`
-- **Implementation plan:** `docs/execution/plans/guided-clarification--contextual-tab-refinement--v0.plan.md`
-- **Code:** `ContextualRefinementPanel` (Sheet), triggers in `PrdViewer`, `ArchitecturePanel`, `QuestionHistoryPanel`; state in `ProjectWorkspace`; Vitest + happy-dom + `@vitejs/plugin-react` for `contextual-refinement-panel.test.tsx`.
+- **Scope slice:** `docs/product/scope-slices/read-only-sharing--revoke-link-and-noindex.md` (UX States, Data Touched, `ready-for-user-stories`)
+- **User story:** `docs/execution/user-stories/read-only-sharing--revoke-link-and-noindex--v0.md`
+- **Implementation plan:** `docs/execution/plans/read-only-sharing--revoke-link-and-noindex--v0.plan.md`
+- **Code:** `DisableShareLinkRequestSchema`; `packages/contracts` exports; `apps/web/app/api/share/disable/route.ts` inbound/outbound `safeParse`; `page.metadata.test.ts`
 
 ## Still blocked elsewhere
 
 - **Credits slice** `orch-credit-system--ledger-concurrency-and-stripe-webhook` remains **blocked** on PIS + plan approval (PR #39); see `status.json` `phases.2b` and `pis_blockers`.
+- **`fa-owner-milestone-feedback--milestone-detection-and-prompt`** — see `status.json` `fa_owner_milestone_feedback.blocker`.
 
 ## Next action for autonomous agent
 
-1. **`fa-read-only-sharing--revoke-link-and-noindex`** (in-progress in `orchestration.steps`).
-2. **`fa-guided-clarification--question-preview-and-progress-score`** (depends on contextual tab refinement).
-3. **Parallel:** `fa-owner-milestone-feedback--milestone-detection-and-prompt` if unstacked.
-4. **`fa-test-first-workflows--task-splitting-with-prompts`** tracking PR **#56** if still pending readiness.
+1. **`fa-guided-clarification--question-preview-and-progress-score`** (orchestration: in-progress).
+2. **Parallel:** `fa-owner-milestone-feedback--milestone-detection-and-prompt` if unblocked.
+3. **`fa-test-first-workflows--task-splitting-with-prompts`** tracking PR **#56** if still pending readiness.
+4. Confirm **PR #66** (contextual tab refinement) marked ready if CI green (prior handoff).
 
 ## Key files (this slice)
 
-- Scope slice: `docs/product/scope-slices/guided-clarification--contextual-tab-refinement.md`
-- User story: `docs/execution/user-stories/guided-clarification--contextual-tab-refinement--v0.md`
-- Plan: `docs/execution/plans/guided-clarification--contextual-tab-refinement--v0.plan.md`
+- Scope slice: `docs/product/scope-slices/read-only-sharing--revoke-link-and-noindex.md`
+- User story: `docs/execution/user-stories/read-only-sharing--revoke-link-and-noindex--v0.md`
+- Plan: `docs/execution/plans/read-only-sharing--revoke-link-and-noindex--v0.plan.md`

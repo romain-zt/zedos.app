@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-11",
-  "current_phase": "fa-guided-clarification--contextual-tab-refinement-complete",
+  "current_phase": "fa-read-only-sharing--revoke-link-and-noindex-complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -27,7 +27,7 @@
       "fa-test-first-workflows--task-splitting-with-prompts": "complete",
       "fa-read-only-sharing--anonymous-read-surface": "complete",
       "fa-owner-milestone-feedback--milestone-detection-and-prompt": "blocked",
-      "fa-read-only-sharing--revoke-link-and-noindex": "not-started",
+      "fa-read-only-sharing--revoke-link-and-noindex": "complete",
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "in-progress"
     }
@@ -61,7 +61,8 @@
   },
   "fa_read_only_sharing": {
     "mint_read_only_link": "complete",
-    "anonymous_read_surface": "complete"
+    "anonymous_read_surface": "complete",
+    "revoke_link_and_noindex": "complete"
   },
   "fa_services_feature_split": {
     "prd_to_feature_split": "complete"
@@ -143,7 +144,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Contextual tab refinement shipped on tracking PR #66 (`orchestrator/tracking-fa-guided-clarification--contextual-tab-refinement-1778530992544`). Mark ready when CI green: gh pr ready 66 --repo romain-zt/zedos.app. Continue: fa-read-only-sharing--revoke-link-and-noindex (in-progress). Next guided-clarification slice: fa-guided-clarification--question-preview-and-progress-score. Parallel: fa-owner-milestone-feedback if unblocked. Credits (PR #39) still blocked on PIS.",
+  "next_action": "Read-only sharing revoke + noindex complete on tracking PR #68 (`orchestrator/tracking-fa-read-only-sharing--revoke-link-and-noindex-1778531718589`). Mark ready for review when CI green: `gh pr ready 68 --repo romain-zt/zedos.app`. Next pipeline: `fa-guided-clarification--question-preview-and-progress-score` (in-progress). Parallel: `fa-owner-milestone-feedback--milestone-detection-and-prompt` if unblocked. Credits (PR #39) still blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {

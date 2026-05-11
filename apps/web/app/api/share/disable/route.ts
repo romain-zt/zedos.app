@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
+import { DisableShareLinkRequestSchema, ShareLinkMintResponseSchema } from '@repo/contracts/share'
 import { db, shareLinks, prdVersions, projects, eq, sql } from '@repo/db'
 
 export async function POST(request: NextRequest) {
@@ -11,14 +12,22 @@ export async function POST(request: NextRequest) {
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const userId = userResult.unwrap().id
 
-    const body = await request.json()
-    const { shareLinkId } = body ?? {}
-
-    if (!shareLinkId) {
-      return NextResponse.json({ error: 'Share link ID is required' }, { status: 400 })
+    let raw: unknown
+    try {
+      raw = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     }
 
-    // Verify ownership via join: shareLink → prdVersion → project → userId
+    const parsed = DisableShareLinkRequestSchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: parsed.error.flatten() },
+        { status: 400 },
+      )
+    }
+    const { shareLinkId } = parsed.data
+
     const [shareLink] = await db
       .select({ id: shareLinks.id, projectUserId: projects.userId })
       .from(shareLinks)
@@ -38,8 +47,14 @@ export async function POST(request: NextRequest) {
       .where(eq(shareLinks.id, shareLinkId))
       .limit(1)
 
-    return NextResponse.json(updated)
-  } catch (error: any) {
+    const out = ShareLinkMintResponseSchema.safeParse(updated)
+    if (!out.success) {
+      console.error('Share disable outbound validation', out.error.flatten())
+      return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+    }
+
+    return NextResponse.json(out.data)
+  } catch (error: unknown) {
     console.error('Share disable error:', error)
     return NextResponse.json({ error: 'Failed to disable share link' }, { status: 500 })
   }
