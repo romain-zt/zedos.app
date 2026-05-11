@@ -6,7 +6,7 @@
 
 ## Status
 
-`exploratory`
+`validated`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -96,16 +96,16 @@ The founder can **buy prepaid credit packs** (**100 / 200 / 1000** credits) usin
 
 ## Readiness Verdict
 
-- [ ] PRD source sections read
-- [ ] Product intent stated without technical language
-- [ ] Business objects enumerated
-- [ ] User journeys identified
-- [ ] In-scope / out-of-scope explicitly separated
-- [ ] No unresolved PRD open questions affecting this area
-- [ ] Deferred behaviors explicitly named
-- [ ] Candidate Scope Slices are individually small enough
+- [x] PRD source sections read
+- [x] Product intent stated without technical language
+- [x] Business objects enumerated
+- [x] User journeys identified
+- [x] In-scope / out-of-scope explicitly separated
+- [x] No unresolved PRD open questions affecting this area
+- [x] Deferred behaviors explicitly named
+- [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR SCOPE SLICES
 
 ---
 
@@ -114,3 +114,4 @@ The founder can **buy prepaid credit packs** (**100 / 200 / 1000** credits) usin
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
+| 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
