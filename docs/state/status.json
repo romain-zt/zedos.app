@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-11",
-  "current_phase": "phase4-cursor-self-improve-complete",
+  "current_phase": "fa-project-workspace-create-project-complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -14,7 +14,7 @@
       "fa-dashboard-shell-slice2": "complete",
       "cursor-self-improve": "complete",
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": "blocked",
-      "fa-project-workspace--create-project": "in-progress"
+      "fa-project-workspace--create-project": "complete"
     }
   },
   "cursor_self_improve": {
@@ -30,6 +30,9 @@
   "fa_account_session": {
     "slice1": "complete",
     "slice2": "complete"
+  },
+  "fa_project_workspace": {
+    "create_project": "complete"
   },
   "fa_dashboard_shell": {
     "slice1": "complete",
@@ -90,8 +93,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "orch-credit-system-slice-await-pis-approval-then-implement-on-tracking-pr-39",
-  "orchestration_blocker": "NEED_HUMAN: Explicit Patch Intent Summary approval for all 5 blockers in docs/state/HANDOFF.md §4 (reply with `approved` per id 1–5). Implementation Plan docs/execution/plans/credit-system--ledger-concurrency-and-stripe-webhook--phase-3-fixes.plan.md must be promoted from proposed to approved before `/implement`. No `gh pr ready 39` until slice executes and verifies.",
+  "next_action": "fa-project-workspace--create-project-complete-mark-pr-40-ready; parallel: orch-credit-system slice still blocked on PIS (PR #39, docs/state/status.json pis_blockers)",
+  "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -151,13 +154,13 @@
     }
   },
   "active_artifacts": {
-    "scope_slice": "docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md",
-    "user_story": "docs/execution/user-stories/credit-system--ledger-concurrency-and-stripe-webhook--phase-3-fixes.md",
-    "implementation_plan": "docs/execution/plans/credit-system--ledger-concurrency-and-stripe-webhook--phase-3-fixes.plan.md",
-    "friction_log": "docs/retro/phase2a-friction-log.md"
+    "scope_slice": "docs/product/scope-slices/project-workspace--create-project.md",
+    "user_story": "docs/execution/user-stories/project-workspace--create-project--v0.md",
+    "implementation_plan": "docs/execution/plans/project-workspace--create-project--v0.plan.md",
+    "parallel_blocked_slice": "docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md"
   },
   "feature_areas_count": 10,
-  "scope_slices_count": 3,
+  "scope_slices_count": 4,
   "cursor_artifacts": {
     "rules": 16,
     "agents": 26,

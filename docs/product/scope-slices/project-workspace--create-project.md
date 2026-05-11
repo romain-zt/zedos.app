@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -47,7 +47,13 @@ Founder creates a named project container and can immediately start PRD work ins
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Projects list loading | First paint before API returns | Skeleton placeholders |
+| Empty projects | Owner has no projects yet | Empty state with CTA to create |
+| Create dialog | User taps New Project | Modal: required name, optional description |
+| Validation error | Name missing or invalid on submit | Inline toast / message; no navigation |
+| Creating | Submit in flight | Primary button loading |
+| Success | Create API succeeds | Toast success; navigate to new project workspace |
+| Create failure | API error | Error toast; user can retry |
 
 ---
 
@@ -55,7 +61,8 @@ Founder creates a named project container and can immediately start PRD work ins
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| Project | Create | New row with `userId` = signed-in owner, required `name`, optional `description` |
+| User account | Read (auth) | Owner identity for scoping |
 
 ---
 
@@ -81,7 +88,7 @@ None — project creation is not a defined milestone trigger in PRD v1.
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| Account & session | Feature Area | pending | Owner identity required to scope the project to an account |
+| Account & session | Feature Area | complete | better-auth session required (`fa_account_session` complete) |
 
 ---
 
@@ -101,18 +108,18 @@ A signed-in founder can create a new project by providing a name; the project is
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY
 
 ---
 
@@ -121,3 +128,4 @@ A signed-in founder can create a new project by providing a name; the project is
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice project-workspace` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX states, data touched, dependency status; promoted to `ready-for-user-stories` for orchestration `fa-project-workspace--create-project` | cloud-agent |

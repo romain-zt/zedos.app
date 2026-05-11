@@ -82,16 +82,19 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto px-3 sm:px-0 space-y-6">
       <FadeIn>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight">Projects</h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight">Projects</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Each project contains your product idea, clarification history, and PRD versions.
             </p>
           </div>
-          <Button onClick={() => setShowCreate(true)}>
+          <Button
+            onClick={() => setShowCreate(true)}
+            className="w-full min-h-11 shrink-0 sm:w-auto sm:min-h-10"
+          >
             <Plus className="mr-2 h-4 w-4" />
             New Project
           </Button>
@@ -112,7 +115,7 @@ export default function ProjectsPage() {
             <p className="text-sm text-muted-foreground mb-4">
               Create your first project to start the product clarification flow.
             </p>
-            <Button onClick={() => setShowCreate(true)}>
+            <Button onClick={() => setShowCreate(true)} className="min-h-11 w-full max-w-xs sm:min-h-10 sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               New Project
             </Button>
@@ -126,8 +129,9 @@ export default function ProjectsPage() {
                 <Card className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4 flex items-center gap-4">
                     <button
+                      type="button"
                       onClick={() => router.push(`/dashboard/projects/${project?.id}`)}
-                      className="flex-1 flex items-center gap-3 text-left"
+                      className="flex-1 flex items-center gap-3 text-left min-h-11 py-1 sm:min-h-0"
                     >
                       <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                         <FileText className="h-5 w-5 text-muted-foreground" />
@@ -138,15 +142,15 @@ export default function ProjectsPage() {
                           {project?.description ?? 'No description'}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {project?._count?.prdVersions ?? 0} version{(project?._count?.prdVersions ?? 0) !== 1 ? 's' : ''}
+                          {project?.prdVersionCount ?? 0} version{(project?.prdVersionCount ?? 0) !== 1 ? 's' : ''}
                           {' · '}
-                          {project?._count?.questionHistory ?? 0} decisions
+                          {project?.questionHistoryCount ?? 0} decisions
                         </p>
                       </div>
                     </button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-sm">
+                        <Button variant="ghost" size="icon-sm" className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -172,7 +176,7 @@ export default function ProjectsPage() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-md sm:w-full rounded-lg">
           <DialogHeader>
             <DialogTitle className="font-display">New Project</DialogTitle>
             <DialogDescription>Describe the product idea you want to explore.</DialogDescription>
@@ -198,9 +202,15 @@ export default function ProjectsPage() {
                 className="resize-none"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button onClick={handleCreate} loading={creating}>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                variant="ghost"
+                onClick={() => setShowCreate(false)}
+                className="min-h-11 w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreate} loading={creating} className="min-h-11 w-full sm:w-auto">
                 Create Project
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
