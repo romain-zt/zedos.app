@@ -14,6 +14,7 @@ import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
+import { ShareLinkMintResponseSchema, ShareLinkSummarySchema } from '@repo/contracts/share/mint'
 
 interface PrdViewerProps {
   projectId: string
@@ -25,7 +26,9 @@ interface PrdViewerProps {
 
 export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersion, onRefresh }: PrdViewerProps) {
   const [shareLink, setShareLink] = useState<string | null>(null)
-  const [shareLinkObj, setShareLinkObj] = useState<any>(null)
+  const [shareLinkObj, setShareLinkObj] = useState<
+    { id: string; token: string; enabled: boolean } | null
+  >(null)
   const [sharing, setSharing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
@@ -34,9 +37,11 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
   // Check for existing share link
   useEffect(() => {
     const existing = selectedVersion?.shareLinks?.[0]
-    if (existing?.token) {
-      setShareLink(`${window?.location?.origin ?? ''}/share/${existing.token}`)
-      setShareLinkObj(existing)
+    const summary = existing ? ShareLinkSummarySchema.safeParse(existing) : null
+    if (summary?.success && summary.data.token) {
+      const { id, token, enabled } = summary.data
+      setShareLink(`${window?.location?.origin ?? ''}/share/${token}`)
+      setShareLinkObj({ id, token, enabled })
     } else {
       setShareLink(null)
       setShareLinkObj(null)
@@ -60,14 +65,29 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
         body: JSON.stringify({ prdVersionId: selectedVersion.id }),
       })
       if (res?.ok) {
-        const data = await res.json()
-        const link = `${window?.location?.origin ?? ''}/share/${data?.token}`
+        const raw = await res.json()
+        const validated = ShareLinkMintResponseSchema.safeParse(raw)
+        if (!validated.success) {
+          toast.error('Invalid share link response')
+          return
+        }
+        const data = validated.data
+        const link = `${window?.location?.origin ?? ''}/share/${data.token}`
         setShareLink(link)
-        setShareLinkObj(data)
+        setShareLinkObj({ id: data.id, token: data.token, enabled: data.enabled })
         toast.success('Share link created!')
         // Milestone feedback for sharing
         setFeedbackType('prd_shared')
         setShowFeedback(true)
+      } else {
+        let msg = 'Failed to create share link'
+        try {
+          const errBody = (await res.json()) as { error?: string }
+          if (errBody?.error) msg = errBody.error
+        } catch {
+          /* ignore */
+        }
+        toast.error(msg)
       }
     } catch {
       toast.error('Failed to create share link')

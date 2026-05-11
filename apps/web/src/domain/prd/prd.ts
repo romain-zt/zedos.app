@@ -21,3 +21,13 @@ export interface PrdVersionWithRelations extends PrdVersion {
   shareLinks: { id: string; token: string; enabled: boolean }[];
   questionHistoryCount: number;
 }
+
+/** Persisted read-only share artifact for a PRD version (owner-minted) */
+export interface MintedShareLink {
+  id: string;
+  prdVersionId: string;
+  token: string;
+  enabled: boolean;
+  createdAt: Date;
+  disabledAt: Date | null;
+}

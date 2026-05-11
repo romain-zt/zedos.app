@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -47,7 +47,12 @@ Founder generates a public link they can share with anyone, giving that person r
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| **No link yet** | Owner selected a PRD version and no active share link exists for that version | "Share" action is available; no copy link UI |
+| **Loading** | Owner taps Share and the mint request is in flight | Button shows loading; no duplicate requests |
+| **Success (new or reused)** | Mint succeeds (creates row or returns existing active link) | Toast confirms success; full URL shown; Copy and Disable available; milestone feedback modal may open |
+| **Error (client / network)** | Fetch throws | Toast: failed to create share link |
+| **Error (4xx/5xx)** | API returns error JSON | Toast shows server `error` message when present |
+| **Invalid response** | 200 OK but body fails contract validation | Toast: invalid share link response |
 
 ---
 
@@ -55,7 +60,8 @@ Founder generates a public link they can share with anyone, giving that person r
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| **Share link** (read-only artifact) | create (or read if one active link already exists for the PRD version) | One active enabled link per PRD version in v0; ties to stable PRD version id |
+| **PRD version** | read (ownership) | Mint authorized only when the PRD version belongs to the signed-in owner’s project |
 
 ---
 
@@ -102,18 +108,18 @@ A signed-in founder can generate a share link for their PRD; the link is immedia
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -122,3 +128,4 @@ A signed-in founder can generate a share link for their PRD; the link is immedia
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice read-only-sharing` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | UX states, data touched, readiness — orchestrator `fa-read-only-sharing--mint-read-only-link` | — |
