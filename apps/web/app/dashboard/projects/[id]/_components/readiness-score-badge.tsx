@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { QuestionCoverageReadinessScoreResponseSchema } from '@repo/contracts/questions/history'
 
 interface ReadinessScoreBadgeProps {
   projectId: string
@@ -9,22 +10,40 @@ interface ReadinessScoreBadgeProps {
 
 export function ReadinessScoreBadge({ projectId }: ReadinessScoreBadgeProps) {
   const [score, setScore] = useState<number>(0)
-  const [loading, setLoading] = useState(true)
+  const [sectionsCovered, setSectionsCovered] = useState<number>(0)
+  const [phase, setPhase] = useState<'loading' | 'ready' | 'error'>('loading')
 
   useEffect(() => {
     const fetchScore = async () => {
       try {
         const res = await fetch(`/api/projects/${projectId}/readiness-score`)
-        if (res.ok) {
-          const data = await res.json()
-          setScore(Math.round((data.total.points / data.total.weight) * 100))
+        if (!res.ok) {
+          setPhase('error')
+          return
         }
-      } catch {}
-      setLoading(false)
+        const raw = await res.json()
+        const parsed = QuestionCoverageReadinessScoreResponseSchema.safeParse(raw)
+        if (!parsed.success) {
+          setPhase('error')
+          return
+        }
+        setScore(parsed.data.score)
+        setSectionsCovered(parsed.data.coveredSections.length)
+        setPhase('ready')
+      } catch {
+        setPhase('error')
+      }
     }
-    fetchScore()
+    void fetchScore()
   }, [projectId])
 
-  if (loading) return <Badge variant="outline">Loading...</Badge>
-  return <Badge>{score}% ready</Badge>
+  if (phase === 'loading') return <Badge variant="outline">…</Badge>
+  if (phase === 'error') return <Badge variant="outline">—</Badge>
+  return (
+    <Badge className="gap-1.5">
+      <span>{score}% ready</span>
+      <span className="opacity-80 font-normal">·</span>
+      <span className="font-normal">{sectionsCovered}/8 sections</span>
+    </Badge>
+  )
 }

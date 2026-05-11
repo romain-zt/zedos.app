@@ -46,12 +46,14 @@ Founder can disable a live share link at any time; pages served at share URLs ar
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-| Success — link disabled | Owner submits disable for a share link they own; link was active | Action completes; link is shown as disabled / no longer listed among active links; anonymous visitors see inactive share surface |
-| Success — idempotent | Owner repeats disable on an already-disabled link | Same outcome as success; no error; row remains disabled |
-| Error — not signed in | No session when calling the owner action | Generic unauthorized; no detail about whether the link exists |
-| Error — invalid input | Request body missing or empty `shareLinkId` | Validation error with clear field feedback |
-| Error — not found | Link id does not exist, or exists but is not owned by this user | Same not-found outcome (no leak whether id exists vs wrong owner) |
-| Anonymous — revoked | Visitor opens share URL after owner disabled link | Inactive / not-found style experience; no PRD content |
+| Active link (owner) | Owner has an enabled share link for the PRD version | PRD viewer shows share controls; owner can copy the link or revoke it |
+| Revoking | Owner confirms disable / revoke | Loading or busy affordance until the server responds |
+| Revoked success | Disable completes | Owner sees confirmation; anonymous visitors can no longer load PRD content at the URL |
+| Revoked visitor | Someone opens a previously shared URL after revocation | Inactive surface: no PRD content (not found or dedicated inactive message per anonymous-read slice) |
+| Not owner / wrong link | Caller is not the project owner or link id is unknown | Generic not-found style response for disable; no leakage that another project owns the link |
+| Unauthenticated | No session on disable action | User is prompted to sign in or sees unauthorized error |
+| Invalid input | Malformed disable request | Clear validation error |
+| Share page SEO (all states) | Any visitor hits `/share/<token>` while link is active or after revocation | Page is treated as non-indexable (robots noindex/nofollow product intent) |
 
 ---
 
@@ -59,9 +61,9 @@ Founder can disable a live share link at any time; pages served at share URLs ar
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-| Share link | Read + conditional update | `enabled`, `disabled_at`; ownership checked via PRD version → project |
-| PRD version | Read (join only) | Ownership path for share link row |
-| Project | Read (join only) | Owner user id for authorization |
+| Share link (read-only) | Disable / update | Set disabled state and timestamp; link stops serving content |
+| PRD version (ownership check) | Read | Ensures only the owning founder can revoke |
+| Project ownership | Read | Join path for “this link belongs to this founder” |
 
 ---
 
@@ -119,7 +121,7 @@ A signed-in founder can disable a live share link; after revocation, visitors ac
 - [x] All blockers resolved or NEED_HUMAN=true explicitly set
 - [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** READY FOR USER STORIES
+**Verdict:** READY
 
 ---
 
@@ -128,4 +130,4 @@ A signed-in founder can disable a live share link; after revocation, visitors ac
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice read-only-sharing` proposal via `/feature-area scaffold-slices` | — |
-| 2026-05-11 | Refined UX states, data touched, dependency statuses; promoted to `ready-for-user-stories` | cloud-agent |
+| 2026-05-11 | Refined UX States, Data Touched, dependency status; promoted to `ready-for-user-stories` for orchestrator `fa-read-only-sharing--revoke-link-and-noindex` | cloud-agent |

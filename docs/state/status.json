@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-11",
-  "current_phase": "fa-read-only-sharing--revoke-link-and-noindex-complete",
+  "current_phase": "fa-guided-clarification--question-preview-and-progress-score-complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -27,7 +27,9 @@
       "fa-test-first-workflows--task-splitting-with-prompts": "complete",
       "fa-read-only-sharing--anonymous-read-surface": "complete",
       "fa-owner-milestone-feedback--milestone-detection-and-prompt": "blocked",
-      "fa-read-only-sharing--revoke-link-and-noindex": "complete"
+      "fa-read-only-sharing--revoke-link-and-noindex": "complete",
+      "fa-guided-clarification--contextual-tab-refinement": "complete",
+      "fa-guided-clarification--question-preview-and-progress-score": "complete"
     }
   },
   "cursor_self_improve": {
@@ -74,6 +76,19 @@
   "fa_dashboard_shell": {
     "slice1": "complete",
     "slice2": "complete"
+  },
+  "fa_guided_clarification": {
+    "contextual_tab_refinement": "complete",
+    "question_preview_and_progress_score": "complete",
+    "tracking_pr": 70,
+    "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532809796"
+  },
+  "fa_owner_milestone_feedback": {
+    "milestone_detection_and_prompt": "blocked",
+    "tracking_pr": 60,
+    "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778527433914",
+    "blocker": "NEED_HUMAN: Scope slice docs/product/scope-slices/owner-milestone-feedback--milestone-detection-and-prompt.md is NOT READY (missing UX States and Data Touched; verdict NOT READY). Refine via /feature-area refine-slice, promote to ready-for-user-stories, then add User Story + approved Implementation Plan (execution bridge). This branch adds milestone feedback Zod contracts and /api/feedback validation only; full milestone detection (prd_updated, prd_viewed) awaits that plan.",
+    "progress_note": "Land @repo/contracts feedback/submit schemas; apps/web /api/feedback POST+GET validates with Zod; contract unit tests. Repair createBufferedStreamingResponse (upstream SSE → processing/completed envelopes for clarify + generate-prd); fix clarify/route.ts merge corruption; DrizzleQuestionHistoryRepository uses NewQuestionHistory from @repo/db."
   },
   "pis_approved": false,
   "pis_blockers_count": 5,
@@ -130,7 +145,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Revoke link + noindex shipped on tracking PR #64 (`orchestrator/tracking-fa-read-only-sharing--revoke-link-and-noindex-1778529549863`). Mark ready when CI green: `gh pr ready 64 --repo romain-zt/zedos.app`. Parallel: fa-owner-milestone-feedback if unblocked. Credits (PR #39) still blocked on PIS.",
+  "next_action": "Guided clarification question-preview slice complete; tracking PR #70 marked ready for review when CI green. Next: `docs/state/orchestration.pipeline.json` + `orchestration.steps` for next eligible item. Parallel: owner-milestone-feedback if unblocked. Credits (PR #39) still blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {

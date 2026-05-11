@@ -236,6 +236,36 @@
       }
     },
     {
+      "id": "fa-guided-clarification--contextual-tab-refinement",
+      "dependsOn": [
+        "fa-prd-versioning--browse-and-switch-prd-versions"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Contextual inline refinement on PRD / Architecture / History tabs",
+        "featureAreaFile": "docs/product/feature-areas/guided-clarification.md",
+        "scopeSliceFile": "docs/product/scope-slices/guided-clarification--contextual-tab-refinement.md",
+        "userStoryFile": "docs/execution/user-stories/guided-clarification--contextual-tab-refinement--v0.md",
+        "planFile": "docs/execution/plans/guided-clarification--contextual-tab-refinement--v0.plan.md",
+        "notes": "P2. Requires prd-versioning complete. UI-only surface: new ContextualRefinementPanel + trigger buttons in PrdViewer, ArchitecturePanel, QuestionHistoryPanel. Reuses existing /clarify endpoint; no new API routes."
+      }
+    },
+    {
+      "id": "fa-guided-clarification--question-preview-and-progress-score",
+      "dependsOn": [
+        "fa-guided-clarification--contextual-tab-refinement"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "Next-section preview and question-based readiness score",
+        "featureAreaFile": "docs/product/feature-areas/guided-clarification.md",
+        "scopeSliceFile": "docs/product/scope-slices/guided-clarification--question-preview-and-progress-score.md",
+        "userStoryFile": "docs/execution/user-stories/guided-clarification--question-preview-and-progress-score--v0.md",
+        "planFile": "docs/execution/plans/guided-clarification--question-preview-and-progress-score--v0.plan.md",
+        "notes": "P2. Depends on slice A (shared question-history load pattern). Replaces ADR-based readiness score with question-coverage formula (answered / answered+remaining). Adds Coming up chips in Clarify tab. Zero new API calls for chips — computed client-side."
+      }
+    },
+    {
       "id": "fa-services-feature-split--prd-to-feature-split",
       "dependsOn": [
         "fa-prd-versioning--browse-and-switch-prd-versions"

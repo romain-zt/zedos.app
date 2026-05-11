@@ -1,15 +1,16 @@
-# Implementation Plan: Revoke read-only share link (v0)
+# Implementation Plan: Revoke link and noindex (v0)
 
 ## Parent User Story
 
-[Revoke read-only share link (v0)](../user-stories/read-only-sharing--revoke-link-and-noindex--v0.md)
+[Revoke link and noindex (v0)](../user-stories/read-only-sharing--revoke-link-and-noindex--v0.md)
 
 ## Status
 
-`approved`
+`executed`
 
 > **Layout in effect:** post-migration (`apps/web/` + `packages/`)
 > **Architecture Surface:** resolved
+> **Approval:** executed-by-orchestrator-instruction (tracking PR #68)
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 
@@ -17,7 +18,9 @@
 
 ## Approach
 
-Extend the PRD repository port with `revokeReadOnlyShareLink`, implemented in `DrizzlePrdRepository` using the same ownership join as minting (`share_links` → `prd_versions` → `projects`). On success, set `enabled = false` and `disabled_at`; if already disabled, return the current row without changing `disabled_at`. Add a thin application use case that delegates to the port. Refactor `POST /api/share/disable` to validate `DisableShareLinkRequestSchema`, authenticate via `requireUser`, call the use case, and validate the outbound payload with `ShareLinkMintResponseSchema` (same row shape as mint). Errors map to HTTP via existing `ApplicationError` status codes. Uses `@repo/result` Result discipline per `73-result-rop.mdc`. Noindex for `/share/[token]` is already satisfied by page metadata; no code change required there.
+Add `DisableShareLinkRequestSchema` in `@repo/contracts`. Harden `POST /api/share/disable` with Zod for the JSON body and `ShareLinkMintResponseSchema` for the JSON response (same row shape as mint; reuse avoids duplicate DTOs). Keep existing ownership check + disable update. Add a colocated Vitest asserting `apps/web/app/share/[token]/page.tsx` exports `metadata.robots` with `index: false, follow: false`.
+
+**Known drift:** The disable route still performs Drizzle reads/writes inline (pre-existing pattern in this codebase). This plan does not expand scope to extract a use case; a follow-up hygiene PR may move revoke behind `IPrdRepository` + application use case per `72-hexagonal-boundaries.mdc`.
 
 ---
 
@@ -26,30 +29,23 @@ Extend the PRD repository port with `revokeReadOnlyShareLink`, implemented in `D
 | Field | Decision |
 |-------|----------|
 | Source-of-truth (data) | Postgres via Drizzle |
-| Auth source-of-truth | better-auth (`requireUser` guard) |
-| Async/sync boundary | Synchronous per request |
-| Transaction boundary | Single update statement in repository method |
+| Auth source-of-truth | better-auth (`requireUser`) |
+| Async/sync boundary | Synchronous per HTTP request |
+| Transaction boundary | Single update path |
 | External dependencies | None |
-| Payment shape (if money) | n/a |
-| ↳ Webhook idempotency mechanism (if Payment shape ≠ n/a) | n/a |
-| ↳ Webhook signature secret source (if Payment shape ≠ n/a) | n/a |
-| ↳ Reservation vs deduct-after-success (if Payment shape ≠ n/a) | n/a |
+| Payment shape | n/a |
 
 ### Surface Blockers
 
-- none
+- None
 
 ---
 
 ## Layers Affected
 
-- [x] `domain` — extend `IPrdRepository` with `revokeReadOnlyShareLink`
-- [x] `application` — `RevokeReadOnlyShareLinkUseCase`
-- [x] `contracts` — `DisableShareLinkRequestSchema` in `packages/contracts/src/share/revoke.ts`
-- [x] `infrastructure` — `DrizzlePrdRepository.revokeReadOnlyShareLink`
-- [x] `app` (routes, server actions, server components) — `app/api/share/disable/route.ts`
-- [ ] `ui` — none
-- [ ] `shared` — none
+- [x] `contracts` — `packages/contracts/src/share/disable.ts`
+- [x] `app` (routes) — `apps/web/app/api/share/disable/route.ts`
+- [x] `app` (pages) — metadata test only; page metadata unchanged
 
 ---
 
@@ -57,21 +53,15 @@ Extend the PRD repository port with `revokeReadOnlyShareLink`, implemented in `D
 
 | Path | Operation | Rationale |
 |------|-----------|-----------|
-| `packages/contracts/src/share/revoke.ts` | modify | Request schema for disable body |
-| `packages/contracts/src/share/revoke.test.ts` | modify | Contract tests |
-| `packages/contracts/src/share/index.ts` | modify | Re-export revoke |
-| `apps/web/src/domain/prd/prd-repository.ts` | modify | Port method |
-| `apps/web/src/infrastructure/persistence/prd-repository.ts` | modify | Drizzle revoke implementation |
-| `apps/web/src/application/prd/revoke-read-only-share-link-usecase.ts` | add | Use case |
-| `apps/web/src/application/prd/revoke-read-only-share-link-usecase.test.ts` | add | Unit test |
-| `apps/web/src/application/prd/index.ts` | modify | Export use case |
-| `apps/web/app/api/share/disable/route.ts` | modify | Thin adapter |
-| `docs/product/scope-slices/read-only-sharing--revoke-link-and-noindex.md` | modify | Slice refinement + promotion |
-| `docs/execution/user-stories/read-only-sharing--revoke-link-and-noindex--v0.md` | add | User story |
+| `packages/contracts/src/share/disable.ts` | add | Request schema for disable |
+| `packages/contracts/src/share/disable.test.ts` | add | Contract tests |
+| `packages/contracts/src/share/index.ts` | modify | Re-export disable |
+| `packages/contracts/package.json` | modify | Subpath exports for `share` surface |
+| `apps/web/app/api/share/disable/route.ts` | modify | Request/response zod validation |
+| `apps/web/app/share/[token]/page.metadata.test.ts` | add | Robots regression test |
+| `docs/product/scope-slices/read-only-sharing--revoke-link-and-noindex.md` | modify | Refine slice → ready-for-user-stories |
+| `docs/execution/user-stories/read-only-sharing--revoke-link-and-noindex--v0.md` | add | Story |
 | `docs/execution/plans/read-only-sharing--revoke-link-and-noindex--v0.plan.md` | add | This plan |
-| `docs/state/orchestration.pipeline.json` | modify | Link story + plan |
-| `docs/state/status.json` | modify | Orchestration + FA mirror |
-| `docs/state/HANDOFF.md` | modify | Next action |
 
 ---
 
@@ -79,15 +69,16 @@ Extend the PRD repository port with `revokeReadOnlyShareLink`, implemented in `D
 
 | Schema | Operation | Test fixture |
 |--------|-----------|--------------|
-| `DisableShareLinkRequestSchema` | add | `revoke.test.ts` |
+| `DisableShareLinkRequestSchema` | add | `disable.test.ts` |
+| (reuse) `ShareLinkMintResponseSchema` | use for outbound | existing `mint.ts` |
 
 ---
 
 ## Migrations
 
 | Migration name | Tables touched | Backwards-compatible? |
-|----------------|----------------|------------------------|
-| — | — | — |
+|----------------|----------------|----------------------|
+| none | — | — |
 
 ---
 
@@ -95,20 +86,20 @@ Extend the PRD repository port with `revokeReadOnlyShareLink`, implemented in `D
 
 | Path | Type | Asserts |
 |------|------|---------|
-| `packages/contracts/src/share/revoke.test.ts` | contract | Invalid / valid disable body |
-| `apps/web/src/application/prd/revoke-read-only-share-link-usecase.test.ts` | unit | Delegation + error propagation |
+| `packages/contracts/src/share/disable.test.ts` | contract | Disable request parses / rejects |
+| `apps/web/app/share/[token]/page.metadata.test.ts` | unit | `metadata.robots` noindex/nofollow |
 
 ---
 
 ## Dependencies Added
 
-- none
+- None
 
 ---
 
 ## Rollback
 
-Revert the commit(s) on the tracking branch; no schema migration. Re-enable links would require a separate data repair if ever needed (out of v0 scope).
+Revert the PR; no schema migrations.
 
 ---
 
@@ -116,35 +107,14 @@ Revert the commit(s) on the tracking branch; no schema migration. Re-enable link
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| Client expects old raw Drizzle row shape | Low | Medium | Outbound validated with same schema as mint |
+| Outbound validation rejects rare DB shape | Low | 500 on disable | Log zod error; fix schema or row mapping |
 
 ---
 
 ## Out of Scope (deliberate)
 
-- E2E browser flow for disable button (UI may already call API — unchanged scope)
-- Changing `GET` anonymous error messages
-- New migrations or new columns
-
----
-
-## Adversarial Review
-
-| Reviewer | Verdict | Findings |
-|----------|---------|----------|
-| domain-guardian | PASS | Port + adapter only; no route DB |
-| scope-critic | PASS | Matches slice boundary |
-
----
-
-## Approval
-
-- [x] User reviewed and approved this Plan (orchestrator instruction: execute read-only-sharing revoke slice)
-- [x] Patch Intent Summary will be produced before any code edit
-- [x] Verification steps (typecheck / lint / test / build) defined in §Tests above
-
-**Approval status:** approved
-**Approval date:** 2026-05-11
+- Extracting disable into a dedicated application use case + repository port (follow-up)
+- Changing anonymous-read inactive UX copy
 
 ---
 
@@ -152,4 +122,4 @@ Revert the commit(s) on the tracking branch; no schema migration. Re-enable link
 
 | Date | Change | Author |
 |------|--------|--------|
-| 2026-05-11 | Initial plan | cloud-agent |
+| 2026-05-11 | Proposed + executed for orchestrator PR #68 | cloud-agent |

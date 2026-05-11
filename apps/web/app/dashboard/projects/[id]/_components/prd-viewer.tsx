@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   FileText, Share2, Copy, Check, XCircle,
-  AlertCircle, CheckCircle2, CircleDot,
+  AlertCircle, CheckCircle2, CircleDot, MessageSquare,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
@@ -22,9 +22,17 @@ interface PrdViewerProps {
   selectedVersion: PrdVersionDTO | null
   onSelectVersion: (v: PrdVersionDTO) => void
   onRefresh: () => void
+  onOpenRefinement?: (payload: { label: string; prdVersionId: string | null }) => void
 }
 
-export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersion, onRefresh }: PrdViewerProps) {
+export function PrdViewer({
+  projectId,
+  versions,
+  selectedVersion,
+  onSelectVersion,
+  onRefresh,
+  onOpenRefinement,
+}: PrdViewerProps) {
   const [shareLink, setShareLink] = useState<string | null>(null)
   const [shareLinkObj, setShareLinkObj] = useState<
     { id: string; token: string; enabled: boolean } | null
@@ -235,17 +243,38 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
             <StaggerItem key={section?.id ?? i}>
               <Card>
                 <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-display">{section?.title ?? 'Section'}</CardTitle>
-                    {section?.confidence && (
-                      <Badge
-                        variant="secondary"
-                        className={`text-xs gap-1 ${getConfidenceColor(section.confidence)}`}
-                      >
-                        {getConfidenceIcon(section.confidence)}
-                        {section.confidence}
-                      </Badge>
-                    )}
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-base font-display pr-1 flex-1 min-w-0">
+                      {section?.title ?? 'Section'}
+                    </CardTitle>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {onOpenRefinement ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11 sm:h-9 sm:w-9 text-muted-foreground hover:text-foreground"
+                          aria-label={`Refine section ${section?.title ?? 'Section'}`}
+                          onClick={() =>
+                            onOpenRefinement({
+                              label: `${section?.title ?? 'Section'} (PRD)`,
+                              prdVersionId: selectedVersion?.id ?? null,
+                            })
+                          }
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                      {section?.confidence && (
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs gap-1 shrink-0 ${getConfidenceColor(section.confidence)}`}
+                        >
+                          {getConfidenceIcon(section.confidence)}
+                          {section.confidence}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">

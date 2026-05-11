@@ -1,4 +1,4 @@
-# User Story: Revoke read-only share link (v0)
+# User Story: Revoke link and noindex (v0)
 
 ## Parent Scope Slice
 
@@ -6,7 +6,7 @@
 
 ## Status
 
-`ready-for-implementation`
+`done`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -15,7 +15,7 @@
 
 ## Story
 
-As a signed-in founder, I want to disable an active read-only share link for my PRD version so that anonymous visitors can no longer view that content at the share URL.
+As a signed-in product owner, I want to disable my live read-only share link and know that share URLs are not indexed by search engines, so that I can cut off public access and reduce discovery risk.
 
 ---
 
@@ -23,18 +23,20 @@ As a signed-in founder, I want to disable an active read-only share link for my 
 
 | ID | Given | When | Then |
 |----|-------|------|------|
-| AC-1 | I own an active share link for my PRD version | I choose to disable that link | The link becomes inactive; anonymous visitors no longer see the PRD body at that URL |
-| AC-2 | The link is already disabled | I invoke disable again for the same link | The outcome is successful and idempotent; the link stays disabled |
-| AC-3 | I am not signed in | I try to disable a link | I get an unauthorized outcome without learning whether a link id exists |
-| AC-4 | The request references an unknown id, another founder’s link, or malformed input | I try to disable | I get validation or not-found style outcomes without leaking ownership details |
+| AC-1 | I own the project and an enabled share link exists | I revoke/disable that link | The link is marked inactive in the system and the disable response reflects disabled state |
+| AC-2 | The link is revoked | A visitor opens the share URL | They do not see PRD content (inactive / not-found behavior per anonymous-read slice) |
+| AC-3 | I am not signed in | I call the disable endpoint | I get unauthorized |
+| AC-4 | I pass a share link id I do not own (or that does not exist) | I call disable | I get not-found style response without leaking other tenants |
+| AC-5 | Request body is invalid JSON or fails validation | — | I get a validation / bad request response |
+| AC-6 | Any visitor loads `/share/<token>` (active or revoked token) | The page is rendered | Metadata expresses noindex / nofollow intent for crawlers |
 
 ---
 
 ## Test Plan
 
-- [ ] Disable share link use case delegates to repository and preserves Result errors (unit)
-- [ ] Disable request contract rejects empty or missing `shareLinkId` (contract)
-- [ ] Repository revoke path returns not-found when ownership fails (integration-style unit with mocked DB optional — covered via repository tests if present)
+- [x] Contract: `DisableShareLinkRequestSchema` in `packages/contracts/src/share/disable.test.ts`
+- [x] App: `apps/web/app/share/[token]/page.metadata.test.ts` (robots metadata)
+- [x] `pnpm typecheck` and `pnpm build` on the tracking branch
 
 ---
 
@@ -42,47 +44,30 @@ As a signed-in founder, I want to disable an active read-only share link for my 
 
 | Path or layer | Change type | Reason |
 |---------------|-------------|--------|
-| Owner disable API route (apps/web) | modify | Thin adapter: validate body, auth, call use case, map Result |
-| PRD repository port + Drizzle adapter | modify | Implement revoke with ownership check and idempotent disable |
-| Share revoke Zod contract package | add / modify | Request shape for disable |
-| Application use case for revoke | add | Single delegation to port |
+| `packages/contracts/src/share/disable.ts` | add | Disable request zod |
+| `packages/contracts/src/share/disable.test.ts` | add | Contract tests |
+| `apps/web/app/api/share/disable/route.ts` | modify | Inbound + outbound zod validation |
+| `apps/web/app/share/[token]/page.tsx` | verify | `metadata.robots` noindex (existing) |
+| `apps/web/app/share/[token]/page.metadata.test.ts` | add | Regression on robots |
 
 ---
 
-## Out of Scope
+## Out-of-Scope
 
-- Scheduled or automatic link expiry
-- Auto-minting a replacement link on revoke
-- Per-link or per-project custom robots policies beyond product-wide noindex intent
-- Changing anonymous page branding beyond existing inactive / not-found behavior
+- Scheduled expiry, auto-remint on revoke, per-link SEO toggles (see parent slice exclusions)
+- New owner UI beyond existing PRD viewer disable control
 
 ---
 
 ## Open Questions
 
-| ID | Question | Blocks | Next action |
-|----|----------|--------|-------------|
-| — | — | — | — |
+- None
 
 ---
 
 ## Decision References
 
-- none
-
----
-
-## Readiness for Implementation Plan
-
-- [x] Story expressed in user-value terms (no implementation language)
-- [x] Acceptance Criteria cover at least one row per UX state from the parent Scope Slice
-- [x] Test plan names test type for each item (unit / integration / contract / e2e)
-- [x] Touched Files (predicted) is non-empty
-- [x] Out of Scope is non-empty
-- [x] All Open Questions either answered or carry an explicit next action
-- [x] Decision references resolved (or `none` stated explicitly)
-
-**Verdict:** READY FOR IMPLEMENTATION PLAN
+- None
 
 ---
 
@@ -90,4 +75,4 @@ As a signed-in founder, I want to disable an active read-only share link for my 
 
 | Date | Change | Author |
 |------|--------|--------|
-| 2026-05-11 | Authored from ready Scope Slice | cloud-agent |
+| 2026-05-11 | Authored for orchestrator `fa-read-only-sharing--revoke-link-and-noindex` | cloud-agent |
