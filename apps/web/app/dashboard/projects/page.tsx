@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import type { ProjectWithCounts } from '@domain/project/project-repository'
 import { Card, CardContent } from '@/components/ui/card'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import {
   Plus, FileText, ArrowRight, FolderOpen, MoreVertical, Trash2, Pencil,
+  AlertTriangle, RefreshCw,
 } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -19,26 +22,38 @@ import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 
 export default function ProjectsPage() {
   const router = useRouter()
-  const [projects, setProjects] = useState<any[]>([])
+  const [projects, setProjects] = useState<ProjectWithCounts[]>([])
   const [loading, setLoading] = useState(true)
+  const [listError, setListError] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
   const [creating, setCreating] = useState(false)
 
   const fetchProjects = async () => {
+    setLoading(true)
+    setListError(null)
     try {
       const res = await fetch('/api/projects')
-      if (res?.ok) {
-        const data = await res.json()
-        setProjects(data ?? [])
+      if (!res?.ok) {
+        setProjects([])
+        setListError(
+          res ? `Could not load projects (HTTP ${res.status}). Try again.` : 'Could not load projects. Try again.'
+        )
+        return
       }
-    } catch {} finally {
+      const data: unknown = await res.json()
+      setProjects(Array.isArray(data) ? (data as ProjectWithCounts[]) : [])
+    } catch (e) {
+      setProjects([])
+      const detail = e instanceof Error ? e.message : 'Network error'
+      setListError(`Could not load projects: ${detail}`)
+    } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchProjects() }, [])
+  useEffect(() => { void fetchProjects() }, [])
 
   const handleCreate = async () => {
     if (!newName.trim()) {
@@ -75,7 +90,7 @@ export default function ProjectsPage() {
     try {
       await fetch(`/api/projects/${id}`, { method: 'DELETE' })
       toast.success('Project deleted')
-      fetchProjects()
+      void fetchProjects()
     } catch {
       toast.error('Failed to delete project')
     }
@@ -107,6 +122,24 @@ export default function ProjectsPage() {
             <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
           ))}
         </div>
+      ) : listError ? (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" aria-hidden />
+          <AlertTitle className="text-base">Projects did not load</AlertTitle>
+          <AlertDescription className="text-destructive-foreground/90 space-y-3">
+            <p>{listError}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-11 w-full sm:w-auto border-destructive-foreground/40"
+              onClick={() => void fetchProjects()}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
       ) : (projects?.length ?? 0) === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -124,27 +157,27 @@ export default function ProjectsPage() {
       ) : (
         <Stagger staggerDelay={0.05}>
           <div className="grid gap-3">
-            {(projects ?? []).map((project: any) => (
-              <StaggerItem key={project?.id}>
+            {(projects ?? []).map((project) => (
+              <StaggerItem key={project.id}>
                 <Card className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4 flex items-center gap-4">
                     <button
                       type="button"
-                      onClick={() => router.push(`/dashboard/projects/${project?.id}`)}
+                      onClick={() => router.push(`/dashboard/projects/${project.id}`)}
                       className="flex-1 flex items-center gap-3 text-left min-h-11 py-1 sm:min-h-0"
                     >
                       <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                         <FileText className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium truncate">{project?.name ?? 'Untitled'}</p>
+                        <p className="font-medium truncate">{project.name ?? 'Untitled'}</p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {project?.description ?? 'No description'}
+                          {project.description ?? 'No description'}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {project?.prdVersionCount ?? 0} version{(project?.prdVersionCount ?? 0) !== 1 ? 's' : ''}
+                          {project.prdVersionCount ?? 0} version{(project.prdVersionCount ?? 0) !== 1 ? 's' : ''}
                           {' · '}
-                          {project?.questionHistoryCount ?? 0} decisions
+                          {project.questionHistoryCount ?? 0} decisions
                         </p>
                       </div>
                     </button>
@@ -155,11 +188,11 @@ export default function ProjectsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/dashboard/projects/${project?.id}`)}>
+                        <DropdownMenuItem onClick={() => router.push(`/dashboard/projects/${project.id}`)}>
                           <Pencil className="mr-2 h-4 w-4" /> Open
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDelete(project?.id)}
+                          onClick={() => handleDelete(project.id)}
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" /> Delete

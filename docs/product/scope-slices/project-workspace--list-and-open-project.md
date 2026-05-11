@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -46,7 +46,11 @@ Founder sees all owned projects at a glance and opens any one to resume work whe
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Loading | Dashboard or Projects page is fetching the list | Skeleton or placeholder rows until data resolves |
+| Empty | Owner has no projects | Prompt to create a first project (existing create flow) |
+| Success | List returned | Named entries with optional description snippet; tap/click opens workspace |
+| List error | GET /api/projects fails (network, 401, 5xx) | Inline message + retry; not a silent empty list |
+| Open denied | Project id missing or not owned | Redirect back to projects list (no partial workspace) |
 
 ---
 
@@ -54,7 +58,7 @@ Founder sees all owned projects at a glance and opens any one to resume work whe
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| Project | Read (list by owner), Read (single by id + owner) | Scopes to signed-in user; same sources as create-project slice |
 
 ---
 
@@ -80,8 +84,8 @@ None — opening a project from the dashboard is not a defined milestone trigger
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| Account & session | Feature Area | pending | Owner identity required to scope the project list |
-| `create-project` | Scope Slice | exploratory | At least one project must exist to open; list is empty state until a project is created |
+| Account & session | Feature Area | complete | Owner identity via better-auth |
+| `create-project` | Scope Slice | complete | At least one project may exist; empty state remains valid |
 
 ---
 
@@ -101,18 +105,18 @@ A signed-in founder arriving at the dashboard sees a list of their projects; sel
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -121,3 +125,4 @@ A signed-in founder arriving at the dashboard sees a list of their projects; sel
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice project-workspace` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-11 | Refined UX states, data touched, dependencies; promoted for user stories (orchestrator slice execution) | — |

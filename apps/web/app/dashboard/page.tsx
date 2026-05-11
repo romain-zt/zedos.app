@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DEFERRED_ROADMAP_PLACEHOLDERS } from './_lib/deferred-roadmap-placeholders'
-import { FolderOpen, Plus, FileText, ArrowRight, Sparkles, Construction, Info } from 'lucide-react'
+import { FolderOpen, Plus, FileText, ArrowRight, Sparkles, Construction, Info, AlertTriangle, RefreshCw } from 'lucide-react'
 import { FadeIn, SlideIn, Stagger, StaggerItem } from '@/components/ui/animate'
 
 export default function DashboardPage() {
@@ -17,22 +17,35 @@ export default function DashboardPage() {
   const router = useRouter()
   const [projects, setProjects] = useState<ProjectWithCounts[]>([])
   const [loading, setLoading] = useState(true)
+  const [listError, setListError] = useState<string | null>(null)
+
+  const loadProjects = async () => {
+    setLoading(true)
+    setListError(null)
+    try {
+      const projRes = await fetch('/api/projects')
+      if (!projRes?.ok) {
+        setProjects([])
+        setListError(
+          projRes
+            ? `Could not load your projects (HTTP ${projRes.status}). Try again.`
+            : 'Could not load your projects. Try again.'
+        )
+        return
+      }
+      const projData: unknown = await projRes.json()
+      setProjects(Array.isArray(projData) ? (projData as ProjectWithCounts[]) : [])
+    } catch (e) {
+      setProjects([])
+      const detail = e instanceof Error ? e.message : 'Network error'
+      setListError(`Could not load your projects: ${detail}`)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const projRes = await fetch('/api/projects')
-        if (projRes?.ok) {
-          const projData: unknown = await projRes.json()
-          setProjects(Array.isArray(projData) ? (projData as ProjectWithCounts[]) : [])
-        }
-      } catch {
-        // Silently handle
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
+    void loadProjects()
   }, [])
 
   const userName = session?.user?.name?.split(' ')?.[0] ?? 'there'
@@ -76,7 +89,7 @@ export default function DashboardPage() {
                     <FolderOpen className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold font-mono">{loading ? '...' : projects.length}</p>
+                    <p className="text-2xl font-bold font-mono">{loading ? '...' : listError ? '—' : projects.length}</p>
                     <p className="text-sm text-muted-foreground">Projects</p>
                   </div>
                 </div>
@@ -94,7 +107,7 @@ export default function DashboardPage() {
                     <FileText className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold font-mono">{loading ? '...' : totalPrdVersions}</p>
+                    <p className="text-2xl font-bold font-mono">{loading ? '...' : listError ? '—' : totalPrdVersions}</p>
                     <p className="text-sm text-muted-foreground">PRD versions (all projects)</p>
                   </div>
                 </div>
@@ -148,7 +161,25 @@ export default function DashboardPage() {
 
       {/* Recent projects or CTA */}
       <SlideIn from="bottom">
-        {projects.length === 0 && !loading ? (
+        {listError && !loading ? (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" aria-hidden />
+            <AlertTitle className="text-base">Projects did not load</AlertTitle>
+            <AlertDescription className="text-destructive-foreground/90 space-y-3">
+              <p>{listError}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11 w-full sm:w-auto border-destructive-foreground/40"
+                onClick={() => void loadProjects()}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : projects.length === 0 && !loading ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12 px-4">
               <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
