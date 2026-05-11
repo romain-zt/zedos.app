@@ -321,8 +321,8 @@
         "title": "Milestone detection and prompt",
         "featureAreaFile": "docs/product/feature-areas/owner-milestone-feedback.md",
         "scopeSliceFile": "docs/product/scope-slices/owner-milestone-feedback--milestone-detection-and-prompt.md",
-        "userStoryFile": null,
-        "planFile": null,
+        "userStoryFile": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
+        "planFile": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
         "notes": "Governance step: create user story + plan if not present before implementing. Requires prd-versioning and sharing milestone events to exist."
       }
     },

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ClarificationChat } from './clarification-chat'
 import { PrdViewer } from './prd-viewer'
@@ -18,6 +18,11 @@ import {
   PrdVersionListResponseSchema,
   type PrdVersionDTO,
 } from '@repo/contracts/prd/prd-contracts'
+import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
+import {
+  hasSeenMilestonePromptThisSession,
+  milestonePromptSessionKey,
+} from './owner-milestone-prompt-session'
 
 interface ProjectWorkspaceProps {
   projectId: string
@@ -35,6 +40,10 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
   const [saving, setSaving] = useState(false)
   const [phase, setPhase] = useState('intake')
   const [loadingPhase, setLoadingPhase] = useState(true)
+  const [showReopenedFeedback, setShowReopenedFeedback] = useState(false)
+
+  const skipReopenedAfterPrdGenerateRef = useRef(false)
+  const workspaceNavRef = useRef<{ tab: string; vid: string | null }>({ tab: '', vid: null })
 
   const fetchVersions = useCallback(async () => {
     try {
@@ -88,9 +97,34 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
   }, [projectId])
 
   const handlePrdGenerated = useCallback(() => {
+    skipReopenedAfterPrdGenerateRef.current = true
     fetchVersions()
     setActiveTab('prd')
   }, [fetchVersions])
+
+  useEffect(() => {
+    const prev = workspaceNavRef.current
+    const vid = selectedVersion?.id ?? null
+    workspaceNavRef.current = { tab: activeTab, vid }
+
+    if (activeTab !== 'prd' || !vid) return
+    if (skipReopenedAfterPrdGenerateRef.current) {
+      skipReopenedAfterPrdGenerateRef.current = false
+      return
+    }
+
+    const enteredPrdFromOtherTab =
+      prev.tab !== '' && prev.tab !== 'prd'
+    const switchedVersionOnPrdTab =
+      prev.tab === 'prd' && prev.vid !== null && prev.vid !== vid
+
+    if (!enteredPrdFromOtherTab && !switchedVersionOnPrdTab) return
+
+    const key = milestonePromptSessionKey(projectId, 'prd_reopened_after_generation', vid)
+    if (hasSeenMilestonePromptThisSession(key)) return
+
+    setShowReopenedFeedback(true)
+  }, [activeTab, selectedVersion?.id, projectId])
 
   const handleSaveSettings = async () => {
     setSaving(true)
@@ -188,6 +222,16 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
           />
         </TabsContent>
       </Tabs>
+
+      <MilestoneFeedbackModal
+        open={showReopenedFeedback}
+        onClose={() => setShowReopenedFeedback(false)}
+        projectId={projectId}
+        prdVersionId={selectedVersion?.id}
+        milestoneType="prd_reopened_after_generation"
+        title="Welcome back to your PRD"
+        description="Quick feedback helps improve how generated PRDs work for founders."
+      />
 
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>

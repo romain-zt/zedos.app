@@ -4,7 +4,7 @@ date: 2026-05-11
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-test-first-workflows--task-splitting-with-prompts-governance-complete
+current_phase: fa-owner-milestone-feedback--milestone-detection-and-prompt-complete
 current_blocker: null
 ---
 
@@ -12,14 +12,14 @@ current_blocker: null
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-test-first-workflows--task-splitting-with-prompts`: **complete** (governance: user story + approved implementation plan; registry updated — see `docs/state/status.json`).
-- **Tracking PR:** #56 — `orchestrator/tracking-fa-test-first-workflows--task-splitting-with-prompts-1778525247993` → `main`. Mark ready when CI green: `gh pr ready 56 --repo romain-zt/zedos.app`.
+- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **complete** — implementation + contracts tests; see `docs/state/status.json`.
+- **Tracking PR:** #57 — `orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778526076696` → `main`. Mark ready when CI green: `gh pr ready 57 --repo romain-zt/zedos.app`.
+- **Also complete (governance):** `fa-test-first-workflows--task-splitting-with-prompts` — tracking PR #56 (`orchestrator/tracking-fa-test-first-workflows--task-splitting-with-prompts-1778525247993`).
 
 ## What changed (this phase)
 
-- **User story:** `docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md` (`ready-for-implementation`).
-- **Implementation plan:** `docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md` (`approved` — orchestrator pipeline; implementation proceeds under Patch Intent Summary per execution bridge).
-- **Pipeline registry:** `docs/state/orchestration.pipeline.json` links this slice to the story and plan paths.
+- **Owner milestone feedback:** user story `docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md`; plan `docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md`; scope slice UX/data sections + SSE completion metadata + session-dedupe prompts in project workspace UI.
+- **Task-splitting (prior turn):** `docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md` (`ready-for-implementation`); plan `docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md` (`approved`); `docs/state/orchestration.pipeline.json` links both slices where applicable.
 
 ## Still blocked elsewhere
 
@@ -29,10 +29,9 @@ current_blocker: null
 
 1. **Implementation:** Run `/implement` against the plan with explicit PIS `approved`; ship stacked PRs on the tracking branch per plan §Approach and PR sizing (79).
 2. **Upstream:** User story corpus / `user_story_lines` FK from `fa-user-stories--story-generation-from-feature-split` — plan allows nullable linkage until those tables exist.
-3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface`, `fa-owner-milestone-feedback--milestone-detection-and-prompt` (see `orchestration.steps`).
+3. **Parallel pipeline:** `fa-read-only-sharing--anonymous-read-surface` (still in progress). **`fa-owner-milestone-feedback--milestone-detection-and-prompt`** is **complete** — tracking PR #57; mark ready: `gh pr ready 57 --repo romain-zt/zedos.app`.
 
-## Key files (this slice)
+## Key files
 
-- Scope slice: `docs/product/scope-slices/test-first-workflows--task-splitting-with-prompts.md`
-- User story: `docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md`
-- Plan: `docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md`
+- Milestone detection slice: `docs/product/scope-slices/owner-milestone-feedback--milestone-detection-and-prompt.md`
+- Task-splitting slice: `docs/product/scope-slices/test-first-workflows--task-splitting-with-prompts.md`

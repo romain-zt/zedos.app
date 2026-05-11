@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { db, milestoneFeedback, eq, and, desc, type MilestoneFeedbackInsert } from '@repo/db'
+import { MilestoneFeedbackPostBodySchema } from '@repo/contracts/feedback/milestone'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,12 +12,12 @@ export async function POST(request: NextRequest) {
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const userId = userResult.unwrap().id
 
-    const body = await request.json()
-    const { projectId, prdVersionId, milestoneType, ratingType, ratingValue, comment } = body ?? {}
-
-    if (!projectId || !milestoneType) {
-      return NextResponse.json({ error: 'Project ID and milestone type are required' }, { status: 400 })
+    const raw = await request.json()
+    const parsed = MilestoneFeedbackPostBodySchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     }
+    const { projectId, prdVersionId, milestoneType, ratingType, ratingValue, comment } = parsed.data
 
     const [existing] = await db
       .select({ id: milestoneFeedback.id })

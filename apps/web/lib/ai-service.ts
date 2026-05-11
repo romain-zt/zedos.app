@@ -81,69 +81,91 @@ export function createStreamingResponse(aiResponse: Response): ReadableStream {
 
 export function createBufferedStreamingResponse(
   aiResponse: Response,
-  onComplete: (result: string) => Promise<void> | void
+  onComplete: (
+    result: string
+  ) =>
+    | Promise<Record<string, unknown> | void>
+    | Record<string, unknown>
+    | void
 ): ReadableStream {
   return new ReadableStream({
-    start(controller) {
-      const run = async () => {
-        const reader = aiResponse?.body?.getReader()
-        const decoder = new TextDecoder()
-        const encoder = new TextEncoder()
-        let buffer = ''
-        let partialRead = ''
+    async start(controller) {
+      const reader = aiResponse?.body?.getReader()
+      const decoder = new TextDecoder()
+      const encoder = new TextEncoder()
+      let buffer = ''
+      let partialRead = ''
 
-        try {
-          while (true) {
-            const { done, value } = await (reader as ReadableStreamDefaultReader<Uint8Array>).read()
-            if (done) break
-            partialRead += decoder.decode(value, { stream: true })
-            const lines = partialRead.split('\n')
-            partialRead = lines.pop() ?? ''
+      try {
+        while (true) {
+          const { done, value } = await (
+            reader as ReadableStreamDefaultReader<Uint8Array>
+          ).read()
+          if (done) break
+          partialRead += decoder.decode(value, { stream: true })
+          const lines = partialRead.split('\n')
+          partialRead = lines.pop() ?? ''
 
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              if (data === '[DONE]') {
-                try {
-                  await Promise.resolve(onComplete(buffer))
-                } catch (e: any) {
-                  console.error('onComplete error:', e)
+            if (!line.startsWith('data: ')) continue
+            const data = line.slice(6)
+            if (data === '[DONE]') {
+              let extras: Record<string, unknown> = {}
+              try {
+                const maybe = await Promise.resolve(onComplete(buffer))
+                if (maybe && typeof maybe === 'object' && !Array.isArray(maybe)) {
+                  extras = maybe as Record<string, unknown>
                 }
+              } catch (e: unknown) {
+                console.error('onComplete error:', e)
               }
+              const finalData = JSON.stringify({
+                status: 'completed',
+                result: buffer,
+                ...extras,
+              })
+              controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
+              return
             }
-          }
-          if (buffer) {
             try {
-              await onComplete(buffer)
+              const parsed = JSON.parse(data)
+              const content = parsed?.choices?.[0]?.delta?.content ?? ''
+              buffer += content
+              const progressData = JSON.stringify({
+                status: 'processing',
+                partial: content,
+              })
+              controller.enqueue(encoder.encode(`data: ${progressData}\n\n`))
             } catch {
-              /* best-effort */
+              /* skip invalid JSON chunks */
             }
-            const finalData = JSON.stringify({ status: 'completed', result: buffer })
-            controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
           }
-        } catch (error: unknown) {
-          console.error('Buffered stream error:', error)
-          const message = error instanceof Error ? error.message : 'Stream failed'
-          const errData = JSON.stringify({ status: 'error', message })
-          controller.enqueue(encoder.encode(`data: ${errData}\n\n`))
-        } finally {
-          controller.close()
         }
-        // If we reach here without [DONE], still complete
         if (buffer) {
-          try { await Promise.resolve(onComplete(buffer)) } catch {}
-          const finalData = JSON.stringify({ status: 'completed', result: buffer })
+          let extras: Record<string, unknown> = {}
+          try {
+            const maybe = await Promise.resolve(onComplete(buffer))
+            if (maybe && typeof maybe === 'object' && !Array.isArray(maybe)) {
+              extras = maybe as Record<string, unknown>
+            }
+          } catch {
+            /* best-effort */
+          }
+          const finalData = JSON.stringify({
+            status: 'completed',
+            result: buffer,
+            ...extras,
+          })
           controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Buffered stream error:', error)
-        const errData = JSON.stringify({ status: 'error', message: error?.message ?? 'Stream failed' })
+        const message = error instanceof Error ? error.message : 'Stream failed'
+        const errData = JSON.stringify({ status: 'error', message })
         controller.enqueue(encoder.encode(`data: ${errData}\n\n`))
       } finally {
         controller.close()
       }
-
-      void run()
     },
   })
 }

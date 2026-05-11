@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Star, ThumbsUp, ThumbsDown, X } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { toast } from 'sonner'
+import { milestonePromptSessionKey, markMilestonePromptSession } from '@/app/dashboard/projects/[id]/_components/owner-milestone-prompt-session'
 
 interface MilestoneFeedbackModalProps {
   open: boolean
@@ -47,6 +48,7 @@ export function MilestoneFeedbackModal({
         }),
       })
       toast.success('Thanks for your feedback!')
+      markMilestonePromptSession(milestonePromptSessionKey(projectId, milestoneType, prdVersionId ?? null))
       onClose()
     } catch {
       toast.error('Failed to submit feedback')
@@ -55,8 +57,13 @@ export function MilestoneFeedbackModal({
     }
   }
 
+  const handleDismiss = () => {
+    markMilestonePromptSession(milestonePromptSessionKey(projectId, milestoneType, prdVersionId ?? null))
+    onClose()
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o: boolean) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o: boolean) => !o && handleDismiss()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display text-lg">{title}</DialogTitle>
@@ -95,7 +102,7 @@ export function MilestoneFeedbackModal({
           />
 
           <div className="flex gap-2 justify-end">
-            <Button variant="ghost" onClick={onClose} size="sm">
+            <Button variant="ghost" onClick={handleDismiss} size="sm" className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-0">
               Skip
             </Button>
             <Button

@@ -13,6 +13,11 @@ import {
 import { DecisionCard } from './decision-card'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
+import { GeneratePrdStreamCompletedEnvelopeSchema } from '@repo/contracts/ai/generate-prd-stream'
+import {
+  hasSeenMilestonePromptThisSession,
+  milestonePromptSessionKey,
+} from './owner-milestone-prompt-session'
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -34,6 +39,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
   const [generatingPrd, setGeneratingPrd] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [feedbackMilestone, setFeedbackMilestone] = useState('')
+  const [feedbackPrdVersionId, setFeedbackPrdVersionId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const hasStarted = useRef(false)
 
@@ -243,14 +249,24 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const parsed = JSON.parse(line.slice(6))
-              if (parsed?.status === 'completed') {
-                toast.success('PRD generated!')
-                onPrdGenerated()
-                // Trigger milestone feedback
-                setFeedbackMilestone('prd_created')
-                setShowFeedback(true)
-              }
+              const raw = JSON.parse(line.slice(6))
+              if (raw?.status !== 'completed') continue
+              toast.success('PRD generated!')
+              onPrdGenerated()
+
+              const env = GeneratePrdStreamCompletedEnvelopeSchema.safeParse(raw)
+              const prdVid = env.success ? env.data.prdVersionId : undefined
+              const kind = env.success ? env.data.prdGenerationKind : undefined
+              if (!env.success || !prdVid || !kind) continue
+
+              const milestone =
+                kind === 'first' ? 'first_prd_version_created' : 'prd_version_updated_after_clarification'
+              const sessionKey = milestonePromptSessionKey(projectId, milestone, prdVid)
+              if (hasSeenMilestonePromptThisSession(sessionKey)) continue
+
+              setFeedbackPrdVersionId(prdVid)
+              setFeedbackMilestone(milestone)
+              setShowFeedback(true)
             } catch {}
           }
         }
@@ -382,11 +398,20 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
       {/* Milestone feedback */}
       <MilestoneFeedbackModal
         open={showFeedback}
-        onClose={() => setShowFeedback(false)}
+        onClose={() => {
+          setShowFeedback(false)
+          setFeedbackPrdVersionId(null)
+        }}
         projectId={projectId}
-        prdVersionId={prdVersionId}
+        prdVersionId={feedbackPrdVersionId ?? prdVersionId}
         milestoneType={feedbackMilestone}
-        title={feedbackMilestone === 'prd_created' ? 'PRD Generated!' : 'How was that?'}
+        title={
+          feedbackMilestone === 'first_prd_version_created'
+            ? 'First PRD version created'
+            : feedbackMilestone === 'prd_version_updated_after_clarification'
+              ? 'PRD updated from clarification'
+              : 'How was that?'
+        }
         description="Your feedback helps improve the product clarification experience."
       />
     </div>

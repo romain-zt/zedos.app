@@ -19,4 +19,15 @@ export const GeneratePrdAiResponseSchema = z.object({
   sections: z.array(GeneratePrdSectionSchema),
 });
 
-export type GeneratePrdAiResponse = z.infer<typeof GeneratePrdAiResponseSchema>;
+export type GeneratePrdAiResponse = z.infer<typeof GeneratePrdAiResponseSchema>
+
+/** Final SSE envelope for buffered PRD generation streams (extras merged by route `onComplete`). */
+export const GeneratePrdStreamCompletedEnvelopeSchema = z.object({
+  status: z.literal('completed'),
+  result: z.string(),
+  prdVersionId: z.string().min(1).optional(),
+  versionNumber: z.number().int().positive().optional(),
+  prdGenerationKind: z.enum(['first', 'update']).optional(),
+})
+
+export type GeneratePrdStreamCompletedEnvelope = z.infer<typeof GeneratePrdStreamCompletedEnvelopeSchema>;

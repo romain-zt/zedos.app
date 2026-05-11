@@ -15,6 +15,10 @@ import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
 import { ShareLinkMintResponseSchema, ShareLinkSummarySchema } from '@repo/contracts/share/mint'
+import {
+  hasSeenMilestonePromptThisSession,
+  milestonePromptSessionKey,
+} from './owner-milestone-prompt-session'
 
 interface PrdViewerProps {
   projectId: string
@@ -76,9 +80,12 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
         setShareLink(link)
         setShareLinkObj({ id: data.id, token: data.token, enabled: data.enabled })
         toast.success('Share link created!')
-        // Milestone feedback for sharing
-        setFeedbackType('prd_shared')
-        setShowFeedback(true)
+        const shareVid = selectedVersion.id
+        const promptKey = milestonePromptSessionKey(projectId, 'prd_shared', shareVid)
+        if (!hasSeenMilestonePromptThisSession(promptKey)) {
+          setFeedbackType('prd_shared')
+          setShowFeedback(true)
+        }
       } else {
         let msg = 'Failed to create share link'
         try {
@@ -293,9 +300,9 @@ export function PrdViewer({ projectId, versions, selectedVersion, onSelectVersio
         title={
           feedbackType === 'prd_shared'
             ? 'PRD Shared!'
-            : feedbackType === 'prd_reopened'
-            ? 'Welcome back to your PRD'
-            : 'How was that?'
+            : feedbackType === 'prd_reopened_after_generation'
+              ? 'Welcome back to your PRD'
+              : 'How was that?'
         }
         description="Quick feedback helps improve the experience."
       />

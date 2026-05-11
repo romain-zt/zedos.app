@@ -165,7 +165,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           content: validated.data,
           status: 'generated',
         }
-        await db.insert(prdVersions).values(prdInsert)
+        const [inserted] = await db.insert(prdVersions).values(prdInsert).returning({ id: prdVersions.id })
+        const prdVersionId = inserted?.id
+        return {
+          prdVersionId,
+          versionNumber: nextVersionNumber,
+          prdGenerationKind: isUpdate ? ('update' as const) : ('first' as const),
+        }
       } catch (e: unknown) {
         console.error('Failed to save PRD version:', e)
       }
