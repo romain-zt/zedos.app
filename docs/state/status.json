@@ -31,6 +31,7 @@
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
+      "fa-user-stories--story-generation-from-feature-split--db": "complete",
       "fa-user-stories--story-generation-from-feature-split--impl": "not-started"
     },
     "remediation_counts": {
@@ -75,10 +76,10 @@
   "fa_user_stories": {
     "story_generation_from_feature_split": "complete",
     "story_generation_from_feature_split_impl": {
-      "tracking_pr": 82,
-      "tracking_branch": "orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778600309744",
-      "layer_complete": "contracts-domain",
-      "next_layer": "persistence-use-cases"
+      "tracking_pr": 83,
+      "tracking_branch": "orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778600733248",
+      "layer_complete": "db-migration",
+      "next_layer": "contracts-domain"
     }
   },
   "fa_test_first_workflows": {
@@ -156,7 +157,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "User stories impl in progress on PR #82 (tracking branch): next layer persistence-use-cases (Drizzle repo + use cases). Parallel: credits (#39) still blocked on PIS.",
+  "next_action": "User stories on PR #83: db-migration complete; next layer contracts-domain (Zod + domain per plan). Parallel: credits (#39) still blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {

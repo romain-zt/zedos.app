@@ -4,7 +4,7 @@ date: 2026-05-12
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-user-stories--story-generation-from-feature-split--impl-in-progress
+current_phase: fa-user-stories--story-generation-from-feature-split--db-complete
 current_blocker: null
 ---
 
@@ -17,19 +17,9 @@ current_blocker: null
 
 ## What changed (this phase)
 
-- **Scope slice:** `docs/product/scope-slices/services-feature-split--prd-to-feature-split.md`
-- **User story:** `docs/execution/user-stories/services-feature-split--prd-to-feature-split--v0.md`
-- **Implementation plan:** `docs/execution/plans/services-feature-split--prd-to-feature-split--v0.plan.md`
-- **DB:** `packages/db/src/schema/feature-split.ts`, `packages/db/src/migrations/0004_feature_split_tables.sql` (already existed on branch), `packages/db/src/types.ts` (added `NewFeatureSplitRow`, `FeatureSplitUpdate`, `NewFeatureSplitClusterRow`)
-- **Contracts:** `packages/contracts/src/feature-split/feature-split.ts`, `packages/contracts/src/ai/feature-split-proposal.ts` (already existed on branch)
-- **Domain:** `apps/web/src/domain/feature-split/` (port + entity types + barrel)
-- **Persistence:** `apps/web/src/infrastructure/persistence/feature-split-repository.ts` (`DrizzleFeatureSplitRepository`)
-- **AI infra:** `apps/web/src/infrastructure/ai/feature-split-proposal.ts` (wraps `callAI`, validates with `FeatureSplitProposalSchema`)
-- **Use cases:** `apps/web/src/application/feature-split/` (get, save-draft, confirm, propose)
-- **Tests:** save-draft + confirm use case unit tests
-- **Routes:** `apps/web/app/api/projects/[id]/feature-split/route.ts` (GET+PUT), `propose/route.ts`, `confirm/route.ts`
-- **UI:** `apps/web/app/dashboard/projects/[id]/feature-split/page.tsx` + `feature-split-workspace.tsx`
-- **Placeholder:** `services-feature-split` removed from `DEFERRED_ROADMAP_PLACEHOLDERS`
+- **User story corpus DB layer (`db-migration`)** on tracking PR **#83**, branch `orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778600733248` → `main`.
+- **Schema + migration:** `packages/db/src/schema/user-stories.ts` (`user_story_corpora`, `user_story_lines`), `packages/db/src/migrations/0005_user_story_corpus_tables.sql`, Drizzle meta journal/snapshot. FKs: `user_story_corpora.project_id` → `projects.id`, `user_story_corpora.feature_split_cluster_id` → `feature_split_clusters.id`, `user_story_lines.corpus_id` → `user_story_corpora.id`. Unique on `feature_split_cluster_id`; indexes on `project_id`, `corpus_id`, `(corpus_id, sort_order)`. Explicit insert/update shapes in `packages/db/src/types.ts`.
+- **Exports:** `@repo/db` re-exports tables and row types via `schema/index.ts` and `schema/user-stories.ts` (`$inferSelect` / `$inferInsert`).
 
 ## Still blocked elsewhere
 
@@ -38,20 +28,18 @@ current_blocker: null
 
 ## Active pipeline step (in progress)
 
-- **`fa-user-stories--story-generation-from-feature-split--impl`** — tracking PR **#82**, branch `orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778600309744` → `main`.
-- **This run (layer `contracts-domain`):** Exported `@repo/contracts` user-stories barrel (`packages/contracts/src/index.ts`). Added domain corpus/line types + `IUserStoryCorpusRepository` port + barrel under `apps/web/src/domain/user-stories/`. DB migration `0005` + Zod modules were already on the branch.
-- **Next eligible layer:** `persistence-use-cases` — Drizzle `user-story-corpus-repository.ts`, optional `infrastructure/ai/user-story-draft.ts`, application use cases (`get`, `generate`, `save`, `mark-review-ready`), plus tests per plan.
+- **`fa-user-stories--story-generation-from-feature-split--impl`** — tracking PR **#83**, branch `orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778600733248` → `main`.
+- **Completed layer:** `db-migration` — migration `0005`, Drizzle schema, indexes/FKs, `@repo/db` types and inferred exports.
+
+**Next layer: contracts-domain**
 
 ## Next action for autonomous agent
 
-1. Continue **PR #82** on the tracking branch: implement **persistence + use cases** (then API routes, then dashboard UI) per `docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md`.
-2. Until the full slice is verified, keep `orchestration.steps["fa-user-stories--story-generation-from-feature-split--impl"]` **not** `complete` and do not run `gh pr ready 82` unless finalization gates pass.
+1. On PR **#83** / the tracking branch above, implement **contracts + domain** per `docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md` (Zod modules under `packages/contracts/src/user-stories/`, domain ports/entities under `apps/web/src/domain/user-stories/` if not already present), then persistence + use cases in a follow-up layer.
+2. Until the full slice is verified, keep `orchestration.steps["fa-user-stories--story-generation-from-feature-split--impl"]` **not** `complete` unless finalization gates pass.
 
-## Key files (this slice)
+## Key files (user stories slice)
 
-- Plan: `docs/execution/plans/services-feature-split--prd-to-feature-split--v0.plan.md`
-- Domain: `apps/web/src/domain/feature-split/`
-- Persistence: `apps/web/src/infrastructure/persistence/feature-split-repository.ts`
-- Use cases: `apps/web/src/application/feature-split/`
-- Routes: `apps/web/app/api/projects/[id]/feature-split/`
-- UI: `apps/web/app/dashboard/projects/[id]/feature-split/`
+- Plan: `docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md`
+- DB schema: `packages/db/src/schema/user-stories.ts`
+- Migration: `packages/db/src/migrations/0005_user_story_corpus_tables.sql`
