@@ -4,10 +4,10 @@ date: 2026-05-12
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-parallel_pipeline_status: in-progress
-current_phase_primary: fa-owner-milestone-feedback--emitter-wiring-next
-current_phase_milestone_feedback: fa-owner-milestone-feedback--milestone-detection-and-prompt--ui-layer-complete
-current_phase_aggregate: fa-owner-milestone-feedback--milestone-detection-and-prompt--emitter-wiring-next
+parallel_pipeline_status: complete
+current_phase_primary: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
+current_phase_milestone_feedback: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
+current_phase_aggregate: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
 credit_system_tracking_phase: orch-credit-system--ledger-concurrency-and-stripe-webhook
 current_blocker: null
 parallel_current_blocker: null
@@ -15,10 +15,10 @@ payments_tracking_pr: 102
 payments_tracking_branch: orchestrator/tracking-fa-payments--manual-credit-pack-checkout-1778625061087
 fa_payments_manual_credit_pack_checkout: blocked
 tracking_pr: 100
-milestone_feedback_tracking_pr: 97
+milestone_feedback_tracking_pr: 103
 parallel_tracking_pr_legacy: 93
 tracking_branch: orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778624552412
-milestone_feedback_tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778623811696
+milestone_feedback_tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778628343980
 parallel_tracking_branch_legacy: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616475286
 remediation_note: null
 ---
@@ -54,9 +54,9 @@ remediation_note: null
 
 Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-stripe-webhook"]` = **`complete`**. Mark tracking PR **`gh pr ready 100`** after CI green.
 
-## Owner milestone feedback — slice layers (tracking PR **#97**)
+## Owner milestone feedback — slice layers (tracking PR **#103**)
 
-- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **in progress** on tracking PR **#97** (`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778623811696` → `main`). Contracts + **UI shell** landed; **next layer = emitter wiring** (`signalMilestone` / `?milestonePayload=` at PRD/share/view callsites), then **tests-state-finalization**.
+- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **complete** on tracking PR **#103** (`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778628343980` → `main`). Contracts + UI + **emitter wiring** + **`owner-milestone-prompt.test.tsx`**; `orchestration.steps["fa-owner-milestone-feedback--milestone-detection-and-prompt"]` = **`complete`**. Mark **`gh pr ready 103`** when CI is green.
 
 | Layer | Status |
 |-------|--------|
@@ -65,8 +65,8 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 | `persistence-use-cases` | **N/A** — no new server use cases for prompt-only surface |
 | `api-routes` | **deferred** — optional; milestone wiring can use client context / layout props |
 | `ui` | **complete** — `OwnerMilestonePromptShell` + `useOwnerMilestonePrompt` (`apps/web/app/dashboard/projects/[id]/_components/owner-milestone-prompt.tsx`), mounted in `apps/web/app/dashboard/projects/[id]/layout.tsx` (owner gate via `GetProjectUseCase`); sessionStorage dismiss per milestone type; optional `milestonePayload` query (base64url JSON) |
-| `emitter-wiring` | **next** — invoke `signalMilestone` or navigate with validated `milestonePayload` after `prd_created`, `prd_updated`, `prd_shared`, `prd_viewed` |
-| `tests-state-finalization` | **after wiring** — smoke + orchestration `complete` + `gh pr ready 97` |
+| `emitter-wiring` | **complete** — `signalMilestone` from clarification (prd_created), refinement (prd_updated), PRD viewer share mint (prd_shared), project workspace PRD tab + version (prd_viewed) |
+| `tests-state-finalization` | **complete** — `owner-milestone-prompt.test.tsx` (prompt open, project guard, session dismiss, URL param + `router.replace` strip); `pnpm typecheck` + `pnpm build` clean |
 
 ### Governance artifacts (milestone slice)
 
@@ -90,9 +90,9 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 - **`tests-state-finalization`**: `apps/web/src/infrastructure/payments/checkout-session-webhook-processor.test.ts`; fixed `sign-up-usecase.test.ts` mocks to return `CreditBalance` (`amount`) not `{ balance }`.
 - **`docs/state`**: pipeline step marked `complete`; tracking PR **#100** / branch **`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778624552412`**.
 
-**Owner milestone slice (tracking PR #97):**
+**Owner milestone slice (tracking PR #103):**
 
-- UI layer: project layout + client milestone banner/provider; see `apps/web/app/dashboard/projects/[id]/layout.tsx` and `_components/owner-milestone-prompt.tsx`. Bookkeeping: `docs/state/status.json` `fa_owner_milestone_feedback`.
+- Full stack for this slice: layout shell + `signalMilestone` wiring in clarify / refinement / PRD viewer / workspace + `owner-milestone-prompt.test.tsx`. Bookkeeping: `docs/state/status.json` `fa_owner_milestone_feedback` (step **complete**).
 
 ## Safest next task
 
@@ -100,16 +100,15 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 
 1. **Deployment:** configure **`STRIPE_WEBHOOK_SECRET`** in the environment for `POST /api/stripe/webhook` (operator-owned secret; not set from this repo).
 
-**Owner milestone (#97):**
+**Owner milestone (#103):**
 
-1. **Emitter wiring**: from PRD version capture/update flows, share mint, and PRD view-after-generation paths, call `useOwnerMilestonePrompt().signalMilestone(...)` (validated payload) or `router.push` with `?milestonePayload=<base64url>` then strip (provider already strips after read).
-2. **Finalization**: `pnpm typecheck` + `pnpm build`, mark `orchestration.steps["fa-owner-milestone-feedback--milestone-detection-and-prompt"]` = `"complete"`, then `gh pr ready 97 --repo romain-zt/zedos.app`.
+1. **CI / merge**: confirm checks on tracking PR **#103**, then `gh pr ready 103 --repo romain-zt/zedos.app` (or merge via cascade when ready).
 
 ## Key files (milestone detection slice)
 
 - Contracts: `packages/contracts/src/feedback/milestone-prompt.ts`
 - Plan: `docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md`
-- UI: `apps/web/app/dashboard/projects/[id]/_components/owner-milestone-prompt.tsx`, `apps/web/app/dashboard/projects/[id]/layout.tsx`
+- UI + tests: `apps/web/app/dashboard/projects/[id]/_components/owner-milestone-prompt.tsx`, `owner-milestone-prompt.test.tsx`, `apps/web/app/dashboard/projects/[id]/layout.tsx`; emitter callsites: `clarification-chat.tsx`, `contextual-refinement-panel.tsx`, `prd-viewer.tsx`, `project-workspace.tsx`
 
 ## Other pipeline items
 
