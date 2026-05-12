@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { GetProjectUseCase } from '@application/project/get-project-usecase'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
-import { OwnerMilestonePromptShell } from './_components/owner-milestone-prompt'
+import { OwnerMilestonePromptProvider } from './_components/owner-milestone-prompt'
 
 export default async function ProjectWorkspaceLayout({
   children,
@@ -12,19 +12,22 @@ export default async function ProjectWorkspaceLayout({
   children: React.ReactNode
   params: { id: string }
 }) {
-  const projectId = params.id
-
   const userResult = await requireUser(headers())
   if (userResult.isErr()) redirect('/sign-in')
   const userId = userResult.unwrap().id
 
   const repo = new PrismaProjectRepository()
   const useCase = new GetProjectUseCase(repo)
-  const result = await useCase.execute(projectId, userId)
+  const result = await useCase.execute(params.id, userId)
 
   if (result.isErr()) redirect('/dashboard/projects')
 
   const project = result.unwrap()
+  const isOwner = project.userId === userId
 
-  return <OwnerMilestonePromptShell projectId={project.id}>{children}</OwnerMilestonePromptShell>
+  return (
+    <OwnerMilestonePromptProvider projectId={project.id} enabled={isOwner}>
+      {children}
+    </OwnerMilestonePromptProvider>
+  )
 }
