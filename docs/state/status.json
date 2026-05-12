@@ -219,6 +219,7 @@
   },
   "next_action": "Feedback capture slice (PR #104): blocked on scope refinement + story/plan. Payments slice still blocked on refinement. Credits: set STRIPE_WEBHOOK_SECRET in deployment.",
   "orchestration_blocker": "NEED_HUMAN: (1) fa-payments--manual-credit-pack-checkout — scope slice exploratory / NOT READY; refine + promote before User Story + Plan. (2) fa-owner-milestone-feedback--feedback-capture-and-attribution — scope slice owner-milestone-feedback--feedback-capture-and-attribution.md exploratory / NOT READY; refine + promote before User Story + Plan; tracking PR #104 branch records state only.",
+  "orchestration_note_pr98_merge": "Parallel orch bookkeeping: tracking PR #98 branch (`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778623987568`) rebased onto main; milestone detection shipped via PR #99 (prior parallel narrative referenced PR #93 / #97).",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -275,13 +276,15 @@
       "orchestrator_step": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
       "tracking_pr": 100,
       "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778624552412",
+      "parallel_tracking_pr": 98,
+      "parallel_tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778623987568",
       "layer_complete": "tests-state-finalization",
       "next_layer": null,
       "verified_at": "2026-05-12",
       "verification": {
         "typecheck": "clean",
         "build": "clean",
-        "tests": "apps/web vitest run"
+        "tests": "apps/web vitest run (full suite via pnpm test)"
       }
     }
   },
