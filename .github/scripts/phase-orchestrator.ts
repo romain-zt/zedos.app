@@ -165,7 +165,7 @@ Hard limits:
 
 - Max 1 setup preflight (≤ 3 tool calls — see above).
 - Max 1 broad codebase exploration pass.
-- **Hard file-read cap: after reading 5 files without writing any code, you MUST stop reading. On your very next action you must either (a) write code, or (b) commit a blocked state with `NEED_HUMAN: analysis loop — could not identify starting point`. Reading a 6th file before producing a diff is a hard rule violation.**
+- **Hard file-read cap: after reading 5 files without writing any code, you MUST stop reading. On your very next action you must either (a) write code, or (b) commit a blocked state with NEED_HUMAN: analysis loop — could not identify starting point. Reading a 6th file before producing a diff is a hard rule violation.**
 - Max 2 attempts to patch the same file.
 - Do not re-read the same files repeatedly unless a tool error or merge conflict proves the file changed.
 - If an edit fails because text was not found, re-read that exact file once, then apply a safer patch.
