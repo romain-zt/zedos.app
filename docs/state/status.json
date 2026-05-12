@@ -140,6 +140,16 @@
         "typecheck": "clean",
         "build": "clean"
       }
+    },
+    "feedback_capture_and_attribution": {
+      "status": "blocked",
+      "tracking_pr": 104,
+      "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--feedback-capture-and-attribution-1778629061701",
+      "scope_slice": "docs/product/scope-slices/owner-milestone-feedback--feedback-capture-and-attribution.md",
+      "user_story": null,
+      "implementation_plan": null,
+      "next_layer": null,
+      "blocker": "NEED_HUMAN: Scope slice docs/product/scope-slices/owner-milestone-feedback--feedback-capture-and-attribution.md is exploratory / NOT READY (UX States and Data Touched empty; readiness checklist unchecked). Per execution-bridge §5 and feature-area-workflow §5, run /feature-area refine-slice and promote-slice to ready-for-user-stories; then User Story + approved Implementation Plan (chat approved, not ok) before db-migration or any code."
     }
   },
   "pis_approved": true,
@@ -207,8 +217,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Owner milestone feedback: slice complete on tracking PR #99. Credits orch-credit-system step complete (tracking PR #100); configure STRIPE_WEBHOOK_SECRET in deployment.",
-  "orchestration_blocker": "NEED_HUMAN: fa-payments--manual-credit-pack-checkout blocked — parent scope slice docs/product/scope-slices/payments--manual-credit-pack-checkout.md is exploratory / NOT READY (UX States, Data Touched, readiness checklist incomplete). Refine + promote to ready-for-user-stories before User Story + approved Implementation Plan per execution-bridge §5–§9. orch-credit-system prerequisite is complete.",
+  "next_action": "Feedback capture slice (PR #104): blocked on scope refinement + story/plan. Payments slice still blocked on refinement. Credits: set STRIPE_WEBHOOK_SECRET in deployment.",
+  "orchestration_blocker": "NEED_HUMAN: (1) fa-payments--manual-credit-pack-checkout — scope slice exploratory / NOT READY; refine + promote before User Story + Plan. (2) fa-owner-milestone-feedback--feedback-capture-and-attribution — scope slice owner-milestone-feedback--feedback-capture-and-attribution.md exploratory / NOT READY; refine + promote before User Story + Plan; tracking PR #104 branch records state only.",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
