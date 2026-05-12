@@ -25,12 +25,11 @@ export class ProposeFeatureSplitUseCase {
       return err(projectResult.error);
     }
 
-    const prdVersionsResult = await this.prdRepository.findByProjectId(projectId);
-    if (prdVersionsResult.isErr()) return err(prdVersionsResult.error);
-
-    const versions = prdVersionsResult.unwrap();
-    const version = versions.find((v) => v.id === sourcePrdVersionId);
+    const versionResult = await this.prdRepository.findVersionByIdForOwner(sourcePrdVersionId, userId);
+    if (versionResult.isErr()) return err(versionResult.error);
+    const version = versionResult.unwrap();
     if (!version) return err(new NotFoundError('PRD version not found'));
+    if (version.projectId !== projectId) return err(new NotFoundError('PRD version not found'));
     if (!version.content) return err(new NotFoundError('PRD version has no content to split'));
 
     return proposeFeatureSplit(version.content);

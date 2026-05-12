@@ -6,14 +6,16 @@ workspace: /workspace
 status: handoff-ready
 current_phase: fa-user-stories--story-generation-from-feature-split--impl--complete
 current_blocker: null
+tracking_pr: 75
+tracking_branch: orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470
+remediation_note: "Post-merge fix commit on tracking_branch; open PR to main (automation could not create PR)."
 ---
 
 # Cloud Agent State Handoff
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-services-feature-split--prd-to-feature-split--impl`: **complete** (verified 2026-05-12). All plan artifacts confirmed present: DB schema (`feature_splits` + `feature_split_clusters`), contracts, domain port, Drizzle repository, AI infrastructure wrapper, application use cases, API routes, and dashboard UI for feature split.
-- **Pipeline step** `fa-user-stories--story-generation-from-feature-split--impl`: **complete** on tracking PR **#87**, branch `orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778613365195` → `main`. Final gates on pushed head: `pnpm typecheck` + `pnpm build` clean (2026-05-12).
+- **Pipeline step** `fa-services-feature-split--prd-to-feature-split--impl`: **complete**. Tracking PR **#75** merged to `main`. Follow-up remediation (owner-scoped PRD lookup, `feature_split` credits, refinement UI types, docs state) is on branch `orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470` — **open a PR to `main`** if those commits are not yet on `main`.
 - **Prior:** Question-coverage readiness score + question preview chips (**#70**) — complete per prior handoff.
 
 ## User stories slice — layers

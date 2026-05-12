@@ -42,7 +42,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const creditCheck = await checkCredits(userId, 'mini_form');
+  const creditCheck = await checkCredits(userId, 'feature_split');
   if (!creditCheck.allowed) {
     return NextResponse.json(
       { error: 'insufficient_credits', message: creditCheck.reason, balance: creditCheck.currentBalance },
@@ -57,7 +57,7 @@ export async function POST(
   const result = await useCase.execute(params.id, userId, parsed.data.sourcePrdVersionId);
   if (result.isErr()) return toErrorResponse(result.error);
 
-  const deductResult = await deductCredits(userId, 'mini_form', {
+  const deductResult = await deductCredits(userId, 'feature_split', {
     projectId: params.id,
     operation: 'feature_split_proposal',
   });

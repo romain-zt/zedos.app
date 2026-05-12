@@ -119,6 +119,46 @@ export class DrizzlePrdRepository implements IPrdRepository {
     }
   }
 
+  async findVersionByIdForOwner(
+    prdVersionId: string,
+    ownerUserId: string
+  ): Promise<Result<PrdVersion | null, ApplicationError>> {
+    try {
+      const [row] = await db
+        .select({
+          id: prdVersions.id,
+          projectId: prdVersions.projectId,
+          versionNumber: prdVersions.versionNumber,
+          content: prdVersions.content,
+          status: prdVersions.status,
+          createdAt: prdVersions.createdAt,
+          updatedAt: prdVersions.updatedAt,
+          projectUserId: projects.userId,
+        })
+        .from(prdVersions)
+        .innerJoin(projects, eq(prdVersions.projectId, projects.id))
+        .where(and(eq(prdVersions.id, prdVersionId), eq(projects.userId, ownerUserId)))
+        .limit(1);
+
+      if (!row) {
+        return ok(null) as Result<PrdVersion | null, ApplicationError>;
+      }
+
+      return ok({
+        id: row.id,
+        projectId: row.projectId,
+        versionNumber: row.versionNumber,
+        content: row.content as Record<string, unknown> | null,
+        status: row.status as PrdStatus,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      }) as Result<PrdVersion | null, ApplicationError>;
+    } catch (error) {
+      logger.error('findVersionByIdForOwner failed', error);
+      return err(new DatabaseError('Failed to fetch PRD version'));
+    }
+  }
+
   async ensureFirstVersion(
     projectId: string,
     content: Record<string, unknown> | null

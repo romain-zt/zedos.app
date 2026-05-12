@@ -21,6 +21,7 @@ describe('MintReadOnlyShareLinkUseCase', () => {
       mintReadOnlyShareLink: vi.fn().mockResolvedValue(ok(link)),
       revokeReadOnlyShareLink: vi.fn(),
       getAnonymousPrdVersionByShareToken: vi.fn(),
+      findVersionByIdForOwner: vi.fn(),
     };
     const useCase = new MintReadOnlyShareLinkUseCase(repo);
     const result = await useCase.execute('pv-1', 'user-1');
@@ -37,6 +38,7 @@ describe('MintReadOnlyShareLinkUseCase', () => {
       mintReadOnlyShareLink: vi.fn().mockResolvedValue(err(new NotFoundError('PRD version not found'))),
       revokeReadOnlyShareLink: vi.fn(),
       getAnonymousPrdVersionByShareToken: vi.fn(),
+      findVersionByIdForOwner: vi.fn(),
     };
     const useCase = new MintReadOnlyShareLinkUseCase(repo);
     const result = await useCase.execute('bad', 'user-1');
