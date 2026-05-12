@@ -15,6 +15,7 @@ import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
 import { ShareLinkMintResponseSchema, ShareLinkSummarySchema } from '@repo/contracts/share/mint'
+import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 
 interface PrdViewerProps {
   projectId: string
@@ -33,6 +34,7 @@ export function PrdViewer({
   onRefresh,
   onOpenRefinement,
 }: PrdViewerProps) {
+  const { signalMilestone } = useOwnerMilestonePrompt()
   const [shareLink, setShareLink] = useState<string | null>(null)
   const [shareLinkObj, setShareLinkObj] = useState<
     { id: string; token: string; enabled: boolean } | null
@@ -84,6 +86,11 @@ export function PrdViewer({
         setShareLink(link)
         setShareLinkObj({ id: data.id, token: data.token, enabled: data.enabled })
         toast.success('Share link created!')
+        signalMilestone({
+          projectId,
+          milestoneType: 'prd_shared',
+          prdVersionId: selectedVersion.id,
+        })
         // Milestone feedback for sharing
         setFeedbackType('prd_shared')
         setShowFeedback(true)

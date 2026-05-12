@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Send, HelpCircle, Loader2, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
+import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 
 /** Exported for unit tests — matches POST /clarify body shape (no decisionResponse). */
 export function buildContextualClarifyBody(
@@ -101,6 +102,7 @@ export function ContextualRefinementPanel({
   onClose,
   onPrdUpdated,
 }: ContextualRefinementPanelProps) {
+  const { signalMilestone } = useOwnerMilestonePrompt()
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<StreamMessage[]>([])
   const [streaming, setStreaming] = useState(false)
@@ -291,6 +293,11 @@ export function ContextualRefinementPanel({
             const parsed = JSON.parse(line.slice(6)) as { status?: string }
             if (parsed?.status === 'completed') {
               toast.success('PRD updated')
+              signalMilestone({
+                projectId,
+                milestoneType: 'prd_updated',
+                ...(prdVersionId ? { prdVersionId } : {}),
+              })
               onPrdUpdated?.()
               onClose()
               return
