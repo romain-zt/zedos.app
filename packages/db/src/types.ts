@@ -166,3 +166,38 @@ export interface MilestoneFeedbackInsert {
   comment?: string | null;
   createdAt?: Date;
 }
+
+export interface NewUserStoryCorpusRow {
+  id?: string;
+  projectId: string;
+  featureSplitClusterId: string;
+  reviewReadyAt?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface UserStoryCorpusUpdate {
+  reviewReadyAt?: Date | null;
+  updatedAt?: Date;
+}
+
+export interface NewUserStoryLineRow {
+  id?: string;
+  corpusId: string;
+  sortOrder: number;
+  title: string;
+  body: string;
+  archivedAt?: Date | null;
+  draftMarker?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface UserStoryLineUpdate {
+  sortOrder?: number;
+  title?: string;
+  body?: string;
+  archivedAt?: Date | null;
+  draftMarker?: string | null;
+  updatedAt?: Date;
+}

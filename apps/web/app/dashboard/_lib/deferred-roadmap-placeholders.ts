@@ -21,16 +21,6 @@ export type DeferredRoadmapPlaceholder = {
 
 export const DEFERRED_ROADMAP_PLACEHOLDERS: readonly DeferredRoadmapPlaceholder[] = [
   {
-    id: 'user-stories',
-    title: 'User stories',
-    summary: 'From PRD to executable stories',
-    tooltip: 'Coming in v1 — tap to learn more.',
-    description:
-      'Translate each feature cluster into structured, testable user stories. Each story comes with a title, actor, outcome, and acceptance criteria — ready for development or AI-assisted implementation.',
-    why:
-      'Vague specs produce vague code. Proper user stories force clarity on who does what and what "done" looks like — saving you from the costly "that\'s not what I meant" conversation with your developers or AI tools.',
-  },
-  {
     id: 'test-first-workflows',
     title: 'Test-first workflows',
     summary: 'Stories with tasks and prompts per task',

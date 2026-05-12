@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-12",
-  "current_phase": "fa-services-feature-split--prd-to-feature-split--impl--complete",
+  "current_phase": "fa-user-stories--story-generation-from-feature-split--impl--complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -31,7 +31,11 @@
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
-      "fa-user-stories--story-generation-from-feature-split--impl": "in-progress"
+      "fa-user-stories--story-generation-from-feature-split--db": "complete",
+      "fa-user-stories--story-generation-from-feature-split--impl": "complete"
+    },
+    "remediation_counts": {
+      "fa-user-stories--story-generation-from-feature-split--impl": 1
     }
   },
   "cursor_self_improve": {
@@ -72,7 +76,18 @@
     "tracking_branch": "orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470"
   },
   "fa_user_stories": {
-    "story_generation_from_feature_split": "complete"
+    "story_generation_from_feature_split": "complete",
+    "story_generation_from_feature_split_impl": {
+      "tracking_pr": 87,
+      "tracking_branch": "orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778613365195",
+      "layer_complete": "ui",
+      "next_layer": null,
+      "verified_at": "2026-05-12",
+      "verification": {
+        "typecheck": "clean",
+        "build": "clean"
+      }
+    }
   },
   "fa_test_first_workflows": {
     "task_splitting_with_prompts": "complete"
