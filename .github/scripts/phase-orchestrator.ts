@@ -48,16 +48,305 @@ if (!repo) {
 // to signal completion and trigger the next orchestrator run via
 // the pr-ready.yml workflow.
 
-const ORCHESTRATOR_BRANCH_RULES = `## Orchestrator branch rules (mandatory)
+const ORCHESTRATOR_BRANCH_RULES = `## Orchestrator branch rules mandatory
 
-A **draft tracking PR already exists**: PR #{TRACKING_PR_NUMBER}, head \`{TRACKING_PR_BRANCH}\` → base \`{TRACKING_BASE}\`. Automation **only auto-merges that PR** (and stacked dependents via pr-cascade.yml). Commits that exist only on PRs that target \`main\` directly will **not** be included when the tracking PR merges.
+A **draft tracking PR already exists**: PR #{TRACKING_PR_NUMBER}, head \`{TRACKING_PR_BRANCH}\` → base \`{TRACKING_BASE}\`.
 
-- **Primary branch:** check out and push **all** implementation work to \`{TRACKING_PR_BRANCH}\` (\`git fetch origin && git checkout {TRACKING_PR_BRANCH}\`). The open draft PR will grow to include your diff.
-- **Merge target for this tracking PR:** base branch is \`{TRACKING_BASE}\` (often \`main\`; for large epics set repo variable \`ORCHESTRATOR_TRACKING_BASE\` to e.g. \`feature/my-epic\` so sub-tasks merge into the integration branch one-by-one, then merge \`feature/my-epic\` → \`main\` when done).
-- **Multiple PRs for this phase:** stack them — first additional PR must use \`gh pr create --base {TRACKING_PR_BRANCH} ...\` (draft). Each next PR uses \`--base\` = the **previous** feature branch name. Never open phase work as a standalone PR to \`{TRACKING_BASE}\` only unless it is stacked this way.
-- **Human blocker:** if work cannot proceed without a person (secrets, product call, access), set the phase to \`"blocked"\` in docs/state/status.json with \`blocker\` starting with \`NEED_HUMAN:\` (recommended), update HANDOFF, do **not** call \`gh pr ready\`. The orchestrator will mirror that state to \`main\` and skip this phase so it can pick the next eligible task.
-- **status.json / HANDOFF.md:** commit them on \`{TRACKING_PR_BRANCH}\` with the rest of the phase so they merge with the code.
+Automation **only auto-merges that tracking PR** and stacked dependents via \`pr-cascade.yml\`.
 
+Commits that exist only on PRs targeting \`main\` directly will **not** be included when the tracking PR merges.
+
+---
+
+## Branch discipline
+
+Before editing, run:
+
+\`\`\`bash
+git fetch origin
+git checkout {TRACKING_PR_BRANCH}
+git pull --ff-only origin {TRACKING_PR_BRANCH}
+\`\`\`
+
+All implementation, tests, docs, state, and handoff changes must be committed and pushed to:
+
+\`\`\`txt
+{TRACKING_PR_BRANCH}
+\`\`\`
+
+The open draft tracking PR must grow to include this run's diff.
+
+Never leave useful work only in the local workspace.
+
+---
+
+## Merge target
+
+The tracking PR base is:
+
+\`\`\`txt
+{TRACKING_BASE}
+\`\`\`
+
+Usually this is \`main\`.
+
+For large epics, \`{TRACKING_BASE}\` may be an integration branch such as \`feature/my-epic\`.
+
+Subtasks should merge into the integration branch first. The integration branch then merges into \`main\` when the epic is complete.
+
+---
+
+## Multiple PRs and stacked work
+
+If this phase requires additional PRs, stack them.
+
+The first additional PR must target the tracking branch:
+
+\`\`\`bash
+gh pr create --base {TRACKING_PR_BRANCH} --draft ...
+\`\`\`
+
+Each next stacked PR must use \`--base\` equal to the previous feature branch name.
+
+Never open phase work as a standalone PR directly to \`{TRACKING_BASE}\` unless it is stacked through the tracking branch.
+
+---
+
+## Mandatory bounded setup preflight
+
+Before implementation, inspect only the repo-local agent setup:
+
+- \`.cursor/rules\`
+- \`.cursor/skills\`
+- \`.cursor/hooks.json\`
+- \`.cursor/mcp.json\`
+- \`AGENTS.md\` if present
+
+This preflight is only for identifying active constraints.
+
+Do not deeply audit, rewrite, or optimize the setup unless the assigned phase explicitly asks for setup work.
+
+Output one short preflight summary:
+
+\`\`\`md
+### Agent setup preflight
+
+- Rules found: yes/no + short list of relevant rule files
+- Skills found: yes/no + short list
+- Hooks found: yes/no
+- MCP config found: yes/no
+- AGENTS.md found: yes/no
+- Blocking setup issue: yes/no
+\`\`\`
+
+If required setup files are missing or contradictory, stop and report:
+
+\`\`\`txt
+SETUP_MISSING=true
+Reason: ...
+Required human/action: ...
+\`\`\`
+
+If setup is usable, continue immediately to implementation.
+
+---
+
+## Anti-analysis-loop rule
+
+Do not spend the run only reading files.
+
+This run must produce exactly one concrete outcome:
+
+1. a committed code/test/docs diff pushed to \`{TRACKING_PR_BRANCH}\`, or
+2. a committed blocked-state update pushed to \`{TRACKING_PR_BRANCH}\`, or
+3. a \`SETUP_MISSING=true\` report.
+
+Hard limits:
+
+- Max 1 setup preflight.
+- Max 1 broad codebase exploration pass.
+- Max 2 attempts to patch the same file.
+- Do not re-read the same files repeatedly unless a tool error or merge conflict proves the file changed.
+- If an edit fails because text was not found, re-read that exact file once, then apply a safer patch.
+- If the second edit attempt fails, stop and mark the phase blocked with \`NEED_HUMAN: edit conflict / file shape mismatch\`.
+
+Within the first implementation cycle, create a real diff.
+
+If no real diff is possible, update \`docs/state/status.json\` as blocked and explain the blocker in \`docs/state/HANDOFF.md\`.
+
+Avoid repeated messages such as "reading the plan", "exploring patterns", or "implementing soon" without producing a diff.
+
+---
+
+## Work package limit
+
+Do not implement more than one stack layer in a single run unless the workload explicitly says:
+
+\`\`\`txt
+FULL_STACK_ALLOWED=true
+\`\`\`
+
+Allowed layers are:
+
+1. \`db-migration\`
+2. \`contracts-domain\`
+3. \`persistence-use-cases\`
+4. \`api-routes\`
+5. \`ui\`
+6. \`tests-state-finalization\`
+
+Before implementation, determine the first incomplete layer in this order and implement only that layer.
+
+If later layers are missing, that is expected. Record the next layer in \`docs/state/HANDOFF.md\`, commit, push, and stop.
+
+Do not attempt DB + contracts + domain + persistence + API + UI in one run.
+
+---
+
+## Execution behavior
+
+After preflight, prioritize implementation.
+
+Use this order:
+
+1. Read the specific phase/task instructions.
+2. Identify the first incomplete layer.
+3. Read only the minimum files needed for that layer.
+4. Implement the smallest coherent diff.
+5. Run the relevant checks for that layer.
+6. Commit the diff.
+7. Push to \`{TRACKING_PR_BRANCH}\`.
+8. Update \`docs/state/status.json\` and \`docs/state/HANDOFF.md\` if required.
+9. Commit and push state updates.
+10. Stop unless this is the finalization layer.
+
+Avoid broad repo exploration.
+
+Avoid speculative refactors.
+
+Avoid improving unrelated files.
+
+Do not change architecture, naming, dependencies, package boundaries, or infra unless the assigned phase requires it.
+
+---
+
+## Regular commit rule
+
+Commit progress in small, reviewable chunks.
+
+Commit after each coherent unit of work, for example:
+
+- DB schema/migration
+- contracts/domain types
+- repository/use case implementation
+- API routes
+- UI
+- tests
+- docs/state finalization
+
+Use clear commit messages:
+
+\`\`\`txt
+feat(user-stories): add corpus db migration
+feat(user-stories): add contracts and domain ports
+feat(user-stories): add persistence and use cases
+feat(user-stories): add api routes
+feat(user-stories): add dashboard workspace
+test(user-stories): cover corpus contracts
+chore(orchestrator): update phase state
+\`\`\`
+
+Before every commit, run:
+
+\`\`\`bash
+git status --short
+git diff --stat
+\`\`\`
+
+Never make one giant commit for unrelated layers.
+
+Never commit broken syntax knowingly.
+
+If checks fail, either fix within the same layer or commit a blocked state. Do not continue into later layers while the current layer is broken.
+
+---
+
+## Checks
+
+Run the narrowest relevant checks first.
+
+Examples:
+
+\`\`\`bash
+pnpm typecheck
+pnpm build
+pnpm test
+\`\`\`
+
+If the repo has package-specific checks, prefer the smallest relevant command first.
+
+For finalization, run the full required gates from the workload instructions.
+
+Do not mark the phase complete if required checks fail.
+
+---
+
+## Human blocker behavior
+
+If work cannot proceed without a person because of secrets, product decisions, access, external accounts, ambiguous architecture, missing upstream work, or unresolved merge conflicts:
+
+1. Set the phase status to \`"blocked"\` in \`docs/state/status.json\`.
+2. Add or update a blocker starting with:
+
+\`\`\`txt
+NEED_HUMAN:
+\`\`\`
+
+3. Update \`docs/state/HANDOFF.md\` with:
+   - what was attempted
+   - what changed, if anything
+   - what is blocked
+   - the exact decision/input needed
+   - the safest next eligible task, if any
+
+4. Commit the state update to \`{TRACKING_PR_BRANCH}\`.
+5. Push the branch.
+6. Do **not** call \`gh pr ready\`.
+
+The orchestrator will mirror the blocked state to \`main\` and skip this phase so it can pick the next eligible task.
+
+---
+
+## State and handoff rules
+
+\`docs/state/status.json\` and \`docs/state/HANDOFF.md\` must be committed on \`{TRACKING_PR_BRANCH}\` with the rest of the phase.
+
+They must reflect the actual final state of the run.
+
+Do not leave local-only state.
+
+Do not mark a phase complete unless implementation and relevant checks are done.
+
+Do not call \`gh pr ready\` unless the phase is complete, unblocked, pushed, and checks have passed.
+
+---
+
+## Completion behavior
+
+If this run completes only one intermediate layer:
+
+- commit and push the layer
+- update \`docs/state/HANDOFF.md\` with the next recommended layer
+- do not call \`gh pr ready\`
+- stop
+
+Only call:
+
+\`\`\`bash
+gh pr ready {TRACKING_PR_NUMBER} --repo {REPO_FULL_NAME}
+\`\`\`
+
+when the assigned workload explicitly reaches finalization and all required checks pass.
 `;
 
 const PHASE_PROMPTS: Record<string, string> = {

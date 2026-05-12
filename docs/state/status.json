@@ -31,7 +31,10 @@
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
-      "fa-user-stories--story-generation-from-feature-split--impl": "not-started"
+      "fa-user-stories--story-generation-from-feature-split--impl": "in-progress"
+    },
+    "remediation_counts": {
+      "fa-user-stories--story-generation-from-feature-split--impl": 1
     }
   },
   "cursor_self_improve": {
@@ -70,7 +73,13 @@
     "prd_to_feature_split": "complete"
   },
   "fa_user_stories": {
-    "story_generation_from_feature_split": "complete"
+    "story_generation_from_feature_split": "complete",
+    "story_generation_from_feature_split_impl": {
+      "tracking_pr": 82,
+      "tracking_branch": "orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778600309744",
+      "layer_complete": "contracts-domain",
+      "next_layer": "persistence-use-cases"
+    }
   },
   "fa_test_first_workflows": {
     "task_splitting_with_prompts": "complete"
@@ -147,7 +156,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Two new --impl pipeline steps added: fa-services-feature-split--prd-to-feature-split--impl and fa-user-stories--story-generation-from-feature-split--impl. Both plans approved. Run phase-orchestrator to dispatch implementation. Parallel: owner-milestone-feedback if unblocked. Credits (PR #39) still blocked on PIS.",
+  "next_action": "User stories impl in progress on PR #82 (tracking branch): next layer persistence-use-cases (Drizzle repo + use cases). Parallel: credits (#39) still blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
