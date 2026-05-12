@@ -154,6 +154,45 @@ export interface NewFeatureSplitClusterRow {
   updatedAt?: Date;
 }
 
+// User story corpus insert type
+export interface NewUserStoryCorpusRow {
+  id?: string;
+  projectId: string;
+  featureSplitClusterId: string;
+  status?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface UserStoryCorpusUpdate {
+  status?: string;
+  updatedAt?: Date;
+}
+
+// User story line insert type
+export interface NewUserStoryLineRow {
+  id?: string;
+  corpusId: string;
+  sortOrder: number;
+  title: string;
+  body: string;
+  draftMarker?: string | null;
+  archivedAt?: Date | null;
+  reviewReadyAt?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface UserStoryLineUpdate {
+  sortOrder?: number;
+  title?: string;
+  body?: string;
+  draftMarker?: string | null;
+  archivedAt?: Date | null;
+  reviewReadyAt?: Date | null;
+  updatedAt?: Date;
+}
+
 // MilestoneFeedback insert type
 export interface MilestoneFeedbackInsert {
   id?: string;
