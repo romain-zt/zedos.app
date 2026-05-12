@@ -16,7 +16,9 @@ export type OperationType =
   | 'feature_area'
   | 'scope_slice'
   | 'test_plan'
-  | 'feature_split';
+  | 'feature_split'
+  | 'mini_form'
+  | 'prd_challenge';
 
 export type CreditTransactionType = 'grant' | 'purchase' | 'auto_reload' | 'consumption';
 
