@@ -6,6 +6,7 @@ export type OperationType =
   | 'mini_form'
   | 'prd_generation'
   | 'prd_challenge'
+  | 'story_generation'
 
 export function getCreditCost(operationType: OperationType): number {
   const costs: Record<OperationType, number> = {
@@ -14,6 +15,7 @@ export function getCreditCost(operationType: OperationType): number {
     mini_form: parseInt(process.env.CREDIT_COST_MINI_FORM ?? '5', 10),
     prd_generation: parseInt(process.env.CREDIT_COST_PRD_GENERATION ?? '10', 10),
     prd_challenge: parseInt(process.env.CREDIT_COST_PRD_CHALLENGE ?? '15', 10),
+    story_generation: parseInt(process.env.CREDIT_COST_STORY_GENERATION ?? '10', 10),
   }
   return costs[operationType] ?? 1
 }

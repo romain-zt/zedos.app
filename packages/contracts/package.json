@@ -27,7 +27,10 @@
     "./share/anonymous-read": "./src/share/anonymous-read.ts",
     "./feedback": "./src/feedback/index.ts",
     "./feedback/submit": "./src/feedback/submit.ts",
-    "./feature-split": "./src/feature-split/index.ts"
+    "./feature-split": "./src/feature-split/index.ts",
+    "./user-stories": "./src/user-stories/index.ts",
+    "./user-stories/generate": "./src/user-stories/generate.ts",
+    "./user-stories/corpus": "./src/user-stories/corpus.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

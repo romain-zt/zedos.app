@@ -31,5 +31,6 @@ export function getCreditCosts() {
     mini_form: parseInt(process.env.CREDIT_COST_MINI_FORM ?? '5', 10),
     prd_generation: parseInt(process.env.CREDIT_COST_PRD_GENERATION ?? '10', 10),
     prd_challenge: parseInt(process.env.CREDIT_COST_PRD_CHALLENGE ?? '15', 10),
+    story_generation: parseInt(process.env.CREDIT_COST_STORY_GENERATION ?? '10', 10),
   }
 }
