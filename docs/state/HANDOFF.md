@@ -9,9 +9,9 @@ current_phase: fa-owner-milestone-feedback--milestone-detection-and-prompt--bloc
 credit_system_tracking_phase: orch-credit-system--ledger-concurrency-and-stripe-webhook
 current_blocker: null
 parallel_current_blocker: NEED_HUMAN: Approve Implementation Plan before Iteration‑1 contracts code
-tracking_pr: 95
+tracking_pr: 96
 parallel_tracking_pr: 92
-tracking_branch: orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778622207100
+tracking_branch: orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778623377916
 parallel_tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616264079
 remediation_note: null
 ---
@@ -20,7 +20,8 @@ remediation_note: null
 
 ## Orchestration — credits slice (`orch-credit-system--ledger-concurrency-and-stripe-webhook`)
 
-- **Tracking PR:** `#95`, head **`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778622207100`** → **`main`**.
+- **Status:** **`complete`** (`orchestration.steps["orch-credit-system--ledger-concurrency-and-stripe-webhook"]`).
+- **Tracking PR:** **`#96`**, head **`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778623377916`** → **`main`**.
 - **Anchors:** `docs/product/feature-areas/credit-system.md`, `docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md`.
 
 ## Stack layers (this epic)
@@ -32,16 +33,17 @@ remediation_note: null
 | `persistence-use-cases` | **complete** — `ICreditsRepository` correlation + `reverseCredits`; Drizzle transactional locking + idempotency; add/deduct use cases; `apps/web/lib/credits.ts` delegates to use cases with deterministic correlation helpers; starter grant in `SignUpUseCase` uses `starter-grant:${userId}` |
 | `api-routes` | **complete** — `apps/web/lib/composition.ts` + `credits-http-bridge`; project routes (`clarify`, `generate-prd`, `feature-split/propose`) and `stripe/verify` use bridge (no `@/lib/credits` in `app/api/**`); AI consumption correlation ids: `<projectId>--<opType>--<uuid>` per PIS; `POST /api/stripe/webhook` verifies signature + idempotent `checkout.session.completed` grants via processor |
 | `ui` | N/A for this slice |
-| `tests-state-finalization` | **next** — contract/integration coverage for webhook + routes; then mark orchestration step complete + `gh pr ready` |
+| `tests-state-finalization` | **complete** — Vitest coverage for `stripe-webhook-verify`, `checkout-session-webhook-processor`, `POST /api/stripe/webhook` route; `@repo/contracts` exports `./payments/webhook` for Vitest resolution; `pnpm typecheck`, `apps/web` test + build green |
 
 ## This run delivered
 
-- Completed **`api-routes`**: composition root, HTTP bridge, Stripe webhook verification (`Stripe.API_VERSION`), checkout-session processor, route wiring; legacy `lib/credits.ts` uses shared `getCreditsComposition()` only.
+- Finalized **`tests-state-finalization`**: webhook verification + processor + route tests; fixed `SignUpUseCase` tests to return domain **`CreditBalance`** (`.amount`) from mocked `addCredits`.
+- **`packages/contracts/package.json`**: explicit export **`./payments/webhook`** for tooling that resolves package exports strictly.
 
 ## Safest next task
 
-1. Run **`tests-state-finalization`** for this slice: webhook + credit-route fixtures; then set `orchestration.steps["orch-credit-system--ledger-concurrency-and-stripe-webhook"]` to **`complete`** and call **`gh pr ready 95`** (after gates green).
-2. Configure **`STRIPE_WEBHOOK_SECRET`** in deployment for the new webhook endpoint.
+1. Configure **`STRIPE_WEBHOOK_SECRET`** in deployment for the webhook endpoint (operator-owned).
+2. Resume parallel track: owner milestone feedback (**PR #92**) after Plan + PIS promotion.
 
 ## Other pipeline items
 
