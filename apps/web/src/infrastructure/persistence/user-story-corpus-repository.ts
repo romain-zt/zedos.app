@@ -89,8 +89,12 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
     featureSplitClusterId: string,
     lines: SaveUserStoryLineInput[]
   ): Promise<Result<UserStoryCorpusDomain, ApplicationError>> {
+    type TxOutcome =
+      | { tag: 'ok'; value: UserStoryCorpusDomain }
+      | { tag: 'err'; error: DatabaseError };
+
     try {
-      const saved = await db.transaction(async (tx) => {
+      const txOutcome = await db.transaction(async (tx): Promise<TxOutcome> => {
         const [existing] = await tx
           .select()
           .from(userStoryCorpora)
@@ -118,7 +122,10 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
             })
             .returning();
           if (!inserted) {
-            throw new Error('Insert user_story_corpora returned no row');
+            return {
+              tag: 'err',
+              error: new DatabaseError('Insert user_story_corpora returned no row'),
+            };
           }
           corpusId = inserted.id;
         }
@@ -143,7 +150,10 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
           .where(eq(userStoryCorpora.id, corpusId));
 
         if (!corpusRow) {
-          throw new Error('Corpus row missing after save');
+          return {
+            tag: 'err',
+            error: new DatabaseError('Corpus row missing after save'),
+          };
         }
 
         const lineRows = await tx
@@ -152,10 +162,11 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
           .where(eq(userStoryLines.corpusId, corpusId))
           .orderBy(asc(userStoryLines.sortOrder));
 
-        return mapCorpus(corpusRow, lineRows);
+        return { tag: 'ok', value: mapCorpus(corpusRow, lineRows) };
       });
 
-      return ok(saved);
+      if (txOutcome.tag === 'err') return err(txOutcome.error);
+      return ok(txOutcome.value);
     } catch (error) {
       logger.error('Failed to save user story corpus', error);
       return err(new DatabaseError('Failed to save user story corpus'));
