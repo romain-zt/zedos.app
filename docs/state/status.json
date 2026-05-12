@@ -32,6 +32,9 @@
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
       "fa-user-stories--story-generation-from-feature-split--impl": "in-progress"
+    },
+    "remediation_counts": {
+      "fa-user-stories--story-generation-from-feature-split--impl": 1
     }
   },
   "cursor_self_improve": {
