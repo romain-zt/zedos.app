@@ -1,0 +1,76 @@
+/**
+ * AI wrapper for user-story draft generation — validates against UserStoryAiDraftListSchema.
+ */
+
+import { UserStoryAiDraftListSchema, type UserStoryAiDraftList } from '@repo/contracts';
+import { Result, ok, err } from '@repo/result';
+import { ApplicationError, ExternalServiceError } from '@shared/errors/application-error';
+import { callAI } from '@/lib/ai-service';
+import { createLogger } from '@shared/observability/logger';
+
+const logger = createLogger({ service: 'UserStoryDraftAI' });
+
+const SYSTEM_PROMPT = `You are Zedos, a product manager. Given one feature cluster summary, produce user stories as implementation-ready statements.
+
+Output strictly valid JSON:
+{ "stories": [ { "title": "...", "body": "...", "sortOrder": 0 } ] }
+
+Rules:
+- 1 to 32 stories.
+- Each title: short verb phrase, max 2000 chars.
+- Each body: Given/When/Then or clear acceptance-style text, max 50000 chars.
+- sortOrder is optional; when omitted, preserve array order starting at 0.
+- Stories must reflect only the cluster scope — do not invent unrelated scope.
+- Output only the JSON object, no extra text.`;
+
+export async function draftUserStoriesWithAi(input: {
+  label: string;
+  valueLine: string;
+  boundaryCue: string;
+}): Promise<Result<UserStoryAiDraftList, ApplicationError>> {
+  try {
+    const userPayload = JSON.stringify(
+      {
+        label: input.label,
+        valueLine: input.valueLine,
+        boundaryCue: input.boundaryCue,
+      },
+      null,
+      2
+    );
+
+    const aiResponse = await callAI({
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `Feature cluster:\n${userPayload}` },
+      ],
+      responseFormat: { type: 'json_object' },
+      maxTokens: 8000,
+      temperature: 0.35,
+    });
+
+    const raw = await aiResponse.json();
+    const text: string = raw?.choices?.[0]?.message?.content ?? '{}';
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      logger.error('AI returned non-JSON for user story draft', { text });
+      return err(new ExternalServiceError('AI', 'AI returned invalid JSON for user stories'));
+    }
+
+    const validated = UserStoryAiDraftListSchema.safeParse(parsed);
+    if (!validated.success) {
+      logger.error('User story AI draft failed schema validation', {
+        errors: validated.error.flatten(),
+      });
+      return err(new ExternalServiceError('AI', 'AI user story draft did not match expected schema'));
+    }
+
+    return ok(validated.data);
+  } catch (error) {
+    logger.error('User story draft AI call failed', error);
+    return err(new ExternalServiceError('AI', 'User story draft generation failed'));
+  }
+}
