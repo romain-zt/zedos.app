@@ -44,7 +44,7 @@ describe('SignUpUseCase', () => {
   it('creates a new user successfully', async () => {
     userRepo.findByEmail.mockResolvedValue(err(new ValidationError('Not found')));
     userRepo.create.mockResolvedValue(ok(makeValidUser()));
-    creditsRepo.addCredits.mockResolvedValue(ok({ balance: 20 }));
+    creditsRepo.addCredits.mockResolvedValue(ok({ amount: 20 }));
 
     const result = await useCase.execute({
       email: 'new@example.com',
@@ -128,7 +128,7 @@ describe('SignUpUseCase', () => {
     const user = makeValidUser();
     userRepo.findByEmail.mockResolvedValue(err(new ValidationError('Not found')));
     userRepo.create.mockResolvedValue(ok(user));
-    creditsRepo.addCredits.mockResolvedValue(ok({ balance: 20 }));
+    creditsRepo.addCredits.mockResolvedValue(ok({ amount: 20 }));
 
     const result = await useCase.execute({
       email: 'test@example.com',
