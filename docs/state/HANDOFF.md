@@ -4,51 +4,41 @@ date: 2026-05-12
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-current_phase: fa-user-stories--story-generation-from-feature-split--impl--complete
+current_phase: orch-credit-system--ledger-concurrency-and-stripe-webhook
 current_blocker: null
-tracking_pr: 75
-tracking_branch: orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470
-remediation_note: "Post-merge fix commit on tracking_branch; open PR to main (automation could not create PR)."
+tracking_pr: 91
+tracking_branch: orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778616260895
+remediation_note: null
 ---
 
 # Cloud Agent State Handoff
 
-## Orchestration (canonical)
+## Orchestration — credits slice (`orch-credit-system--ledger-concurrency-and-stripe-webhook`)
 
-- **Pipeline step** `fa-services-feature-split--prd-to-feature-split--impl`: **complete**. Tracking PR **#75** merged to `main`. Follow-up remediation (owner-scoped PRD lookup, `feature_split` credits, refinement UI types, docs state) is on branch `orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470` — **open a PR to `main`** if those commits are not yet on `main`.
-- **Prior:** Question-coverage readiness score + question preview chips (**#70**) — complete per prior handoff.
+- **Tracking PR:** `#91`, head **`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778616260895`** → **`main`**.
+- **Anchors:** `docs/product/feature-areas/credit-system.md`, `docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md`.
 
-## User stories slice — layers
+## Stack layers (this epic)
 
-- **`db-migration`** — complete: `packages/db` schema `user_story_corpora` / `user_story_lines`, migration `0005`, FKs to `projects` and `feature_split_clusters`.
-- **`contracts-domain`** — complete: Zod under `packages/contracts/src/user-stories/`, domain entities + `IUserStoryCorpusRepository` + `IUserStoryDraftGenerator` under `apps/web/src/domain/user-stories/`.
-- **`persistence-use-cases`** — complete: Drizzle `DrizzleUserStoryCorpusRepository`, application use cases, AI draft wrapper + `UserStoryDraftGeneratorAdapter` (hex port/adapter).
-- **`api-routes`** — complete: `GET`/`PUT` `apps/web/app/api/projects/[id]/user-stories/route.ts`, `POST` `.../generate/route.ts`, `POST` `.../review-ready/route.ts`; Zod in/out.
-- **`ui`** — complete: `apps/web/app/dashboard/projects/[id]/user-stories/page.tsx`, `.../_components/user-stories-workspace.tsx`, dashboard shell sub-nav + removal of deferred “User stories” placeholder from `deferred-roadmap-placeholders.ts`.
+| Layer | Status |
+|-------|--------|
+| `db-migration` | **complete** (`credit_transactions.correlation_id` present in Drizzle schema) |
+| `contracts-domain` | **complete** (`CreditDeductionDecision`, `CreditsDomainService.computeDeductionDecision`, `canOperationProceed` aligned; unit tests updated) |
+| `persistence-use-cases` | **next** — widen `ICreditsRepository` (`correlationId`, `reverseCredits`); Drizzle repo: idempotency + domain deduct path + reversal; refactor `apps/web/lib/credits.ts` + thread IDs through application use cases |
+| `api-routes` | pending (Stripe webhook, etc.) |
+| `ui` | N/A for this slice |
+| `tests-state-finalization` | pending |
 
-## Still blocked elsewhere
+## This run delivered
 
-- **Credits slice** `orch-credit-system--ledger-concurrency-and-stripe-webhook` — PIS + plan approval (PR #39); see `status.json` `phases.2b` and `pis_blockers`.
-- **`fa-owner-milestone-feedback--milestone-detection-and-prompt`** — see `status.json` `fa_owner_milestone_feedback.blocker`.
+- Landed **`contracts-domain`** for locked-row deduction: single authority `computeDeductionDecision` + tests.
 
-## Completed pipeline step
+## Safest next task
 
-- **`fa-user-stories--story-generation-from-feature-split--impl`** — tracking PR **#87** marked ready for review after implementation + verification.
-- **Stack delivered:** `db-migration` → `contracts-domain` → `persistence-use-cases` → `api-routes` → `ui` → finalization (`typecheck`, `build`).
+1. Implement **`persistence-use-cases`** only (port, `DrizzleCreditsRepository`, `lib/credits.ts`, deduct/add use cases, test doubles).
+2. Run `pnpm typecheck` and `pnpm build` before marking further steps complete.
 
-## Next action for autonomous agent
+## Other pipeline items
 
-1. Orchestrator: merge stack via `pr-cascade` (PR #87 and dependents).
-2. Optional follow-ups (separate slices): E2E for user-stories journey; dedicated contract/component tests if product asks for more coverage.
+- Separate branches/PRs (user-stories, milestone feedback, etc.) are unaffected; resume from their tracking PRs when unblocked.
 
-## Key files (user stories slice)
-
-- Plan: `docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md`
-- DB schema: `packages/db/src/schema/user-stories.ts`
-- Contracts: `packages/contracts/src/user-stories/`
-- Domain: `apps/web/src/domain/user-stories/`
-- Application: `apps/web/src/application/user-stories/`
-- Persistence: `apps/web/src/infrastructure/persistence/user-story-corpus-repository.ts`
-- AI: `apps/web/src/infrastructure/ai/user-story-draft.ts`, `user-story-draft-generator-adapter.ts`
-- API: `apps/web/app/api/projects/[id]/user-stories/`
-- Dashboard UI: `apps/web/app/dashboard/projects/[id]/user-stories/`, `.../_components/user-stories-workspace.tsx`
