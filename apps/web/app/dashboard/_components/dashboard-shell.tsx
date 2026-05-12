@@ -19,9 +19,10 @@ import {
   Zap,
   Construction,
   GitBranch,
-  Users,
   BarChart3,
   X,
+  Layers,
+  FileText,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -33,7 +34,6 @@ const NAV_ITEMS = [
 
 const PLACEHOLDER_ICONS: Record<string, LucideIcon> = {
   'services-feature-split': GitBranch,
-  'user-stories': Users,
   'test-first-workflows': BarChart3,
   'delivery': Zap,
 }
@@ -47,8 +47,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const userName = session?.user?.name ?? 'Founder'
   const userInitial = userName?.charAt(0)?.toUpperCase() ?? 'F'
-  const workspaceProjectId =
-    pathname?.match(/^\/dashboard\/projects\/([^/]+)$/)?.[1] ?? null
+  const workspaceProjectId = pathname?.match(/^\/dashboard\/projects\/([^/]+)/)?.[1] ?? null
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,6 +101,39 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 </button>
               )
             })}
+
+            {workspaceProjectId && (
+              <>
+                <div className="pt-4 pb-2">
+                  <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    This project
+                  </p>
+                </div>
+                {([
+                  { href: `/dashboard/projects/${workspaceProjectId}`, label: 'Workspace', icon: FileText },
+                  { href: `/dashboard/projects/${workspaceProjectId}/feature-split`, label: 'Feature split', icon: Layers },
+                  { href: `/dashboard/projects/${workspaceProjectId}/user-stories`, label: 'User stories', icon: GitBranch },
+                ] as const).map((sub) => {
+                  const isSubActive = pathname === sub.href || pathname?.startsWith(`${sub.href}/`)
+                  return (
+                    <button
+                      key={sub.href}
+                      type="button"
+                      onClick={() => { router.push(sub.href); setSidebarOpen(false) }}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        isSubActive
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      )}
+                    >
+                      <sub.icon className="h-4 w-4 shrink-0" />
+                      {sub.label}
+                    </button>
+                  )
+                })}
+              </>
+            )}
 
             <div className="pt-4 pb-2">
               <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
