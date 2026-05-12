@@ -30,7 +30,7 @@
       "fa-read-only-sharing--revoke-link-and-noindex": "complete",
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
-      "fa-services-feature-split--prd-to-feature-split--impl": "not-started",
+      "fa-services-feature-split--prd-to-feature-split--impl": "in-progress",
       "fa-user-stories--story-generation-from-feature-split--impl": "not-started"
     }
   },
