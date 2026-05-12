@@ -14,7 +14,7 @@
       "fa-dashboard-shell-slice1": "complete",
       "fa-dashboard-shell-slice2": "complete",
       "cursor-self-improve": "complete",
-      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "not-started",
+      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "complete",
       "fa-project-workspace--create-project": "complete",
       "fa-project-workspace--list-and-open-project": "complete",
       "fa-project-workspace--switch-active-project": "complete",
@@ -33,7 +33,8 @@
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
       "fa-user-stories--story-generation-from-feature-split--db": "complete",
-      "fa-user-stories--story-generation-from-feature-split--impl": "complete"
+      "fa-user-stories--story-generation-from-feature-split--impl": "complete",
+      "fa-payments--manual-credit-pack-checkout": "blocked"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
@@ -103,6 +104,17 @@
     "question_preview_and_progress_score": "complete",
     "tracking_pr": 70,
     "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532809796"
+  },
+  "fa_payments": {
+    "manual_credit_pack_checkout": {
+      "status": "blocked",
+      "tracking_pr": 102,
+      "tracking_branch": "orchestrator/tracking-fa-payments--manual-credit-pack-checkout-1778625061087",
+      "scope_slice": "docs/product/scope-slices/payments--manual-credit-pack-checkout.md",
+      "blocker": "NEED_HUMAN: Scope slice not ready-for-user-stories — complete refine-slice (UX states, data touched, checklists) then promote-slice; then User Story + Plan with explicit approval before code.",
+      "next_layer": null,
+      "orch_credit_prerequisite": "complete"
+    }
   },
   "fa_owner_milestone_feedback": {
     "milestone_detection_and_prompt": "in-progress",
@@ -193,8 +205,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Owner milestone feedback: wire milestone emitters + finalize tests on tracking PR #97; credits orch-credit-system (PR #95) continues tests-state-finalization in parallel.",
-  "orchestration_blocker": null,
+  "next_action": "Owner milestone feedback: wire milestone emitters + finalize tests on tracking PR #97. Credits orch-credit-system step complete (tracking PR #100); configure STRIPE_WEBHOOK_SECRET in deployment.",
+  "orchestration_blocker": "NEED_HUMAN: fa-payments--manual-credit-pack-checkout blocked — parent scope slice docs/product/scope-slices/payments--manual-credit-pack-checkout.md is exploratory / NOT READY (UX States, Data Touched, readiness checklist incomplete). Refine + promote to ready-for-user-stories before User Story + approved Implementation Plan per execution-bridge §5–§9. orch-credit-system prerequisite is complete.",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -246,13 +258,19 @@
       "description": "Credit/Stripe planning artifacts (scope slice, user story, plan, friction log)"
     },
     "2b": {
-      "status": "in-progress",
-      "description": "orch-credit-system slice: api-routes landed on tracking PR #95 (composition root, credits HTTP bridge, stripe webhook + checkout.session.completed processor, verify + AI routes off legacy lib imports). Next: tests-state-finalization.",
+      "status": "complete",
+      "description": "orch-credit-system slice: ledger concurrency, Stripe webhook idempotency, credits HTTP bridge, tests-state-finalization (webhook processor unit tests + sign-up CreditBalance test mocks). Deploy: set STRIPE_WEBHOOK_SECRET for POST /api/stripe/webhook.",
       "orchestrator_step": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
-      "tracking_pr": 95,
-      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778622207100",
-      "layer_complete": "api-routes",
-      "next_layer": "tests-state-finalization"
+      "tracking_pr": 100,
+      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778624552412",
+      "layer_complete": "tests-state-finalization",
+      "next_layer": null,
+      "verified_at": "2026-05-12",
+      "verification": {
+        "typecheck": "clean",
+        "build": "clean",
+        "tests": "apps/web vitest run"
+      }
     }
   },
   "active_artifacts": {
