@@ -8,8 +8,8 @@ parallel_pipeline_status: in-progress
 parallel_pipeline_status_prior_branch_note: blocked-awaiting-plan-approval — historic parallel orch branch gate (superseded on mainline where milestone work advanced to PR #97 + UI complete).
 current_phase_primary: orch-credit-system--tests-state-finalization
 current_phase_primary_prior_branch_note: fa-owner-milestone-feedback--emitter-wiring-next — older bookkeeping before main advanced credits tests-finalization focus; fa-owner-milestone-feedback--ui-next — older parallel bookkeeping on credits orch tracking branch.
-current_phase_milestone_feedback: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
-current_phase_milestone_feedback_prior_branch_note: fa-owner-milestone-feedback--milestone-detection-and-prompt--ui-layer-complete — prior state before milestone marked complete on main; fa-owner-milestone-feedback--milestone-detection-and-prompt--contracts-complete — prior parallel narrative when milestone tracked on PR #93.
+current_phase_milestone_feedback: fa-owner-milestone-feedback--feedback-capture-and-attribution--blocked
+current_phase_milestone_feedback_prior_branch_note: fa-owner-milestone-feedback--milestone-detection-and-prompt — complete on tracking PR #99; fa-owner-milestone-feedback--milestone-detection-and-prompt--ui-layer-complete — prior state before milestone marked complete on main; fa-owner-milestone-feedback--milestone-detection-and-prompt--contracts-complete — prior parallel narrative when milestone tracked on PR #93.
 current_phase_aggregate: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
 current_phase_aggregate_prior_branch_note: fa-owner-milestone-feedback--milestone-detection-and-prompt--emitter-wiring-next — prior aggregate before completion; fa-owner-milestone-feedback--milestone-detection-and-prompt--blocked-plan-approval — superseded where contracts/UI landed on subsequent tracking PRs.
 credit_system_tracking_phase: orch-credit-system--ledger-concurrency-and-stripe-webhook
@@ -35,6 +35,17 @@ remediation_note: null
 ---
 
 # Cloud Agent State Handoff
+
+## Owner milestone feedback — feedback capture and attribution (`fa-owner-milestone-feedback--feedback-capture-and-attribution`)
+
+- **Tracking PR:** **`#104`**, head **`orchestrator/tracking-fa-owner-milestone-feedback--feedback-capture-and-attribution-1778629061701`** → **`main`**.
+- **Orchestration step:** **`blocked`** in `docs/state/status.json` — no code until governance bridge is satisfied.
+- **Anchor:** `docs/product/feature-areas/owner-milestone-feedback.md`, `docs/product/scope-slices/owner-milestone-feedback--feedback-capture-and-attribution.md`.
+- **Why blocked:** Scope slice is **`exploratory`** with **Readiness for User Stories: NOT READY** (UX States / Data Touched empty; checklist unchecked). Per **execution-bridge** §5, a **User Story must not be authored** until the slice is **`ready-for-user-stories`**; no **approved Implementation Plan** can gate code before that. Dependency row still lists **`milestone-detection-and-prompt`** as exploratory — reconcile with shipped **#99** when refining.
+- **User story / plan:** None — correct until slice promotion.
+- **NEED_HUMAN:** Product/governance must **`/feature-area refine-slice`** (fill UX states, data touched, dependencies) and **`/feature-area promote-slice`** to `ready-for-user-stories`, then run **`/plan`** with chat **`approved`** before any implementation layer (`db-migration` onward).
+- **This run (2026-05-12):** Updated `status.json` (`orchestration.steps[...] = blocked`, `fa_owner_milestone_feedback.feedback_capture_and_attribution`, `orchestration.blocker`) and this HANDOFF; **no** `gh pr ready` — draft stays open.
+- **Safest next task:** Refine `owner-milestone-feedback--feedback-capture-and-attribution.md`; then architect User Story + Plan from slice only.
 
 ## Payments — manual credit pack checkout (`fa-payments--manual-credit-pack-checkout`)
 
