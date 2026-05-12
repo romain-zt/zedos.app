@@ -21,16 +21,6 @@ export type DeferredRoadmapPlaceholder = {
 
 export const DEFERRED_ROADMAP_PLACEHOLDERS: readonly DeferredRoadmapPlaceholder[] = [
   {
-    id: 'services-feature-split',
-    title: 'Services / feature split',
-    summary: 'Post-PRD pipeline structure',
-    tooltip: 'Coming in v1 — tap to learn more.',
-    description:
-      'Break your validated PRD into distinct services and feature groups — named areas that can be planned and delivered independently. You\'ll get a structured map of what to build and in what order, with clear ownership boundaries.',
-    why:
-      'Founders stare at a monolithic PRD and don\'t know where to start. This step turns that document into a clear build sequence so you can tackle each part without ambiguity — alone or with a team.',
-  },
-  {
     id: 'user-stories',
     title: 'User stories',
     summary: 'From PRD to executable stories',
