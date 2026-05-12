@@ -27,6 +27,7 @@
     "./share/anonymous-read": "./src/share/anonymous-read.ts",
     "./feedback": "./src/feedback/index.ts",
     "./feedback/submit": "./src/feedback/submit.ts",
+    "./feedback/milestone-prompt": "./src/feedback/milestone-prompt.ts",
     "./feature-split": "./src/feature-split/index.ts",
     "./user-stories": "./src/user-stories/index.ts"
   },
