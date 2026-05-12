@@ -78,8 +78,8 @@
     "story_generation_from_feature_split_impl": {
       "tracking_pr": 88,
       "tracking_branch": "orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778614749792",
-      "layer_complete": "persistence-use-cases",
-      "next_layer": "api-routes"
+      "layer_complete": "ui",
+      "next_layer": "tests-state-finalization"
     }
   },
   "fa_test_first_workflows": {
@@ -157,7 +157,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "User stories on PR #86: contracts-domain complete; next layer persistence-use-cases (Drizzle repo + use cases per plan). Parallel: credits (#39) still blocked on PIS.",
+  "next_action": "User stories PR #88: ui layer landed; next tests-state-finalization then mark impl step complete. Parallel: credits (#39) blocked on PIS.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
