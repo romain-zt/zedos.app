@@ -126,6 +126,34 @@ export interface PurchaseUpdate {
   status?: string;
 }
 
+// FeatureSplit insert type
+export interface NewFeatureSplitRow {
+  id?: string;
+  projectId: string;
+  sourcePrdVersionId: string;
+  status?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// FeatureSplit update type
+export interface FeatureSplitUpdate {
+  status?: string;
+  updatedAt?: Date;
+}
+
+// FeatureSplitCluster insert type
+export interface NewFeatureSplitClusterRow {
+  id?: string;
+  featureSplitId: string;
+  sortOrder: number;
+  label: string;
+  valueLine: string;
+  boundaryCue: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 // MilestoneFeedback insert type
 export interface MilestoneFeedbackInsert {
   id?: string;
