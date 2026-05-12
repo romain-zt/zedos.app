@@ -178,7 +178,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Owner milestone feedback (PR #92) blocked on Plan approval; after approval implement contracts iteration per docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md. Credits orch-credit-system (tracking PR #94) continues api-routes layer next.",
+  "next_action": "Owner milestone feedback (PR #92) blocked on Plan approval; credits orch-credit-system (tracking PR #95) continues tests-state-finalization next.",
   "orchestration_blocker": "NEED_HUMAN: Approvals — Implementation Plan docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md is `proposed`; promote to `approved` (execution bridge ladder) plus Patch Intent Summary `approved` before Iteration‑1 touches packages/apps code.",
   "phases": {
     "0": {
@@ -232,12 +232,12 @@
     },
     "2b": {
       "status": "in-progress",
-      "description": "orch-credit-system slice: persistence-use-cases landed on tracking PR #94 (locked-row repo, correlationId idempotency, reverseCredits, lib adapter, signup starter grant). Next: api-routes (stripe verify + AI project routes wiring, webhook).",
+      "description": "orch-credit-system slice: api-routes landed on tracking PR #95 (composition root, credits HTTP bridge, stripe webhook + checkout.session.completed processor, verify + AI routes off legacy lib imports). Next: tests-state-finalization.",
       "orchestrator_step": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
-      "tracking_pr": 94,
-      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778619778753",
-      "layer_complete": "persistence-use-cases",
-      "next_layer": "api-routes"
+      "tracking_pr": 95,
+      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778622207100",
+      "layer_complete": "api-routes",
+      "next_layer": "tests-state-finalization"
     }
   },
   "active_artifacts": {

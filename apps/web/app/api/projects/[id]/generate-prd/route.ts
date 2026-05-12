@@ -5,7 +5,10 @@ import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { db, projects, questionHistory, prdVersions, eq, and, asc, desc, type PrdVersionInsert } from '@repo/db'
 import { GeneratePrdAiResponseSchema } from '@repo/contracts/ai/generate-prd-stream'
-import { checkCredits, deductCredits } from '@/lib/credits'
+import {
+  checkCreditsForApi as checkCredits,
+  deductCreditsForApi as deductCredits,
+} from '@infrastructure/http/credits-http-bridge'
 import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
 
 const PRD_SYSTEM_PROMPT = `You are Zedos, generating a structured PRD from the founder's clarification history.
