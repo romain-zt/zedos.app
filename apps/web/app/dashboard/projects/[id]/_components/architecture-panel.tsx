@@ -183,6 +183,7 @@ export function ArchitecturePanel({
             {ADR_SLOTS.map((slot) => {
               const adr = adrs.find((a) => a.adrNumber === slot.number)
               const isComplete = adr?.status === 'complete'
+              const adrLabel = `ADR-${slot.number.toString().padStart(2, '0')}`
               return (
                 <div
                   key={slot.number}
@@ -196,7 +197,7 @@ export function ArchitecturePanel({
                         <AlertCircle className="h-4 w-4 text-gray-400 flex-shrink-0" />
                       )}
                       <div>
-                        <div className="font-medium text-sm">{`ADR-${slot.number.toString().padStart(2, '0')}: ${slot.title}`}</div>
+                        <div className="font-medium text-sm">{`${adrLabel}: ${slot.title}`}</div>
                         <div className="text-xs text-gray-600">{slot.description}</div>
                       </div>
                     </div>

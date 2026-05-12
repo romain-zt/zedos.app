@@ -106,6 +106,13 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
     setActiveTab('prd')
   }, [fetchVersions])
 
+  const handleOpenRefinement = useCallback(
+    (label: string) => {
+      setRefinementContext({ label, prdVersionId: selectedVersion?.id ?? null })
+    },
+    [selectedVersion]
+  )
+
   const handleSaveSettings = async () => {
     setSaving(true)
     try {

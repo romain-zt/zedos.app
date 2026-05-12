@@ -192,6 +192,17 @@ export function PrdViewer({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {onOpenRefinement && selectedVersion && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenRefinement('my PRD')}
+              title="Open a focused chat to refine this PRD"
+            >
+              <MessageSquare className="mr-2 h-3.5 w-3.5" />
+              Refine PRD
+            </Button>
+          )}
           {shareLink ? (
             <div className="flex items-center gap-1">
               <Button variant="outline" size="sm" onClick={handleCopy}>
@@ -241,7 +252,7 @@ export function PrdViewer({
         <div className="space-y-3">
           {(sections ?? []).map((section: any, i: number) => (
             <StaggerItem key={section?.id ?? i}>
-              <Card>
+              <Card className="group">
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-base font-display pr-1 flex-1 min-w-0">
