@@ -4,10 +4,10 @@ date: 2026-05-12
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-parallel_pipeline_status: in-progress
-current_phase_primary: fa-owner-milestone-feedback--emitter-wiring-next
-current_phase_milestone_feedback: fa-owner-milestone-feedback--milestone-detection-and-prompt--ui-layer-complete
-current_phase_aggregate: fa-owner-milestone-feedback--milestone-detection-and-prompt--tests-state-finalization-next
+parallel_pipeline_status: milestone-feedback-complete-payments-blocked
+current_phase_primary: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
+current_phase_milestone_feedback: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
+current_phase_aggregate: fa-owner-milestone-feedback--tests-state-finalization-complete
 credit_system_tracking_phase: orch-credit-system--ledger-concurrency-and-stripe-webhook
 current_blocker: null
 parallel_current_blocker: null
@@ -56,7 +56,7 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 
 ## Owner milestone feedback — slice layers (tracking PR **#101**)
 
-- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **in progress** on tracking PR **#101** (`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710` → `main`). Contracts + UI shell + **emitter wiring** landed (`signalMilestone` at clarify / refinement / share / PRD-tab view); **next layer = tests-state-finalization** (smoke tests, then orchestration `complete`, then `gh pr ready 101`).
+- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **`complete`** on tracking PR **#101** (`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710` → `main`). Emitter wiring + **tests-state-finalization** landed (`owner-milestone-prompt-shell.test.tsx` smoke coverage; orchestration bookkeeping updated). **`gh pr ready 101`** when CI is green.
 
 | Layer | Status |
 |-------|--------|
@@ -66,7 +66,7 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 | `api-routes` | **deferred** — optional; milestone wiring can use client context / layout props |
 | `ui` | **complete** — `OwnerMilestonePromptShell` + `useOwnerMilestonePrompt` (`apps/web/app/dashboard/projects/[id]/_components/owner-milestone-prompt.tsx`), mounted in `apps/web/app/dashboard/projects/[id]/layout.tsx` (owner gate via `GetProjectUseCase`); sessionStorage dismiss per milestone type; optional `milestonePayload` query (base64url JSON) |
 | `emitter-wiring` | **complete** — `prd_created` (`clarification-chat`), `prd_updated` (`contextual-refinement-panel`), `prd_shared` (`prd-viewer`), `prd_viewed` (enter PRD tab in `project-workspace` after `await fetchVersions`) |
-| `tests-state-finalization` | **next** — smoke + `orchestration.steps[...] = complete` + `gh pr ready 101 --repo romain-zt/zedos.app` |
+| `tests-state-finalization` | **complete** — Vitest smoke (`apps/web/app/dashboard/projects/owner-milestone-prompt-shell.test.tsx`), `pnpm typecheck` + `pnpm build` clean; `orchestration.steps["fa-owner-milestone-feedback--milestone-detection-and-prompt"]` = **`complete`**; `sign-up-usecase.test.ts` conflict-marker cleanup |
 
 ### Governance artifacts (milestone slice)
 
@@ -92,7 +92,7 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 
 **Owner milestone slice (tracking PR #101):**
 
-- UI layer: project layout + client milestone banner/provider; see `apps/web/app/dashboard/projects/[id]/layout.tsx` and `_components/owner-milestone-prompt.tsx`. Bookkeeping: `docs/state/status.json` `fa_owner_milestone_feedback`.
+- UI + emitter wiring + **tests-state-finalization**: milestone shell tests; bookkeeping in `docs/state/status.json` `fa_owner_milestone_feedback`; pipeline step **`complete`**.
 
 ## Safest next task
 
@@ -102,13 +102,14 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 
 **Owner milestone (#101):**
 
-1. **Tests + finalization**: milestone emitter smoke coverage if needed; `pnpm typecheck` + `pnpm build`; mark `orchestration.steps["fa-owner-milestone-feedback--milestone-detection-and-prompt"]` = `"complete"`; then `gh pr ready 101 --repo romain-zt/zedos.app`.
+1. **Merge prep:** **`gh pr ready 101 --repo romain-zt/zedos.app`** after confirming CI passes on the tracking branch push.
 
 ## Key files (milestone detection slice)
 
 - Contracts: `packages/contracts/src/feedback/milestone-prompt.ts`
 - Plan: `docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md`
 - UI: `apps/web/app/dashboard/projects/[id]/_components/owner-milestone-prompt.tsx`, `apps/web/app/dashboard/projects/[id]/layout.tsx`
+- Tests (shell smoke): `apps/web/app/dashboard/projects/owner-milestone-prompt-shell.test.tsx`
 
 ## Other pipeline items
 
