@@ -4,7 +4,6 @@
   "credit_system_tracking_phase": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
-    "blocker": "NEED_HUMAN: fa-owner-milestone-feedback--feedback-capture-and-attribution — scope slice not ready-for-user-stories; see fa_owner_milestone_feedback.feedback_capture_and_attribution.blocker",
     "steps": {
       "phase3-p0": "complete",
       "phase3-p1": "complete",
