@@ -29,19 +29,19 @@ remediation_note: null
 |-------|--------|
 | `db-migration` | **complete** (`credit_transactions.correlation_id` present in Drizzle schema) |
 | `contracts-domain` | **complete** (`CreditDeductionDecision`, `CreditsDomainService.computeDeductionDecision`, `canOperationProceed` aligned; unit tests updated) |
-| `persistence-use-cases` | **next** — widen `ICreditsRepository` (`correlationId`, `reverseCredits`); Drizzle repo: idempotency + domain deduct path + reversal; refactor `apps/web/lib/credits.ts` + thread IDs through application use cases |
-| `api-routes` | pending (Stripe webhook, etc.) |
+| `persistence-use-cases` | **complete** — `ICreditsRepository` + Drizzle idempotency/reversal wired; legacy `apps/web/lib/credits.ts` delegates to `DrizzleCreditsRepository`; `ReverseCreditsUseCase` exported |
+| `api-routes` | **next** — thread stable `correlationId` through Stripe verify + project AI routes; Stripe webhook grants |
 | `ui` | N/A for this slice |
 | `tests-state-finalization` | pending |
 
 ## This run delivered
 
-- Landed **`contracts-domain`** for locked-row deduction: single authority `computeDeductionDecision` + tests.
+- Completed **`persistence-use-cases`**: legacy `lib/credits.ts` uses `DrizzleCreditsRepository` for deduct/add/reverse (optional `correlationId` params default to `randomUUID()`); starter grant rows carry `correlationId` `starter_grant:<userId>`; added **`ReverseCreditsUseCase`** + barrel export. `pnpm typecheck` + `pnpm build` green.
 
 ## Safest next task
 
-1. Implement **`persistence-use-cases`** only (port, `DrizzleCreditsRepository`, `lib/credits.ts`, deduct/add use cases, test doubles).
-2. Run `pnpm typecheck` and `pnpm build` before marking further steps complete.
+1. **`api-routes`** — pass stable ids into `deductCredits` / `addCredits` from Stripe verify and project routes; webhook path per slice.
+2. Run `pnpm typecheck` and `pnpm build` after route updates.
 
 ## Other pipeline items
 
