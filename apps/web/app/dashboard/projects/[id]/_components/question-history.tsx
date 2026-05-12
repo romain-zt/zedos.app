@@ -243,7 +243,12 @@ export function QuestionHistoryPanel({
                           variant="ghost"
                           size="sm"
                           className="h-7 text-xs gap-1.5 mt-0.5"
-                          onClick={() => onOpenRefinement(`question: "${q.structuredQuestion}"`)}
+                          onClick={() =>
+                            onOpenRefinement({
+                              label: `question: "${q.structuredQuestion}"`,
+                              prdVersionId: q.prdVersionId,
+                            })
+                          }
                         >
                           <MessageSquare className="h-3 w-3" />
                           Revise
