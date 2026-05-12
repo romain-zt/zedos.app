@@ -12,8 +12,20 @@ import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError, DatabaseError } from '@shared/errors/application-error';
 import { db, users, creditTransactions, eq, desc, sql, type UserUpdate, type CreditTransactionInsert } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
+import { clampPersistedCreditBalanceNonNegative } from './credits-persisted-balance';
 
 const logger = createLogger({ service: 'CreditsRepository' });
+
+function persistedCreditBalanceForDomain(raw: number, userId: string): number {
+  const coerced = clampPersistedCreditBalanceNonNegative(raw);
+  if (coerced !== raw) {
+    logger.error('Persisted credit_balance is negative; treating as 0 for ledger operations', {
+      userId,
+      rawCreditBalance: raw,
+    });
+  }
+  return coerced;
+}
 
 export class DrizzleCreditsRepository implements ICreditsRepository {
   // Constructor kept for API compatibility - argument is ignored since we use the singleton db
@@ -35,11 +47,8 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
         return err(new NotFoundError('User not found'));
       }
 
-      const balance = new CreditBalance(
-        new UserId(user.id),
-        user.creditBalance,
-        user.graceUsed
-      );
+      const amount = persistedCreditBalanceForDomain(user.creditBalance, user.id);
+      const balance = new CreditBalance(new UserId(user.id), amount, user.graceUsed);
       return ok(balance) as Result<CreditBalance, ApplicationError>;
     } catch (error) {
       logger.error('Failed to get balance', error);
@@ -71,19 +80,21 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
 
         const user = rows[0];
 
-        if (user.credit_balance < amount) {
+        const effectiveBalance = persistedCreditBalanceForDomain(user.credit_balance, userId);
+
+        if (effectiveBalance < amount) {
           return {
             error: new ApplicationError({
               code: 'INSUFFICIENT_CREDITS' as any,
-              message: `Insufficient credits. Required: ${amount}, Available: ${user.credit_balance}`,
+              message: `Insufficient credits. Required: ${amount}, Available: ${effectiveBalance}`,
               statusCode: 402,
-              details: { required: amount, available: user.credit_balance },
+              details: { required: amount, available: effectiveBalance },
             }),
           };
         }
 
         // 2. Deduct credits
-        const newBalance = user.credit_balance - amount;
+        const newBalance = effectiveBalance - amount;
         const updateData: UserUpdate = { creditBalance: newBalance };
         await tx
           .update(users)
@@ -141,8 +152,10 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
 
         const user = rows[0];
 
+        const effectiveBalance = persistedCreditBalanceForDomain(user.credit_balance, userId);
+
         // 2. Add credits
-        const newBalance = user.credit_balance + amount;
+        const newBalance = effectiveBalance + amount;
         
         const updateData: UserUpdate = { creditBalance: newBalance };
         if (type === 'grant') {
@@ -273,9 +286,10 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
           graceUsed: users.graceUsed,
         });
 
+      const amount = persistedCreditBalanceForDomain(updatedUser.creditBalance, updatedUser.id);
       const balance = new CreditBalance(
         new UserId(updatedUser.id),
-        updatedUser.creditBalance,
+        amount,
         updatedUser.graceUsed
       );
       logger.info('Grace period used', { userId });
