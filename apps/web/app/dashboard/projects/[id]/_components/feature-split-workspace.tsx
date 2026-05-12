@@ -425,6 +425,9 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                 <p className="text-sm text-green-800 dark:text-green-300 font-medium">
                   Feature split confirmed. The next step is generating user stories from these clusters.
                 </p>
+                <Button variant="outline" size="sm" className="mt-3 min-h-11 w-full sm:w-auto" asChild>
+                  <Link href={`/dashboard/projects/${projectId}/user-stories`}>Open user stories</Link>
+                </Button>
               </div>
             )}
           </FadeIn>

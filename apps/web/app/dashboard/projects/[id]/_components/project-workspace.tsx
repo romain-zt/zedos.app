@@ -8,7 +8,8 @@ import { QuestionHistoryPanel } from './question-history'
 import { ArchitecturePanel } from './architecture-panel'
 import { ReadinessScoreBadge } from './readiness-score-badge'
 import { ContextualRefinementPanel } from './contextual-refinement-panel'
-import { MessageSquare, FileText, History, Settings, Layers } from 'lucide-react'
+import Link from 'next/link'
+import { MessageSquare, FileText, History, Settings, Layers, SplitSquareHorizontal, ListChecks } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -128,16 +129,30 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       <FadeIn>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="min-w-0">
             <h1 className="font-display text-2xl font-bold tracking-tight">{projectName}</h1>
             {projectDescription && (
               <p className="text-sm text-muted-foreground mt-0.5">{projectDescription}</p>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" className="min-h-11" asChild>
+              <Link href={`/dashboard/projects/${projectId}/feature-split`}>
+                <SplitSquareHorizontal className="h-4 w-4 mr-1" />
+                Split
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" className="min-h-11" asChild>
+              <Link href={`/dashboard/projects/${projectId}/user-stories`}>
+                <ListChecks className="h-4 w-4 mr-1" />
+                Stories
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" className="min-h-11 min-w-11" onClick={() => setShowSettings(true)}>
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </FadeIn>
 
