@@ -30,6 +30,12 @@ export const UserStoryCorpusSchema = z.object({
 
 export type UserStoryCorpusDTO = z.infer<typeof UserStoryCorpusSchema>;
 
+export const GetUserStoryCorpusResponseSchema = z.object({
+  corpus: UserStoryCorpusSchema.nullable(),
+});
+
+export type GetUserStoryCorpusResponse = z.infer<typeof GetUserStoryCorpusResponseSchema>;
+
 /** Line row for PUT — id omitted when creating a new line server-side. */
 export const UserStoryLineSaveInputSchema = z.object({
   id: IdSchema.optional(),
