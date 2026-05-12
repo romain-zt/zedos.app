@@ -10,13 +10,8 @@ import {
   ProposeFeatureSplitRequestSchema,
   ProposeFeatureSplitResponseSchema,
 } from '@repo/contracts/ai/feature-split-proposal';
-import { checkCredits, deductCredits } from '@/lib/credits';
+import { checkCredits, deductCredits, getCreditCost } from '@/lib/credits';
 import { ApplicationError } from '@shared/errors/application-error';
-
-const FEATURE_SPLIT_CREDIT_COST = parseInt(
-  process.env.CREDIT_COST_FEATURE_SPLIT ?? '5',
-  10
-);
 
 function toErrorResponse(e: ApplicationError) {
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -42,7 +37,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const creditCheck = await checkCredits(userId, 'mini_form');
+  const creditCheck = await checkCredits(userId, 'feature_split_propose');
   if (!creditCheck.allowed) {
     return NextResponse.json(
       { error: 'insufficient_credits', message: creditCheck.reason, balance: creditCheck.currentBalance },
@@ -57,7 +52,7 @@ export async function POST(
   const result = await useCase.execute(params.id, userId, parsed.data.sourcePrdVersionId);
   if (result.isErr()) return toErrorResponse(result.error);
 
-  const deductResult = await deductCredits(userId, 'mini_form', {
+  const deductResult = await deductCredits(userId, 'feature_split_propose', {
     projectId: params.id,
     operation: 'feature_split_proposal',
   });
@@ -65,7 +60,7 @@ export async function POST(
   const proposal = result.unwrap();
   const responsePayload = {
     proposal,
-    creditsDeducted: deductResult.success ? FEATURE_SPLIT_CREDIT_COST : undefined,
+    creditsDeducted: deductResult.success ? getCreditCost('feature_split_propose') : undefined,
   };
 
   const out = ProposeFeatureSplitResponseSchema.safeParse(responsePayload);

@@ -196,7 +196,12 @@ export function PrdViewer({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onOpenRefinement({ label: 'my PRD', prdVersionId: selectedVersion?.id ?? null })}
+              onClick={() =>
+                onOpenRefinement({
+                  label: 'my PRD',
+                  prdVersionId: selectedVersion?.id ?? null,
+                })
+              }
               title="Open a focused chat to refine this PRD"
             >
               <MessageSquare className="mr-2 h-3.5 w-3.5" />
