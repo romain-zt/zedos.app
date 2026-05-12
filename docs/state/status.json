@@ -67,7 +67,9 @@
     "revoke_link_and_noindex": "complete"
   },
   "fa_services_feature_split": {
-    "prd_to_feature_split": "complete"
+    "prd_to_feature_split": "complete",
+    "tracking_pr": 75,
+    "tracking_branch": "orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470"
   },
   "fa_user_stories": {
     "story_generation_from_feature_split": "complete"

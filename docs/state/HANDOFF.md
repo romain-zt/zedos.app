@@ -6,13 +6,15 @@ workspace: /workspace
 status: handoff-ready
 current_phase: fa-services-feature-split--prd-to-feature-split--impl-complete
 current_blocker: null
+tracking_pr: 75
+tracking_branch: orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470
 ---
 
 # Cloud Agent State Handoff
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-services-feature-split--prd-to-feature-split--impl`: **complete**. Feature split domain + persistence (Drizzle, `feature_splits` + `feature_split_clusters` tables), contracts (existing `@repo/contracts/feature-split/`), application use cases (get, save draft, confirm, propose), AI infrastructure wrapper, API routes (`GET/PUT /api/projects/[id]/feature-split`, `POST /propose`, `POST /confirm`), dashboard UI (`/dashboard/projects/[id]/feature-split`), placeholder removal, unit tests. Tracking PR **#76** → `main`.
+- **Pipeline step** `fa-services-feature-split--prd-to-feature-split--impl`: **complete**. Feature split domain + persistence (Drizzle, `feature_splits` + `feature_split_clusters` tables), contracts (existing `@repo/contracts/feature-split/`), application use cases (get, save draft, confirm, propose), AI infrastructure wrapper, API routes (`GET/PUT /api/projects/[id]/feature-split`, `POST /propose`, `POST /confirm`), dashboard UI (`/dashboard/projects/[id]/feature-split`), placeholder removal, unit tests. Remediation: owner-scoped `findVersionByIdForOwner`, `feature_split` credit op + env, contextual refinement `onOpenRefinement` payload typing. Tracking PR **#75** → `main` (branch `orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470`).
 - **Prior:** Question-coverage readiness score + question preview chips (**#70**) — complete per prior handoff.
 
 ## What changed (this phase)
@@ -38,7 +40,7 @@ current_blocker: null
 
 ## Next action for autonomous agent
 
-1. **PR #76** — just marked ready for review (`gh pr ready 76`). Confirm CI green on head.
+1. **PR #75** — marking ready for review (`gh pr ready 75 --repo romain-zt/zedos.app`). Confirm CI green on head.
 2. **Next pipeline step** — `fa-user-stories--story-generation-from-feature-split--impl` (not-started). Read `docs/state/orchestration.pipeline.json` + `status.json` for next eligible item.
 
 ## Key files (this slice)

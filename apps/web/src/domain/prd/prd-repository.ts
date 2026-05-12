@@ -46,4 +46,10 @@ export interface IPrdRepository {
   getAnonymousPrdVersionByShareToken(
     token: string
   ): Promise<Result<AnonymousSharedPrdSnapshot, ApplicationError>>;
+
+  /** Owner-scoped PRD version lookup; not-found when missing or not owned (no existence leak). */
+  findVersionByIdForOwner(
+    prdVersionId: string,
+    ownerUserId: string
+  ): Promise<Result<PrdVersion | null, ApplicationError>>;
 }
