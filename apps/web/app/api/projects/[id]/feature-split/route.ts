@@ -7,6 +7,7 @@ import { DrizzleProjectRepository } from '@infrastructure/persistence/project-re
 import { DrizzleFeatureSplitRepository } from '@infrastructure/persistence/feature-split-repository';
 import { GetFeatureSplitUseCase } from '@application/feature-split/get-feature-split-usecase';
 import { SaveFeatureSplitDraftUseCase } from '@application/feature-split/save-feature-split-draft-usecase';
+import type { NewFeatureClusterInput } from '@domain/feature-split/feature-split';
 import {
   GetFeatureSplitsQuerySchema,
   FeatureSplitListResponseSchema,
@@ -110,7 +111,7 @@ export async function PUT(
     projectId: params.id,
     userId,
     sourcePrdVersionId: parsed.data.sourcePrdVersionId,
-    clusters: parsed.data.clusters,
+    clusters: parsed.data.clusters as NewFeatureClusterInput[],
   });
   if (result.isErr()) return toErrorResponse(result.error);
 

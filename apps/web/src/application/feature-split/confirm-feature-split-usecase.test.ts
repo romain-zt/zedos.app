@@ -131,6 +131,6 @@ describe('ConfirmFeatureSplitUseCase', () => {
     const result = await uc.execute('fs_1', 'prj_1', 'usr_1');
 
     expect(result.isErr()).toBe(true);
-    expect(result.error).toBeInstanceOf(NotFoundError);
+    if (result.isErr()) expect(result.error).toBeInstanceOf(NotFoundError);
   });
 });

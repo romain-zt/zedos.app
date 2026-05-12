@@ -1,6 +1,6 @@
 {
-  "handoff_date": "2026-05-11",
-  "current_phase": "fa-services-feature-split--prd-to-feature-split--impl",
+  "handoff_date": "2026-05-12",
+  "current_phase": "fa-services-feature-split--prd-to-feature-split--impl--complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -30,7 +30,7 @@
       "fa-read-only-sharing--revoke-link-and-noindex": "complete",
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
-      "fa-services-feature-split--prd-to-feature-split--impl": "in-progress",
+      "fa-services-feature-split--prd-to-feature-split--impl": "complete",
       "fa-user-stories--story-generation-from-feature-split--impl": "not-started"
     }
   },
