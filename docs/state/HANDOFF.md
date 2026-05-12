@@ -8,13 +8,14 @@ current_phase: fa-services-feature-split--prd-to-feature-split--impl-complete
 current_blocker: null
 tracking_pr: 75
 tracking_branch: orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470
+remediation_note: "Post-merge fix commit on tracking_branch; open PR to main (automation could not create PR)."
 ---
 
 # Cloud Agent State Handoff
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-services-feature-split--prd-to-feature-split--impl`: **complete**. Feature split domain + persistence (Drizzle, `feature_splits` + `feature_split_clusters` tables), contracts (existing `@repo/contracts/feature-split/`), application use cases (get, save draft, confirm, propose), AI infrastructure wrapper, API routes (`GET/PUT /api/projects/[id]/feature-split`, `POST /propose`, `POST /confirm`), dashboard UI (`/dashboard/projects/[id]/feature-split`), placeholder removal, unit tests. Remediation: owner-scoped `findVersionByIdForOwner`, `feature_split` credit op + env, contextual refinement `onOpenRefinement` payload typing. Tracking PR **#75** → `main` (branch `orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470`).
+- **Pipeline step** `fa-services-feature-split--prd-to-feature-split--impl`: **complete**. Tracking PR **#75** merged to `main`. Follow-up remediation (owner-scoped PRD lookup, `feature_split` credits, refinement UI types, docs state) is on branch `orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470` — **open a PR to `main`** if those commits are not yet on `main`.
 - **Prior:** Question-coverage readiness score + question preview chips (**#70**) — complete per prior handoff.
 
 ## What changed (this phase)
@@ -40,8 +41,8 @@ tracking_branch: orchestrator/tracking-fa-services-feature-split--prd-to-feature
 
 ## Next action for autonomous agent
 
-1. **PR #75** — marking ready for review (`gh pr ready 75 --repo romain-zt/zedos.app`). Confirm CI green on head.
-2. **Next pipeline step** — `fa-user-stories--story-generation-from-feature-split--impl` (not-started). Read `docs/state/orchestration.pipeline.json` + `status.json` for next eligible item.
+1. **Remediation** — Branch `orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470` has post–PR-#75 fixes; verify whether `main` already contains them, otherwise open a PR to `main`. (`gh pr ready 75` does not apply: PR #75 is merged.)
+2. **Next pipeline step** — `fa-user-stories--story-generation-from-feature-split--impl` (`in-progress` in `status.json`). Read `docs/state/orchestration.pipeline.json` + `status.json`.
 
 ## Key files (this slice)
 
