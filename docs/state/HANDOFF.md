@@ -9,9 +9,9 @@ current_phase: fa-owner-milestone-feedback--milestone-detection-and-prompt--bloc
 credit_system_tracking_phase: orch-credit-system--ledger-concurrency-and-stripe-webhook
 current_blocker: null
 parallel_current_blocker: NEED_HUMAN: Approve Implementation Plan before Iteration‑1 contracts code
-tracking_pr: 91
+tracking_pr: 94
 parallel_tracking_pr: 92
-tracking_branch: orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778616260895
+tracking_branch: orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778619778753
 parallel_tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616264079
 remediation_note: null
 ---
@@ -20,7 +20,7 @@ remediation_note: null
 
 ## Orchestration — credits slice (`orch-credit-system--ledger-concurrency-and-stripe-webhook`)
 
-- **Tracking PR:** `#91`, head **`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778616260895`** → **`main`**.
+- **Tracking PR:** `#94`, head **`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778619778753`** → **`main`**.
 - **Anchors:** `docs/product/feature-areas/credit-system.md`, `docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md`.
 
 ## Stack layers (this epic)
@@ -29,19 +29,19 @@ remediation_note: null
 |-------|--------|
 | `db-migration` | **complete** (`credit_transactions.correlation_id` present in Drizzle schema) |
 | `contracts-domain` | **complete** (`CreditDeductionDecision`, `CreditsDomainService.computeDeductionDecision`, `canOperationProceed` aligned; unit tests updated) |
-| `persistence-use-cases` | **next** — widen `ICreditsRepository` (`correlationId`, `reverseCredits`); Drizzle repo: idempotency + domain deduct path + reversal; refactor `apps/web/lib/credits.ts` + thread IDs through application use cases |
-| `api-routes` | pending (Stripe webhook, etc.) |
+| `persistence-use-cases` | **complete** — `ICreditsRepository` correlation + `reverseCredits`; Drizzle transactional locking + idempotency; add/deduct use cases; `apps/web/lib/credits.ts` delegates to use cases with deterministic correlation helpers; starter grant in `SignUpUseCase` uses `starter-grant:${userId}` |
+| `api-routes` | **next** — wire Next route handlers off `lib/credits` (`stripe/verify`, project AI routes): inject use cases + explicit `correlationId` (`purchase`, consumption per PIS decisions); Stripe webhook grant path |
 | `ui` | N/A for this slice |
 | `tests-state-finalization` | pending |
 
 ## This run delivered
 
-- Landed **`contracts-domain`** for locked-row deduction: single authority `computeDeductionDecision` + tests.
+- Completed **`persistence-use-cases`**: concurrency-safe Drizzle ledger, idempotent add/deduct/reverse, legacy `lib/credits` adapter, signup starter credits correlation alignment.
 
 ## Safest next task
 
-1. Implement **`persistence-use-cases`** only (port, `DrizzleCreditsRepository`, `lib/credits.ts`, deduct/add use cases, test doubles).
-2. Run `pnpm typecheck` and `pnpm build` before marking further steps complete.
+1. Implement **`api-routes`** only: replace `@/lib/credits` imports in `app/api/**` with composed use cases + stable correlation IDs for purchases and AI operations.
+2. Run `pnpm typecheck` and `pnpm build`; keep orchestration step **in-progress** until webhook + deduct wiring + tests ship.
 
 ## Other pipeline items
 

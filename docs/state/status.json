@@ -14,7 +14,7 @@
       "fa-dashboard-shell-slice1": "complete",
       "fa-dashboard-shell-slice2": "complete",
       "cursor-self-improve": "complete",
-      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "not-started",
+      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "in-progress",
       "fa-project-workspace--create-project": "complete",
       "fa-project-workspace--list-and-open-project": "complete",
       "fa-project-workspace--switch-active-project": "complete",
@@ -178,7 +178,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Owner milestone feedback (PR #92) blocked on Plan approval; after approval implement contracts iteration per docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md. Credits orch-credit-system (#39) remains independent queue item.",
+  "next_action": "Owner milestone feedback (PR #92) blocked on Plan approval; after approval implement contracts iteration per docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md. Credits orch-credit-system (tracking PR #94) continues api-routes layer next.",
   "orchestration_blocker": "NEED_HUMAN: Approvals — Implementation Plan docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md is `proposed`; promote to `approved` (execution bridge ladder) plus Patch Intent Summary `approved` before Iteration‑1 touches packages/apps code.",
   "phases": {
     "0": {
@@ -232,12 +232,12 @@
     },
     "2b": {
       "status": "in-progress",
-      "description": "orch-credit-system slice: contracts-domain landed on tracking PR #91 (computeDeductionDecision). Next layer: persistence-use-cases (correlationId, reverseCredits, idempotent deduct/add, align lib/credits + Drizzle repo).",
+      "description": "orch-credit-system slice: persistence-use-cases landed on tracking PR #94 (locked-row repo, correlationId idempotency, reverseCredits, lib adapter, signup starter grant). Next: api-routes (stripe verify + AI project routes wiring, webhook).",
       "orchestrator_step": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
-      "tracking_pr": 91,
-      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778616260895",
-      "layer_complete": "contracts-domain",
-      "next_layer": "persistence-use-cases"
+      "tracking_pr": 94,
+      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778619778753",
+      "layer_complete": "persistence-use-cases",
+      "next_layer": "api-routes"
     }
   },
   "active_artifacts": {
