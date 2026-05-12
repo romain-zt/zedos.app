@@ -57,17 +57,22 @@ export class SignUpUseCase {
       }
       const createdUser = createResult.unwrap();
 
-      // 6. Grant starter credits
-      const STARTER_CREDITS = parseInt(process.env.STARTER_CREDITS || '20');
+      // 6. Grant starter credits (idempotent correlation tied to account)
+      const STARTER_CREDITS = parseInt(process.env.STARTER_CREDITS || '20', 10);
       const creditsResult = await this.creditsRepository.addCredits(
         userId,
         STARTER_CREDITS,
-        'grant'
+        'grant',
+        {
+          correlationId: `starter-grant:${userId}`,
+          metadata: { reason: 'New account starter credits' },
+        }
       );
       if (creditsResult.isErr()) {
         logger.error('Sign up failed: starter credits grant error', creditsResult.error);
         return creditsResult as any;
       }
+      const creditedBalance = creditsResult.unwrap().amount;
 
       logger.info('User signed up successfully', { userId, email: email.value });
 
@@ -76,7 +81,7 @@ export class SignUpUseCase {
         id: createdUser.id,
         email: createdUser.email,
         name: createdUser.name,
-        creditBalance: STARTER_CREDITS,
+        creditBalance: creditedBalance,
       };
       return ok(dto) as any;
     } catch (error: any) {

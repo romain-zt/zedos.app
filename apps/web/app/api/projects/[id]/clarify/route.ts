@@ -6,7 +6,11 @@ import { requireUser } from '@repo/auth/guards'
 import { db, projects, questionHistory, eq, and, asc, type QuestionHistoryInsert } from '@repo/db'
 import { ClarifyAiResponseSchema } from '@repo/contracts/ai/clarify-stream'
 import { ClarifyPostBodySchema } from '@repo/contracts/questions/history'
-import { checkCredits, deductCredits, OperationType } from '@/lib/credits'
+import {
+  checkCreditsForApi as checkCredits,
+  deductCreditsForApi as deductCredits,
+  type ApiCreditOperationType as OperationType,
+} from '@infrastructure/http/credits-http-bridge'
 import { callAI, createBufferedStreamingResponse, type AIMessage } from '@/lib/ai-service'
 
 const SYSTEM_PROMPT = `You are Zedos, an expert product strategist helping solo founders turn vague product ideas into clear, versioned PRDs (Product Requirements Documents).

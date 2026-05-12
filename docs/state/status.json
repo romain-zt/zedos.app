@@ -1,6 +1,7 @@
 {
   "handoff_date": "2026-05-12",
-  "current_phase": "fa-user-stories--story-generation-from-feature-split--impl--complete",
+  "current_phase": "fa-owner-milestone-feedback--milestone-detection-and-prompt--blocked-plan-approval",
+  "credit_system_tracking_phase": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -35,7 +36,8 @@
       "fa-user-stories--story-generation-from-feature-split--impl": "complete"
     },
     "remediation_counts": {
-      "fa-user-stories--story-generation-from-feature-split--impl": 1
+      "fa-user-stories--story-generation-from-feature-split--impl": 1,
+      "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1
     }
   },
   "cursor_self_improve": {
@@ -106,8 +108,14 @@
     "milestone_detection_and_prompt": "not-started",
     "tracking_pr": 93,
     "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616475286",
+    "prior_tracking_pr": 92,
+    "prior_tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616264079",
+    "prior_milestone_detection_and_prompt_status": "blocked",
     "blocker": null,
-    "progress_note": "User story + approved plan + contracts layer landed on tracking branch (2026-05-12). Next layer: ui (provider + milestone emitters). Set orchestration step to complete only after UI + gates + gh pr ready 93.",
+    "prior_blocker": "NEED_HUMAN: Approve proposed Implementation Plan (Iteration 1 contracts stack) plus chat-level PIS approval before emitting code under packages/ or apps/web/.",
+    "progress_note": "User story + approved plan + contracts layer landed on tracking branch (2026-05-12). Next layer: ui (provider + milestone emitters). Set orchestration step to complete only after UI + gates + gh pr ready 93. Earlier: User Story + stacked Implementation Plan authored 2026-05-12; contracts iteration staged after explicit plan approval (prior tracking PR #92).",
+    "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
+    "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
     "milestone_detection_and_prompt_impl": {
       "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
       "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
@@ -185,8 +193,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "PR #75 (feature-split impl tracking) is merged. Remediation commits are on orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470 (not yet in main) — open/merge a PR to main. Next pipeline work: fa-user-stories--story-generation-from-feature-split--impl (in-progress). Credits PR #39 still PIS-blocked.",
-  "orchestration_blocker": null,
+  "next_action": "Owner milestone feedback (PR #92) blocked on Plan approval; credits orch-credit-system (tracking PR #95) continues tests-state-finalization next.",
+  "orchestration_blocker": "NEED_HUMAN: Approvals — Implementation Plan docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md is `proposed`; promote to `approved` (execution bridge ladder) plus Patch Intent Summary `approved` before Iteration‑1 touches packages/apps code.",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -238,17 +246,19 @@
       "description": "Credit/Stripe planning artifacts (scope slice, user story, plan, friction log)"
     },
     "2b": {
-      "status": "not-started",
-      "description": "orch-credit-system slice: all 5 PIS blockers approved 2026-05-12. Decisions locked: CC-04 carve-out waived; grace consumed on attempt; placeholder Stripe fixtures; server-supplied correlationId; 4-PR stack. Orchestrator will create User Story + Implementation Plan on next run.",
+      "status": "in-progress",
+      "description": "orch-credit-system slice: api-routes landed on tracking PR #95 (composition root, credits HTTP bridge, stripe webhook + checkout.session.completed processor, verify + AI routes off legacy lib imports). Next: tests-state-finalization.",
       "orchestrator_step": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
-      "tracking_pr": 39,
-      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778500683893"
+      "tracking_pr": 95,
+      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778622207100",
+      "layer_complete": "api-routes",
+      "next_layer": "tests-state-finalization"
     }
   },
   "active_artifacts": {
-    "scope_slice": "docs/product/scope-slices/test-first-workflows--task-splitting-with-prompts.md",
-    "user_story": "docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md",
-    "implementation_plan": "docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md",
+    "scope_slice": "docs/product/scope-slices/owner-milestone-feedback--milestone-detection-and-prompt.md",
+    "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
+    "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
     "parallel_blocked_slice": "docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md"
   },
   "feature_areas_count": 10,

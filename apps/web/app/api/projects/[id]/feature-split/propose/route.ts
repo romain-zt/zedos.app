@@ -10,7 +10,10 @@ import {
   ProposeFeatureSplitRequestSchema,
   ProposeFeatureSplitResponseSchema,
 } from '@repo/contracts/ai/feature-split-proposal';
-import { checkCredits, deductCredits } from '@/lib/credits';
+import {
+  checkCreditsForApi as checkCredits,
+  deductCreditsForApi as deductCredits,
+} from '@infrastructure/http/credits-http-bridge';
 import { ApplicationError } from '@shared/errors/application-error';
 
 const FEATURE_SPLIT_CREDIT_COST = parseInt(

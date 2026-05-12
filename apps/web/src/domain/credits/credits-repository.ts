@@ -9,6 +9,12 @@ import { CreditBalance, CreditTransaction, OperationType } from './credits';
 import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 
+/** Optional idempotency + audit metadata on ledger mutations */
+export interface CreditsLedgerMutationOptions {
+  correlationId?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
 export interface ICreditsRepository {
   /**
    * Get current credit balance for a user
@@ -21,7 +27,8 @@ export interface ICreditsRepository {
   deductCredits(
     userId: string,
     amount: number,
-    operationType: OperationType
+    operationType: OperationType,
+    options?: CreditsLedgerMutationOptions
   ): Promise<Result<CreditBalance, ApplicationError>>;
 
   /**
@@ -30,7 +37,18 @@ export interface ICreditsRepository {
   addCredits(
     userId: string,
     amount: number,
-    type: 'grant' | 'purchase' | 'auto_reload'
+    type: 'grant' | 'purchase' | 'auto_reload',
+    options?: CreditsLedgerMutationOptions
+  ): Promise<Result<CreditBalance, ApplicationError>>;
+
+  /**
+   * Restore credits tied to an earlier ledger row identified by correlationId (consumption reversal).
+   * Idempotent: repeated calls succeed while returning current balance once the reversal row exists.
+   */
+  reverseCredits(
+    userId: string,
+    originalConsumptionCorrelationId: string,
+    options?: CreditsLedgerMutationOptions
   ): Promise<Result<CreditBalance, ApplicationError>>;
 
   /**

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { db, purchases, users, eq, sql } from '@repo/db'
-import { addCredits } from '@/lib/credits'
+import { addPurchaseCreditsForApi } from '@infrastructure/http/credits-http-bridge'
 import Stripe from 'stripe'
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -60,11 +60,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ balance: user?.creditBalance ?? 0, alreadyProcessed: true })
     }
 
-    const newBalance = await addCredits(userId, packSize, 'purchase', {
+    const grantResult = await addPurchaseCreditsForApi(userId, packSize, {
       purchaseId,
       stripeSessionId: sessionId,
       packSize,
     })
+
+    if (grantResult.isErr()) {
+      return NextResponse.json({ error: grantResult.error.message }, { status: grantResult.error.statusCode ?? 500 })
+    }
+
+    const newBalance = grantResult.unwrap()
 
     const paymentIntent = (checkoutSession as any).payment_intent as string | null ?? null
     await db.execute(
