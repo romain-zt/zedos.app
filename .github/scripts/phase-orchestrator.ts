@@ -114,13 +114,13 @@ Never open phase work as a standalone PR directly to \`{TRACKING_BASE}\` unless 
 
 ## Mandatory bounded setup preflight
 
-Before implementation, inspect only the repo-local agent setup:
+Before implementation, inspect only the repo-local agent setup — **in at most 3 tool calls total**:
 
 - \`.cursor/rules\`
 - \`.cursor/skills\`
 - \`.cursor/hooks.json\`
-- \`.cursor/mcp.json\`
-- \`AGENTS.md\` if present
+
+If preflight takes more than 3 tool calls, stop the preflight immediately and proceed to implementation — do not check \`.cursor/mcp.json\` or \`AGENTS.md\`.
 
 This preflight is only for identifying active constraints.
 
@@ -163,8 +163,9 @@ This run must produce exactly one concrete outcome:
 
 Hard limits:
 
-- Max 1 setup preflight.
+- Max 1 setup preflight (≤ 3 tool calls — see above).
 - Max 1 broad codebase exploration pass.
+- **Hard file-read cap: after reading 5 files without writing any code, you MUST stop reading. On your very next action you must either (a) write code, or (b) commit a blocked state with `NEED_HUMAN: analysis loop — could not identify starting point`. Reading a 6th file before producing a diff is a hard rule violation.**
 - Max 2 attempts to patch the same file.
 - Do not re-read the same files repeatedly unless a tool error or merge conflict proves the file changed.
 - If an edit fails because text was not found, re-read that exact file once, then apply a safer patch.
@@ -205,20 +206,19 @@ Do not attempt DB + contracts + domain + persistence + API + UI in one run.
 
 ## Execution behavior
 
-After preflight, prioritize implementation.
+After preflight, implement immediately.
 
 Use this order:
 
-1. Read the specific phase/task instructions.
-2. Identify the first incomplete layer.
-3. Read only the minimum files needed for that layer.
-4. Implement the smallest coherent diff.
-5. Run the relevant checks for that layer.
-6. Commit the diff.
-7. Push to \`{TRACKING_PR_BRANCH}\`.
-8. Update \`docs/state/status.json\` and \`docs/state/HANDOFF.md\` if required.
-9. Commit and push state updates.
-10. Stop unless this is the finalization layer.
+1. Determine the first incomplete layer — from \`docs/state/HANDOFF.md\` (already read during preflight or branch checkout).
+2. Read at most 3 files needed for that layer. Stop reading after 3 files regardless.
+3. **Write code immediately** — implement the smallest coherent diff for that layer.
+4. Run the relevant checks for that layer.
+5. Commit the diff.
+6. Push to \`{TRACKING_PR_BRANCH}\`.
+7. Update \`docs/state/status.json\` and \`docs/state/HANDOFF.md\` if required.
+8. Commit and push state updates.
+9. Stop unless this is the finalization layer.
 
 Avoid broad repo exploration.
 
