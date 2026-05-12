@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-12",
-  "current_phase": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
+  "current_phase": "fa-owner-milestone-feedback--milestone-detection-and-prompt--ui-layer",
   "credit_system_tracking_phase": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
@@ -14,7 +14,7 @@
       "fa-dashboard-shell-slice1": "complete",
       "fa-dashboard-shell-slice2": "complete",
       "cursor-self-improve": "complete",
-      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "not-started",
+      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "complete",
       "fa-project-workspace--create-project": "complete",
       "fa-project-workspace--list-and-open-project": "complete",
       "fa-project-workspace--switch-active-project": "complete",
@@ -33,7 +33,8 @@
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
       "fa-user-stories--story-generation-from-feature-split--db": "complete",
-      "fa-user-stories--story-generation-from-feature-split--impl": "complete"
+      "fa-user-stories--story-generation-from-feature-split--impl": "complete",
+      "fa-payments--manual-credit-pack-checkout": "blocked"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
@@ -104,6 +105,17 @@
     "tracking_pr": 70,
     "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532809796"
   },
+  "fa_payments": {
+    "manual_credit_pack_checkout": {
+      "status": "blocked",
+      "tracking_pr": 102,
+      "tracking_branch": "orchestrator/tracking-fa-payments--manual-credit-pack-checkout-1778625061087",
+      "scope_slice": "docs/product/scope-slices/payments--manual-credit-pack-checkout.md",
+      "blocker": "NEED_HUMAN: Scope slice not ready-for-user-stories — complete refine-slice (UX states, data touched, checklists) then promote-slice; then User Story + Plan with explicit approval before code.",
+      "next_layer": null,
+      "orch_credit_prerequisite": "complete"
+    }
+  },
   "fa_owner_milestone_feedback": {
     "milestone_detection_and_prompt": "complete",
     "tracking_pr": 99,
@@ -113,7 +125,7 @@
     "prior_milestone_detection_and_prompt_status": "blocked",
     "blocker": null,
     "prior_blocker": "NEED_HUMAN: Approve proposed Implementation Plan (Iteration 1 contracts stack) plus chat-level PIS approval before emitting code under packages/ or apps/web/.",
-    "progress_note": "Slice complete (2026-05-12): project workspace layout mounts OwnerMilestonePromptProvider (owner-only); emitters wire prd_created, prd_updated, prd_shared, prd_viewed; root pnpm typecheck + pnpm build clean; tracking PR #99 marked ready for review.",
+    "progress_note": "Slice complete (2026-05-12): project workspace layout mounts OwnerMilestonePromptProvider (owner-only); emitters wire prd_created, prd_updated, prd_shared, prd_viewed; root pnpm typecheck + pnpm build clean; tracking PR #99 marked ready for review. Prior #97 exploratory work: OwnerMilestonePromptShell, milestonePayload (base64url) + signalMilestone + sessionStorage dismiss — superseded by #99 provider + modal UX.",
     "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
     "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
     "milestone_detection_and_prompt_impl": {
@@ -193,8 +205,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "orch-credit-system slice: tests-state-finalization on tracking PR #95; configure STRIPE_WEBHOOK_SECRET for webhook route.",
-  "orchestration_blocker": null,
+  "next_action": "Owner milestone feedback: slice complete on tracking PR #99. Credits orch-credit-system step complete (tracking PR #100); configure STRIPE_WEBHOOK_SECRET in deployment.",
+  "orchestration_blocker": "NEED_HUMAN: fa-payments--manual-credit-pack-checkout blocked — parent scope slice docs/product/scope-slices/payments--manual-credit-pack-checkout.md is exploratory / NOT READY (UX States, Data Touched, readiness checklist incomplete). Refine + promote to ready-for-user-stories before User Story + approved Implementation Plan per execution-bridge §5–§9. orch-credit-system prerequisite is complete.",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -246,13 +258,19 @@
       "description": "Credit/Stripe planning artifacts (scope slice, user story, plan, friction log)"
     },
     "2b": {
-      "status": "in-progress",
-      "description": "orch-credit-system slice: api-routes landed on tracking PR #95 (composition root, credits HTTP bridge, stripe webhook + checkout.session.completed processor, verify + AI routes off legacy lib imports). Next: tests-state-finalization.",
+      "status": "complete",
+      "description": "orch-credit-system slice: ledger concurrency, Stripe webhook idempotency, credits HTTP bridge, tests-state-finalization (webhook processor unit tests + sign-up CreditBalance test mocks). Deploy: set STRIPE_WEBHOOK_SECRET for POST /api/stripe/webhook.",
       "orchestrator_step": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
-      "tracking_pr": 95,
-      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778622207100",
-      "layer_complete": "api-routes",
-      "next_layer": "tests-state-finalization"
+      "tracking_pr": 100,
+      "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778624552412",
+      "layer_complete": "tests-state-finalization",
+      "next_layer": null,
+      "verified_at": "2026-05-12",
+      "verification": {
+        "typecheck": "clean",
+        "build": "clean",
+        "tests": "apps/web vitest run"
+      }
     }
   },
   "active_artifacts": {
