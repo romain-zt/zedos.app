@@ -73,14 +73,15 @@ type OwnerMilestonePromptContextValue = {
   signalMilestone: (payload: OwnerMilestoneDetectedPayload) => void
 }
 
-const OwnerMilestonePromptContext = createContext<OwnerMilestonePromptContextValue | null>(null)
+const noopOwnerMilestonePrompt: OwnerMilestonePromptContextValue = {
+  signalMilestone: () => {},
+}
+
+const OwnerMilestonePromptContext =
+  createContext<OwnerMilestonePromptContextValue>(noopOwnerMilestonePrompt)
 
 export function useOwnerMilestonePrompt(): OwnerMilestonePromptContextValue {
-  const ctx = useContext(OwnerMilestonePromptContext)
-  if (!ctx) {
-    throw new Error('useOwnerMilestonePrompt must be used within OwnerMilestonePromptShell')
-  }
-  return ctx
+  return useContext(OwnerMilestonePromptContext)
 }
 
 type InnerProps = {
