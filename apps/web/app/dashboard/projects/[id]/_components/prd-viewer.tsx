@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
+import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
@@ -33,6 +34,7 @@ export function PrdViewer({
   onRefresh,
   onOpenRefinement,
 }: PrdViewerProps) {
+  const { signalMilestone } = useOwnerMilestonePrompt()
   const [shareLink, setShareLink] = useState<string | null>(null)
   const [shareLinkObj, setShareLinkObj] = useState<
     { id: string; token: string; enabled: boolean } | null
@@ -84,6 +86,11 @@ export function PrdViewer({
         setShareLink(link)
         setShareLinkObj({ id: data.id, token: data.token, enabled: data.enabled })
         toast.success('Share link created!')
+        signalMilestone({
+          projectId,
+          milestoneType: 'prd_shared',
+          prdVersionId: selectedVersion.id,
+        })
         // Milestone feedback for sharing
         setFeedbackType('prd_shared')
         setShowFeedback(true)

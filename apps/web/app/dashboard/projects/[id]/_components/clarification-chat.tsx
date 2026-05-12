@@ -14,6 +14,7 @@ import { DecisionCard } from './decision-card'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
 import { comingUpPrdSectionsFromAssistantParsed } from '@repo/contracts/questions/history'
+import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 
 interface Message {
   role: 'user' | 'assistant' | 'system'
@@ -29,6 +30,7 @@ interface ClarificationChatProps {
 }
 
 export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: ClarificationChatProps) {
+  const { signalMilestone } = useOwnerMilestonePrompt()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -258,6 +260,11 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
               if (parsed?.status === 'completed') {
                 toast.success('PRD generated!')
                 onPrdGenerated()
+                signalMilestone({
+                  projectId,
+                  milestoneType: 'prd_created',
+                  ...(prdVersionId ? { prdVersionId } : {}),
+                })
                 // Trigger milestone feedback
                 setFeedbackMilestone('prd_created')
                 setShowFeedback(true)

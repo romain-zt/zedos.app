@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ClarificationChat } from './clarification-chat'
 import { PrdViewer } from './prd-viewer'
@@ -8,6 +8,7 @@ import { QuestionHistoryPanel } from './question-history'
 import { ArchitecturePanel } from './architecture-panel'
 import { ReadinessScoreBadge } from './readiness-score-badge'
 import { ContextualRefinementPanel } from './contextual-refinement-panel'
+import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 import { MessageSquare, FileText, History, Settings, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +28,8 @@ interface ProjectWorkspaceProps {
 }
 
 export function ProjectWorkspace({ projectId, projectName, projectDescription }: ProjectWorkspaceProps) {
+  const { signalMilestone } = useOwnerMilestonePrompt()
+  const prevTabRef = useRef<string | null>(null)
   const [activeTab, setActiveTab] = useState('clarify')
   const [prdVersions, setPrdVersions] = useState<PrdVersionDTO[]>([])
   const [selectedVersion, setSelectedVersion] = useState<PrdVersionDTO | null>(null)
@@ -101,8 +104,21 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
     fetchPhase()
   }, [projectId])
 
-  const handlePrdGenerated = useCallback(() => {
-    fetchVersions()
+  useEffect(() => {
+    const prev = prevTabRef.current
+    prevTabRef.current = activeTab
+    if (activeTab !== 'prd') return
+    if (!selectedVersion?.id) return
+    if (prev === 'prd') return
+    signalMilestone({
+      projectId,
+      milestoneType: 'prd_viewed',
+      prdVersionId: selectedVersion.id,
+    })
+  }, [activeTab, projectId, selectedVersion?.id, signalMilestone])
+
+  const handlePrdGenerated = useCallback(async () => {
+    await fetchVersions()
     setActiveTab('prd')
   }, [fetchVersions])
 

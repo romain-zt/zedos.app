@@ -7,15 +7,15 @@ status: handoff-ready
 parallel_pipeline_status: in-progress
 current_phase_primary: orch-credit-system--tests-state-finalization
 current_phase_milestone_feedback: fa-owner-milestone-feedback--milestone-detection-and-prompt--ui-layer-complete
-current_phase_aggregate: fa-owner-milestone-feedback--milestone-detection-and-prompt--emitter-wiring-next
+current_phase_aggregate: fa-owner-milestone-feedback--milestone-detection-and-prompt--tests-state-finalization-next
 credit_system_tracking_phase: orch-credit-system--ledger-concurrency-and-stripe-webhook
 current_blocker: null
 parallel_current_blocker: null
 tracking_pr: 95
-milestone_feedback_tracking_pr: 97
+milestone_feedback_tracking_pr: 101
 parallel_tracking_pr_legacy: 93
 tracking_branch: orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778622207100
-milestone_feedback_tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778623811696
+milestone_feedback_tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710
 parallel_tracking_branch_legacy: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616475286
 remediation_note: null
 ---
@@ -38,9 +38,9 @@ remediation_note: null
 | `ui` | N/A for this slice |
 | `tests-state-finalization` | **next** — contract/integration coverage for webhook + routes; then mark orchestration step complete + `gh pr ready` |
 
-## Owner milestone feedback — slice layers (tracking PR **#97**)
+## Owner milestone feedback — slice layers (tracking PR **#101**)
 
-- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **in progress** on tracking PR **#97** (`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778623811696` → `main`). Contracts + **UI shell** landed; **next layer = emitter wiring** (`signalMilestone` / `?milestonePayload=` at PRD/share/view callsites), then **tests-state-finalization**.
+- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **in progress** on tracking PR **#101** (`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710` → `main`). Contracts + UI shell + **emitter wiring** landed (`signalMilestone` at clarify / refinement / share / PRD-tab view); **next layer = tests-state-finalization** (smoke tests, then orchestration `complete`, then `gh pr ready 101`).
 
 | Layer | Status |
 |-------|--------|
@@ -49,8 +49,8 @@ remediation_note: null
 | `persistence-use-cases` | **N/A** — no new server use cases for prompt-only surface |
 | `api-routes` | **deferred** — optional; milestone wiring can use client context / layout props |
 | `ui` | **complete** — `OwnerMilestonePromptShell` + `useOwnerMilestonePrompt` (`apps/web/app/dashboard/projects/[id]/_components/owner-milestone-prompt.tsx`), mounted in `apps/web/app/dashboard/projects/[id]/layout.tsx` (owner gate via `GetProjectUseCase`); sessionStorage dismiss per milestone type; optional `milestonePayload` query (base64url JSON) |
-| `emitter-wiring` | **next** — invoke `signalMilestone` or navigate with validated `milestonePayload` after `prd_created`, `prd_updated`, `prd_shared`, `prd_viewed` |
-| `tests-state-finalization` | **after wiring** — smoke + orchestration `complete` + `gh pr ready 97` |
+| `emitter-wiring` | **complete** — `prd_created` (`clarification-chat`), `prd_updated` (`contextual-refinement-panel`), `prd_shared` (`prd-viewer`), `prd_viewed` (enter PRD tab in `project-workspace` after `await fetchVersions`) |
+| `tests-state-finalization` | **next** — smoke + `orchestration.steps[...] = complete` + `gh pr ready 101 --repo romain-zt/zedos.app` |
 
 ### Governance artifacts (milestone slice)
 
@@ -73,7 +73,7 @@ remediation_note: null
 
 - Completed **`api-routes`**: composition root, HTTP bridge, Stripe webhook verification (`Stripe.API_VERSION`), checkout-session processor, route wiring; legacy `lib/credits.ts` uses shared `getCreditsComposition()` only.
 
-**Owner milestone slice (tracking PR #97):**
+**Owner milestone slice (tracking PR #101):**
 
 - UI layer: project layout + client milestone banner/provider; see `apps/web/app/dashboard/projects/[id]/layout.tsx` and `_components/owner-milestone-prompt.tsx`. Bookkeeping: `docs/state/status.json` `fa_owner_milestone_feedback`.
 
@@ -84,10 +84,9 @@ remediation_note: null
 1. Run **`tests-state-finalization`** for this slice: webhook + credit-route fixtures; then set `orchestration.steps["orch-credit-system--ledger-concurrency-and-stripe-webhook"]` to **`complete`** and call **`gh pr ready 95`** (after gates green).
 2. Configure **`STRIPE_WEBHOOK_SECRET`** in deployment for the new webhook endpoint.
 
-**Owner milestone (#97):**
+**Owner milestone (#101):**
 
-1. **Emitter wiring**: from PRD version capture/update flows, share mint, and PRD view-after-generation paths, call `useOwnerMilestonePrompt().signalMilestone(...)` (validated payload) or `router.push` with `?milestonePayload=<base64url>` then strip (provider already strips after read).
-2. **Finalization**: `pnpm typecheck` + `pnpm build`, mark `orchestration.steps["fa-owner-milestone-feedback--milestone-detection-and-prompt"]` = `"complete"`, then `gh pr ready 97 --repo romain-zt/zedos.app`.
+1. **Tests + finalization**: milestone emitter smoke coverage if needed; `pnpm typecheck` + `pnpm build`; mark `orchestration.steps["fa-owner-milestone-feedback--milestone-detection-and-prompt"]` = `"complete"`; then `gh pr ready 101 --repo romain-zt/zedos.app`.
 
 ## Key files (milestone detection slice)
 
