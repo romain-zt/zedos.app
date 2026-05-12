@@ -3,52 +3,46 @@ type: state-handoff
 date: 2026-05-12
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
-status: handoff-ready
-current_phase: fa-user-stories--story-generation-from-feature-split--impl--complete
-current_blocker: null
-tracking_pr: 75
-tracking_branch: orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470
-remediation_note: "Post-merge fix commit on tracking_branch; open PR to main (automation could not create PR)."
+status: blocked-awaiting-plan-approval
+current_phase: fa-owner-milestone-feedback--milestone-detection-and-prompt--governance-docs
+current_blocker: NEED_HUMAN: Approve Implementation Plan before Iteration‑1 contracts code
+tracking_pr: 92
+tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616264079
+remediation_note: null
 ---
 
 # Cloud Agent State Handoff
 
 ## Orchestration (canonical)
 
-- **Pipeline step** `fa-services-feature-split--prd-to-feature-split--impl`: **complete**. Tracking PR **#75** merged to `main`. Follow-up remediation (owner-scoped PRD lookup, `feature_split` credits, refinement UI types, docs state) is on branch `orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470` — **open a PR to `main`** if those commits are not yet on `main`.
-- **Prior:** Question-coverage readiness score + question preview chips (**#70**) — complete per prior handoff.
+- Pipeline step **`fa-owner-milestone-feedback--milestone-detection-and-prompt`**: **`blocked`** pending explicit Implementation Plan promotion + chat Patch Intent Summary `approved`.
+- Canonical docs:
+  - Scope Slice — `docs/product/scope-slices/owner-milestone-feedback--milestone-detection-and-prompt.md`
+  - User Story — `docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md`
+  - Implementation Plan (proposed) — `docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md`
 
-## User stories slice — layers
+### Blocker narrative
 
-- **`db-migration`** — complete: `packages/db` schema `user_story_corpora` / `user_story_lines`, migration `0005`, FKs to `projects` and `feature_split_clusters`.
-- **`contracts-domain`** — complete: Zod under `packages/contracts/src/user-stories/`, domain entities + `IUserStoryCorpusRepository` + `IUserStoryDraftGenerator` under `apps/web/src/domain/user-stories/`.
-- **`persistence-use-cases`** — complete: Drizzle `DrizzleUserStoryCorpusRepository`, application use cases, AI draft wrapper + `UserStoryDraftGeneratorAdapter` (hex port/adapter).
-- **`api-routes`** — complete: `GET`/`PUT` `apps/web/app/api/projects/[id]/user-stories/route.ts`, `POST` `.../generate/route.ts`, `POST` `.../review-ready/route.ts`; Zod in/out.
-- **`ui`** — complete: `apps/web/app/dashboard/projects/[id]/user-stories/page.tsx`, `.../_components/user-stories-workspace.tsx`, dashboard shell sub-nav + removal of deferred “User stories” placeholder from `deferred-roadmap-placeholders.ts`.
+```
+NEED_HUMAN: Promotion of Implementation Plan from `proposed` → `approved` (execution bridge §6). Until then autonomous agents MUST NOT mutate `packages/**`/`apps/web/**` beyond governance docs already pushed. Afterwards begin Iteration 1 ONLY (`contracts-domain` layer — owner milestone Zod discriminants).
+```
 
-## Still blocked elsewhere
+Legacy mirrors:
 
-- **Credits slice** `orch-credit-system--ledger-concurrency-and-stripe-webhook` — PIS + plan approval (PR #39); see `status.json` `phases.2b` and `pis_blockers`.
-- **`fa-owner-milestone-feedback--milestone-detection-and-prompt`** — see `status.json` `fa_owner_milestone_feedback.blocker`.
+- **`fa_owner_milestone_feedback.milestone_detection_and_prompt`**: **`blocked`** (tracked with PR `#92`)
 
-## Completed pipeline step
+## Completed this run
 
-- **`fa-user-stories--story-generation-from-feature-split--impl`** — tracking PR **#87** marked ready for review after implementation + verification.
-- **Stack delivered:** `db-migration` → `contracts-domain` → `persistence-use-cases` → `api-routes` → `ui` → finalization (`typecheck`, `build`).
+- Authored **`ready-for-implementation`** user story + **`proposed`** stacked implementation plan (Iteration 1 = contracts-only) committed to tracking branch.
+- Synced **`docs/state/status.json`** mirrors + blocker fields for orchestrator bookkeeping.
 
-## Next action for autonomous agent
+## Next eligible task (once human approves Plan + PIS)
 
-1. Orchestrator: merge stack via `pr-cascade` (PR #87 and dependents).
-2. Optional follow-ups (separate slices): E2E for user-stories journey; dedicated contract/component tests if product asks for more coverage.
+1. Rename plan `Status` stanza to **`approved`** in-repo *after human records approval*.
+2. Execute **contracts-domain iteration** (`packages/contracts/src/owner-milestone-feedback/**` + barrel) per plan table.
+3. Run `pnpm typecheck` scoped to `@repo/contracts` if available, otherwise root `pnpm typecheck`.
+4. Update `HANDOFF.md` next-layer pointer → **emitter hooks** iteration (thin Next routes referencing contracts).
 
-## Key files (user stories slice)
+## Out of scope for immediate next micro-layer
 
-- Plan: `docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md`
-- DB schema: `packages/db/src/schema/user-stories.ts`
-- Contracts: `packages/contracts/src/user-stories/`
-- Domain: `apps/web/src/domain/user-stories/`
-- Application: `apps/web/src/application/user-stories/`
-- Persistence: `apps/web/src/infrastructure/persistence/user-story-corpus-repository.ts`
-- AI: `apps/web/src/infrastructure/ai/user-story-draft.ts`, `user-story-draft-generator-adapter.ts`
-- API: `apps/web/app/api/projects/[id]/user-stories/`
-- Dashboard UI: `apps/web/app/dashboard/projects/[id]/user-stories/`, `.../_components/user-stories-workspace.tsx`
+DB migrations, emitter wiring, dashboard UI hosting — reserved for later stacked commits per Implementation Plan backlog table.

@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-12",
-  "current_phase": "fa-user-stories--story-generation-from-feature-split--impl--complete",
+  "current_phase": "fa-owner-milestone-feedback--milestone-detection-and-prompt--blocked-plan-approval",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -26,7 +26,7 @@
       "fa-user-stories--story-generation-from-feature-split": "complete",
       "fa-test-first-workflows--task-splitting-with-prompts": "complete",
       "fa-read-only-sharing--anonymous-read-surface": "complete",
-      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "not-started",
+      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "blocked",
       "fa-read-only-sharing--revoke-link-and-noindex": "complete",
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
@@ -103,11 +103,13 @@
     "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532809796"
   },
   "fa_owner_milestone_feedback": {
-    "milestone_detection_and_prompt": "not-started",
-    "tracking_pr": 60,
-    "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778527433914",
-    "blocker": null,
-    "progress_note": "Scope slice promoted to ready-for-user-stories (2026-05-12). UX States + Data Touched filled in. Next: orchestrator creates User Story + Implementation Plan via /plan, then /implement."
+    "milestone_detection_and_prompt": "blocked",
+    "tracking_pr": 92,
+    "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616264079",
+    "blocker": "NEED_HUMAN: Approve proposed Implementation Plan (Iteration 1 contracts stack) plus chat-level PIS approval before emitting code under packages/ or apps/web/.",
+    "progress_note": "User Story + stacked Implementation Plan authored 2026-05-12; contracts iteration staged after explicit plan approval.",
+    "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
+    "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md"
   },
   "pis_approved": true,
   "pis_approved_at": "2026-05-12",
@@ -174,8 +176,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "PR #75 (feature-split impl tracking) is merged. Remediation commits are on orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470 (not yet in main) — open/merge a PR to main. Next pipeline work: fa-user-stories--story-generation-from-feature-split--impl (in-progress). Credits PR #39 still PIS-blocked.",
-  "orchestration_blocker": null,
+  "next_action": "Owner milestone feedback (PR #92) blocked on Plan approval; after approval implement contracts iteration per docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md. Credits orch-credit-system (#39) remains independent queue item.",
+  "orchestration_blocker": "NEED_HUMAN: Approvals — Implementation Plan docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md is `proposed`; promote to `approved` (execution bridge ladder) plus Patch Intent Summary `approved` before Iteration‑1 touches packages/apps code.",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -235,9 +237,9 @@
     }
   },
   "active_artifacts": {
-    "scope_slice": "docs/product/scope-slices/test-first-workflows--task-splitting-with-prompts.md",
-    "user_story": "docs/execution/user-stories/test-first-workflows--task-splitting-with-prompts--v0.md",
-    "implementation_plan": "docs/execution/plans/test-first-workflows--task-splitting-with-prompts--v0.plan.md",
+    "scope_slice": "docs/product/scope-slices/owner-milestone-feedback--milestone-detection-and-prompt.md",
+    "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
+    "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
     "parallel_blocked_slice": "docs/product/scope-slices/credit-system--ledger-concurrency-and-stripe-webhook.md"
   },
   "feature_areas_count": 10,
