@@ -32,7 +32,7 @@
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
       "fa-user-stories--story-generation-from-feature-split--db": "complete",
-      "fa-user-stories--story-generation-from-feature-split--impl": "not-started"
+      "fa-user-stories--story-generation-from-feature-split--impl": "in-progress"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1
@@ -76,10 +76,10 @@
   "fa_user_stories": {
     "story_generation_from_feature_split": "complete",
     "story_generation_from_feature_split_impl": {
-      "tracking_pr": 86,
-      "tracking_branch": "orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778612893752",
-      "layer_complete": "contracts-domain",
-      "next_layer": "persistence-use-cases"
+      "tracking_pr": 88,
+      "tracking_branch": "orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778614749792",
+      "layer_complete": "persistence-use-cases",
+      "next_layer": "api-routes"
     }
   },
   "fa_test_first_workflows": {
