@@ -11,6 +11,9 @@ current_phase_aggregate: fa-owner-milestone-feedback--milestone-detection-and-pr
 credit_system_tracking_phase: orch-credit-system--ledger-concurrency-and-stripe-webhook
 current_blocker: null
 parallel_current_blocker: null
+payments_tracking_pr: 102
+payments_tracking_branch: orchestrator/tracking-fa-payments--manual-credit-pack-checkout-1778625061087
+fa_payments_manual_credit_pack_checkout: blocked
 tracking_pr: 100
 milestone_feedback_tracking_pr: 97
 parallel_tracking_pr_legacy: 93
@@ -21,6 +24,17 @@ remediation_note: null
 ---
 
 # Cloud Agent State Handoff
+
+## Payments — manual credit pack checkout (`fa-payments--manual-credit-pack-checkout`)
+
+- **Tracking PR:** **`#102`**, head **`orchestrator/tracking-fa-payments--manual-credit-pack-checkout-1778625061087`** → **`main`**.
+- **Orchestration step:** **`blocked`** in `docs/state/status.json` (do not mark complete until slice bridge + implementation ship).
+- **Anchor:** `docs/product/feature-areas/payments.md`, `docs/product/scope-slices/payments--manual-credit-pack-checkout.md`.
+- **Prerequisite:** `orch-credit-system--ledger-concurrency-and-stripe-webhook` is **`complete`** in `status.json` (operator “blocked until credit system” no longer applies).
+- **Why blocked:** The scope slice is **`exploratory`** with **Readiness for User Stories: NOT READY** (empty UX States / Data Touched; checklist unchecked). Per **execution-bridge** (§5 inputs, §9), a **User Story must not be authored** until the parent slice is **`ready-for-user-stories`**; no **approved Implementation Plan** can gate code before that.
+- **User story / plan:** None yet — correct until slice promotion.
+- **NEED_HUMAN:** Product/governance must **`/feature-area refine-slice`** (fill UX states, data touched, dependencies) and **`/feature-area promote-slice`** to `ready-for-user-stories`, then run **`/plan`** with chat **`approved`** before any implementation layer (`db-migration` … `tests-state-finalization`).
+- **Safest next task:** Refine `payments--manual-credit-pack-checkout.md`; then architect User Story + Plan from slice only (no scope beyond Included Behavior).
 
 ## Orchestration — credits slice (`orch-credit-system--ledger-concurrency-and-stripe-webhook`)
 
