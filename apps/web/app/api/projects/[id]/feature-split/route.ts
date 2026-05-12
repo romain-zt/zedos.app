@@ -12,7 +12,9 @@ import {
   FeatureSplitListResponseSchema,
   FeatureSplitDTOSchema,
   SaveFeatureSplitDraftRequestSchema,
+  type SaveFeatureSplitDraftRequest,
 } from '@repo/contracts/feature-split/feature-split';
+import type { NewFeatureClusterInput } from '@domain/feature-split/feature-split';
 import { ApplicationError } from '@shared/errors/application-error';
 
 function toErrorResponse(e: ApplicationError) {
@@ -106,11 +108,18 @@ export async function PUT(
     new DrizzleProjectRepository(),
     new DrizzleFeatureSplitRepository()
   );
+  const body: SaveFeatureSplitDraftRequest = parsed.data;
+  const clusters: NewFeatureClusterInput[] = body.clusters.map((c) => ({
+    sortOrder: c.sortOrder,
+    label: c.label,
+    valueLine: c.valueLine,
+    boundaryCue: c.boundaryCue,
+  }));
   const result = await useCase.execute({
     projectId: params.id,
     userId,
-    sourcePrdVersionId: parsed.data.sourcePrdVersionId,
-    clusters: parsed.data.clusters,
+    sourcePrdVersionId: body.sourcePrdVersionId,
+    clusters,
   });
   if (result.isErr()) return toErrorResponse(result.error);
 
