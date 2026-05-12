@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-12",
-  "current_phase": "fa-owner-milestone-feedback--milestone-detection-and-prompt--blocked-plan-approval",
+  "current_phase": "fa-owner-milestone-feedback--milestone-detection-and-prompt--ui-layer",
   "credit_system_tracking_phase": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
@@ -27,7 +27,7 @@
       "fa-user-stories--story-generation-from-feature-split": "complete",
       "fa-test-first-workflows--task-splitting-with-prompts": "complete",
       "fa-read-only-sharing--anonymous-read-surface": "complete",
-      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "not-started",
+      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "in-progress",
       "fa-read-only-sharing--revoke-link-and-noindex": "complete",
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
@@ -105,22 +105,22 @@
     "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532809796"
   },
   "fa_owner_milestone_feedback": {
-    "milestone_detection_and_prompt": "not-started",
-    "tracking_pr": 93,
-    "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616475286",
+    "milestone_detection_and_prompt": "in-progress",
+    "tracking_pr": 97,
+    "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778623811696",
     "prior_tracking_pr": 92,
     "prior_tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616264079",
     "prior_milestone_detection_and_prompt_status": "blocked",
     "blocker": null,
     "prior_blocker": "NEED_HUMAN: Approve proposed Implementation Plan (Iteration 1 contracts stack) plus chat-level PIS approval before emitting code under packages/ or apps/web/.",
-    "progress_note": "User story + approved plan + contracts layer landed on tracking branch (2026-05-12). Next layer: ui (provider + milestone emitters). Set orchestration step to complete only after UI + gates + gh pr ready 93. Earlier: User Story + stacked Implementation Plan authored 2026-05-12; contracts iteration staged after explicit plan approval (prior tracking PR #92).",
+    "progress_note": "Contracts + UI shell landed on tracking PR #97 branch (2026-05-12): OwnerMilestonePromptShell under dashboard/projects/[id], URL param milestonePayload (base64url JSON) + signalMilestone context + sessionStorage per-milestone dismiss. Next: emitter wiring (prd_created/updated/shared/viewed) then tests-state-finalization; then mark orchestration step complete + gh pr ready 97.",
     "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
     "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
     "milestone_detection_and_prompt_impl": {
       "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
       "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
-      "layer_complete": "contracts-domain",
-      "next_layer": "ui",
+      "layer_complete": "ui",
+      "next_layer": "emitter-wiring",
       "verified_at": "2026-05-12",
       "verification": {
         "typecheck": "clean",
@@ -193,8 +193,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Owner milestone feedback (PR #92) blocked on Plan approval; credits orch-credit-system (tracking PR #95) continues tests-state-finalization next.",
-  "orchestration_blocker": "NEED_HUMAN: Approvals — Implementation Plan docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md is `proposed`; promote to `approved` (execution bridge ladder) plus Patch Intent Summary `approved` before Iteration‑1 touches packages/apps code.",
+  "next_action": "Owner milestone feedback: wire milestone emitters + finalize tests on tracking PR #97; credits orch-credit-system (PR #95) continues tests-state-finalization in parallel.",
+  "orchestration_blocker": null,
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
