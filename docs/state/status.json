@@ -13,7 +13,7 @@
       "fa-dashboard-shell-slice1": "complete",
       "fa-dashboard-shell-slice2": "complete",
       "cursor-self-improve": "complete",
-      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "blocked",
+      "orch-credit-system--ledger-concurrency-and-stripe-webhook": "not-started",
       "fa-project-workspace--create-project": "complete",
       "fa-project-workspace--list-and-open-project": "complete",
       "fa-project-workspace--switch-active-project": "complete",
@@ -26,7 +26,7 @@
       "fa-user-stories--story-generation-from-feature-split": "complete",
       "fa-test-first-workflows--task-splitting-with-prompts": "complete",
       "fa-read-only-sharing--anonymous-read-surface": "complete",
-      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "blocked",
+      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "not-started",
       "fa-read-only-sharing--revoke-link-and-noindex": "complete",
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
@@ -103,49 +103,59 @@
     "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532809796"
   },
   "fa_owner_milestone_feedback": {
-    "milestone_detection_and_prompt": "blocked",
+    "milestone_detection_and_prompt": "not-started",
     "tracking_pr": 60,
     "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778527433914",
-    "blocker": "NEED_HUMAN: Scope slice docs/product/scope-slices/owner-milestone-feedback--milestone-detection-and-prompt.md is NOT READY (missing UX States and Data Touched; verdict NOT READY). Refine via /feature-area refine-slice, promote to ready-for-user-stories, then add User Story + approved Implementation Plan (execution bridge). This branch adds milestone feedback Zod contracts and /api/feedback validation only; full milestone detection (prd_updated, prd_viewed) awaits that plan.",
-    "progress_note": "Land @repo/contracts feedback/submit schemas; apps/web /api/feedback POST+GET validates with Zod; contract unit tests. Repair createBufferedStreamingResponse (upstream SSE → processing/completed envelopes for clarify + generate-prd); fix clarify/route.ts merge corruption; DrizzleQuestionHistoryRepository uses NewQuestionHistory from @repo/db."
+    "blocker": null,
+    "progress_note": "Scope slice promoted to ready-for-user-stories (2026-05-12). UX States + Data Touched filled in. Next: orchestrator creates User Story + Implementation Plan via /plan, then /implement."
   },
-  "pis_approved": false,
-  "pis_blockers_count": 5,
+  "pis_approved": true,
+  "pis_approved_at": "2026-05-12",
+  "pis_blockers_count": 0,
   "pis_blockers": [
     {
       "id": 1,
       "label": "Parent FA NEED_HUMAN carve-out",
       "description": "B-003 (operator X) and B-004 (burn-tier) are commercially orthogonal to this safety fix. User must waive CC-04.",
       "proposed_default": "proceed-with-carve-out",
-      "status": "pending"
+      "status": "approved",
+      "approved_at": "2026-05-12"
     },
     {
       "id": 2,
       "label": "OQ-2: reversal restores graceUsed?",
       "description": "Does reversal on AI failure clear graceUsed? PRD Q-014/Q-019 silent on rollback.",
       "proposed_default": "no — grace consumed on attempt",
-      "status": "pending"
+      "status": "approved",
+      "decision": "no — grace consumed on attempt, not on success",
+      "approved_at": "2026-05-12"
     },
     {
       "id": 3,
       "label": "OQ-3: placeholder vs real Stripe sandbox fixtures",
       "description": "Contract tests need Stripe payloads. User may not have sandbox ready.",
       "proposed_default": "placeholder fixtures with TODO to swap before merge",
-      "status": "pending"
+      "status": "approved",
+      "decision": "placeholder fixtures with TODO comment; swap for real Stripe test-mode payloads before merging to production",
+      "approved_at": "2026-05-12"
     },
     {
       "id": 4,
       "label": "OQ-4: correlation_id source",
       "description": "AI route idempotency: server-supplied vs client-supplied correlation IDs.",
       "proposed_default": "server-supplied (<projectId>--<opType>--<crypto.randomUUID()>)",
-      "status": "pending"
+      "status": "approved",
+      "decision": "server-supplied: <projectId>--<opType>--<crypto.randomUUID()>",
+      "approved_at": "2026-05-12"
     },
     {
       "id": 5,
       "label": "4-PR stack shape",
       "description": "Work exceeds single-PR limits. Proposed 4 stacked PRs: foundation → concurrency → webhook → ai-deduct.",
       "proposed_default": "4-pr-stack",
-      "status": "pending"
+      "status": "approved",
+      "decision": "4-PR stack: (1) foundation/schema, (2) concurrency, (3) webhook, (4) AI deduct wiring",
+      "approved_at": "2026-05-12"
     }
   ],
   "rules_merge_status": "complete",
@@ -165,7 +175,7 @@
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
   "next_action": "PR #75 (feature-split impl tracking) is merged. Remediation commits are on orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470 (not yet in main) — open/merge a PR to main. Next pipeline work: fa-user-stories--story-generation-from-feature-split--impl (in-progress). Credits PR #39 still PIS-blocked.",
-  "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
+  "orchestration_blocker": null,
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
@@ -217,8 +227,8 @@
       "description": "Credit/Stripe planning artifacts (scope slice, user story, plan, friction log)"
     },
     "2b": {
-      "status": "blocked-on-pis-and-plan-approval",
-      "description": "orch-credit-system slice (PR #39 tracking branch): blocked until PIS §4 (5× explicit `approved`) + Implementation Plan promoted from proposed → approved",
+      "status": "not-started",
+      "description": "orch-credit-system slice: all 5 PIS blockers approved 2026-05-12. Decisions locked: CC-04 carve-out waived; grace consumed on attempt; placeholder Stripe fixtures; server-supplied correlationId; 4-PR stack. Orchestrator will create User Story + Implementation Plan on next run.",
       "orchestrator_step": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
       "tracking_pr": 39,
       "tracking_branch": "orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778500683893"

@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -47,7 +47,11 @@ After specific owner actions, a lightweight skippable feedback prompt appears �
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Baseline — no prompt | Owner is using the product; no milestone has fired in this session | Normal product UI; no feedback prompt visible anywhere |
+| Milestone detected — prompt appears | Owner just completed one of the four milestone actions: first PRD version created; PRD version updated after clarification; share link minted; PRD reopened / viewed after generation | A lightweight, non-blocking feedback prompt appears (toast or anchored banner); includes a visible "Skip" control; does not interrupt the current flow |
+| Prompt dismissed / skipped | Owner clicks "Skip" or the dismiss control | Prompt closes immediately; owner continues without consequence; no rating is required and none is recorded in this slice |
+| Already prompted this session | Same milestone (or any milestone) fires again within the same browser session | No duplicate prompt shown; session-level deduplication (React state) prevents re-surfacing until the next full page load |
+| Anonymous / share visitor | A share link is opened by a non-signed-in visitor, or the signed-in user is not the project owner | No prompt is visible at any point; the prompt surface is strictly owner-account-only |
 
 ---
 
@@ -55,7 +59,11 @@ After specific owner actions, a lightweight skippable feedback prompt appears �
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| User session / auth | Read | Verified before any prompt is shown; prompt never surfaces unless the viewer is the signed-in project owner |
+| `PrdVersion` | Read (event) | "First PRD version created" and "PRD version updated after clarification" milestones are triggered by version-create/update events emitted by the `create-or-capture-prd-version` slice |
+| `ShareLink` | Read (event) | "PRD shared" milestone is triggered by the link-minted event emitted by the `mint-read-only-link` slice |
+| `Project` | Read | Prompt is scoped to the owning project; owner identity is validated against `project.ownerId` |
+| Client session state (React / sessionStorage) | Write (client-only) | Once a prompt is shown or dismissed in a session, a client flag suppresses re-surfacing for that session; nothing is written to the database in this slice — persistent tracking of dismissed prompts is deferred to the `feedback-capture-and-attribution` slice |
 
 ---
 
@@ -105,18 +113,18 @@ After each of the four defined owner milestone events, the signed-in founder see
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including empty, dismissed, duplicate-suppression, and anonymous states)
+- [x] Business objects named (PrdVersion, ShareLink, Project, user session)
+- [x] Credit / payment impact assessed (none)
+- [x] Sharing / privacy surface assessed (none — prompt is owner-only)
+- [x] Feedback / instrumentation impact assessed (this slice is the feedback entry point)
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set (none open)
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -125,3 +133,4 @@ After each of the four defined owner milestone events, the signed-in founder see
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice owner-milestone-feedback` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-12 | Refined via `/fix` — filled in UX States (5 states: baseline, milestone-fired, dismissed, session-dedupe, anonymous) and Data Touched (session, PrdVersion, ShareLink, Project, client-only session flag); promoted status to `ready-for-user-stories`; all readiness checklist items checked | cloud-agent |
