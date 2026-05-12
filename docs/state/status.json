@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-12",
-  "current_phase": "fa-services-feature-split--prd-to-feature-split--impl--complete",
+  "current_phase": "fa-user-stories--story-generation-from-feature-split--impl--complete",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
     "steps": {
@@ -32,7 +32,7 @@
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
       "fa-user-stories--story-generation-from-feature-split--db": "complete",
-      "fa-user-stories--story-generation-from-feature-split--impl": "in-progress"
+      "fa-user-stories--story-generation-from-feature-split--impl": "complete"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1
@@ -76,10 +76,15 @@
   "fa_user_stories": {
     "story_generation_from_feature_split": "complete",
     "story_generation_from_feature_split_impl": {
-      "tracking_pr": 86,
-      "tracking_branch": "orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778612893752",
-      "layer_complete": "contracts-domain",
-      "next_layer": "persistence-use-cases"
+      "tracking_pr": 87,
+      "tracking_branch": "orchestrator/tracking-fa-user-stories--story-generation-from-feature-split--impl-1778613365195",
+      "layer_complete": "ui",
+      "next_layer": null,
+      "verified_at": "2026-05-12",
+      "verification": {
+        "typecheck": "clean",
+        "build": "clean"
+      }
     }
   },
   "fa_test_first_workflows": {
@@ -157,7 +162,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "User stories on PR #86: contracts-domain complete; next layer persistence-use-cases (Drizzle repo + use cases per plan). Parallel: credits (#39) still blocked on PIS.",
+  "next_action": "User stories impl (PR #87): complete — merge via pr-cascade. Parallel: credits (#39) still blocked on PIS; milestone feedback still blocked on slice readiness.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
