@@ -14,3 +14,4 @@ export * from './adr';
 export * from './questions/history';
 export * from './share';
 export * from './feedback';
+export * from './feature-split';
