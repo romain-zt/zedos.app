@@ -16,8 +16,8 @@ import { DrizzleProjectRepository } from '@infrastructure/persistence/project-re
 import { DrizzleFeatureSplitRepository } from '@infrastructure/persistence/feature-split-repository';
 import { DrizzleUserStoryCorpusRepository } from '@infrastructure/persistence/user-story-corpus-repository';
 import { ApplicationError } from '@shared/errors/application-error';
-import type { SaveUserStoryLineInput } from '@domain/user-stories/user-story-corpus';
 import { mapUserStoryCorpusDomainToDto } from './_lib/map-corpus-to-contract';
+import { mapSaveRequestLinesToDomain } from './_lib/map-save-request-to-domain';
 
 function toErrorResponse(e: ApplicationError) {
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -85,7 +85,7 @@ export async function PUT(
     params.id,
     userId,
     parsed.data.featureSplitClusterId,
-    parsed.data.lines as SaveUserStoryLineInput[]
+    mapSaveRequestLinesToDomain(parsed.data.lines)
   );
   if (result.isErr()) return toErrorResponse(result.error);
 
