@@ -1,4 +1,16 @@
-import { db, users, creditTransactions, eq, sql, type UserUpdate, type CreditTransactionInsert } from '@repo/db'
+/**
+ * Legacy credit helpers — delegate to application use cases + DrizzleCreditsRepository.
+ * Mutations honor correlation idempotency on `credit_transactions`.
+ */
+
+import type { OperationType as DomainOperationType } from '@domain/credits/credits';
+import type { CreditCheckResult as DomainCreditCheckResult } from '@domain/credits/credits';
+import { AddCreditsUseCase } from '@application/credits/add-credits-usecase';
+import { CheckCreditsUseCase } from '@application/credits/check-credits-usecase';
+import { DeductCreditsUseCase } from '@application/credits/deduct-credits-usecase';
+import { DrizzleCreditsRepository } from '@infrastructure/persistence/credits-repository';
+import { db, users, eq } from '@repo/db';
+import { NotFoundError } from '@shared/errors/application-error';
 
 export type OperationType =
   | 'clarification'
@@ -6,7 +18,21 @@ export type OperationType =
   | 'mini_form'
   | 'prd_generation'
   | 'prd_challenge'
-  | 'feature_split'
+  | 'feature_split';
+
+function creditsComposition() {
+  const repo = new DrizzleCreditsRepository();
+  return {
+    repo,
+    checkCredits: new CheckCreditsUseCase(repo),
+    deductCredits: new DeductCreditsUseCase(repo),
+    addCredits: new AddCreditsUseCase(repo),
+  };
+}
+
+function toDomainOperation(operationType: OperationType): DomainOperationType {
+  return operationType as DomainOperationType;
+}
 
 export function getCreditCost(operationType: OperationType): number {
   const costs: Record<OperationType, number> = {
@@ -16,11 +42,9 @@ export function getCreditCost(operationType: OperationType): number {
     prd_generation: parseInt(process.env.CREDIT_COST_PRD_GENERATION ?? '10', 10),
     prd_challenge: parseInt(process.env.CREDIT_COST_PRD_CHALLENGE ?? '15', 10),
     feature_split: parseInt(process.env.CREDIT_COST_FEATURE_SPLIT ?? '5', 10),
-  }
-  return costs[operationType] ?? 1
+  };
+  return costs[operationType] ?? 1;
 }
-
-const GRACE_CEILING = parseInt(process.env.GRACE_CREDIT_CEILING ?? '20', 10)
 
 export interface CreditCheckResult {
   allowed: boolean
@@ -31,58 +55,103 @@ export interface CreditCheckResult {
   graceAlreadyUsed: boolean
 }
 
+function domainCheckToLegacy(
+  d: DomainCreditCheckResult,
+  graceUsedFromBalance: boolean
+): Omit<CreditCheckResult, 'cost'> & { cost: number } {
+  const wouldUseGrace = !!(d.canProceed && d.graceApplicable && d.graceWillExpire);
+  const graceAlreadyUsed = d.canProceed
+    ? wouldUseGrace
+      ? false
+      : graceUsedFromBalance
+    : !d.graceApplicable;
+
+  return {
+    allowed: d.canProceed,
+    reason: d.canProceed ? undefined : d.message,
+    currentBalance: d.currentBalance,
+    cost: d.requiredAmount,
+    wouldUseGrace,
+    graceAlreadyUsed,
+  };
+}
+
 export async function checkCredits(
   userId: string,
   operationType: OperationType
 ): Promise<CreditCheckResult> {
-  const [user] = await db
-    .select({ creditBalance: users.creditBalance, graceUsed: users.graceUsed })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1)
+  const { repo, checkCredits: checkCreditsUc } = creditsComposition();
+  const cost = getCreditCost(operationType);
 
-  if (!user) {
+  const balResult = await repo.getBalance(userId);
+  if (balResult.isErr()) {
+    if (balResult.error instanceof NotFoundError) {
+      return {
+        allowed: false,
+        reason: 'User not found',
+        currentBalance: 0,
+        cost: 0,
+        wouldUseGrace: false,
+        graceAlreadyUsed: false,
+      };
+    }
     return {
       allowed: false,
-      reason: 'User not found',
+      reason: balResult.error.message ?? 'Credit check failed',
       currentBalance: 0,
-      cost: 0,
-      wouldUseGrace: false,
-      graceAlreadyUsed: false,
-    }
-  }
-
-  const cost = getCreditCost(operationType)
-  const balance = user.creditBalance
-  const graceUsed = user.graceUsed
-
-  if (balance >= cost) {
-    return { allowed: true, currentBalance: balance, cost, wouldUseGrace: false, graceAlreadyUsed: graceUsed }
-  }
-
-  if (!graceUsed) {
-    const overage = cost - balance
-    if (overage <= GRACE_CEILING) {
-      return { allowed: true, currentBalance: balance, cost, wouldUseGrace: true, graceAlreadyUsed: false }
-    }
-    return {
-      allowed: false,
-      reason: `This operation costs ${cost} credits but you only have ${balance}. The projected overage exceeds the ${GRACE_CEILING}-credit grace limit. Please add credits to continue.`,
-      currentBalance: balance,
       cost,
       wouldUseGrace: false,
       graceAlreadyUsed: false,
-    }
+    };
+  }
+  const graceUsedFromBalance = balResult.unwrap().graceUsed;
+
+  const result = await checkCreditsUc.execute({
+    userId,
+    operationType: toDomainOperation(operationType),
+    operationCost: cost,
+  });
+
+  if (result.isErr()) {
+    return {
+      allowed: false,
+      reason: result.error.message,
+      currentBalance: 0,
+      cost,
+      wouldUseGrace: false,
+      graceAlreadyUsed: graceUsedFromBalance,
+    };
   }
 
-  return {
-    allowed: false,
-    reason: `Insufficient credits. You have ${balance} credits but this operation costs ${cost}. Please add credits to continue.`,
-    currentBalance: balance,
-    cost,
-    wouldUseGrace: false,
-    graceAlreadyUsed: true,
-  }
+  return domainCheckToLegacy(result.unwrap(), graceUsedFromBalance);
+}
+
+function consumptionCorrelationId(
+  userId: string,
+  operationType: OperationType,
+  metadata?: Record<string, unknown>
+): string | undefined {
+  const m = metadata ?? {};
+  const explicit = m.correlationId;
+  if (typeof explicit === 'string' && explicit.length > 0) return explicit;
+
+  const projectId = m.projectId ?? m.project_id;
+  const prdVersionId = m.prdVersionId ?? m.prd_version_id;
+  const operation = m.operation;
+  const parts: string[] = ['consume', userId, operationType];
+  if (projectId != null) parts.push(String(projectId));
+  if (prdVersionId != null) parts.push(String(prdVersionId));
+  if (operation != null) parts.push(String(operation));
+  return parts.join(':');
+}
+
+function purchaseCorrelationId(metadata?: Record<string, unknown>): string | undefined {
+  const m = metadata ?? {};
+  const purchaseId = m.purchaseId ?? m.purchase_id;
+  if (typeof purchaseId === 'string' && purchaseId.length > 0) return `purchase:${purchaseId}`;
+  const sessionId = m.stripeSessionId ?? m.stripe_session_id;
+  if (typeof sessionId === 'string' && sessionId.length > 0) return `stripe_session:${sessionId}`;
+  return undefined;
 }
 
 export async function deductCredits(
@@ -90,39 +159,33 @@ export async function deductCredits(
   operationType: OperationType,
   metadata?: Record<string, unknown>
 ): Promise<{ success: boolean; newBalance: number; graceActivated: boolean }> {
-  const cost = getCreditCost(operationType)
+  const { repo, deductCredits: deductUc } = creditsComposition();
+  const cost = getCreditCost(operationType);
+  const correlationId = consumptionCorrelationId(userId, operationType, metadata);
 
-  const result = await db.transaction(async (tx) => {
-    const rows = await tx.execute(
-      sql`SELECT id, credit_balance, grace_used FROM users WHERE id = ${userId} FOR UPDATE`
-    )
-    const user = (rows as unknown as Array<{ id: string; credit_balance: number; grace_used: boolean }>)[0]
-    if (!user) return null
+  const balBefore = await repo.getBalance(userId);
+  const graceUsedBefore = balBefore.isOk() ? balBefore.unwrap().graceUsed : false;
 
-    const newBalance = user.credit_balance - cost
-    const graceActivated = newBalance < 0 && !user.grace_used
+  const deductResult = await deductUc.execute({
+    userId,
+    amount: cost,
+    operationType: toDomainOperation(operationType),
+    correlationId,
+    metadata: metadata ?? {},
+  });
 
-    const updateData: UserUpdate = {
-      creditBalance: newBalance,
-      ...(graceActivated ? { graceUsed: true } : {}),
-    }
-    await tx.update(users).set(updateData).where(eq(users.id, userId))
+  if (deductResult.isErr()) {
+    return { success: false, newBalance: 0, graceActivated: false };
+  }
 
-    const txData: CreditTransactionInsert = {
-      userId,
-      type: 'consumption',
-      amount: -cost,
-      balanceAfter: newBalance,
-      operationType,
-      metadata: metadata ?? {},
-    }
-    await tx.insert(creditTransactions).values(txData)
+  const dto = deductResult.unwrap();
+  const graceActivated = dto.graceUsed && !graceUsedBefore;
 
-    return { newBalance, graceActivated }
-  })
-
-  if (!result) return { success: false, newBalance: 0, graceActivated: false }
-  return { success: true, newBalance: result.newBalance, graceActivated: result.graceActivated }
+  return {
+    success: true,
+    newBalance: dto.amount,
+    graceActivated,
+  };
 }
 
 export async function addCredits(
@@ -131,57 +194,51 @@ export async function addCredits(
   type: 'grant' | 'purchase' | 'auto_reload',
   metadata?: Record<string, unknown>
 ): Promise<number> {
-  return db.transaction(async (tx) => {
-    const rows = await tx.execute(
-      sql`SELECT id, credit_balance FROM users WHERE id = ${userId} FOR UPDATE`
-    )
-    const user = (rows as unknown as Array<{ id: string; credit_balance: number }>)[0]
-    if (!user) throw new Error('User not found')
+  const { addCredits: addUc } = creditsComposition();
+  const correlationId =
+    type === 'purchase'
+      ? purchaseCorrelationId(metadata)
+      : typeof metadata?.correlationId === 'string' && metadata.correlationId.length > 0
+        ? metadata.correlationId
+        : undefined;
 
-    const newBalance = user.credit_balance + amount
+  const result = await addUc.execute({
+    userId,
+    amount,
+    type,
+    correlationId,
+    metadata: metadata ?? {},
+  });
 
-    const updateData: UserUpdate = { creditBalance: newBalance }
-    await tx.update(users).set(updateData).where(eq(users.id, userId))
-
-    const txData: CreditTransactionInsert = {
-      userId,
-      type,
-      amount,
-      balanceAfter: newBalance,
-      metadata: metadata ?? {},
+  if (result.isErr()) {
+    if (result.error instanceof NotFoundError) {
+      throw new Error('User not found');
     }
-    await tx.insert(creditTransactions).values(txData)
+    throw new Error(result.error.message);
+  }
 
-    return newBalance
-  })
+  return result.unwrap().amount;
 }
 
 export async function grantStarterCredits(userId: string): Promise<boolean> {
   const [user] = await db
-    .select({ creditBalance: users.creditBalance, starterCreditsGranted: users.starterCreditsGranted })
+    .select({ starterCreditsGranted: users.starterCreditsGranted })
     .from(users)
     .where(eq(users.id, userId))
-    .limit(1)
+    .limit(1);
 
-  if (!user || user.starterCreditsGranted) return false
+  if (!user || user.starterCreditsGranted) return false;
 
-  const starterAmount = parseInt(process.env.STARTER_CREDITS ?? '20', 10)
-  const newBalance = user.creditBalance + starterAmount
+  const starterAmount = parseInt(process.env.STARTER_CREDITS ?? '20', 10);
+  const { addCredits: addUc } = creditsComposition();
 
-  await db.transaction(async (tx) => {
-    const updateData: UserUpdate = { creditBalance: newBalance, starterCreditsGranted: true }
-    await tx.update(users).set(updateData).where(eq(users.id, userId))
+  const result = await addUc.execute({
+    userId,
+    amount: starterAmount,
+    type: 'grant',
+    correlationId: `starter-grant:${userId}`,
+    metadata: { reason: 'New account starter credits' },
+  });
 
-    const txData: CreditTransactionInsert = {
-      userId,
-      type: 'grant',
-      amount: starterAmount,
-      balanceAfter: newBalance,
-      operationType: 'starter_grant',
-      metadata: { reason: 'New account starter credits' },
-    }
-    await tx.insert(creditTransactions).values(txData)
-  })
-
-  return true
+  return result.isOk();
 }
