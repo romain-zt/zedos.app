@@ -15,6 +15,7 @@ import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
 import { ShareLinkMintResponseSchema, ShareLinkSummarySchema } from '@repo/contracts/share/mint'
+import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 
 interface PrdViewerProps {
   projectId: string
@@ -33,6 +34,7 @@ export function PrdViewer({
   onRefresh,
   onOpenRefinement,
 }: PrdViewerProps) {
+  const { notifyMilestone } = useOwnerMilestonePrompt()
   const [shareLink, setShareLink] = useState<string | null>(null)
   const [shareLinkObj, setShareLinkObj] = useState<
     { id: string; token: string; enabled: boolean } | null
@@ -55,6 +57,15 @@ export function PrdViewer({
       setShareLinkObj(null)
     }
   }, [selectedVersion])
+
+  useEffect(() => {
+    if (!selectedVersion?.id) return
+    notifyMilestone({
+      projectId,
+      milestoneType: 'prd_viewed',
+      prdVersionId: selectedVersion.id,
+    })
+  }, [projectId, selectedVersion?.id, notifyMilestone])
 
   const content = selectedVersion?.content as Record<string, unknown> & {
     title?: string
@@ -87,6 +98,11 @@ export function PrdViewer({
         // Milestone feedback for sharing
         setFeedbackType('prd_shared')
         setShowFeedback(true)
+        notifyMilestone({
+          projectId,
+          milestoneType: 'prd_shared',
+          prdVersionId: selectedVersion.id,
+        })
       } else {
         let msg = 'Failed to create share link'
         try {

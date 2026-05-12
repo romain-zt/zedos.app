@@ -27,7 +27,7 @@
       "fa-user-stories--story-generation-from-feature-split": "complete",
       "fa-test-first-workflows--task-splitting-with-prompts": "complete",
       "fa-read-only-sharing--anonymous-read-surface": "complete",
-      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "in-progress",
+      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "complete",
       "fa-read-only-sharing--revoke-link-and-noindex": "complete",
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
@@ -117,22 +117,22 @@
     }
   },
   "fa_owner_milestone_feedback": {
-    "milestone_detection_and_prompt": "in-progress",
-    "tracking_pr": 97,
-    "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778623811696",
+    "milestone_detection_and_prompt": "complete",
+    "tracking_pr": 99,
+    "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624070943",
     "prior_tracking_pr": 92,
     "prior_tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616264079",
     "prior_milestone_detection_and_prompt_status": "blocked",
     "blocker": null,
     "prior_blocker": "NEED_HUMAN: Approve proposed Implementation Plan (Iteration 1 contracts stack) plus chat-level PIS approval before emitting code under packages/ or apps/web/.",
-    "progress_note": "Contracts + UI shell landed on tracking PR #97 branch (2026-05-12): OwnerMilestonePromptShell under dashboard/projects/[id], URL param milestonePayload (base64url JSON) + signalMilestone context + sessionStorage per-milestone dismiss. Next: emitter wiring (prd_created/updated/shared/viewed) then tests-state-finalization; then mark orchestration step complete + gh pr ready 97.",
+    "progress_note": "Slice complete (2026-05-12): project workspace layout mounts OwnerMilestonePromptProvider (owner-only); emitters wire prd_created, prd_updated, prd_shared, prd_viewed; root pnpm typecheck + pnpm build clean; tracking PR #99 marked ready for review. Prior #97 exploratory work: OwnerMilestonePromptShell, milestonePayload (base64url) + signalMilestone + sessionStorage dismiss — superseded by #99 provider + modal UX.",
     "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
     "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
     "milestone_detection_and_prompt_impl": {
       "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
       "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
-      "layer_complete": "ui",
-      "next_layer": "emitter-wiring",
+      "layer_complete": "tests-state-finalization",
+      "next_layer": null,
       "verified_at": "2026-05-12",
       "verification": {
         "typecheck": "clean",
@@ -205,7 +205,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Owner milestone feedback: wire milestone emitters + finalize tests on tracking PR #97. Credits orch-credit-system step complete (tracking PR #100); configure STRIPE_WEBHOOK_SECRET in deployment.",
+  "next_action": "Owner milestone feedback: slice complete on tracking PR #99. Credits orch-credit-system step complete (tracking PR #100); configure STRIPE_WEBHOOK_SECRET in deployment.",
   "orchestration_blocker": "NEED_HUMAN: fa-payments--manual-credit-pack-checkout blocked — parent scope slice docs/product/scope-slices/payments--manual-credit-pack-checkout.md is exploratory / NOT READY (UX States, Data Touched, readiness checklist incomplete). Refine + promote to ready-for-user-stories before User Story + approved Implementation Plan per execution-bridge §5–§9. orch-credit-system prerequisite is complete.",
   "phases": {
     "0": {
