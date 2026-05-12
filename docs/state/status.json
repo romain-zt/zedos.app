@@ -34,7 +34,8 @@
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
       "fa-user-stories--story-generation-from-feature-split--db": "complete",
       "fa-user-stories--story-generation-from-feature-split--impl": "complete",
-      "fa-payments--manual-credit-pack-checkout": "blocked"
+      "fa-payments--manual-credit-pack-checkout": "blocked",
+      "fa-owner-milestone-feedback--feedback-capture-and-attribution": "in-progress"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
