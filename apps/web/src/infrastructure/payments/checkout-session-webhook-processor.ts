@@ -4,7 +4,6 @@
  */
 
 import type { CheckoutSessionCompletedEvent } from '@repo/contracts/payments/webhook';
-import { db, purchases, processedWebhookEvents, eq, sql, users } from '@repo/db';
 import type { Result } from '@repo/result';
 import { ok, err } from '@repo/result';
 import {
@@ -14,6 +13,13 @@ import {
 } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
 import { addPurchaseCreditsForApi } from '@infrastructure/http/credits-http-bridge';
+import {
+  findPurchaseById,
+  insertProcessedStripeWebhookEvent,
+  isStripeWebhookEventRecorded,
+  markPurchaseCompletedWithPaymentIntent,
+  getUserCreditBalance as loadUserCreditBalance,
+} from '@infrastructure/persistence/stripe-checkout-webhook-persistence';
 
 const logger = createLogger({ service: 'CheckoutSessionWebhookProcessor' });
 
@@ -23,13 +29,7 @@ export async function processCheckoutSessionCompletedWebhook(
   const eventId = event.id;
 
   try {
-    const [already] = await db
-      .select({ id: processedWebhookEvents.id })
-      .from(processedWebhookEvents)
-      .where(eq(processedWebhookEvents.eventId, eventId))
-      .limit(1);
-
-    if (already) {
+    if (await isStripeWebhookEventRecorded(eventId)) {
       return ok({ balance: 0, duplicateStripeEvent: true });
     }
 
@@ -46,7 +46,7 @@ export async function processCheckoutSessionCompletedWebhook(
       return err(new ValidationError('Invalid checkout session metadata for credit grant'));
     }
 
-    const [purchase] = await db.select().from(purchases).where(eq(purchases.id, purchaseId)).limit(1);
+    const purchase = await findPurchaseById(purchaseId);
 
     if (!purchase) {
       return err(new ValidationError('Purchase not found'));
@@ -71,14 +71,8 @@ export async function processCheckoutSessionCompletedWebhook(
         ? session.payment_intent
         : null;
 
-    await db.execute(
-      sql`UPDATE purchases SET status = 'completed', stripe_payment_intent_id = ${paymentIntent} WHERE id = ${purchaseId}`
-    );
-
-    await db.insert(processedWebhookEvents).values({
-      eventId,
-      eventType: event.type,
-    });
+    await markPurchaseCompletedWithPaymentIntent(purchaseId, paymentIntent);
+    await insertProcessedStripeWebhookEvent(eventId, event.type);
 
     return ok({ balance: newBalance, duplicateStripeEvent: false });
   } catch (error) {
@@ -89,10 +83,5 @@ export async function processCheckoutSessionCompletedWebhook(
 
 /** Loads current balance for duplicate Stripe event acknowledgment */
 export async function getUserCreditBalance(userId: string): Promise<number> {
-  const [row] = await db
-    .select({ creditBalance: users.creditBalance })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  return row?.creditBalance ?? 0;
+  return loadUserCreditBalance(userId);
 }

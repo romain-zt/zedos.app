@@ -195,7 +195,7 @@ export async function addPurchaseCreditsForApi(
   });
 
   if (result.isErr()) {
-    return result as Result<number, ApplicationError>;
+    return err(result.error);
   }
   return ok(result.unwrap().amount);
 }
