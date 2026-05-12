@@ -11,6 +11,8 @@ export interface AddCreditsInput {
   userId: string;
   amount: number;
   type: 'grant' | 'purchase' | 'auto_reload';
+  correlationId: string;
+  metadata?: Record<string, unknown>;
 }
 
 export class AddCreditsUseCase {
@@ -20,7 +22,9 @@ export class AddCreditsUseCase {
     const addResult = await this.creditsRepository.addCredits(
       input.userId,
       input.amount,
-      input.type
+      input.type,
+      input.correlationId,
+      input.metadata
     );
 
     if (addResult.isErr()) {

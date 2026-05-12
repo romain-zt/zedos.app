@@ -21,7 +21,9 @@ export interface ICreditsRepository {
   deductCredits(
     userId: string,
     amount: number,
-    operationType: OperationType
+    operationType: OperationType,
+    correlationId: string,
+    metadata?: Record<string, unknown>
   ): Promise<Result<CreditBalance, ApplicationError>>;
 
   /**
@@ -30,7 +32,19 @@ export interface ICreditsRepository {
   addCredits(
     userId: string,
     amount: number,
-    type: 'grant' | 'purchase' | 'auto_reload'
+    type: 'grant' | 'purchase' | 'auto_reload',
+    correlationId: string,
+    metadata?: Record<string, unknown>
+  ): Promise<Result<CreditBalance, ApplicationError>>;
+
+  /**
+   * Compensating credit after a failed downstream operation; credits back the original deduction.
+   */
+  reverseCredits(
+    userId: string,
+    originalDeductionCorrelationId: string,
+    reversalCorrelationId: string,
+    metadata?: Record<string, unknown>
   ): Promise<Result<CreditBalance, ApplicationError>>;
 
   /**

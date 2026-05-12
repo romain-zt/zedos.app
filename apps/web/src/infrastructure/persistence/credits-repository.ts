@@ -7,10 +7,28 @@
 
 import { ICreditsRepository } from '@domain/credits/credits-repository';
 import { CreditBalance, CreditTransaction, OperationType } from '@domain/credits/credits';
+import { CreditsDomainService } from '@domain/credits/credits-service';
 import { UserId } from '@domain/user/user';
 import { Result, ok, err } from '@repo/result';
-import { ApplicationError, NotFoundError, DatabaseError } from '@shared/errors/application-error';
-import { db, users, creditTransactions, eq, desc, sql, type UserUpdate, type CreditTransactionInsert } from '@repo/db';
+import {
+  ApplicationError,
+  NotFoundError,
+  DatabaseError,
+  InsufficientCreditsError,
+  ConflictError,
+  ValidationError,
+} from '@shared/errors/application-error';
+import {
+  db,
+  users,
+  creditTransactions,
+  eq,
+  desc,
+  sql,
+  and,
+  type UserUpdate,
+  type CreditTransactionInsert,
+} from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 import { clampPersistedCreditBalanceNonNegative } from './credits-persisted-balance';
 
@@ -25,6 +43,23 @@ function persistedCreditBalanceForDomain(raw: number, userId: string): number {
     });
   }
   return coerced;
+}
+
+function balanceFromLockedRow(userId: string, creditBalanceRaw: number, graceUsed: boolean): CreditBalance {
+  const amount = persistedCreditBalanceForDomain(creditBalanceRaw, userId);
+  return new CreditBalance(new UserId(userId), amount, graceUsed);
+}
+
+function consumptionMatchesIdempotent(
+  row: { type: string; amount: number; operationType: string | null },
+  amount: number,
+  operationType: OperationType
+): boolean {
+  return row.type === 'consumption' && row.amount === amount && (row.operationType ?? undefined) === operationType;
+}
+
+function grantMatchesIdempotent(row: { type: string; amount: number }, amount: number, type: string): boolean {
+  return row.type === type && row.amount === amount;
 }
 
 export class DrizzleCreditsRepository implements ICreditsRepository {
@@ -63,60 +98,81 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
   async deductCredits(
     userId: string,
     amount: number,
-    operationType: OperationType
+    operationType: OperationType,
+    correlationId: string,
+    metadata?: Record<string, unknown>
   ): Promise<Result<CreditBalance, ApplicationError>> {
     try {
       const result = await db.transaction(async (tx) => {
-        // 1. Lock the user row with SELECT FOR UPDATE to prevent concurrent modifications
         const lockedRows = await tx.execute(
           sql`SELECT id, credit_balance, grace_used FROM users WHERE id = ${userId} FOR UPDATE`
         );
 
         const rows = lockedRows as unknown as Array<{ id: string; credit_balance: number; grace_used: boolean }>;
-        
+
         if (!rows || rows.length === 0) {
           return { error: new NotFoundError('User not found') };
         }
 
         const user = rows[0];
 
-        const effectiveBalance = persistedCreditBalanceForDomain(user.credit_balance, userId);
+        const [existing] = await tx
+          .select()
+          .from(creditTransactions)
+          .where(and(eq(creditTransactions.userId, userId), eq(creditTransactions.correlationId, correlationId)))
+          .limit(1);
 
-        if (effectiveBalance < amount) {
+        if (existing) {
+          if (!consumptionMatchesIdempotent(existing, amount, operationType)) {
+            return {
+              error: new ConflictError('Correlation id already used with different deduction parameters', {
+                correlationId,
+              }),
+            };
+          }
+          return { balance: balanceFromLockedRow(userId, user.credit_balance, user.grace_used) };
+        }
+
+        const effectiveBalance = persistedCreditBalanceForDomain(user.credit_balance, userId);
+        const decision = CreditsDomainService.computeDeductionDecision(
+          effectiveBalance,
+          user.grace_used,
+          amount
+        );
+
+        if (decision.kind === 'reject') {
           return {
-            error: new ApplicationError({
-              code: 'INSUFFICIENT_CREDITS' as any,
-              message: `Insufficient credits. Required: ${amount}, Available: ${effectiveBalance}`,
-              statusCode: 402,
-              details: { required: amount, available: effectiveBalance },
-            }),
+            error: new InsufficientCreditsError(amount, decision.currentBalance),
           };
         }
 
-        // 2. Deduct credits
-        const newBalance = effectiveBalance - amount;
+        const newBalance = decision.newBalance;
+        let nextGraceUsed = user.grace_used;
         const updateData: UserUpdate = { creditBalance: newBalance };
-        await tx
-          .update(users)
-          .set(updateData)
-          .where(eq(users.id, userId));
 
-        // 3. Record transaction
+        if (decision.kind === 'proceed-with-grace') {
+          nextGraceUsed = true;
+          updateData.graceUsed = true;
+        }
+
+        await tx.update(users).set(updateData).where(eq(users.id, userId));
+
+        const mergedMeta =
+          metadata && Object.keys(metadata).length > 0 ? { ...metadata } : undefined;
+
         const txData: CreditTransactionInsert = {
           userId,
           type: 'consumption',
           amount,
           balanceAfter: newBalance,
           operationType,
+          correlationId,
+          metadata: mergedMeta,
         };
         await tx.insert(creditTransactions).values(txData);
 
         return {
-          balance: new CreditBalance(
-            new UserId(userId),
-            newBalance,
-            user.grace_used
-          ),
+          balance: balanceFromLockedRow(userId, newBalance, nextGraceUsed),
         };
       });
 
@@ -124,7 +180,7 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
         return err(result.error);
       }
 
-      logger.info('Credits deducted', { userId, amount, operationType });
+      logger.info('Credits deducted', { userId, amount, operationType, correlationId });
       return ok(result.balance) as Result<CreditBalance, ApplicationError>;
     } catch (error) {
       logger.error('Failed to deduct credits', error);
@@ -135,52 +191,65 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
   async addCredits(
     userId: string,
     amount: number,
-    type: 'grant' | 'purchase' | 'auto_reload'
+    type: 'grant' | 'purchase' | 'auto_reload',
+    correlationId: string,
+    metadata?: Record<string, unknown>
   ): Promise<Result<CreditBalance, ApplicationError>> {
     try {
       const result = await db.transaction(async (tx) => {
-        // 1. Lock the user row with SELECT FOR UPDATE
         const lockedRows = await tx.execute(
           sql`SELECT id, credit_balance, grace_used FROM users WHERE id = ${userId} FOR UPDATE`
         );
 
         const rows = lockedRows as unknown as Array<{ id: string; credit_balance: number; grace_used: boolean }>;
-        
+
         if (!rows || rows.length === 0) {
           return { error: new NotFoundError('User not found') };
         }
 
         const user = rows[0];
 
-        const effectiveBalance = persistedCreditBalanceForDomain(user.credit_balance, userId);
+        const [existing] = await tx
+          .select()
+          .from(creditTransactions)
+          .where(and(eq(creditTransactions.userId, userId), eq(creditTransactions.correlationId, correlationId)))
+          .limit(1);
 
-        // 2. Add credits
+        if (existing) {
+          if (!grantMatchesIdempotent(existing, amount, type)) {
+            return {
+              error: new ConflictError('Correlation id already used with different credit grant parameters', {
+                correlationId,
+              }),
+            };
+          }
+          return { balance: balanceFromLockedRow(userId, user.credit_balance, user.grace_used) };
+        }
+
+        const effectiveBalance = persistedCreditBalanceForDomain(user.credit_balance, userId);
         const newBalance = effectiveBalance + amount;
-        
+
         const updateData: UserUpdate = { creditBalance: newBalance };
         if (type === 'grant') {
           updateData.starterCreditsGranted = true;
         }
-        await tx
-          .update(users)
-          .set(updateData)
-          .where(eq(users.id, userId));
+        await tx.update(users).set(updateData).where(eq(users.id, userId));
 
-        // 3. Record transaction
+        const mergedMeta =
+          metadata && Object.keys(metadata).length > 0 ? { ...metadata } : undefined;
+
         const txData: CreditTransactionInsert = {
           userId,
           type,
           amount,
           balanceAfter: newBalance,
+          correlationId,
+          metadata: mergedMeta,
         };
         await tx.insert(creditTransactions).values(txData);
 
         return {
-          balance: new CreditBalance(
-            new UserId(userId),
-            newBalance,
-            user.grace_used
-          ),
+          balance: balanceFromLockedRow(userId, newBalance, user.grace_used),
         };
       });
 
@@ -188,11 +257,137 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
         return err(result.error);
       }
 
-      logger.info('Credits added', { userId, amount, type });
+      logger.info('Credits added', { userId, amount, type, correlationId });
       return ok(result.balance) as Result<CreditBalance, ApplicationError>;
     } catch (error) {
       logger.error('Failed to add credits', error);
       return err(new DatabaseError('Failed to add credits'));
+    }
+  }
+
+  async reverseCredits(
+    userId: string,
+    originalDeductionCorrelationId: string,
+    reversalCorrelationId: string,
+    metadata?: Record<string, unknown>
+  ): Promise<Result<CreditBalance, ApplicationError>> {
+    try {
+      const result = await db.transaction(async (tx) => {
+        const lockedRows = await tx.execute(
+          sql`SELECT id, credit_balance, grace_used FROM users WHERE id = ${userId} FOR UPDATE`
+        );
+
+        const rows = lockedRows as unknown as Array<{ id: string; credit_balance: number; grace_used: boolean }>;
+
+        if (!rows || rows.length === 0) {
+          return { error: new NotFoundError('User not found') };
+        }
+
+        const lockedUser = rows[0];
+
+        const [replay] = await tx
+          .select()
+          .from(creditTransactions)
+          .where(and(eq(creditTransactions.userId, userId), eq(creditTransactions.correlationId, reversalCorrelationId)))
+          .limit(1);
+
+        if (replay) {
+          if (replay.type !== 'reversal') {
+            return {
+              error: new ConflictError('Correlation id already used for a non-reversal transaction', {
+                correlationId: reversalCorrelationId,
+              }),
+            };
+          }
+          const meta = replay.metadata as Record<string, unknown> | null | undefined;
+          const orig = meta?.originalDeductionCorrelationId;
+          if (typeof orig === 'string' && orig !== originalDeductionCorrelationId) {
+            return {
+              error: new ConflictError('Reversal replay metadata mismatch', {
+                correlationId: reversalCorrelationId,
+              }),
+            };
+          }
+          return { balance: balanceFromLockedRow(userId, lockedUser.credit_balance, lockedUser.grace_used) };
+        }
+
+        const [priorReversal] = await tx
+          .select()
+          .from(creditTransactions)
+          .where(
+            and(
+              eq(creditTransactions.userId, userId),
+              eq(creditTransactions.type, 'reversal'),
+              sql`(${creditTransactions.metadata})::jsonb->>'originalDeductionCorrelationId' = ${originalDeductionCorrelationId}`
+            )
+          )
+          .limit(1);
+
+        if (priorReversal) {
+          return {
+            error: new ConflictError('Original deduction already reversed', {
+              originalDeductionCorrelationId,
+              existingReversalCorrelationId: priorReversal.correlationId,
+            }),
+          };
+        }
+
+        const [original] = await tx
+          .select()
+          .from(creditTransactions)
+          .where(
+            and(
+              eq(creditTransactions.userId, userId),
+              eq(creditTransactions.correlationId, originalDeductionCorrelationId),
+              eq(creditTransactions.type, 'consumption')
+            )
+          )
+          .limit(1);
+
+        if (!original) {
+          return {
+            error: new ValidationError('No consumption transaction found for correlation id', {
+              originalDeductionCorrelationId,
+            }),
+          };
+        }
+
+        const refundAmount = original.amount;
+        const effectiveBalance = persistedCreditBalanceForDomain(lockedUser.credit_balance, userId);
+        const newBalance = effectiveBalance + refundAmount;
+
+        const updateData: UserUpdate = { creditBalance: newBalance };
+        await tx.update(users).set(updateData).where(eq(users.id, userId));
+
+        const reversalMeta: Record<string, unknown> = {
+          originalDeductionCorrelationId,
+          ...(metadata ?? {}),
+        };
+
+        const txData: CreditTransactionInsert = {
+          userId,
+          type: 'reversal',
+          amount: refundAmount,
+          balanceAfter: newBalance,
+          correlationId: reversalCorrelationId,
+          metadata: reversalMeta,
+        };
+        await tx.insert(creditTransactions).values(txData);
+
+        return {
+          balance: balanceFromLockedRow(userId, newBalance, lockedUser.grace_used),
+        };
+      });
+
+      if ('error' in result) {
+        return err(result.error);
+      }
+
+      logger.info('Credits reversed', { userId, originalDeductionCorrelationId, reversalCorrelationId });
+      return ok(result.balance) as Result<CreditBalance, ApplicationError>;
+    } catch (error) {
+      logger.error('Failed to reverse credits', error);
+      return err(new DatabaseError('Failed to reverse credits'));
     }
   }
 
@@ -207,6 +402,7 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
         balanceAfter: 0,
         operationType: transaction.operationType,
         metadata: transaction.metadata,
+        correlationId: transaction.correlationId ?? null,
       };
       const [row] = await db
         .insert(creditTransactions)
@@ -220,6 +416,7 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
         amount: row.amount,
         operationType: (row.operationType as OperationType) || undefined,
         metadata: row.metadata as CreditTransaction['metadata'],
+        correlationId: row.correlationId ?? undefined,
         createdAt: row.createdAt,
       };
 
@@ -249,6 +446,7 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
         amount: t.amount,
         operationType: (t.operationType || undefined) as OperationType | undefined,
         metadata: t.metadata as CreditTransaction['metadata'],
+        correlationId: t.correlationId ?? undefined,
         createdAt: t.createdAt,
       }));
 

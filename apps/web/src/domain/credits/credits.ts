@@ -18,7 +18,12 @@ export type OperationType =
   | 'test_plan'
   | 'feature_split';
 
-export type CreditTransactionType = 'grant' | 'purchase' | 'auto_reload' | 'consumption';
+export type CreditTransactionType =
+  | 'grant'
+  | 'purchase'
+  | 'auto_reload'
+  | 'consumption'
+  | 'reversal';
 
 /**
  * Credit Operation - cost mapping
@@ -84,6 +89,7 @@ export interface CreditTransaction {
   amount: number;
   operationType?: OperationType;
   metadata?: Record<string, any>;
+  correlationId?: string;
   createdAt: Date;
 }
 

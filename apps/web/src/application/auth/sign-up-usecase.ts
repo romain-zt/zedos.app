@@ -62,7 +62,9 @@ export class SignUpUseCase {
       const creditsResult = await this.creditsRepository.addCredits(
         userId,
         STARTER_CREDITS,
-        'grant'
+        'grant',
+        `signup-starter-grant:${userId}`,
+        { source: 'signup', kind: 'starter_grant' }
       );
       if (creditsResult.isErr()) {
         logger.error('Sign up failed: starter credits grant error', creditsResult.error);

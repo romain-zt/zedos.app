@@ -33,6 +33,9 @@ export enum ErrorCode {
   
   // Internal
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
+
+  /** Idempotency / concurrent mutation conflict */
+  CONFLICT = 'CONFLICT',
 }
 
 export interface ErrorContext {
@@ -105,6 +108,18 @@ export class ForbiddenError extends ApplicationError {
       details,
     });
     Object.setPrototypeOf(this, ForbiddenError.prototype);
+  }
+}
+
+export class ConflictError extends ApplicationError {
+  constructor(message: string, details?: Record<string, any>) {
+    super({
+      code: ErrorCode.CONFLICT,
+      message,
+      statusCode: 409,
+      details,
+    });
+    Object.setPrototypeOf(this, ConflictError.prototype);
   }
 }
 

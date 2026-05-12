@@ -1,4 +1,11 @@
-import { db, users, creditTransactions, eq, sql, type UserUpdate, type CreditTransactionInsert } from '@repo/db'
+import { randomUUID } from 'crypto';
+import { db, users, creditTransactions, eq } from '@repo/db';
+import type { UserUpdate, CreditTransactionInsert } from '@repo/db';
+import { DrizzleCreditsRepository } from '@infrastructure/persistence/credits-repository';
+import type { OperationType as DomainOperationType } from '@domain/credits/credits';
+import { InsufficientCreditsError } from '@shared/errors/application-error';
+
+const creditsRepo = new DrizzleCreditsRepository();
 
 export type OperationType =
   | 'clarification'
@@ -6,7 +13,7 @@ export type OperationType =
   | 'mini_form'
   | 'prd_generation'
   | 'prd_challenge'
-  | 'feature_split'
+  | 'feature_split';
 
 export function getCreditCost(operationType: OperationType): number {
   const costs: Record<OperationType, number> = {
@@ -85,75 +92,77 @@ export async function checkCredits(
   }
 }
 
+/**
+ * Deduct credits via the Drizzle ledger (locked rows + idempotent correlationId).
+ * Pass a stable correlationId from route handlers when retries are possible.
+ */
 export async function deductCredits(
   userId: string,
   operationType: OperationType,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  correlationId: string = randomUUID()
 ): Promise<{ success: boolean; newBalance: number; graceActivated: boolean }> {
   const cost = getCreditCost(operationType)
+  const domainOp = operationType as DomainOperationType
 
-  const result = await db.transaction(async (tx) => {
-    const rows = await tx.execute(
-      sql`SELECT id, credit_balance, grace_used FROM users WHERE id = ${userId} FOR UPDATE`
-    )
-    const user = (rows as unknown as Array<{ id: string; credit_balance: number; grace_used: boolean }>)[0]
-    if (!user) return null
+  const before = await creditsRepo.getBalance(userId)
+  if (before.isErr()) {
+    return { success: false, newBalance: 0, graceActivated: false }
+  }
+  const graceUsedBefore = before.unwrap().graceUsed
 
-    const newBalance = user.credit_balance - cost
-    const graceActivated = newBalance < 0 && !user.grace_used
+  const result = await creditsRepo.deductCredits(userId, cost, domainOp, correlationId, metadata)
 
-    const updateData: UserUpdate = {
-      creditBalance: newBalance,
-      ...(graceActivated ? { graceUsed: true } : {}),
+  if (result.isErr()) {
+    if (result.error instanceof InsufficientCreditsError) {
+      const available =
+        typeof result.error.details?.available === 'number' ? result.error.details.available : 0
+      return { success: false, newBalance: available, graceActivated: false }
     }
-    await tx.update(users).set(updateData).where(eq(users.id, userId))
+    return { success: false, newBalance: 0, graceActivated: false }
+  }
 
-    const txData: CreditTransactionInsert = {
-      userId,
-      type: 'consumption',
-      amount: -cost,
-      balanceAfter: newBalance,
-      operationType,
-      metadata: metadata ?? {},
-    }
-    await tx.insert(creditTransactions).values(txData)
-
-    return { newBalance, graceActivated }
-  })
-
-  if (!result) return { success: false, newBalance: 0, graceActivated: false }
-  return { success: true, newBalance: result.newBalance, graceActivated: result.graceActivated }
+  const balance = result.unwrap()
+  const graceActivated = balance.graceUsed && !graceUsedBefore
+  return { success: true, newBalance: balance.amount, graceActivated }
 }
 
+/**
+ * Add credits via the Drizzle ledger. Pass a stable correlationId when retries are possible (e.g. Stripe session id).
+ */
 export async function addCredits(
   userId: string,
   amount: number,
   type: 'grant' | 'purchase' | 'auto_reload',
+  metadata?: Record<string, unknown>,
+  correlationId: string = randomUUID()
+): Promise<number> {
+  const result = await creditsRepo.addCredits(userId, amount, type, correlationId, metadata)
+  if (result.isErr()) {
+    throw new Error(result.error.message)
+  }
+  return result.unwrap().amount
+}
+
+/**
+ * Compensating reversal after a failed downstream operation.
+ */
+export async function reverseCredits(
+  userId: string,
+  originalDeductionCorrelationId: string,
+  reversalCorrelationId: string,
   metadata?: Record<string, unknown>
 ): Promise<number> {
-  return db.transaction(async (tx) => {
-    const rows = await tx.execute(
-      sql`SELECT id, credit_balance FROM users WHERE id = ${userId} FOR UPDATE`
-    )
-    const user = (rows as unknown as Array<{ id: string; credit_balance: number }>)[0]
-    if (!user) throw new Error('User not found')
-
-    const newBalance = user.credit_balance + amount
-
-    const updateData: UserUpdate = { creditBalance: newBalance }
-    await tx.update(users).set(updateData).where(eq(users.id, userId))
-
-    const txData: CreditTransactionInsert = {
-      userId,
-      type,
-      amount,
-      balanceAfter: newBalance,
-      metadata: metadata ?? {},
-    }
-    await tx.insert(creditTransactions).values(txData)
-
-    return newBalance
-  })
+  const result = await creditsRepo.reverseCredits(
+    userId,
+    originalDeductionCorrelationId,
+    reversalCorrelationId,
+    metadata
+  )
+  if (result.isErr()) {
+    throw new Error(result.error.message)
+  }
+  return result.unwrap().amount
 }
 
 export async function grantStarterCredits(userId: string): Promise<boolean> {
@@ -167,6 +176,7 @@ export async function grantStarterCredits(userId: string): Promise<boolean> {
 
   const starterAmount = parseInt(process.env.STARTER_CREDITS ?? '20', 10)
   const newBalance = user.creditBalance + starterAmount
+  const correlationId = `starter_grant:${userId}`
 
   await db.transaction(async (tx) => {
     const updateData: UserUpdate = { creditBalance: newBalance, starterCreditsGranted: true }
@@ -178,6 +188,7 @@ export async function grantStarterCredits(userId: string): Promise<boolean> {
       amount: starterAmount,
       balanceAfter: newBalance,
       operationType: 'starter_grant',
+      correlationId,
       metadata: { reason: 'New account starter credits' },
     }
     await tx.insert(creditTransactions).values(txData)

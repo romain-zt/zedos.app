@@ -27,6 +27,10 @@ const makeMockCreditsRepo = () => ({
   getBalance: vi.fn(),
   addCredits: vi.fn(),
   deductCredits: vi.fn(),
+  reverseCredits: vi.fn(),
+  recordTransaction: vi.fn(),
+  getTransactionHistory: vi.fn(),
+  useGracePeriod: vi.fn(),
   findByUserId: vi.fn(),
 });
 

@@ -12,6 +12,8 @@ export interface DeductCreditsInput {
   userId: string;
   amount: number;
   operationType: OperationType;
+  correlationId: string;
+  metadata?: Record<string, unknown>;
 }
 
 export class DeductCreditsUseCase {
@@ -21,7 +23,9 @@ export class DeductCreditsUseCase {
     const deductResult = await this.creditsRepository.deductCredits(
       input.userId,
       input.amount,
-      input.operationType
+      input.operationType,
+      input.correlationId,
+      input.metadata
     );
 
     if (deductResult.isErr()) {
