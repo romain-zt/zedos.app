@@ -149,7 +149,7 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Two new --impl pipeline steps added: fa-services-feature-split--prd-to-feature-split--impl and fa-user-stories--story-generation-from-feature-split--impl. Both plans approved. Run phase-orchestrator to dispatch implementation. Parallel: owner-milestone-feedback if unblocked. Credits (PR #39) still blocked on PIS.",
+  "next_action": "PR #75 (feature-split impl tracking) is merged. Remediation commits are on orchestrator/tracking-fa-services-feature-split--prd-to-feature-split--impl-1778551730470 (not yet in main) — open/merge a PR to main. Next pipeline work: fa-user-stories--story-generation-from-feature-split--impl (in-progress). Credits PR #39 still PIS-blocked.",
   "orchestration_blocker": "NEED_HUMAN: Credits slice remains blocked — explicit Patch Intent Summary approval for all 5 blockers (see docs/state/status.json pis_blockers / phases.2b). Unrelated to PR #40.",
   "phases": {
     "0": {
