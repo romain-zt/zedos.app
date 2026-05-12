@@ -1,15 +1,15 @@
 /**
- * Legacy credit helpers — delegate to application use cases + DrizzleCreditsRepository.
- * Mutations honor correlation idempotency on `credit_transactions`.
+ * HTTP-layer helpers for credit checks/consumption via composed use cases.
+ * Used by App Router API routes instead of `@/lib/credits`.
  */
 
 import type { OperationType as DomainOperationType } from '@domain/credits/credits';
 import type { CreditCheckResult as DomainCreditCheckResult } from '@domain/credits/credits';
+import { Result, ok, err } from '@repo/result';
+import { ApplicationError, NotFoundError } from '@shared/errors/application-error';
 import { getCreditsComposition } from '@/lib/composition';
-import { db, users, eq } from '@repo/db';
-import { NotFoundError } from '@shared/errors/application-error';
 
-export type OperationType =
+export type ApiCreditOperationType =
   | 'clarification'
   | 'decision'
   | 'mini_form'
@@ -17,12 +17,12 @@ export type OperationType =
   | 'prd_challenge'
   | 'feature_split';
 
-function toDomainOperation(operationType: OperationType): DomainOperationType {
+function toDomainOperation(operationType: ApiCreditOperationType): DomainOperationType {
   return operationType as DomainOperationType;
 }
 
-export function getCreditCost(operationType: OperationType): number {
-  const costs: Record<OperationType, number> = {
+export function getCreditCost(operationType: ApiCreditOperationType): number {
+  const costs: Record<ApiCreditOperationType, number> = {
     clarification: parseInt(process.env.CREDIT_COST_CLARIFICATION ?? '1', 10),
     decision: parseInt(process.env.CREDIT_COST_DECISION ?? '3', 10),
     mini_form: parseInt(process.env.CREDIT_COST_MINI_FORM ?? '5', 10),
@@ -33,19 +33,19 @@ export function getCreditCost(operationType: OperationType): number {
   return costs[operationType] ?? 1;
 }
 
-export interface CreditCheckResult {
-  allowed: boolean
-  reason?: string
-  currentBalance: number
-  cost: number
-  wouldUseGrace: boolean
-  graceAlreadyUsed: boolean
+export interface CreditCheckHttpResult {
+  allowed: boolean;
+  reason?: string;
+  currentBalance: number;
+  cost: number;
+  wouldUseGrace: boolean;
+  graceAlreadyUsed: boolean;
 }
 
-function domainCheckToLegacy(
+function domainCheckToHttp(
   d: DomainCreditCheckResult,
   graceUsedFromBalance: boolean
-): Omit<CreditCheckResult, 'cost'> & { cost: number } {
+): Omit<CreditCheckHttpResult, 'cost'> & { cost: number } {
   const wouldUseGrace = !!(d.canProceed && d.graceApplicable && d.graceWillExpire);
   const graceAlreadyUsed = d.canProceed
     ? wouldUseGrace
@@ -63,10 +63,10 @@ function domainCheckToLegacy(
   };
 }
 
-export async function checkCredits(
+export async function checkCreditsForApi(
   userId: string,
-  operationType: OperationType
-): Promise<CreditCheckResult> {
+  operationType: ApiCreditOperationType
+): Promise<CreditCheckHttpResult> {
   const { repo, checkCredits: checkCreditsUc } = getCreditsComposition();
   const cost = getCreditCost(operationType);
 
@@ -110,12 +110,12 @@ export async function checkCredits(
     };
   }
 
-  return domainCheckToLegacy(result.unwrap(), graceUsedFromBalance);
+  return domainCheckToHttp(result.unwrap(), graceUsedFromBalance);
 }
 
 function consumptionCorrelationId(
   userId: string,
-  operationType: OperationType,
+  operationType: ApiCreditOperationType,
   metadata?: Record<string, unknown>
 ): string | undefined {
   const m = metadata ?? {};
@@ -123,27 +123,21 @@ function consumptionCorrelationId(
   if (typeof explicit === 'string' && explicit.length > 0) return explicit;
 
   const projectId = m.projectId ?? m.project_id;
+  if (projectId != null && String(projectId).length > 0) {
+    return `${String(projectId)}--${operationType}--${crypto.randomUUID()}`;
+  }
+
   const prdVersionId = m.prdVersionId ?? m.prd_version_id;
   const operation = m.operation;
   const parts: string[] = ['consume', userId, operationType];
-  if (projectId != null) parts.push(String(projectId));
   if (prdVersionId != null) parts.push(String(prdVersionId));
   if (operation != null) parts.push(String(operation));
   return parts.join(':');
 }
 
-function purchaseCorrelationId(metadata?: Record<string, unknown>): string | undefined {
-  const m = metadata ?? {};
-  const purchaseId = m.purchaseId ?? m.purchase_id;
-  if (typeof purchaseId === 'string' && purchaseId.length > 0) return `purchase:${purchaseId}`;
-  const sessionId = m.stripeSessionId ?? m.stripe_session_id;
-  if (typeof sessionId === 'string' && sessionId.length > 0) return `stripe_session:${sessionId}`;
-  return undefined;
-}
-
-export async function deductCredits(
+export async function deductCreditsForApi(
   userId: string,
-  operationType: OperationType,
+  operationType: ApiCreditOperationType,
   metadata?: Record<string, unknown>
 ): Promise<{ success: boolean; newBalance: number; graceActivated: boolean }> {
   const { repo, deductCredits: deductUc } = getCreditsComposition();
@@ -175,57 +169,33 @@ export async function deductCredits(
   };
 }
 
-export async function addCredits(
+export function purchaseCorrelationId(metadata?: Record<string, unknown>): string | undefined {
+  const m = metadata ?? {};
+  const purchaseId = m.purchaseId ?? m.purchase_id;
+  if (typeof purchaseId === 'string' && purchaseId.length > 0) return `purchase:${purchaseId}`;
+  const sessionId = m.stripeSessionId ?? m.stripe_session_id;
+  if (typeof sessionId === 'string' && sessionId.length > 0) return `stripe_session:${sessionId}`;
+  return undefined;
+}
+
+export async function addPurchaseCreditsForApi(
   userId: string,
   amount: number,
-  type: 'grant' | 'purchase' | 'auto_reload',
   metadata?: Record<string, unknown>
-): Promise<number> {
+): Promise<Result<number, ApplicationError>> {
   const { addCredits: addUc } = getCreditsComposition();
-  const correlationId =
-    type === 'purchase'
-      ? purchaseCorrelationId(metadata)
-      : typeof metadata?.correlationId === 'string' && metadata.correlationId.length > 0
-        ? metadata.correlationId
-        : undefined;
+  const correlationId = purchaseCorrelationId(metadata);
 
   const result = await addUc.execute({
     userId,
     amount,
-    type,
+    type: 'purchase',
     correlationId,
     metadata: metadata ?? {},
   });
 
   if (result.isErr()) {
-    if (result.error instanceof NotFoundError) {
-      throw new Error('User not found');
-    }
-    throw new Error(result.error.message);
+    return result as Result<number, ApplicationError>;
   }
-
-  return result.unwrap().amount;
-}
-
-export async function grantStarterCredits(userId: string): Promise<boolean> {
-  const [user] = await db
-    .select({ starterCreditsGranted: users.starterCreditsGranted })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  if (!user || user.starterCreditsGranted) return false;
-
-  const starterAmount = parseInt(process.env.STARTER_CREDITS ?? '20', 10);
-  const { addCredits: addUc } = getCreditsComposition();
-
-  const result = await addUc.execute({
-    userId,
-    amount: starterAmount,
-    type: 'grant',
-    correlationId: `starter-grant:${userId}`,
-    metadata: { reason: 'New account starter credits' },
-  });
-
-  return result.isOk();
+  return ok(result.unwrap().amount);
 }
