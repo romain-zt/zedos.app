@@ -18,6 +18,7 @@
     "./ai/clarify-stream": "./src/ai/clarify-stream.ts",
     "./ai/decision-ui": "./src/ai/decision-ui.ts",
     "./ai/generate-prd-stream": "./src/ai/generate-prd-stream.ts",
+    "./ai/feature-split-proposal": "./src/ai/feature-split-proposal.ts",
     "./questions": "./src/questions/history.ts",
     "./questions/history": "./src/questions/history.ts",
     "./share": "./src/share/index.ts",
@@ -25,7 +26,8 @@
     "./share/disable": "./src/share/disable.ts",
     "./share/anonymous-read": "./src/share/anonymous-read.ts",
     "./feedback": "./src/feedback/index.ts",
-    "./feedback/submit": "./src/feedback/submit.ts"
+    "./feedback/submit": "./src/feedback/submit.ts",
+    "./feature-split": "./src/feature-split/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
