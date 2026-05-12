@@ -4,10 +4,10 @@ date: 2026-05-12
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
-parallel_pipeline_status: milestone-feedback-complete-payments-blocked
-current_phase_primary: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
-current_phase_milestone_feedback: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
-current_phase_aggregate: fa-owner-milestone-feedback--tests-state-finalization-complete
+parallel_pipeline_status: milestone-feedback-blocked-pr-101-closed-payments-blocked
+current_phase_primary: fa-owner-milestone-feedback--milestone-detection-and-prompt--blocked-tracking-pr
+current_phase_milestone_feedback: fa-owner-milestone-feedback--milestone-detection-and-prompt--blocked-tracking-pr
+current_phase_aggregate: fa-owner-milestone-feedback--impl-done-awaiting-tracking-pr-open
 credit_system_tracking_phase: orch-credit-system--ledger-concurrency-and-stripe-webhook
 current_blocker: null
 parallel_current_blocker: null
@@ -56,7 +56,7 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 
 ## Owner milestone feedback — slice layers (tracking PR **#101**)
 
-- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **`complete`** on tracking PR **#101** (`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710` → `main`). Emitter wiring + **tests-state-finalization** landed (`owner-milestone-prompt-shell.test.tsx` smoke coverage; orchestration bookkeeping updated). **`gh pr ready 101`** when CI is green.
+- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **`blocked`** (canonical `docs/state/status.json`) — implementation + **`tests-state-finalization`** landed on **`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710`** (pushed post-close). **`NEED_HUMAN`:** GitHub **PR #101** is **CLOSED without merge**; reopen or open a **replacement draft tracking PR** (base **`main`**, head = this branch) so **`pr-cascade`** can merge. Cloud agent token cannot **`gh pr reopen`**.
 
 | Layer | Status |
 |-------|--------|
@@ -66,7 +66,7 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 | `api-routes` | **deferred** — optional; milestone wiring can use client context / layout props |
 | `ui` | **complete** — `OwnerMilestonePromptShell` + `useOwnerMilestonePrompt` (`apps/web/app/dashboard/projects/[id]/_components/owner-milestone-prompt.tsx`), mounted in `apps/web/app/dashboard/projects/[id]/layout.tsx` (owner gate via `GetProjectUseCase`); sessionStorage dismiss per milestone type; optional `milestonePayload` query (base64url JSON) |
 | `emitter-wiring` | **complete** — `prd_created` (`clarification-chat`), `prd_updated` (`contextual-refinement-panel`), `prd_shared` (`prd-viewer`), `prd_viewed` (enter PRD tab in `project-workspace` after `await fetchVersions`) |
-| `tests-state-finalization` | **complete** — Vitest smoke (`apps/web/app/dashboard/projects/owner-milestone-prompt-shell.test.tsx`), `pnpm typecheck` + `pnpm build` clean; `orchestration.steps["fa-owner-milestone-feedback--milestone-detection-and-prompt"]` = **`complete`**; `sign-up-usecase.test.ts` conflict-marker cleanup |
+| `tests-state-finalization` | **complete** locally on branch — Vitest smoke (`apps/web/app/dashboard/projects/owner-milestone-prompt-shell.test.tsx`), `pnpm typecheck` + `pnpm build`; merge **blocked** until an open tracking PR exists |
 
 ### Governance artifacts (milestone slice)
 
@@ -90,9 +90,9 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 - **`tests-state-finalization`**: `apps/web/src/infrastructure/payments/checkout-session-webhook-processor.test.ts`; fixed `sign-up-usecase.test.ts` mocks to return `CreditBalance` (`amount`) not `{ balance }`.
 - **`docs/state`**: pipeline step marked `complete`; tracking PR **#100** / branch **`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778624552412`**.
 
-**Owner milestone slice (tracking PR #101):**
+**Owner milestone slice (tracking PR #101 — PR currently closed):**
 
-- UI + emitter wiring + **tests-state-finalization**: milestone shell tests; bookkeeping in `docs/state/status.json` `fa_owner_milestone_feedback`; pipeline step **`complete`**.
+- Branch work: emitter wiring + **`owner-milestone-prompt-shell.test.tsx`** Vitest smoke; **`docs/state/status.json`** reflects **blocked** pending reopened/replaced tracking PR.
 
 ## Safest next task
 
@@ -102,7 +102,7 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 
 **Owner milestone (#101):**
 
-1. **Merge prep:** **`gh pr ready 101 --repo romain-zt/zedos.app`** after confirming CI passes on the tracking branch push.
+1. **Human:** reopen **https://github.com/romain-zt/zedos.app/pull/101** **or** open a **new draft tracking PR** (base **`main`**, head **`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710`**). Latest commits already pushed to that branch. Then run **`gh pr ready`** on the **active** tracking PR once CI passes.
 
 ## Key files (milestone detection slice)
 

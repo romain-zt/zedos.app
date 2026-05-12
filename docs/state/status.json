@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-12",
-  "current_phase": "fa-owner-milestone-feedback--milestone-detection-and-prompt--complete",
+  "current_phase": "fa-owner-milestone-feedback--milestone-detection-and-prompt--blocked-pr-101-closed",
   "credit_system_tracking_phase": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
@@ -27,7 +27,7 @@
       "fa-user-stories--story-generation-from-feature-split": "complete",
       "fa-test-first-workflows--task-splitting-with-prompts": "complete",
       "fa-read-only-sharing--anonymous-read-surface": "complete",
-      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "complete",
+      "fa-owner-milestone-feedback--milestone-detection-and-prompt": "blocked",
       "fa-read-only-sharing--revoke-link-and-noindex": "complete",
       "fa-guided-clarification--contextual-tab-refinement": "complete",
       "fa-guided-clarification--question-preview-and-progress-score": "complete",
@@ -39,7 +39,7 @@
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1,
-      "fa-owner-milestone-feedback--milestone-detection-and-prompt": 1
+      "fa-owner-milestone-feedback--milestone-detection-and-prompt": 2
     }
   },
   "cursor_self_improve": {
@@ -118,15 +118,15 @@
     }
   },
   "fa_owner_milestone_feedback": {
-    "milestone_detection_and_prompt": "complete",
+    "milestone_detection_and_prompt": "blocked",
     "tracking_pr": 101,
     "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710",
     "prior_tracking_pr": 92,
     "prior_tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616264079",
     "prior_milestone_detection_and_prompt_status": "blocked",
-    "blocker": null,
+    "blocker": "NEED_HUMAN: GitHub PR #101 (tracking branch orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710) was closed without merge; automation token cannot reopen. Reopen PR #101 or open a replacement draft tracking PR targeting main with head = this branch so pr-cascade can merge; then run gh pr ready on the active PR.",
     "prior_blocker": "NEED_HUMAN: Approve proposed Implementation Plan (Iteration 1 contracts stack) plus chat-level PIS approval before emitting code under packages/ or apps/web/.",
-    "progress_note": "tests-state-finalization complete (2026-05-12): owner-milestone-prompt-shell Vitest smoke tests; stable useRouter mock + router.replace sync clears milestonePayload in tests; sign-up test merge-artifact cleanup. pnpm typecheck + pnpm build clean. Marked orchestration step complete; gh pr ready 101 when CI green.",
+    "progress_note": "tests-state-finalization done on tracking branch (2026-05-12): owner-milestone-prompt-shell Vitest smoke; pnpm typecheck + pnpm build clean. Integration blocked: GitHub PR #101 closed without merge (cannot reopen via agent token)—need human to reopen PR #101 or open replacement draft tracking PR (base main, head this branch); then gh pr ready on active PR.",
     "user_story": "docs/execution/user-stories/owner-milestone-feedback--milestone-detection-and-prompt--v0.md",
     "implementation_plan": "docs/execution/plans/owner-milestone-feedback--milestone-detection-and-prompt--v0.plan.md",
     "milestone_detection_and_prompt_impl": {
@@ -207,8 +207,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Owner milestone feedback slice complete (tracking PR #101); run gh pr ready 101 after CI. Credits: configure STRIPE_WEBHOOK_SECRET in deployment. Payments (#102) blocked until slice ready-for-user-stories.",
-  "orchestration_blocker": "NEED_HUMAN: fa-payments--manual-credit-pack-checkout blocked — parent scope slice docs/product/scope-slices/payments--manual-credit-pack-checkout.md is exploratory / NOT READY (UX States, Data Touched, readiness checklist incomplete). Refine + promote to ready-for-user-stories before User Story + approved Implementation Plan per execution-bridge §5–§9. orch-credit-system prerequisite is complete.",
+  "next_action": "Owner milestone (#101): human must reopen GitHub PR #101 or create a new draft tracking PR (main ← orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624614710); agent pushed latest commits branch-side. Credits: configure STRIPE_WEBHOOK_SECRET. Payments (#102): slice not ready-for-user-stories.",
+  "orchestration_blocker": "NEED_HUMAN: fa-owner-milestone-feedback--milestone-detection-and-prompt — PR #101 closed without merge (reopen or replace tracking PR); OR fa-payments--manual-credit-pack-checkout blocked — parent scope slice payments--manual-credit-pack-checkout.md is exploratory / NOT READY. Refine + promote payments slice before User Story + Plan. orch-credit-system prerequisite complete.",
   "phases": {
     "0": {
       "status": "in-progress-user-owned",
