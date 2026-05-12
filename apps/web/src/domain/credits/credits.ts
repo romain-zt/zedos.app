@@ -87,6 +87,17 @@ export interface CreditTransaction {
   createdAt: Date;
 }
 
+/** Default matches `GRACE_CREDIT_CEILING` when env is unset (see `lib/credits.ts`). */
+export const DEFAULT_GRACE_CREDIT_CEILING = 20;
+
+/**
+ * Result of balancing a deduct against locked user row state (`FOR UPDATE` path).
+ */
+export type CreditDeductionDecision =
+  | { kind: 'proceed'; newBalance: number; willActivateGrace: false }
+  | { kind: 'proceed-with-grace'; newBalance: number; willActivateGrace: true }
+  | { kind: 'reject'; currentBalance: number; cost: number };
+
 /**
  * Credit Check Result - used to determine if an operation can proceed
  */
