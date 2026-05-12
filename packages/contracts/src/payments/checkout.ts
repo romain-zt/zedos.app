@@ -30,3 +30,14 @@ export const VerifySessionResponseSchema = z.object({
 });
 
 export type VerifySessionResponse = z.infer<typeof VerifySessionResponseSchema>;
+
+/**
+ * Normalized fields read from Stripe checkout.sessions.retrieve for POST /api/stripe/verify.
+ */
+export const CheckoutSessionStripeVerifySchema = z.object({
+  payment_status: z.enum(['unpaid', 'paid', 'no_payment_required']),
+  metadata: z.record(z.string(), z.string()).optional(),
+  paymentIntentId: z.string().nullable(),
+});
+
+export type CheckoutSessionStripeVerify = z.infer<typeof CheckoutSessionStripeVerifySchema>;
