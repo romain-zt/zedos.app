@@ -18,6 +18,12 @@ const trackingBase = (process.env.ORCHESTRATOR_TRACKING_BASE ?? "main").trim() |
 /** When set, the orchestrator runs as a worker for this specific step ID only (dispatched by coordinator). */
 const stepId = process.env.STEP_ID?.trim() || "";
 
+/**
+ * Maximum number of consecutive remediation runs before the orchestrator auto-blocks a step.
+ * Prevents infinite agent-refire loops when an agent keeps exploring without committing.
+ */
+const MAX_REMEDIATION_RUNS = 5;
+
 if (!orchestratorEnabled) {
   console.log("⏸️  ORCHESTRATOR_ENABLED=false — paused. Set it to 'true' to resume.");
   process.exit(0);
@@ -329,6 +335,8 @@ interface StatusJson {
   orchestration?: {
     steps?: Record<string, PhaseStatus>;
     blocker?: string;
+    /** Per-step count of consecutive remediation runs. Reset to 0 on success. Used as circuit-breaker against infinite agent loops. */
+    remediation_counts?: Record<string, number>;
   };
   phase3?: {
     p0?: PhaseStatus;
@@ -750,6 +758,8 @@ function syncBlockedFromRemoteToMain(step: string, remoteRev: string): boolean {
   applyBlockedMirror(mainS, remoteS, step);
   writeStatus(mainS);
   try {
+    gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
+    gitExec(`config user.name "github-actions[bot]"`);
     gitExec(`add docs/state/status.json`);
     gitExec(`commit -m "chore(orchestrator): mirror blocked state for ${step} from agent branch [skip ci]"`);
     gitExec(`push`);
@@ -800,6 +810,8 @@ function resetInProgress(stepId: string): void {
   writeStatus(current);
 
   try {
+    gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
+    gitExec(`config user.name "github-actions[bot]"`);
     gitExec(`add docs/state/status.json`);
     gitExec(`commit -m "chore(orchestrator): reset ${stepId} from in-progress to not-started (agent failed) [skip ci]"`);
     gitExec(`push`);
@@ -1183,7 +1195,52 @@ async function mainOrchestrator(): Promise<void> {
     if (currentStepStatus === "in-progress") {
       const draftPR = findDraftTrackingPR(stepId);
       if (draftPR) {
-        console.log(`🔁 Remediation: "${stepId}" in-progress — re-using draft PR #${draftPR.number}.`);
+        // Circuit breaker: auto-block the step after too many consecutive remediation attempts
+        // to prevent the cron from endlessly refiring an agent that only explores without committing.
+        if (!status.orchestration) status.orchestration = {};
+        if (!status.orchestration.remediation_counts) status.orchestration.remediation_counts = {};
+        const prevCount = status.orchestration.remediation_counts[stepId] ?? 0;
+        const remCount = prevCount + 1;
+        status.orchestration.remediation_counts[stepId] = remCount;
+
+        if (remCount > MAX_REMEDIATION_RUNS) {
+          const blocker = `NEED_HUMAN: step "${stepId}" exceeded ${MAX_REMEDIATION_RUNS} remediation runs (agent kept exploring without committing). Review the Cursor agent dashboard and reset manually once the underlying issue is resolved.`;
+          console.error(`\n❌ Circuit breaker triggered for "${stepId}" (${remCount} runs > limit ${MAX_REMEDIATION_RUNS}).`);
+          console.error(`   Auto-blocking. Blocker: ${blocker}`);
+          writeCanonicalStepState(status, stepId, "blocked");
+          if (!status.orchestration) status.orchestration = {};
+          status.orchestration.blocker = blocker;
+          writeStatus(status);
+          try {
+            gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
+            gitExec(`config user.name "github-actions[bot]"`);
+            gitExec(`add docs/state/status.json`);
+            gitExec(
+              `commit -m "chore(orchestrator): auto-block ${stepId} after ${MAX_REMEDIATION_RUNS} remediation attempts [skip ci]"`,
+            );
+            gitExec(`push`);
+            console.log(`📌 Auto-blocked "${stepId}" — orchestrator will skip it on next run.`);
+          } catch (err) {
+            console.warn("⚠️  Could not commit auto-block state (non-fatal):", err);
+          }
+          process.exit(2);
+        }
+
+        // Persist incremented counter so concurrent cron ticks can see it.
+        writeStatus(status);
+        try {
+          gitExec(`config user.email "github-actions[bot]@users.noreply.github.com"`);
+          gitExec(`config user.name "github-actions[bot]"`);
+          gitExec(`add docs/state/status.json`);
+          gitExec(
+            `commit -m "chore(orchestrator): remediation run ${remCount}/${MAX_REMEDIATION_RUNS} for ${stepId} [skip ci]"`,
+          );
+          gitExec(`push`);
+        } catch (err) {
+          console.warn("⚠️  Could not persist remediation count (non-fatal):", err);
+        }
+
+        console.log(`🔁 Remediation ${remCount}/${MAX_REMEDIATION_RUNS}: "${stepId}" in-progress — re-using draft PR #${draftPR.number}.`);
         validateRunnableStep(stepId);
         const preflightOk = await runPreflight(stepId);
         if (!preflightOk) {
