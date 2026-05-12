@@ -35,12 +35,13 @@
       "fa-user-stories--story-generation-from-feature-split--db": "complete",
       "fa-user-stories--story-generation-from-feature-split--impl": "complete",
       "fa-payments--manual-credit-pack-checkout": "blocked",
-      "fa-owner-milestone-feedback--feedback-capture-and-attribution": "not-started"
+      "fa-owner-milestone-feedback--feedback-capture-and-attribution": "blocked"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1
-    }
+    },
+    "blocker": "NEED_HUMAN: fa-owner-milestone-feedback--feedback-capture-and-attribution — scope slice not ready-for-user-stories; see fa_owner_milestone_feedback.feedback_capture_and_attribution.blocker"
   },
   "cursor_self_improve": {
     "status": "complete",
