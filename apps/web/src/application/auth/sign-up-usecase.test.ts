@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SignUpUseCase } from './sign-up-usecase';
 import { ok, err } from '@repo/result';
 import { ValidationError, DatabaseError } from '@shared/errors/application-error';
-import { Email } from '@domain/user/user';
+import { CreditBalance } from '@domain/credits/credits';
+import { UserId } from '@domain/user/user';
+
+const starterCreditBalance = (amount: number, userId: string) =>
+  new CreditBalance(new UserId(userId), amount);
 
 const makeValidUser = () => ({
   id: 'user-123',
@@ -44,7 +48,9 @@ describe('SignUpUseCase', () => {
   it('creates a new user successfully', async () => {
     userRepo.findByEmail.mockResolvedValue(err(new ValidationError('Not found')));
     userRepo.create.mockResolvedValue(ok(makeValidUser()));
-    creditsRepo.addCredits.mockResolvedValue(ok({ balance: 20 }));
+    creditsRepo.addCredits.mockImplementation(async (uid: string) =>
+      ok(starterCreditBalance(20, uid))
+    );
 
     const result = await useCase.execute({
       email: 'new@example.com',
@@ -128,7 +134,9 @@ describe('SignUpUseCase', () => {
     const user = makeValidUser();
     userRepo.findByEmail.mockResolvedValue(err(new ValidationError('Not found')));
     userRepo.create.mockResolvedValue(ok(user));
-    creditsRepo.addCredits.mockResolvedValue(ok({ balance: 20 }));
+    creditsRepo.addCredits.mockImplementation(async (uid: string) =>
+      ok(starterCreditBalance(20, uid))
+    );
 
     const result = await useCase.execute({
       email: 'test@example.com',

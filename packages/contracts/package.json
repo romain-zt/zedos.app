@@ -11,6 +11,7 @@
     "./auth": "./src/auth/index.ts",
     "./credits": "./src/credits/index.ts",
     "./payments": "./src/payments/index.ts",
+    "./payments/webhook": "./src/payments/webhook.ts",
     "./project": "./src/project/index.ts",
     "./prd": "./src/prd/index.ts",
     "./adr": "./src/adr/index.ts",
