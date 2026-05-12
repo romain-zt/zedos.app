@@ -1,4 +1,5 @@
 import { pgTable, text, integer, timestamp, unique, index } from 'drizzle-orm/pg-core';
+import type { PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import { randomUUID } from 'node:crypto';
 import { projects } from './projects';
 import { prdVersions } from './prd-versions';
@@ -38,3 +39,13 @@ export type FeatureSplit = typeof featureSplits.$inferSelect;
 export type NewFeatureSplit = typeof featureSplits.$inferInsert;
 export type FeatureSplitCluster = typeof featureSplitClusters.$inferSelect;
 export type NewFeatureSplitCluster = typeof featureSplitClusters.$inferInsert;
+
+/**
+ * Drizzle update `.set()` only accepts keys from `$inferInsert`; columns with DB defaults
+ * (`status`, `updatedAt`, etc.) are often omitted from that union. Bridge here (one cast) instead of `as any` at call sites.
+ */
+export function featureSplitSetUpdate(
+  patch: Pick<FeatureSplit, 'status' | 'updatedAt'>
+): PgUpdateSetSource<typeof featureSplits> {
+  return patch as PgUpdateSetSource<typeof featureSplits>;
+}

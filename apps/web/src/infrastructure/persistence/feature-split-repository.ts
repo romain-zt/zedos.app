@@ -11,12 +11,12 @@ import {
   db,
   featureSplits,
   featureSplitClusters,
+  featureSplitSetUpdate,
   eq,
   and,
   asc,
   type NewFeatureSplitRow,
   type NewFeatureSplitClusterRow,
-  type FeatureSplitUpdate,
 } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
@@ -149,19 +149,17 @@ export class DrizzleFeatureSplitRepository implements IFeatureSplitRepository {
 
         if (!existing) {
           const newSplit: NewFeatureSplitRow = {
-            id: randomUUID(),
             projectId,
             sourcePrdVersionId,
             status: 'draft',
             updatedAt: new Date(),
           };
-          const [inserted] = await tx.insert(featureSplits).values(newSplit as any).returning();
+          const [inserted] = await tx.insert(featureSplits).values(newSplit).returning();
           existing = inserted;
         } else {
-          const updateData: FeatureSplitUpdate = { status: 'draft', updatedAt: new Date() };
           const [updated] = await tx
             .update(featureSplits)
-            .set(updateData as any)
+            .set(featureSplitSetUpdate({ status: 'draft', updatedAt: new Date() }))
             .where(eq(featureSplits.id, existing.id))
             .returning();
           existing = updated;
@@ -184,7 +182,7 @@ export class DrizzleFeatureSplitRepository implements IFeatureSplitRepository {
 
         const insertedClusters =
           clusterRows.length > 0
-            ? await tx.insert(featureSplitClusters).values(clusterRows as any).returning()
+            ? await tx.insert(featureSplitClusters).values(clusterRows).returning()
             : [];
 
         return mapToDomain(existing, insertedClusters);
@@ -199,10 +197,9 @@ export class DrizzleFeatureSplitRepository implements IFeatureSplitRepository {
 
   async confirm(id: string): Promise<Result<FeatureSplitDomain, ApplicationError>> {
     try {
-      const confirmUpdate: FeatureSplitUpdate = { status: 'confirmed', updatedAt: new Date() };
       const [updated] = await db
         .update(featureSplits)
-        .set(confirmUpdate as any)
+        .set(featureSplitSetUpdate({ status: 'confirmed', updatedAt: new Date() }))
         .where(eq(featureSplits.id, id))
         .returning();
 

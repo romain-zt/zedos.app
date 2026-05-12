@@ -126,7 +126,7 @@ export interface PurchaseUpdate {
   status?: string;
 }
 
-// FeatureSplit insert type
+/** feature_splits insert — explicit shape; Drizzle $inferInsert is unreliable across package boundaries. */
 export interface NewFeatureSplitRow {
   id?: string;
   projectId: string;
@@ -136,13 +136,7 @@ export interface NewFeatureSplitRow {
   updatedAt?: Date;
 }
 
-// FeatureSplit update type
-export interface FeatureSplitUpdate {
-  status?: string;
-  updatedAt?: Date;
-}
-
-// FeatureSplitCluster insert type
+/** feature_split_clusters insert */
 export interface NewFeatureSplitClusterRow {
   id?: string;
   featureSplitId: string;
