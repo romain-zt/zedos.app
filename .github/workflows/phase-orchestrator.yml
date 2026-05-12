@@ -59,6 +59,7 @@ jobs:
       - name: Install deps
         run: npm install --prefix .github/scripts
 
+      # Prints dashboard + SSE URLs immediately after the cloud run starts; also appends links to the job summary.
       - name: Run phase orchestrator
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}

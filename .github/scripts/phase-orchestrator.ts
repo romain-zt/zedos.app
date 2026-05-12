@@ -1,4 +1,4 @@
-import { Agent, CursorAgentError } from "@cursor/sdk";
+import { Agent, CursorAgentError, type RunResult } from "@cursor/sdk";
 import { buildCursorCloudOptions } from "./cursor-sdk-options";
 import fs from "node:fs";
 import path from "node:path";
@@ -851,6 +851,53 @@ const PHASE_REQUIREMENTS: Record<string, PhaseRequirements> = {
   },
 };
 
+/** GitHub Actions requires % / CR / LF escaping in workflow commands. */
+function githubNoticeBody(text: string): string {
+  return text.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+}
+
+/** Log + job summary + ::notice so CI shows a direct link while the cloud run is in progress. */
+function emitCursorCloudRunTelemetry(args: { label: string; agentId: string; runId: string }): void {
+  const { label, agentId, runId } = args;
+  const dashboardUrl = `https://cursor.com/agents/${agentId}`;
+  const streamUrl = `https://api.cursor.com/v1/agents/${agentId}/runs/${runId}/stream`;
+
+  console.log(`\n📎 Cursor cloud agent — ${label}`);
+  console.log(`   Dashboard : ${dashboardUrl}`);
+  console.log(`   Run id    : ${runId}`);
+  console.log(`   Stream API: ${streamUrl}`);
+
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+  if (summaryPath) {
+    const md =
+      `### Cursor cloud agent — ${label}\n\n` +
+      `- [Open in Cursor](${dashboardUrl})\n` +
+      `- Run id: \`${runId}\`\n` +
+      `- Agent id: \`${agentId}\`\n` +
+      `- Stream (SSE, needs \`CURSOR_API_KEY\`): \`${streamUrl}\`\n\n`;
+    fs.appendFileSync(summaryPath, md);
+  }
+
+  console.log(
+    `::notice title=Cursor cloud agent::${githubNoticeBody(`${label}: ${dashboardUrl}`)}`,
+  );
+}
+
+/**
+ * Like `Agent.prompt`, but emits agent/run URLs as soon as the cloud run starts (links stay valid for hours).
+ */
+async function runOneCloudPrompt(message: string, label: string): Promise<RunResult> {
+  const opts = buildCursorCloudOptions(apiKey!, repo!);
+  const agent = await Agent.create(opts);
+  try {
+    const run = await agent.send(message);
+    emitCursorCloudRunTelemetry({ label, agentId: run.agentId, runId: run.id });
+    return await run.wait();
+  } finally {
+    await agent[Symbol.asyncDispose]();
+  }
+}
+
 function preflightRequirementsForStep(stepId: string): PhaseRequirements | undefined {
   if (stepId !== "__slice__" && stepId in PHASE_REQUIREMENTS) return PHASE_REQUIREMENTS[stepId];
   const row = pipelineStepById(stepId);
@@ -914,7 +961,7 @@ When done, commit with:
   git push`.trim();
 
   try {
-    const result = await Agent.prompt(setupPrompt, buildCursorCloudOptions(apiKey!, repo!));
+    const result = await runOneCloudPrompt(setupPrompt, `preflight:${nextStep}`);
 
     if (result.status === "error") {
       console.error(`❌ Preflight setup agent failed for "${nextStep}".`);
@@ -1034,7 +1081,10 @@ async function executeAgentRun(step: string, trackingPR: TrackingPR, remediate: 
   console.log(`🚀 Firing Cursor cloud agent for ${step}${remediate ? " (remediation)" : ""}…\n`);
 
   try {
-    const result = await Agent.prompt(prompt, buildCursorCloudOptions(apiKey!, repo!));
+    const result = await runOneCloudPrompt(
+      prompt,
+      remediate ? `${step} (remediation)` : step,
+    );
 
     if (result.status === "error") {
       console.error(`\n❌ Agent run for "${step}" failed. Check the Cursor dashboard.`);
