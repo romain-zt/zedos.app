@@ -43,3 +43,8 @@ export const userStoryLines = pgTable(
     index('user_story_lines_corpus_sort_idx').on(t.corpusId, t.sortOrder),
   ]
 );
+
+export type UserStoryCorpus = typeof userStoryCorpora.$inferSelect;
+export type NewUserStoryCorpus = typeof userStoryCorpora.$inferInsert;
+export type UserStoryLine = typeof userStoryLines.$inferSelect;
+export type NewUserStoryLine = typeof userStoryLines.$inferInsert;
