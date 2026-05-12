@@ -15,7 +15,8 @@ export type OperationType =
   | 'adr_authoring'
   | 'feature_area'
   | 'scope_slice'
-  | 'test_plan';
+  | 'test_plan'
+  | 'user_story_generation';
 
 export type CreditTransactionType = 'grant' | 'purchase' | 'auto_reload' | 'consumption';
 

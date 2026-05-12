@@ -25,6 +25,9 @@ export enum ErrorCode {
   // Credits
   INSUFFICIENT_CREDITS = 'INSUFFICIENT_CREDITS',
   GRACE_PERIOD_EXCEEDED = 'GRACE_PERIOD_EXCEEDED',
+
+  /** Optimistic concurrency / stale client state */
+  CONFLICT = 'CONFLICT',
   
   // External Service
   AI_SERVICE_ERROR = 'AI_SERVICE_ERROR',
@@ -152,5 +155,17 @@ export class DatabaseError extends ApplicationError {
       details,
     });
     Object.setPrototypeOf(this, DatabaseError.prototype);
+  }
+}
+
+export class ConflictError extends ApplicationError {
+  constructor(message: string = 'Resource was updated elsewhere', details?: Record<string, any>) {
+    super({
+      code: ErrorCode.CONFLICT,
+      message,
+      statusCode: 409,
+      details,
+    });
+    Object.setPrototypeOf(this, ConflictError.prototype);
   }
 }
