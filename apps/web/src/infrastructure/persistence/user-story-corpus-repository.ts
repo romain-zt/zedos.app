@@ -14,6 +14,7 @@ import {
   eq,
   and,
   asc,
+  sql,
 } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
@@ -106,19 +107,21 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
         if (existing) {
           corpusId = existing.id;
           await tx.delete(userStoryLines).where(eq(userStoryLines.corpusId, corpusId));
-          await tx
-            .update(userStoryCorpora)
-            .set({ updatedAt: now })
-            .where(eq(userStoryCorpora.id, corpusId));
+          await tx.execute(
+            sql`UPDATE user_story_corpora SET updated_at = ${now} WHERE id = ${corpusId}`
+          );
         } else {
-          corpusId = randomUUID();
-          await tx.insert(userStoryCorpora).values({
-            id: corpusId,
-            projectId,
-            featureSplitClusterId,
-            createdAt: now,
-            updatedAt: now,
-          });
+          const [inserted] = await tx
+            .insert(userStoryCorpora)
+            .values({
+              projectId,
+              featureSplitClusterId,
+            })
+            .returning({ id: userStoryCorpora.id });
+          if (!inserted) {
+            throw new Error('Insert user_story_corpora returned no row');
+          }
+          corpusId = inserted.id;
         }
 
         if (lines.length > 0) {
