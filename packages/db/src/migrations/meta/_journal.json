@@ -50,6 +50,13 @@
       "when": 1778615760000,
       "tag": "0006_add_review_ready_at_to_user_story_corpora",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1747113697000,
+      "tag": "0007_fix_updated_at_defaults",
+      "breakpoints": true
     }
   ]
 }
