@@ -133,13 +133,13 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
 
         if (lines.length > 0) {
           const lineInsertRows = lines.map((l) => ({
-              id: l.id ?? randomUUID(),
-              sortOrder: l.sortOrder,
-              title: l.title,
-              body: l.body,
-              archivedAt: l.archivedAt ?? null,
-              draftMarker: l.draftMarker ?? null,
-            }));
+            id: l.id ?? randomUUID(),
+            sortOrder: l.sortOrder,
+            title: l.title,
+            body: l.body,
+            archivedAt: l.archivedAt ?? null,
+            draftMarker: l.draftMarker ?? null,
+          }));
 
           await tx.execute(
             sql`
