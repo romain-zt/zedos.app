@@ -115,6 +115,7 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
             .values({
               projectId,
               featureSplitClusterId,
+              updatedAt: new Date(),
             })
             .returning();
           if (!inserted) {
