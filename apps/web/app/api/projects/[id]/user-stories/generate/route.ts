@@ -13,7 +13,10 @@ import { DrizzleFeatureSplitRepository } from '@infrastructure/persistence/featu
 import { DrizzleUserStoryCorpusRepository } from '@infrastructure/persistence/user-story-corpus-repository';
 import { UserStoryDraftGeneratorAdapter } from '@infrastructure/ai/user-story-draft-generator-adapter';
 import { ApplicationError } from '@shared/errors/application-error';
+import { createLogger } from '@shared/observability/logger';
 import { mapUserStoryCorpusDomainToDto } from '../_lib/map-corpus-to-contract';
+
+const logger = createLogger({ operation: 'user-stories/generate' });
 
 function toErrorResponse(e: ApplicationError) {
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -55,6 +58,12 @@ export async function POST(
 
   const body = { corpus: mapUserStoryCorpusDomainToDto(result.unwrap()) };
   const out = GenerateUserStoriesResponseSchema.safeParse(body);
-  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (!out.success) {
+    logger.error('Outbound DTO validation failed for user-stories/generate', {
+      projectId: params.id,
+      errors: out.error.flatten(),
+    });
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
   return NextResponse.json(out.data);
 }
