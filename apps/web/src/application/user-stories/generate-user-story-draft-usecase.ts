@@ -39,12 +39,15 @@ export class GenerateUserStoryDraftUseCase {
     const cluster = clusterResult.unwrap();
 
     if (mode === 'template') {
-      const body = [cluster.valueLine, cluster.boundaryCue].filter(Boolean).join('\n\n');
+      const bodyParts = [cluster.valueLine, cluster.boundaryCue].filter((s) => s && s.trim().length > 0);
+      const bodyText = bodyParts.join('\n\n');
+      const title = cluster.label.trim() || 'Feature story';
+      const body = bodyText.length > 0 ? bodyText : title;
       return this.corpusRepository.save(projectId, featureSplitClusterId, [
         {
           sortOrder: 0,
-          title: cluster.label,
-          body: body.length > 0 ? body : cluster.label,
+          title,
+          body,
         },
       ]);
     }
