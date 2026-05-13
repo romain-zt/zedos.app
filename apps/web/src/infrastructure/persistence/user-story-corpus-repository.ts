@@ -116,8 +116,6 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
             .values({
               projectId,
               featureSplitClusterId,
-              createdAt: now,
-              updatedAt: now,
             })
             .returning({ id: userStoryCorpora.id });
           if (!inserted) {
@@ -136,8 +134,6 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
               body: l.body,
               archivedAt: l.archivedAt ?? null,
               draftMarker: l.draftMarker ?? null,
-              createdAt: now,
-              updatedAt: now,
             }))
           );
         }
