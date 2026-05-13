@@ -20,6 +20,15 @@ import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'UserStoryCorpusRepository' });
 
+/** Narrow first row from `tx.execute` RETURNING without banned casts. */
+function readReturningId(rows: unknown): string | undefined {
+  if (!Array.isArray(rows) || rows.length === 0) return undefined;
+  const row = rows[0];
+  if (typeof row !== 'object' || row === null || !('id' in row)) return undefined;
+  const id = (row as { id: unknown }).id;
+  return typeof id === 'string' ? id : undefined;
+}
+
 function mapLine(
   row: typeof userStoryLines.$inferSelect
 ): UserStoryCorpusDomain['lines'][number] {
@@ -124,11 +133,11 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
               RETURNING id
             `
           );
-          const [inserted] = insertedRows as unknown as Array<{ id: string }>;
-          if (!inserted) {
+          const insertedId = readReturningId(insertedRows);
+          if (!insertedId) {
             throw new Error('Insert user_story_corpora returned no row');
           }
-          corpusId = inserted.id;
+          corpusId = insertedId;
         }
 
         if (lines.length > 0) {
