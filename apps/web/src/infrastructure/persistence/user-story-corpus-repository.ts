@@ -102,21 +102,29 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
           );
 
         let corpusId: string;
+        const now = new Date();
 
         if (existing) {
           corpusId = existing.id;
           await tx.delete(userStoryLines).where(eq(userStoryLines.corpusId, corpusId));
           await tx.execute(
-            sql`UPDATE user_story_corpora SET updated_at = ${new Date()} WHERE id = ${corpusId}`
+            sql`UPDATE user_story_corpora SET updated_at = ${now} WHERE id = ${corpusId}`
           );
         } else {
-          const [inserted] = await tx
-            .insert(userStoryCorpora)
-            .values({
-              projectId,
-              featureSplitClusterId,
-            })
-            .returning();
+          const insertedRows = await tx.execute(
+            sql`
+              INSERT INTO user_story_corpora (
+                id,
+                project_id,
+                feature_split_cluster_id,
+                created_at,
+                updated_at
+              )
+              VALUES (${randomUUID()}, ${projectId}, ${featureSplitClusterId}, ${now}, ${now})
+              RETURNING id
+            `
+          );
+          const [inserted] = insertedRows as unknown as Array<{ id: string }>;
           if (!inserted) {
             throw new Error('Insert user_story_corpora returned no row');
           }
@@ -124,16 +132,47 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
         }
 
         if (lines.length > 0) {
-          await tx.insert(userStoryLines).values(
-            lines.map((l) => ({
+          const lineInsertRows = lines.map((l) => ({
               id: l.id ?? randomUUID(),
-              corpusId,
               sortOrder: l.sortOrder,
               title: l.title,
               body: l.body,
               archivedAt: l.archivedAt ?? null,
               draftMarker: l.draftMarker ?? null,
-            }))
+            }));
+
+          await tx.execute(
+            sql`
+              INSERT INTO user_story_lines (
+                id,
+                corpus_id,
+                sort_order,
+                title,
+                body,
+                archived_at,
+                draft_marker,
+                created_at,
+                updated_at
+              )
+              VALUES ${sql.join(
+                lineInsertRows.map(
+                  (line) => sql`
+                    (
+                      ${line.id},
+                      ${corpusId},
+                      ${line.sortOrder},
+                      ${line.title},
+                      ${line.body},
+                      ${line.archivedAt},
+                      ${line.draftMarker},
+                      ${now},
+                      ${now}
+                    )
+                  `
+                ),
+                sql`, `
+              )}
+            `
           );
         }
 
