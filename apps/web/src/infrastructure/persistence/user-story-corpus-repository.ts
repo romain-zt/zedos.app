@@ -119,7 +119,7 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
             })
             .returning({ id: userStoryCorpora.id });
           if (!inserted) {
-            throw new Error('Insert user_story_corpora returned no row');
+            throw new DatabaseError('Insert user_story_corpora returned no row');
           }
           corpusId = inserted.id;
         }
@@ -145,7 +145,9 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
           .from(userStoryCorpora)
           .where(eq(userStoryCorpora.id, corpusId));
 
-        if (!corpusRow) throw new Error('Corpus row missing after save');
+        if (!corpusRow) {
+          throw new DatabaseError('Corpus row missing after save');
+        }
 
         const lineRows = await tx
           .select()
@@ -159,6 +161,9 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
       return ok(saved);
     } catch (error) {
       logger.error('Failed to save user story corpus', error);
+      if (error instanceof DatabaseError) {
+        return err(error);
+      }
       return err(new DatabaseError('Failed to save user story corpus'));
     }
   }
