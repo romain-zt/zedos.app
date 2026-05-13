@@ -21,13 +21,13 @@ payments_tracking_branch: orchestrator/tracking-fa-payments--manual-credit-pack-
 fa_payments_manual_credit_pack_checkout: blocked
 tracking_pr: 100
 parallel_credit_tracking_pr: 98
-milestone_feedback_tracking_pr: 99
+milestone_feedback_tracking_pr: 105
 prior_milestone_feedback_tracking_pr: 97
 parallel_tracking_pr_legacy: 93
 parallel_tracking_pr_legacy_prior_branch: 92
 tracking_branch: orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778624552412
 parallel_credit_tracking_branch: orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778623987568
-milestone_feedback_tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624070943
+milestone_feedback_tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778629075399
 prior_milestone_feedback_tracking_branch: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778623811696
 parallel_tracking_branch_legacy: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616475286
 parallel_tracking_branch_legacy_92: orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778616264079
@@ -77,9 +77,9 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 | `ui` | N/A for this slice |
 | `tests-state-finalization` | **complete** — `route.test.ts` for `POST /api/stripe/webhook` (+ error message expectations); **`checkout-session-webhook-processor.test.ts`** (idempotency, validation, grant path); `packages/contracts` **`webhook.contract.test.ts`**; signup / `SignUpUseCase` tests mock **`CreditBalance`** with **`amount`** (not `{ balance }`); `pnpm typecheck` + `pnpm build` + **`pnpm test`** (apps/web full run / vitest) green |
 
-## Owner milestone feedback — slice layers (tracking PR **#99**)
+## Owner milestone feedback — slice layers (tracking PR **#105**)
 
-- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **complete** on tracking PR **#99** (`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778624070943` → `main`). UI: `OwnerMilestonePromptProvider` in project layout (**owner-only**), emitters for `prd_created` / `prd_updated` / `prd_shared` / `prd_viewed`, `pnpm typecheck` + `pnpm build` clean.
+- **Pipeline step** `fa-owner-milestone-feedback--milestone-detection-and-prompt`: **complete** on tracking PR **#105** (`orchestrator/tracking-fa-owner-milestone-feedback--milestone-detection-and-prompt-1778629075399` → `main`). Same implementation as prior **#99** delivery: `OwnerMilestonePromptProvider` in project layout (**owner-only**), emitters for `prd_created` / `prd_updated` / `prd_shared` / `prd_viewed`, `pnpm typecheck` + `pnpm build` clean.
 
 ### Prior exploratory branch (tracking PR **#97**) — reference
 
@@ -92,7 +92,7 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 | `persistence-use-cases` | **N/A** — no new server use cases for prompt-only surface |
 | `api-routes` | **deferred** — optional; milestone wiring uses client context / layout |
 | `ui` | **complete** — provider + `sessionStorage` dedupe + URL `om`/`omv` + **#97-era** `milestonePayload` / `OwnerMilestonePromptShell` patterns documented for historical comparison |
-| `emitter-wiring` | **complete** (tracking **#99**) — `notifyMilestone` from `clarification-chat.tsx`, `contextual-refinement-panel.tsx`, `prd-viewer.tsx` |
+| `emitter-wiring` | **complete** (tracking **#105** / prior **#99**) — `notifyMilestone` from `clarification-chat.tsx`, `contextual-refinement-panel.tsx`, `prd-viewer.tsx` |
 | `tests-state-finalization` | **complete** (orchestrator gates: root typecheck + build) |
 
 ### Governance artifacts (milestone slice)
@@ -119,10 +119,10 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 - **`tests-state-finalization`** (mainline **#100** path): `apps/web/src/infrastructure/payments/checkout-session-webhook-processor.test.ts`; fixed `sign-up-usecase.test.ts` mocks to return `CreditBalance` (`amount`) not `{ balance }`.
 - **`docs/state`**: pipeline step marked `complete`; tracking PR **#100** / branch **`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778624552412`** (plus parallel **#98** branch merged main).
 
-**Owner milestone slice (tracking PR #99):**
+**Owner milestone slice (tracking PR #105):**
 
 - UI layer + milestone emitters + `docs/state/status.json` / `HANDOFF` updated; orchestration step marked `complete`.
-- **#97** milestone shell / `milestonePayload` / `signalMilestone` bookkeeping preserved above as historical reference; active shipping path is **Provider + `notifyMilestone`** on **#99**.
+- **#97** milestone shell / `milestonePayload` / `signalMilestone` bookkeeping preserved above as historical reference; active shipping path is **Provider + `notifyMilestone`** (stack reconciled on **#105**).
 
 ## Safest next task
 
@@ -132,7 +132,7 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 2. Configure **`STRIPE_WEBHOOK_SECRET`** in deployment for **`POST /api/stripe/webhook`** (operator-owned secret; not set from this repo).
 3. **Deployment (duplicate emphasis):** configure **`STRIPE_WEBHOOK_SECRET`** in the environment for `POST /api/stripe/webhook`.
 
-**Owner milestone (#99):**
+**Owner milestone (#105):**
 
 - No further automated work on this slice unless product changes the prompt UX. If revisiting **#97**-only integrations, prefer **`notifyMilestone`** + **`OwnerMilestonePromptProvider`** at callsites.
 
