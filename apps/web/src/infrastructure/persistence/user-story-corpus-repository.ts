@@ -116,8 +116,6 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
             .values({
               projectId,
               featureSplitClusterId,
-              createdAt: now,
-              updatedAt: now,
             })
             .returning({ id: userStoryCorpora.id });
           if (!inserted) {
@@ -131,7 +129,6 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
         }
 
         if (lines.length > 0) {
-          const lineNow = new Date();
           await tx.insert(userStoryLines).values(
             lines.map((l, i) => ({
               id: l.id ?? randomUUID(),
@@ -141,8 +138,6 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
               body: l.body,
               archivedAt: l.archivedAt ?? null,
               draftMarker: l.draftMarker ?? null,
-              createdAt: lineNow,
-              updatedAt: lineNow,
             }))
           );
           // updated_at has no DB-level DEFAULT until migration 0007 is applied
