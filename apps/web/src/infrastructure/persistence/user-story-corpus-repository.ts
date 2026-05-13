@@ -15,6 +15,8 @@ import {
   and,
   asc,
   sql,
+  type NewUserStoryCorpusRow,
+  type NewUserStoryLineRow,
 } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
@@ -111,69 +113,39 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
             sql`UPDATE user_story_corpora SET updated_at = ${now} WHERE id = ${corpusId}`
           );
         } else {
-          const insertedRows = await tx.execute(
-            sql`
-              INSERT INTO user_story_corpora (
-                id,
-                project_id,
-                feature_split_cluster_id,
-                created_at,
-                updated_at
-              )
-              VALUES (${randomUUID()}, ${projectId}, ${featureSplitClusterId}, ${now}, ${now})
-              RETURNING id
-            `
-          );
-          const [inserted] = insertedRows as unknown as Array<{ id: string }>;
+          const newCorpusId = randomUUID();
+          const newCorpusRow: NewUserStoryCorpusRow = {
+            id: newCorpusId,
+            projectId,
+            featureSplitClusterId,
+            createdAt: now,
+            updatedAt: now,
+          };
+          const [inserted] = await tx
+            .insert(userStoryCorpora)
+            .values(newCorpusRow as typeof userStoryCorpora.$inferInsert)
+            .returning();
           if (!inserted) {
-            throw new Error('Insert user_story_corpora returned no row');
+            throw new DatabaseError('Insert user_story_corpora returned no row');
           }
           corpusId = inserted.id;
         }
 
         if (lines.length > 0) {
-          const lineInsertRows = lines.map((l) => ({
+          const lineRows: NewUserStoryLineRow[] = lines.map((l) => ({
             id: l.id ?? randomUUID(),
+            corpusId,
             sortOrder: l.sortOrder,
             title: l.title,
             body: l.body,
             archivedAt: l.archivedAt ?? null,
             draftMarker: l.draftMarker ?? null,
+            createdAt: now,
+            updatedAt: now,
           }));
-
-          await tx.execute(
-            sql`
-              INSERT INTO user_story_lines (
-                id,
-                corpus_id,
-                sort_order,
-                title,
-                body,
-                archived_at,
-                draft_marker,
-                created_at,
-                updated_at
-              )
-              VALUES ${sql.join(
-                lineInsertRows.map(
-                  (line) => sql`
-                    (
-                      ${line.id},
-                      ${corpusId},
-                      ${line.sortOrder},
-                      ${line.title},
-                      ${line.body},
-                      ${line.archivedAt},
-                      ${line.draftMarker},
-                      ${now},
-                      ${now}
-                    )
-                  `
-                ),
-                sql`, `
-              )}
-            `
-          );
+          await tx
+            .insert(userStoryLines)
+            .values(lineRows as typeof userStoryLines.$inferInsert[]);
         }
 
         const [corpusRow] = await tx
@@ -182,7 +154,7 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
           .where(eq(userStoryCorpora.id, corpusId));
 
         if (!corpusRow) {
-          throw new Error('Corpus row missing after save');
+          throw new DatabaseError('Corpus row missing after save');
         }
 
         const lineRows = await tx
@@ -197,6 +169,9 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
       return ok(saved);
     } catch (error) {
       logger.error('Failed to save user story corpus', error);
+      if (error instanceof DatabaseError) {
+        return err(error);
+      }
       return err(new DatabaseError('Failed to save user story corpus'));
     }
   }
