@@ -14,20 +14,10 @@ import {
   eq,
   and,
   asc,
-  sql,
 } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'UserStoryCorpusRepository' });
-
-/** Narrow first row from `tx.execute` RETURNING without banned casts. */
-function readReturningId(rows: unknown): string | undefined {
-  if (!Array.isArray(rows) || rows.length === 0) return undefined;
-  const row = rows[0];
-  if (typeof row !== 'object' || row === null || !('id' in row)) return undefined;
-  const id = (row as { id: unknown }).id;
-  return typeof id === 'string' ? id : undefined;
-}
 
 function mapLine(
   row: typeof userStoryLines.$inferSelect
@@ -110,78 +100,40 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
             )
           );
 
-        let corpusId: string;
         const now = new Date();
+        let corpusId: string;
 
         if (existing) {
           corpusId = existing.id;
           await tx.delete(userStoryLines).where(eq(userStoryLines.corpusId, corpusId));
-          await tx.execute(
-            sql`UPDATE user_story_corpora SET updated_at = ${now} WHERE id = ${corpusId}`
-          );
+          await tx
+            .update(userStoryCorpora)
+            .set({ updatedAt: now })
+            .where(eq(userStoryCorpora.id, corpusId));
         } else {
-          const insertedRows = await tx.execute(
-            sql`
-              INSERT INTO user_story_corpora (
-                id,
-                project_id,
-                feature_split_cluster_id,
-                created_at,
-                updated_at
-              )
-              VALUES (${randomUUID()}, ${projectId}, ${featureSplitClusterId}, ${now}, ${now})
-              RETURNING id
-            `
-          );
-          const insertedId = readReturningId(insertedRows);
-          if (!insertedId) {
-            throw new Error('Insert user_story_corpora returned no row');
-          }
-          corpusId = insertedId;
+          corpusId = randomUUID();
+          await tx.insert(userStoryCorpora).values({
+            id: corpusId,
+            projectId,
+            featureSplitClusterId,
+            createdAt: now,
+            updatedAt: now,
+          });
         }
 
         if (lines.length > 0) {
-          const lineInsertRows = lines.map((l) => ({
-            id: l.id ?? randomUUID(),
-            sortOrder: l.sortOrder,
-            title: l.title,
-            body: l.body,
-            archivedAt: l.archivedAt ?? null,
-            draftMarker: l.draftMarker ?? null,
-          }));
-
-          await tx.execute(
-            sql`
-              INSERT INTO user_story_lines (
-                id,
-                corpus_id,
-                sort_order,
-                title,
-                body,
-                archived_at,
-                draft_marker,
-                created_at,
-                updated_at
-              )
-              VALUES ${sql.join(
-                lineInsertRows.map(
-                  (line) => sql`
-                    (
-                      ${line.id},
-                      ${corpusId},
-                      ${line.sortOrder},
-                      ${line.title},
-                      ${line.body},
-                      ${line.archivedAt},
-                      ${line.draftMarker},
-                      ${now},
-                      ${now}
-                    )
-                  `
-                ),
-                sql`, `
-              )}
-            `
+          await tx.insert(userStoryLines).values(
+            lines.map((l, i) => ({
+              id: l.id ?? randomUUID(),
+              corpusId,
+              sortOrder: l.sortOrder ?? i,
+              title: l.title,
+              body: l.body,
+              archivedAt: l.archivedAt ?? null,
+              draftMarker: l.draftMarker ?? null,
+              createdAt: now,
+              updatedAt: now,
+            }))
           );
         }
 
@@ -190,9 +142,7 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
           .from(userStoryCorpora)
           .where(eq(userStoryCorpora.id, corpusId));
 
-        if (!corpusRow) {
-          throw new Error('Corpus row missing after save');
-        }
+        if (!corpusRow) throw new Error('Corpus row missing after save');
 
         const lineRows = await tx
           .select()
