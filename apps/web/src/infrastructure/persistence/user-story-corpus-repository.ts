@@ -184,9 +184,9 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
       }
 
       const now = new Date();
-      const ts = now.toISOString();
+      // Drizzle's inferred `.set()` omits nullable `timestamp()` columns here; keep bound `Date` params.
       await db.execute(
-        sql`UPDATE user_story_corpora SET review_ready_at = ${ts}::timestamptz, updated_at = ${ts}::timestamptz WHERE id = ${corpusRow.id}`
+        sql`UPDATE user_story_corpora SET review_ready_at = ${now}, updated_at = ${now} WHERE id = ${corpusRow.id}`
       );
 
       const lineRows = await db

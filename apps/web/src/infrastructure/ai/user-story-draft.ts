@@ -21,6 +21,9 @@ Rules:
 - Each body: Given/When/Then or clear acceptance-style text, max 50000 chars.
 - sortOrder is optional; when omitted, preserve array order starting at 0.
 - Stories must reflect only the cluster scope — do not invent unrelated scope.
+- Each story must describe exactly one distinct user-visible capability or outcome; split overloaded clusters rather than merging unrelated behaviors.
+- Do not paste or lightly restyle raw cluster fields (label/valueLine/boundaryCue JSON or bullets) as the whole story — turn hints into concrete product behaviors an engineer could ship.
+- Every story body must end with observable acceptance signals (what a reviewer could verify manually or via automated checks).
 - Output only the JSON object, no extra text.`;
 
 export async function draftUserStoriesWithAi(input: {
