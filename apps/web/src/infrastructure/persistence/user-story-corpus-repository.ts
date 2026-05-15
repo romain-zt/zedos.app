@@ -14,6 +14,7 @@ import {
   eq,
   and,
   asc,
+  sql,
 } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
@@ -183,10 +184,10 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
       }
 
       const now = new Date();
-      await db
-        .update(userStoryCorpora)
-        .set({ reviewReadyAt: now, updatedAt: now })
-        .where(eq(userStoryCorpora.id, corpusRow.id));
+      // Drizzle v0.38 type inference omits nullable timestamp() columns from .set(); use raw SQL.
+      await db.execute(
+        sql`UPDATE user_story_corpora SET review_ready_at = ${now}, updated_at = ${now} WHERE id = ${corpusRow.id}`
+      );
 
       const [updatedCorpusRow] = await db
         .select()
