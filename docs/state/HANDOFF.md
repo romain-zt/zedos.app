@@ -105,6 +105,28 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 
 - **`db-migration` → `ui`** stack for story generation — complete per PR **#87** tracking branch history.
 
+## User stories — corpus reliability, batch UI, draft quality (tracking PR **#117**)
+
+- **Tracking PR:** **`#117`**, head **`orchestrator/tracking-fa-user-stories--corpus-reliability-batch-quality--impl-1778837270358`** → **`main`**.
+- **Pipeline step:** `fa-user-stories--corpus-reliability-batch-quality--impl` remains **`not-started`** in `docs/state/status.json` until AI prompt hardening, dashboard batch UI, and full gates ship end-to-end.
+- **Anchors:** Implementation Plan `docs/execution/plans/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.plan.md`; User Story `docs/execution/user-stories/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.md`.
+
+| Layer | Status |
+|-------|--------|
+| `db-migration` | **N/A** |
+| `contracts-domain` | **N/A** |
+| `persistence-use-cases` | **complete** — corpus repo `markReviewReady`: SQL `now()` via `db.execute`, refetch row for domain accuracy; template drafts use behavioral scaffold (`GenerateUserStoryDraftUseCase`); unit tests aligned |
+| `api-routes` | **N/A** (reuse `POST …/user-stories/generate`) |
+| AI adapter (`user-story-draft.ts`) | **complete** — system prompt: one distinct user-visible behavior per story, mutual intent separation, body opens with `### User-visible outcome` then acceptance/GWT |
+| `ui` | **pending** — `user-stories-workspace.tsx` batch multi-select + progress + per-cluster error toasts |
+| `tests-state-finalization` | **pending** — set orchestration step **`complete`**, then **`gh pr ready 117 --repo romain-zt/zedos.app`** after CI green |
+
+**Prior run (2026-05-15):** Shipped **`persistence-use-cases`** (single-layer budget); **`pnpm typecheck`**, **`pnpm build`**, targeted Vitest green.
+
+**This run (2026-05-15):** Shipped **AI adapter** — `user-story-draft.ts` system prompt tightened for distinct user-visible behaviors; **`pnpm typecheck`**, **`pnpm build`**, targeted Vitest green.
+
+**Safest next task:** **`user-stories-workspace.tsx`** batch generation UI (`ui` layer), then **`tests-state-finalization`** (mark pipeline step **`complete`** + **`gh pr ready 117`** when gates green).
+
 ## Historical / parallel context
 
 - **Prior milestone tracking:** `fa-services-feature-split--prd-to-feature-split--impl` complete (PR **#75**). Optional remediation branch may still carry post-merge commits — see archive rows in `status.json` if needed.
