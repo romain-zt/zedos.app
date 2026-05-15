@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FadeIn } from '@/components/ui/animate';
@@ -73,6 +73,8 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   const [generatingTemplate, setGeneratingTemplate] = useState(false);
   const [generatingAi, setGeneratingAi] = useState(false);
   const [markingReady, setMarkingReady] = useState(false);
+  /** When non-empty, template / AI actions run for these clusters (sequential). When empty, actions use `selectedClusterId` only. */
+  const [batchClusterIds, setBatchClusterIds] = useState<string[]>([]);
 
   const fetchVersions = useCallback(async () => {
     try {
@@ -160,6 +162,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   useEffect(() => {
     if (selectedVersionId) {
       setSelectedClusterId(null);
+      setBatchClusterIds([]);
       setLines([]);
       fetchSplitsForVersion(selectedVersionId);
     }
@@ -173,6 +176,28 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
 
   const confirmed = selectedVersionId ? confirmedSplitForVersion(splits, selectedVersionId) : null;
   const clusters: FeatureCluster[] = confirmed?.clusters ?? [];
+
+  const batchSet = useMemo(() => new Set(batchClusterIds), [batchClusterIds]);
+
+  const toggleBatchCluster = (clusterId: string) => {
+    setBatchClusterIds((prev) =>
+      prev.includes(clusterId) ? prev.filter((id) => id !== clusterId) : [...prev, clusterId]
+    );
+  };
+
+  const selectAllClustersForBatch = () => {
+    setBatchClusterIds(clusters.map((c) => c.id));
+  };
+
+  const clearBatchClusters = () => {
+    setBatchClusterIds([]);
+  };
+
+  const generationTargets = (): string[] => {
+    if (batchClusterIds.length > 0) return batchClusterIds;
+    if (selectedClusterId) return [selectedClusterId];
+    return [];
+  };
 
   const handleLineChange = (index: number, field: keyof LineDraft, value: string | number) => {
     setLines((prev) => prev.map((line, i) => (i === index ? { ...line, [field]: value } : line)));
@@ -246,31 +271,51 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   };
 
   const handleGenerate = async (mode: 'template' | 'ai') => {
-    if (!selectedClusterId) return;
+    const targets = generationTargets();
+    if (targets.length === 0) {
+      toast.error('Select a cluster to generate, or tick clusters for batch');
+      return;
+    }
     const setBusy = mode === 'template' ? setGeneratingTemplate : setGeneratingAi;
     setBusy(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/user-stories/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ featureSplitClusterId: selectedClusterId, mode }),
-      });
-      const raw = await res.json();
-      if (!res.ok) {
-        if (res.status === 402) {
-          toast.error('Insufficient credits for AI generation');
-        } else {
-          toast.error(raw?.error ?? 'Generation failed');
+      let rawForCurrentView: unknown | null = null;
+      for (let i = 0; i < targets.length; i++) {
+        const clusterId = targets[i];
+        const res = await fetch(`/api/projects/${projectId}/user-stories/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ featureSplitClusterId: clusterId, mode }),
+        });
+        const raw = await res.json();
+        if (!res.ok) {
+          if (res.status === 402) {
+            toast.error('Insufficient credits for AI generation');
+          } else {
+            toast.error(raw?.error ?? `Generation failed (cluster ${i + 1}/${targets.length})`);
+          }
+          return;
         }
-        return;
+        const parsed = GenerateUserStoriesResponseSchema.safeParse(raw);
+        if (!parsed.success) {
+          toast.error(`Unexpected generate response (cluster ${i + 1}/${targets.length})`);
+          return;
+        }
+        if (selectedClusterId && clusterId === selectedClusterId) {
+          rawForCurrentView = parsed.data.corpus;
+        }
       }
-      const parsed = GenerateUserStoriesResponseSchema.safeParse(raw);
-      if (!parsed.success) {
-        toast.error('Unexpected generate response');
-        return;
+      if (rawForCurrentView != null) {
+        applyCorpusResponse(rawForCurrentView);
+      } else if (selectedClusterId && targets.includes(selectedClusterId)) {
+        await fetchCorpus(selectedClusterId);
       }
-      applyCorpusResponse(parsed.data.corpus);
-      toast.success(mode === 'template' ? 'Template story loaded' : 'AI drafts loaded — review and save');
+      const batchLabel = targets.length > 1 ? ` (${targets.length} clusters)` : '';
+      toast.success(
+        mode === 'template'
+          ? `Template stories generated${batchLabel}`
+          : `AI drafts generated${batchLabel} — review and save`
+      );
     } catch {
       toast.error('Network error during generation');
     } finally {
@@ -364,22 +409,64 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
 
             {confirmed && clusters.length > 0 && (
               <div className="space-y-2">
-                <span className="text-sm font-medium">Cluster</span>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-sm font-medium">Cluster</span>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="min-h-[44px]"
+                      onClick={selectAllClustersForBatch}
+                    >
+                      Select all for batch
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="min-h-[44px]"
+                      onClick={clearBatchClusters}
+                      disabled={batchClusterIds.length === 0}
+                    >
+                      Clear batch
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Tick clusters to generate templates or AI drafts for several at once. With none ticked, generation
+                  uses the cluster you open below.
+                  {batchClusterIds.length > 0 ? ` (${batchClusterIds.length} in batch)` : null}
+                </p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {clusters.map((c) => {
                     const active = selectedClusterId === c.id;
+                    const inBatch = batchSet.has(c.id);
                     return (
-                      <button
+                      <div
                         key={c.id}
-                        type="button"
-                        onClick={() => setSelectedClusterId(c.id)}
-                        className={`rounded-lg border p-3 text-left transition-colors min-h-[44px] ${
-                          active ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
-                        }`}
+                        className={`flex gap-2 rounded-lg border p-2 transition-colors ${
+                          active ? 'border-primary bg-primary/5' : 'border-border'
+                        } ${inBatch ? 'ring-1 ring-primary/30' : ''}`}
                       >
-                        <p className="font-medium text-sm">{c.label}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{c.valueLine}</p>
-                      </button>
+                        <label className="flex shrink-0 cursor-pointer items-center justify-center px-1 min-h-[44px] min-w-[44px]">
+                          <input
+                            type="checkbox"
+                            className="h-5 w-5 rounded border-input"
+                            checked={inBatch}
+                            onChange={() => toggleBatchCluster(c.id)}
+                            aria-label={`Include ${c.label} in batch generation`}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedClusterId(c.id)}
+                          className="min-h-[44px] flex-1 text-left rounded-md px-1 py-1 hover:bg-muted/50"
+                        >
+                          <p className="font-medium text-sm">{c.label}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{c.valueLine}</p>
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -392,7 +479,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                   <Button
                     type="button"
                     variant="secondary"
-                    disabled={generatingTemplate || loadingCorpus}
+                    disabled={generatingTemplate || loadingCorpus || generationTargets().length === 0}
                     onClick={() => handleGenerate('template')}
                     className="min-h-[44px] w-full sm:w-auto"
                   >
@@ -405,7 +492,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                   </Button>
                   <Button
                     type="button"
-                    disabled={generatingAi || loadingCorpus}
+                    disabled={generatingAi || loadingCorpus || generationTargets().length === 0}
                     onClick={() => handleGenerate('ai')}
                     className="min-h-[44px] w-full sm:w-auto"
                   >
