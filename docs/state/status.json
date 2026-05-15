@@ -36,7 +36,7 @@
       "fa-user-stories--story-generation-from-feature-split--impl": "complete",
       "fa-payments--manual-credit-pack-checkout": "blocked",
       "fa-owner-milestone-feedback--feedback-capture-and-attribution": "blocked",
-      "fa-user-stories--corpus-reliability-batch-quality--impl": "not-started"
+      "fa-user-stories--corpus-reliability-batch-quality--impl": "in-progress"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
@@ -92,6 +92,20 @@
       "verification": {
         "typecheck": "clean",
         "build": "clean"
+      }
+    },
+    "corpus_reliability_batch_quality_impl": {
+      "tracking_pr": 118,
+      "tracking_branch": "orchestrator/tracking-fa-user-stories--corpus-reliability-batch-quality--impl-1778838044060",
+      "user_story": "docs/execution/user-stories/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.md",
+      "implementation_plan": "docs/execution/plans/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.plan.md",
+      "layer_complete": "persistence-use-cases",
+      "next_layer": "ui",
+      "verified_at": "2026-05-15",
+      "verification": {
+        "typecheck": "clean",
+        "build": "clean",
+        "unit_tests": "apps/web/src/application/user-stories/generate-user-story-draft-usecase.test.ts"
       }
     }
   },

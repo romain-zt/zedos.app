@@ -36,6 +36,14 @@ remediation_note: null
 
 # Cloud Agent State Handoff
 
+## User stories — corpus reliability, batch UI, draft quality (`fa-user-stories--corpus-reliability-batch-quality--impl`)
+
+- **Tracking PR:** **`#118`**, head **`orchestrator/tracking-fa-user-stories--corpus-reliability-batch-quality--impl-1778838044060`** → **`main`**.
+- **Orchestration step:** **`in-progress`** in `orchestration.steps["fa-user-stories--corpus-reliability-batch-quality--impl"]` — **`persistence-use-cases`** layer complete; **`fa_user_stories.corpus_reliability_batch_quality_impl`** in `docs/state/status.json` mirrors verification + **`next_layer`:** **`ui`**.
+- **Anchors:** `docs/product/feature-areas/user-stories.md`, `docs/product/scope-slices/user-stories--story-generation-from-feature-split.md`, user story `docs/execution/user-stories/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.md`, plan `docs/execution/plans/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.plan.md`.
+- **Delivered this run (2026-05-15) — `persistence-use-cases` layer:** `DrizzleUserStoryCorpusRepository.markReviewReady` uses parameterized `sql` with **`Date`** values (Drizzle ORM `.set()` typings omit nullable `review_ready_at` on this schema build); **`user-story-draft.ts`** system prompt tightened for distinct behaviors and observable acceptance; template-mode behavioral scaffold + **`generate-user-story-draft-usecase`** tests updated. Checks on pushed head: **`pnpm typecheck`**, **`pnpm build`**, **`vitest run`** `generate-user-story-draft-usecase.test.ts` — green.
+- **Next eligible layer:** **`ui`** — multi-select + bulk draft generation in **`apps/web/app/dashboard/projects/[id]/_components/user-stories-workspace.tsx`**, then **`tests-state-finalization`** as needed. Do **not** call **`gh pr ready 118`** until the operator checklist marks the orchestration step **`complete`** and gates stay green.
+
 ## Owner milestone feedback — feedback capture and attribution (`fa-owner-milestone-feedback--feedback-capture-and-attribution`)
 
 - **Tracking PR:** **`#104`**, head **`orchestrator/tracking-fa-owner-milestone-feedback--feedback-capture-and-attribution-1778629061701`** → **`main`**.
