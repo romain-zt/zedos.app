@@ -15,7 +15,8 @@ export const userStoryCorpora = pgTable(
       .references(() => featureSplitClusters.id, { onDelete: 'cascade' }),
     reviewReadyAt: timestamp('review_ready_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    // No Drizzle default: DB may lack DEFAULT until migration 0007; inserts must set explicitly.
+    updatedAt: timestamp('updated_at').notNull(),
   },
   (t) => [
     unique('user_story_corpora_cluster_unique').on(t.featureSplitClusterId),
@@ -36,7 +37,7 @@ export const userStoryLines = pgTable(
     archivedAt: timestamp('archived_at'),
     draftMarker: text('draft_marker'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull(),
   },
   (t) => [
     index('user_story_lines_corpus_id_idx').on(t.corpusId),

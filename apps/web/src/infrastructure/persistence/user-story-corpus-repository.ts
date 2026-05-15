@@ -116,16 +116,13 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
             .values({
               projectId,
               featureSplitClusterId,
+              updatedAt: now,
             })
             .returning({ id: userStoryCorpora.id });
           if (!inserted) {
             throw new Error('Insert user_story_corpora returned no row');
           }
           corpusId = inserted.id;
-          // updated_at has no DB-level DEFAULT until migration 0007 is applied
-          await tx.execute(
-            sql`UPDATE user_story_corpora SET updated_at = ${now} WHERE id = ${corpusId}`
-          );
         }
 
         if (lines.length > 0) {
@@ -138,11 +135,8 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
               body: l.body,
               archivedAt: l.archivedAt ?? null,
               draftMarker: l.draftMarker ?? null,
+              updatedAt: now,
             }))
-          );
-          // updated_at has no DB-level DEFAULT until migration 0007 is applied
-          await tx.execute(
-            sql`UPDATE user_story_lines SET updated_at = ${now} WHERE corpus_id = ${corpusId}`
           );
         }
 
