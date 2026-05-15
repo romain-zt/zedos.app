@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { FadeIn } from '@/components/ui/animate';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle,
+  ExternalLink,
   Loader2,
   Plus,
   Sparkles,
@@ -60,6 +62,7 @@ function corpusToDrafts(corpus: UserStoryCorpusDTO): LineDraft[] {
 }
 
 export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWorkspaceProps) {
+  const router = useRouter();
   const [prdVersions, setPrdVersions] = useState<PrdVersionDTO[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [splits, setSplits] = useState<FeatureSplitDTO[]>([]);
@@ -73,6 +76,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   const [generatingTemplate, setGeneratingTemplate] = useState(false);
   const [generatingAi, setGeneratingAi] = useState(false);
   const [markingReady, setMarkingReady] = useState(false);
+  const [lastGeneratedClusterId, setLastGeneratedClusterId] = useState<string | null>(null);
   /** When non-empty, template / AI actions run for these clusters (sequential). When empty, actions use `selectedClusterId` only. */
   const [batchClusterIds, setBatchClusterIds] = useState<string[]>([]);
 
@@ -310,12 +314,28 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
       } else if (selectedClusterId && targets.includes(selectedClusterId)) {
         await fetchCorpus(selectedClusterId);
       }
+
+      const primaryClusterId = selectedClusterId ?? targets[0];
+      if (primaryClusterId) {
+        setLastGeneratedClusterId(primaryClusterId);
+      }
+
       const batchLabel = targets.length > 1 ? ` (${targets.length} clusters)` : '';
-      toast.success(
+      const successMessage =
         mode === 'template'
           ? `Template stories generated${batchLabel}`
-          : `AI drafts generated${batchLabel} — review and save`
-      );
+          : `AI drafts generated${batchLabel} — review and save`;
+      toast.success(successMessage, {
+        action: primaryClusterId
+          ? {
+              label: 'View stories',
+              onClick: () =>
+                router.push(
+                  `/dashboard/projects/${projectId}/user-stories/${primaryClusterId}`
+                ),
+            }
+          : undefined,
+      });
     } catch {
       toast.error('Network error during generation');
     } finally {
@@ -442,6 +462,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                   {clusters.map((c) => {
                     const active = selectedClusterId === c.id;
                     const inBatch = batchSet.has(c.id);
+                    const wasGenerated = lastGeneratedClusterId === c.id || (batchClusterIds.length > 1 && batchSet.has(c.id) && lastGeneratedClusterId !== null);
                     return (
                       <div
                         key={c.id}
@@ -458,14 +479,25 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                             aria-label={`Include ${c.label} in batch generation`}
                           />
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedClusterId(c.id)}
-                          className="min-h-[44px] flex-1 text-left rounded-md px-1 py-1 hover:bg-muted/50"
-                        >
-                          <p className="font-medium text-sm">{c.label}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{c.valueLine}</p>
-                        </button>
+                        <div className="flex-1 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedClusterId(c.id)}
+                            className="min-h-[44px] w-full text-left rounded-md px-1 py-1 hover:bg-muted/50"
+                          >
+                            <p className="font-medium text-sm">{c.label}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{c.valueLine}</p>
+                          </button>
+                          {wasGenerated && (
+                            <Link
+                              href={`/dashboard/projects/${projectId}/user-stories/${c.id}`}
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline px-1 pb-1"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              View stories
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
