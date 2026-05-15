@@ -183,11 +183,18 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
         return err(new NotFoundError('User story corpus not found'));
       }
 
-      const now = new Date();
-      const ts = now.toISOString();
       await db.execute(
-        sql`UPDATE user_story_corpora SET review_ready_at = ${ts}::timestamptz, updated_at = ${ts}::timestamptz WHERE id = ${corpusRow.id}`
+        sql`UPDATE user_story_corpora SET review_ready_at = now(), updated_at = now() WHERE id = ${corpusRow.id}`
       );
+
+      const [updatedCorpusRow] = await db
+        .select()
+        .from(userStoryCorpora)
+        .where(eq(userStoryCorpora.id, corpusRow.id));
+
+      if (!updatedCorpusRow) {
+        return err(new DatabaseError('User story corpus missing after review-ready update'));
+      }
 
       const lineRows = await db
         .select()
@@ -195,8 +202,7 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
         .where(eq(userStoryLines.corpusId, corpusRow.id))
         .orderBy(asc(userStoryLines.sortOrder));
 
-      const updatedCorpus = { ...corpusRow, reviewReadyAt: now, updatedAt: now };
-      return ok(mapCorpus(updatedCorpus, lineRows));
+      return ok(mapCorpus(updatedCorpusRow, lineRows));
     } catch (error) {
       logger.error('Failed to mark user stories review ready', error);
       return err(new DatabaseError('Failed to mark user stories review ready'));

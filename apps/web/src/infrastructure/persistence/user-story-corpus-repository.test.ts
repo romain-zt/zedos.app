@@ -4,11 +4,31 @@ const mocks = vi.hoisted(() => ({
   corpusInsert: null as Record<string, unknown> | null,
   linesInsert: null as unknown,
   corporaFromCalls: 0,
+  markReviewCorpusRow: null as null | {
+    reviewReadyAt: Date | null;
+    updatedAt: Date;
+  },
 }));
 
 vi.mock('@repo/db', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@repo/db')>();
   const fixedDate = new Date('2026-05-15T12:00:00.000Z');
+
+  const corporaRow = {
+    id: 'corp-review',
+    projectId: 'proj_a',
+    featureSplitClusterId: 'cluster_a',
+    reviewReadyAt: null as Date | null,
+    createdAt: fixedDate,
+    updatedAt: fixedDate,
+  };
+  mocks.markReviewCorpusRow = corporaRow;
+
+  const mockDbExecute = vi.fn(() => {
+    corporaRow.reviewReadyAt = fixedDate;
+    corporaRow.updatedAt = fixedDate;
+    return Promise.resolve();
+  });
 
   const mockTx = {
     delete: vi.fn(() => ({
@@ -70,6 +90,29 @@ vi.mock('@repo/db', async (importOriginal) => {
     db: {
       ...actual.db,
       transaction: vi.fn(async (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
+      execute: mockDbExecute,
+      update: vi.fn(() => ({
+        set: vi.fn(() => ({
+          where: vi.fn(() => Promise.resolve()),
+        })),
+      })),
+      select: vi.fn(() => ({
+        from: vi.fn((table: unknown) => {
+          if (table === actual.userStoryCorpora) {
+            return {
+              where: vi.fn(() => Promise.resolve([corporaRow])),
+            };
+          }
+          if (table === actual.userStoryLines) {
+            return {
+              where: vi.fn(() => ({
+                orderBy: vi.fn(() => Promise.resolve([])),
+              })),
+            };
+          }
+          throw new Error('Unexpected table in root db.select mock');
+        }),
+      })),
     },
   };
 });
@@ -111,5 +154,32 @@ describe('DrizzleUserStoryCorpusRepository.save', () => {
     const rows = mocks.linesInsert as Record<string, unknown>[];
     expect(rows).toHaveLength(1);
     expect(rows[0]?.updatedAt).toBeInstanceOf(Date);
+  });
+});
+
+describe('DrizzleUserStoryCorpusRepository.markReviewReady', () => {
+  const fixedDate = new Date('2026-05-15T12:00:00.000Z');
+
+  beforeEach(() => {
+    mocks.corpusInsert = null;
+    mocks.linesInsert = null;
+    mocks.corporaFromCalls = 0;
+    vi.clearAllMocks();
+    if (mocks.markReviewCorpusRow) {
+      mocks.markReviewCorpusRow.reviewReadyAt = null;
+      mocks.markReviewCorpusRow.updatedAt = fixedDate;
+    }
+  });
+
+  it('runs SQL update with now() then reloads the corpus row', async () => {
+    const dbMod = await import('@repo/db');
+    const repo = new DrizzleUserStoryCorpusRepository();
+    const result = await repo.markReviewReady('proj_a', 'cluster_a');
+
+    expect(result.isOk()).toBe(true);
+    expect(dbMod.db.execute).toHaveBeenCalledTimes(1);
+    if (result.isOk()) {
+      expect(result.unwrap().reviewReadyAt).toEqual(new Date('2026-05-15T12:00:00.000Z'));
+    }
   });
 });

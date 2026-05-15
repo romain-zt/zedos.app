@@ -10,6 +10,27 @@ import { requireConfirmedClusterForUserStories } from './require-confirmed-clust
 
 const logger = createLogger({ operation: 'GenerateUserStoryDraftUseCase' });
 
+/** Template drafts: structured scaffold so editors split distinct user-visible behaviors. */
+function buildTemplateModeBody(input: {
+  title: string;
+  valueLine: string;
+  boundaryCue: string;
+}): string {
+  const outcome = input.valueLine.trim();
+  const boundaries = input.boundaryCue.trim();
+  const blocks: string[] = [];
+  if (outcome.length > 0) {
+    blocks.push(`### User-visible outcome\n${outcome}`);
+  }
+  if (boundaries.length > 0) {
+    blocks.push(`### Boundaries & edge cases\n${boundaries}`);
+  }
+  if (blocks.length === 0) {
+    blocks.push(`### User-visible outcome\n${input.title}`);
+  }
+  return blocks.join('\n\n');
+}
+
 export class GenerateUserStoryDraftUseCase {
   constructor(
     private projectRepository: IProjectRepository,
@@ -39,10 +60,12 @@ export class GenerateUserStoryDraftUseCase {
     const cluster = clusterResult.unwrap();
 
     if (mode === 'template') {
-      const bodyParts = [cluster.valueLine, cluster.boundaryCue].filter((s) => s && s.trim().length > 0);
-      const bodyText = bodyParts.join('\n\n');
       const title = cluster.label.trim() || 'Feature story';
-      const body = bodyText.length > 0 ? bodyText : title;
+      const body = buildTemplateModeBody({
+        title,
+        valueLine: cluster.valueLine,
+        boundaryCue: cluster.boundaryCue,
+      });
       return this.corpusRepository.save(projectId, featureSplitClusterId, [
         {
           sortOrder: 0,
