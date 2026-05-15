@@ -36,7 +36,7 @@
       "fa-user-stories--story-generation-from-feature-split--impl": "complete",
       "fa-payments--manual-credit-pack-checkout": "blocked",
       "fa-owner-milestone-feedback--feedback-capture-and-attribution": "blocked",
-      "fa-user-stories--corpus-reliability-batch-quality--impl": "not-started"
+      "fa-user-stories--corpus-reliability-batch-quality--impl": "in-progress"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
