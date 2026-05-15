@@ -36,10 +36,11 @@
       "fa-user-stories--story-generation-from-feature-split--impl": "complete",
       "fa-payments--manual-credit-pack-checkout": "blocked",
       "fa-owner-milestone-feedback--feedback-capture-and-attribution": "blocked",
-      "fa-user-stories--corpus-reliability-batch-quality--impl": "in-progress"
+      "fa-user-stories--corpus-reliability-batch-quality--impl": "complete"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
+      "fa-user-stories--corpus-reliability-batch-quality--impl": 1,
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1
     },
     "blocker": "NEED_HUMAN: fa-owner-milestone-feedback--feedback-capture-and-attribution — scope slice not ready-for-user-stories; see fa_owner_milestone_feedback.feedback_capture_and_attribution.blocker"
@@ -99,13 +100,15 @@
       "tracking_branch": "orchestrator/tracking-fa-user-stories--corpus-reliability-batch-quality--impl-1778838044060",
       "user_story": "docs/execution/user-stories/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.md",
       "implementation_plan": "docs/execution/plans/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.plan.md",
-      "layer_complete": "persistence-use-cases",
-      "next_layer": "ui",
+      "layer_complete": "tests-state-finalization",
+      "next_layer": null,
       "verified_at": "2026-05-15",
       "verification": {
         "typecheck": "clean",
         "build": "clean",
-        "unit_tests": "apps/web/src/application/user-stories/generate-user-story-draft-usecase.test.ts"
+        "tests": "turbo test (packages/contracts, packages/result, packages/db, apps/web vitest) — all green",
+        "unit_tests": "apps/web/src/application/user-stories/generate-user-story-draft-usecase.test.ts; apps/web/src/infrastructure/persistence/user-story-corpus-repository.test.ts",
+        "notes": "user-story-draft.ts SYSTEM_PROMPT: one user-visible behavior per story + structured outcome heading; user-story-corpus-repository markReviewReady uses bound Date params; template draft uses buildTemplateDraft scaffold; UI: batch cluster checkboxes + sequential generate in user-stories-workspace; full pnpm typecheck + pnpm build + pnpm test (2026-05-15); rebase resolved duplicate tracking PR #117 vs canonical #118"
       }
     }
   },
