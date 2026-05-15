@@ -108,7 +108,7 @@
         "build": "clean",
         "tests": "turbo test (packages/contracts, packages/result, packages/db, apps/web vitest) — all green",
         "unit_tests": "apps/web/src/application/user-stories/generate-user-story-draft-usecase.test.ts; apps/web/src/infrastructure/persistence/user-story-corpus-repository.test.ts",
-        "notes": "user-story-draft.ts SYSTEM_PROMPT: one user-visible behavior per story + structured outcome heading; user-story-corpus-repository markReviewReady uses bound Date params; template draft uses buildTemplateDraft scaffold; UI: batch cluster checkboxes + sequential generate in user-stories-workspace; full pnpm typecheck + pnpm build + pnpm test (2026-05-15); rebase resolved duplicate tracking PR #117 vs canonical #118"
+        "notes": "user-story-draft.ts SYSTEM_PROMPT: one user-visible behavior per story + structured outcome heading; user-story-corpus-repository markReviewReady uses bound Date params; template draft uses buildTemplateDraft scaffold; UI: batch cluster checkboxes + sequential generate in user-stories-workspace; full pnpm typecheck + pnpm build + pnpm test (2026-05-15); merge main resolved duplicate tracking PR #117 vs canonical #118"
       }
     }
   },
