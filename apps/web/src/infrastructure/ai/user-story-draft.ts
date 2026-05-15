@@ -17,8 +17,10 @@ Output strictly valid JSON:
 
 Rules:
 - 1 to 32 stories.
-- Each title: short verb phrase, max 2000 chars.
-- Each body: Given/When/Then or clear acceptance-style text, max 50000 chars.
+- Each story captures exactly ONE distinct user-visible behavior — something an end user can notice on the product surface (screens, messages, emails, limits shown to them) without knowing internals. If the cluster implies multiple behaviors, emit multiple stories; never cram unrelated behaviors into a single story.
+- Do not duplicate or near-duplicate the same behavior across stories; titles must describe different intents.
+- Each title: short verb phrase naming that single behavior, max 2000 chars.
+- Each body: begin with a line "### User-visible outcome" followed by the observable result; then Given/When/Then or bullet acceptance criteria (include boundary cases hinted by the cluster when relevant). Max 50000 chars.
 - sortOrder is optional; when omitted, preserve array order starting at 0.
 - Stories must reflect only the cluster scope — do not invent unrelated scope.
 - Output only the JSON object, no extra text.`;
