@@ -40,7 +40,8 @@
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
-      "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1
+      "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1,
+      "fa-user-stories--corpus-reliability-batch-quality--impl": 1
     },
     "blocker": "NEED_HUMAN: fa-owner-milestone-feedback--feedback-capture-and-attribution — scope slice not ready-for-user-stories; see fa_owner_milestone_feedback.feedback_capture_and_attribution.blocker"
   },
