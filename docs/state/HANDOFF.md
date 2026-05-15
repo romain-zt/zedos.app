@@ -36,6 +36,14 @@ remediation_note: null
 
 # Cloud Agent State Handoff
 
+## User stories — corpus reliability, batch UI, draft quality (`fa-user-stories--corpus-reliability-batch-quality--impl`)
+
+- **Tracking PR:** **`#118`**, head **`orchestrator/tracking-fa-user-stories--corpus-reliability-batch-quality--impl-1778838044060`** → **`main`**.
+- **Orchestration step:** **`complete`** in `orchestration.steps["fa-user-stories--corpus-reliability-batch-quality--impl"]`. **`fa_user_stories.corpus_reliability_batch_quality_impl`:** **`layer_complete`:** **`tests-state-finalization`**, **`next_layer`:** **`null`**.
+- **Anchors:** `docs/product/feature-areas/user-stories.md`, `docs/product/scope-slices/user-stories--story-generation-from-feature-split.md`, user story `docs/execution/user-stories/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.md`, plan `docs/execution/plans/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.plan.md`.
+- **Shipped:** `persistence-use-cases` — `markReviewReady` bound **`Date`** SQL params; **AI adapter** — `user-story-draft.ts` system prompt; **template** — `buildTemplateDraft` scaffold in **`GenerateUserStoryDraftUseCase`**; **`ui`** — **`user-stories-workspace.tsx`** batch checkboxes, **Select all / Clear batch**, sequential **`POST .../user-stories/generate`** per selected cluster (empty batch → active cluster); PRD version change clears batch selection.
+- **`tests-state-finalization` (2026-05-15):** **`pnpm typecheck`**, **`pnpm build`**, **`pnpm test`** (turbo: contracts, result, db, apps/web vitest) — all green after pull/rebase conflict resolution (canonical **PR #118** vs duplicate **#117** tracking bookkeeping). Operator: when CI green on PR **#118**, run **`gh pr ready 118 --repo romain-zt/zedos.app`**.
+
 ## Owner milestone feedback — feedback capture and attribution (`fa-owner-milestone-feedback--feedback-capture-and-attribution`)
 
 - **Tracking PR:** **`#104`**, head **`orchestrator/tracking-fa-owner-milestone-feedback--feedback-capture-and-attribution-1778629061701`** → **`main`**.
@@ -105,27 +113,9 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 
 - **`db-migration` → `ui`** stack for story generation — complete per PR **#87** tracking branch history.
 
-## User stories — corpus reliability, batch UI, draft quality (tracking PR **#117**)
+## User stories — corpus reliability (superseded tracking PR **#117**)
 
-- **Tracking PR:** **`#117`**, head **`orchestrator/tracking-fa-user-stories--corpus-reliability-batch-quality--impl-1778837270358`** → **`main`**.
-- **Pipeline step:** `fa-user-stories--corpus-reliability-batch-quality--impl` remains **`not-started`** in `docs/state/status.json` until AI prompt hardening, dashboard batch UI, and full gates ship end-to-end.
-- **Anchors:** Implementation Plan `docs/execution/plans/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.plan.md`; User Story `docs/execution/user-stories/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.md`.
-
-| Layer | Status |
-|-------|--------|
-| `db-migration` | **N/A** |
-| `contracts-domain` | **N/A** |
-| `persistence-use-cases` | **complete** — corpus repo `markReviewReady`: SQL `now()` via `db.execute`, refetch row for domain accuracy; template drafts use behavioral scaffold (`GenerateUserStoryDraftUseCase`); unit tests aligned |
-| `api-routes` | **N/A** (reuse `POST …/user-stories/generate`) |
-| AI adapter (`user-story-draft.ts`) | **complete** — system prompt: one distinct user-visible behavior per story, mutual intent separation, body opens with `### User-visible outcome` then acceptance/GWT |
-| `ui` | **pending** — `user-stories-workspace.tsx` batch multi-select + progress + per-cluster error toasts |
-| `tests-state-finalization` | **pending** — set orchestration step **`complete`**, then **`gh pr ready 117 --repo romain-zt/zedos.app`** after CI green |
-
-**Prior run (2026-05-15):** Shipped **`persistence-use-cases`** (single-layer budget); **`pnpm typecheck`**, **`pnpm build`**, targeted Vitest green.
-
-**This run (2026-05-15):** Shipped **AI adapter** — `user-story-draft.ts` system prompt tightened for distinct user-visible behaviors; **`pnpm typecheck`**, **`pnpm build`**, targeted Vitest green.
-
-**Safest next task:** **`user-stories-workspace.tsx`** batch generation UI (`ui` layer), then **`tests-state-finalization`** (mark pipeline step **`complete`** + **`gh pr ready 117`** when gates green).
+- **Superseded by:** canonical tracking **PR #118** — head **`orchestrator/tracking-fa-user-stories--corpus-reliability-batch-quality--impl-1778838044060`** → **`main`** (see section above). **#117** branch was an earlier orchestrator duplicate; do not use **`gh pr ready 117`** for this pipeline step.
 
 ## Historical / parallel context
 

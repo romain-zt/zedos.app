@@ -183,8 +183,10 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
         return err(new NotFoundError('User story corpus not found'));
       }
 
+      const now = new Date();
+      // Drizzle's inferred `.set()` omits nullable `timestamp()` columns here; keep bound `Date` params.
       await db.execute(
-        sql`UPDATE user_story_corpora SET review_ready_at = now(), updated_at = now() WHERE id = ${corpusRow.id}`
+        sql`UPDATE user_story_corpora SET review_ready_at = ${now}, updated_at = ${now} WHERE id = ${corpusRow.id}`
       );
 
       const [updatedCorpusRow] = await db

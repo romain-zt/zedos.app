@@ -10,25 +10,36 @@ import { requireConfirmedClusterForUserStories } from './require-confirmed-clust
 
 const logger = createLogger({ operation: 'GenerateUserStoryDraftUseCase' });
 
-/** Template drafts: structured scaffold so editors split distinct user-visible behaviors. */
-function buildTemplateModeBody(input: {
-  title: string;
+/** Cheap template draft: structured scaffold; cluster fields are hints only (not the whole story). */
+function buildTemplateDraft(cluster: {
+  label: string;
   valueLine: string;
   boundaryCue: string;
-}): string {
-  const outcome = input.valueLine.trim();
-  const boundaries = input.boundaryCue.trim();
-  const blocks: string[] = [];
-  if (outcome.length > 0) {
-    blocks.push(`### User-visible outcome\n${outcome}`);
-  }
-  if (boundaries.length > 0) {
-    blocks.push(`### Boundaries & edge cases\n${boundaries}`);
-  }
-  if (blocks.length === 0) {
-    blocks.push(`### User-visible outcome\n${input.title}`);
-  }
-  return blocks.join('\n\n');
+}): { title: string; body: string } {
+  const title = cluster.label.trim() || 'Feature story';
+  const valueLine = cluster.valueLine?.trim() ?? '';
+  const boundaryCue = cluster.boundaryCue?.trim() ?? '';
+
+  const body = [
+    '## Goal',
+    'Turn this cluster into concrete, user-visible behaviors. Each capability below must be **distinct** — do not ship the cluster fields alone as the story.',
+    '',
+    '## Cluster reference (expand; do not use as sole story text)',
+    `- Label: ${title}`,
+    valueLine ? `- Value line: ${valueLine}` : '- Value line: _add during refinement_',
+    boundaryCue ? `- Boundary cue: ${boundaryCue}` : '- Boundary cue: _add during refinement_',
+    '',
+    '## Draft behaviors',
+    '- As a user, I can …',
+    '- As a user, I can …',
+    '',
+    '## Acceptance outline',
+    '- Given … When … Then …',
+    '',
+    '_Template scaffold — replace placeholders with implementation-ready criteria._',
+  ].join('\n');
+
+  return { title, body };
 }
 
 export class GenerateUserStoryDraftUseCase {
@@ -60,12 +71,7 @@ export class GenerateUserStoryDraftUseCase {
     const cluster = clusterResult.unwrap();
 
     if (mode === 'template') {
-      const title = cluster.label.trim() || 'Feature story';
-      const body = buildTemplateModeBody({
-        title,
-        valueLine: cluster.valueLine,
-        boundaryCue: cluster.boundaryCue,
-      });
+      const { title, body } = buildTemplateDraft(cluster);
       return this.corpusRepository.save(projectId, featureSplitClusterId, [
         {
           sortOrder: 0,

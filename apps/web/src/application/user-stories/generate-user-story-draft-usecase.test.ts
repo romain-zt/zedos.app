@@ -98,11 +98,16 @@ const makeMockDraftGenerator = (): IUserStoryDraftGenerator => ({
 });
 
 describe('GenerateUserStoryDraftUseCase', () => {
-  const paymentsTemplateBody =
-    '### User-visible outcome\nCollect money\n\n### Boundaries & edge cases\nNo refunds';
-
   describe('template mode', () => {
-    it('saves a line using a behavioral scaffold from valueLine + boundaryCue', async () => {
+    const templateScaffoldSuffix =
+      '\n\n## Draft behaviors\n' +
+      '- As a user, I can …\n' +
+      '- As a user, I can …\n' +
+      '\n## Acceptance outline\n' +
+      '- Given … When … Then …\n' +
+      '\n_Template scaffold — replace placeholders with implementation-ready criteria._';
+
+    it('saves a structured scaffold body that expands cluster hints', async () => {
       const projectRepo = makeMockProjectRepo();
       const splitRepo = makeMockSplitRepo();
       const corpusRepo = makeMockCorpusRepo();
@@ -113,11 +118,20 @@ describe('GenerateUserStoryDraftUseCase', () => {
         boundaryCue: 'No refunds',
       });
 
+      const expectedBody =
+        '## Goal\n' +
+        'Turn this cluster into concrete, user-visible behaviors. Each capability below must be **distinct** — do not ship the cluster fields alone as the story.\n' +
+        '\n## Cluster reference (expand; do not use as sole story text)\n' +
+        '- Label: Payments\n' +
+        '- Value line: Collect money\n' +
+        '- Boundary cue: No refunds' +
+        templateScaffoldSuffix;
+
       vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
       vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit(cluster)]));
       vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([makeLine({
         title: 'Payments',
-        body: paymentsTemplateBody,
+        body: expectedBody,
       })])));
 
       const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
@@ -127,23 +141,29 @@ describe('GenerateUserStoryDraftUseCase', () => {
       expect(corpusRepo.save).toHaveBeenCalledWith(
         'prj_1',
         'clu_1',
-        [{ sortOrder: 0, title: 'Payments', body: paymentsTemplateBody }]
+        [{ sortOrder: 0, title: 'Payments', body: expectedBody }]
       );
     });
 
-    it('falls back to cluster.label when valueLine and boundaryCue are empty', async () => {
+    it('uses refinement placeholders when valueLine and boundaryCue are empty', async () => {
       const projectRepo = makeMockProjectRepo();
       const splitRepo = makeMockSplitRepo();
       const corpusRepo = makeMockCorpusRepo();
       const generator = makeMockDraftGenerator();
       const cluster = makeCluster({ label: 'User Auth', valueLine: '', boundaryCue: '' });
 
+      const expectedBody =
+        '## Goal\n' +
+        'Turn this cluster into concrete, user-visible behaviors. Each capability below must be **distinct** — do not ship the cluster fields alone as the story.\n' +
+        '\n## Cluster reference (expand; do not use as sole story text)\n' +
+        '- Label: User Auth\n' +
+        '- Value line: _add during refinement_\n' +
+        '- Boundary cue: _add during refinement_' +
+        templateScaffoldSuffix;
+
       vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
       vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit(cluster)]));
-      vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([makeLine({
-        title: 'User Auth',
-        body: '### User-visible outcome\nUser Auth',
-      })])));
+      vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([makeLine({ title: 'User Auth', body: expectedBody })])));
 
       const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
       const result = await uc.execute('prj_1', 'usr_1', 'clu_1', 'template');
@@ -152,7 +172,7 @@ describe('GenerateUserStoryDraftUseCase', () => {
       expect(corpusRepo.save).toHaveBeenCalledWith(
         'prj_1',
         'clu_1',
-        [{ sortOrder: 0, title: 'User Auth', body: '### User-visible outcome\nUser Auth' }]
+        [{ sortOrder: 0, title: 'User Auth', body: expectedBody }]
       );
     });
 
@@ -163,10 +183,19 @@ describe('GenerateUserStoryDraftUseCase', () => {
       const generator = makeMockDraftGenerator();
       const cluster = makeCluster({ label: '', valueLine: '', boundaryCue: '' });
 
+      const expectedBody =
+        '## Goal\n' +
+        'Turn this cluster into concrete, user-visible behaviors. Each capability below must be **distinct** — do not ship the cluster fields alone as the story.\n' +
+        '\n## Cluster reference (expand; do not use as sole story text)\n' +
+        '- Label: Feature story\n' +
+        '- Value line: _add during refinement_\n' +
+        '- Boundary cue: _add during refinement_' +
+        templateScaffoldSuffix;
+
       vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
       vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit(cluster)]));
       vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([
-        makeLine({ title: 'Feature story', body: '### User-visible outcome\nFeature story' }),
+        makeLine({ title: 'Feature story', body: expectedBody }),
       ])));
 
       const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
@@ -175,7 +204,7 @@ describe('GenerateUserStoryDraftUseCase', () => {
       expect(result.isOk()).toBe(true);
       const savedLines = vi.mocked(corpusRepo.save).mock.calls[0][2];
       expect(savedLines[0].title).toBe('Feature story');
-      expect(savedLines[0].body).toBe('### User-visible outcome\nFeature story');
+      expect(savedLines[0].body).toBe(expectedBody);
       expect(savedLines[0].title.length).toBeGreaterThan(0);
       expect(savedLines[0].body.length).toBeGreaterThan(0);
     });
@@ -187,18 +216,24 @@ describe('GenerateUserStoryDraftUseCase', () => {
       const generator = makeMockDraftGenerator();
       const cluster = makeCluster({ label: 'Search', valueLine: '   ', boundaryCue: '  ' });
 
+      const expectedBody =
+        '## Goal\n' +
+        'Turn this cluster into concrete, user-visible behaviors. Each capability below must be **distinct** — do not ship the cluster fields alone as the story.\n' +
+        '\n## Cluster reference (expand; do not use as sole story text)\n' +
+        '- Label: Search\n' +
+        '- Value line: _add during refinement_\n' +
+        '- Boundary cue: _add during refinement_' +
+        templateScaffoldSuffix;
+
       vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
       vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit(cluster)]));
-      vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([makeLine({
-        title: 'Search',
-        body: '### User-visible outcome\nSearch',
-      })])));
+      vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([makeLine({ title: 'Search', body: expectedBody })])));
 
       const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
       await uc.execute('prj_1', 'usr_1', 'clu_1', 'template');
 
       const savedLines = vi.mocked(corpusRepo.save).mock.calls[0][2];
-      expect(savedLines[0].body).toBe('### User-visible outcome\nSearch');
+      expect(savedLines[0].body).toBe(expectedBody);
     });
   });
 
