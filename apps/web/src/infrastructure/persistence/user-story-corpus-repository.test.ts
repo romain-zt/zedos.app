@@ -14,7 +14,11 @@ vi.mock('@repo/db', async (importOriginal) => {
     delete: vi.fn(() => ({
       where: vi.fn(() => Promise.resolve()),
     })),
-    execute: vi.fn(() => Promise.resolve()),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => Promise.resolve()),
+      })),
+    })),
     insert: vi.fn(() => ({
       values: (v: unknown) => {
         if (!mocks.corpusInsert) {

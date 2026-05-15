@@ -445,6 +445,21 @@
         "planFile": "docs/execution/plans/user-stories--story-generation-from-feature-split--v0.plan.md",
         "notes": "IMPLEMENTATION PHASE — governance artifacts (user story + approved plan) already exist. Stack PRs on tracking branch: (1) packages/db migration 0005 (user_story_corpora + user_story_lines, FK to feature_split_clusters), (2) contracts + domain + persistence + use cases, (3) API routes, (4) dashboard UI + placeholder navigation updates. Depends on feature_split_clusters table from upstream impl step."
       }
+    },
+    {
+      "id": "fa-user-stories--corpus-reliability-batch-quality--impl",
+      "dependsOn": [
+        "fa-user-stories--story-generation-from-feature-split--impl"
+      ],
+      "workload": {
+        "kind": "slice",
+        "title": "User story corpus reliability, batch UI, draft quality",
+        "featureAreaFile": "docs/product/feature-areas/user-stories.md",
+        "scopeSliceFile": "docs/product/scope-slices/user-stories--story-generation-from-feature-split.md",
+        "userStoryFile": "docs/execution/user-stories/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.md",
+        "planFile": "docs/execution/plans/user-stories--story-generation-from-feature-split--corpus-reliability-batch-quality.plan.md",
+        "notes": "Follow-up implementation: Drizzle corpus timestamps (NOT NULL updated_at/created_at), AI/template draft quality, optional multi-select batch generation per approved Plan. Prefer single-layer PRs."
+      }
     }
   ]
 }

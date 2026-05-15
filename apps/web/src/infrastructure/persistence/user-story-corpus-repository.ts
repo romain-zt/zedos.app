@@ -107,9 +107,10 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
         if (existing) {
           corpusId = existing.id;
           await tx.delete(userStoryLines).where(eq(userStoryLines.corpusId, corpusId));
-          await tx.execute(
-            sql`UPDATE user_story_corpora SET updated_at = ${now} WHERE id = ${corpusId}`
-          );
+          await tx
+            .update(userStoryCorpora)
+            .set({ updatedAt: now })
+            .where(eq(userStoryCorpora.id, corpusId));
         } else {
           const [inserted] = await tx
             .insert(userStoryCorpora)
@@ -183,8 +184,9 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
       }
 
       const now = new Date();
+      const ts = now.toISOString();
       await db.execute(
-        sql`UPDATE user_story_corpora SET review_ready_at = ${now}, updated_at = ${now} WHERE id = ${corpusRow.id}`
+        sql`UPDATE user_story_corpora SET review_ready_at = ${ts}::timestamptz, updated_at = ${ts}::timestamptz WHERE id = ${corpusRow.id}`
       );
 
       const lineRows = await db
