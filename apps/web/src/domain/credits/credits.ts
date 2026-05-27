@@ -84,8 +84,9 @@ export interface CreditTransaction {
   userId: string;
   type: CreditTransactionType;
   amount: number;
+  balanceAfter?: number;
   operationType?: OperationType;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 

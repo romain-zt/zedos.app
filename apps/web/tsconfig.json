@@ -13,7 +13,8 @@
       "@repo/contracts/*": ["../../packages/contracts/src/*"],
       "@contracts/*": ["../../packages/contracts/src/*"],
       "@repo/db": ["../../packages/db/src/index.ts"],
-      "@repo/auth": ["../../packages/auth/src/index.ts"]
+      "@repo/auth": ["../../packages/auth/src/index.ts"],
+      "@repo/mail": ["../../packages/mail/src/index.ts"]
     }
   },
   "include": [

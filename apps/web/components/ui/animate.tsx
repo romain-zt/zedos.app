@@ -72,7 +72,13 @@ export function Stagger({
 }) {
   return (
     <motion.div
-      variants={{ show: { transition: { staggerChildren: staggerDelay } } }}
+      variants={{
+        hidden: { opacity: 1 },
+        show: {
+          opacity: 1,
+          transition: { staggerChildren: staggerDelay },
+        },
+      }}
       initial="hidden"
       whileInView="show"
       viewport={viewportConfig}

@@ -2,7 +2,8 @@ import { IProjectRepository } from '@domain/project/project-repository';
 import { IPrdRepository } from '@domain/prd/prd-repository';
 import { FeatureSplitProposal } from '@repo/contracts/ai/feature-split-proposal';
 import { Result, err } from '@repo/result';
-import { ApplicationError, NotFoundError } from '@shared/errors/application-error';
+import { ApplicationError, NotFoundError, ValidationError } from '@shared/errors/application-error';
+import { assessPrdSplitReadiness } from '@/lib/prd-content-for-ai';
 import { proposeFeatureSplit } from '@infrastructure/ai/feature-split-proposal';
 import { createLogger } from '@shared/observability/logger';
 
@@ -31,6 +32,11 @@ export class ProposeFeatureSplitUseCase {
     if (!version) return err(new NotFoundError('PRD version not found'));
     if (version.projectId !== projectId) return err(new NotFoundError('PRD version not found'));
     if (!version.content) return err(new NotFoundError('PRD version has no content to split'));
+
+    const readiness = assessPrdSplitReadiness(version.content);
+    if (!readiness.isReadyForAiSplit) {
+      return err(new ValidationError(readiness.message));
+    }
 
     return proposeFeatureSplit(version.content);
   }

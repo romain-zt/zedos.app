@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 export const CreateProjectRequestSchema = z.object({
   name: z.string().min(1, 'Project name is required').transform((v) => v.trim()),
-  description: z.string().optional().transform((v) => v?.trim() || null),
+  description: z.string().optional().nullable().transform((v) => v?.trim() ?? null),
 });
 
 export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;

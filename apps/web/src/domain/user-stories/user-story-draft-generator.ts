@@ -18,7 +18,13 @@ export type UserStoryDraftItem = {
 };
 
 export interface IUserStoryDraftGenerator {
-  draftFromCluster(
+  draftOutlines(
     cluster: UserStoryClusterSummary
-  ): Promise<Result<{ stories: UserStoryDraftItem[] }, ApplicationError>>;
+  ): Promise<Result<{ outlines: { title: string }[] }, ApplicationError>>;
+
+  draftSingleStory(
+    cluster: UserStoryClusterSummary,
+    outline: { title: string },
+    sortOrder: number
+  ): Promise<Result<UserStoryDraftItem, ApplicationError>>;
 }

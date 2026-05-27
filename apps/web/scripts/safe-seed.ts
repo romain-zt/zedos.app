@@ -7,14 +7,14 @@ try {
   const content = fs.readFileSync(seedFile, "utf-8");
 
   const forbiddenPatterns = [
-    /prisma\.\w+\.delete\(/,
-    /prisma\.\w+\.deleteMany\(/,
+    /\.delete\(/,
+    /deleteFrom\(/,
   ];
 
   const violations = forbiddenPatterns.filter((pattern) => pattern.test(content));
 
   if (violations.length > 0) {
-    console.error("Seed aborted: seed.ts contains prisma.delete or prisma.deleteMany calls.");
+    console.error("Seed aborted: seed.ts contains delete operations.");
     console.error("Remove all delete operations before seeding to avoid deleting production data.");
     console.error("Do not modify this file to bypass this check in development environment as production and deployment database can be shared.");
     process.exit(1);

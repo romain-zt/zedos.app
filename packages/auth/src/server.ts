@@ -14,6 +14,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { toNextJsHandler } from 'better-auth/next-js';
 import { db, grantStarterCreditsIfNeeded } from '@repo/db';
+import { sendPasswordResetLink } from '@repo/mail';
 import * as schema from '@repo/db/schema';
 
 function resolveAuthBaseURL(): string | undefined {
@@ -27,6 +28,7 @@ function resolveAuthBaseURL(): string | undefined {
 const authSecret =
   process.env.BETTER_AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 const authBaseURL = resolveAuthBaseURL();
+const appBaseURL = process.env.NEXT_PUBLIC_APP_URL ?? authBaseURL ?? 'http://localhost:3000';
 
 export const auth = betterAuth({
   ...(authSecret ? { secret: authSecret } : {}),
@@ -60,6 +62,14 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
+    sendResetPassword: async ({ user, token }) => {
+      const resetUrl = `${appBaseURL}/reset-password?token=${encodeURIComponent(token)}`;
+      await sendPasswordResetLink({
+        to: user.email,
+        resetUrl,
+      });
+    },
+    revokeSessionsOnPasswordReset: true,
   },
 
   session: {

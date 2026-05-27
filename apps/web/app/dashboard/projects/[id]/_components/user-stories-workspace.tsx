@@ -274,6 +274,88 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
     }
   };
 
+  const generateAiStoriesForCluster = async (
+    clusterId: string,
+    clusterLabel: string,
+    onStoryProgress?: (corpus: UserStoryCorpusDTO) => void
+  ): Promise<UserStoryCorpusDTO | null> => {
+    const outlineRes = await fetch(`/api/projects/${projectId}/user-stories/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        featureSplitClusterId: clusterId,
+        mode: 'ai',
+        aiStep: 'outline',
+      }),
+    });
+    const outlineRaw = await outlineRes.json();
+    if (!outlineRes.ok) {
+      if (outlineRes.status === 402) {
+        toast.error('Insufficient credits for AI generation');
+      } else {
+        toast.error(outlineRaw?.error ?? 'Outline generation failed');
+      }
+      return null;
+    }
+    const outlineParsed = GenerateUserStoriesResponseSchema.safeParse(outlineRaw);
+    if (!outlineParsed.success || outlineParsed.data.kind !== 'outline') {
+      toast.error('Unexpected outline response');
+      return null;
+    }
+
+    const { outlines, total } = outlineParsed.data;
+    let existingLines: { sortOrder: number; title: string; body: string }[] = [];
+    let lastCorpus: UserStoryCorpusDTO | null = null;
+
+    for (let storyIndex = 0; storyIndex < outlines.length; storyIndex++) {
+      toast.loading(`Story ${storyIndex + 1}/${total} — ${clusterLabel}`, { id: 'ai-story-gen' });
+      const storyRes = await fetch(`/api/projects/${projectId}/user-stories/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          featureSplitClusterId: clusterId,
+          mode: 'ai',
+          aiStep: 'story',
+          outlines,
+          outlineIndex: storyIndex,
+          existingLines,
+        }),
+      });
+      const storyRaw = await storyRes.json();
+      if (!storyRes.ok) {
+        toast.dismiss('ai-story-gen');
+        if (storyRes.status === 402) {
+          toast.error('Insufficient credits for AI generation');
+        } else {
+          const partial =
+            existingLines.length > 0
+              ? ` (${existingLines.length}/${total} stories saved before failure)`
+              : '';
+          toast.error((storyRaw?.error ?? 'Story generation failed') + partial);
+        }
+        return lastCorpus;
+      }
+      const storyParsed = GenerateUserStoriesResponseSchema.safeParse(storyRaw);
+      if (!storyParsed.success || storyParsed.data.kind !== 'story') {
+        toast.dismiss('ai-story-gen');
+        toast.error(`Unexpected story response (${storyIndex + 1}/${total})`);
+        return lastCorpus;
+      }
+      lastCorpus = storyParsed.data.corpus;
+      existingLines = lastCorpus.lines
+        .filter((l) => !l.archivedAt)
+        .map((l) => ({
+          sortOrder: l.sortOrder,
+          title: l.title,
+          body: l.body,
+        }));
+      onStoryProgress?.(lastCorpus);
+    }
+
+    toast.dismiss('ai-story-gen');
+    return lastCorpus;
+  };
+
   const handleGenerate = async (mode: 'template' | 'ai') => {
     const targets = generationTargets();
     if (targets.length === 0) {
@@ -283,25 +365,43 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
     const setBusy = mode === 'template' ? setGeneratingTemplate : setGeneratingAi;
     setBusy(true);
     try {
-      let rawForCurrentView: unknown | null = null;
+      let rawForCurrentView: UserStoryCorpusDTO | null = null;
+      const confirmedSplit = selectedVersionId
+        ? confirmedSplitForVersion(splits, selectedVersionId)
+        : null;
+      const clusterById = new Map(
+        (confirmedSplit?.clusters ?? []).map((c) => [c.id, c] as const)
+      );
+
       for (let i = 0; i < targets.length; i++) {
         const clusterId = targets[i];
+        const clusterLabel = clusterById.get(clusterId)?.label ?? 'cluster';
+
+        if (mode === 'ai') {
+          const corpus = await generateAiStoriesForCluster(
+            clusterId,
+            clusterLabel,
+            selectedClusterId === clusterId ? applyCorpusResponse : undefined
+          );
+          if (corpus === null) return;
+          if (selectedClusterId && clusterId === selectedClusterId) {
+            rawForCurrentView = corpus;
+          }
+          continue;
+        }
+
         const res = await fetch(`/api/projects/${projectId}/user-stories/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ featureSplitClusterId: clusterId, mode }),
+          body: JSON.stringify({ featureSplitClusterId: clusterId, mode: 'template' }),
         });
         const raw = await res.json();
         if (!res.ok) {
-          if (res.status === 402) {
-            toast.error('Insufficient credits for AI generation');
-          } else {
-            toast.error(raw?.error ?? `Generation failed (cluster ${i + 1}/${targets.length})`);
-          }
+          toast.error(raw?.error ?? `Generation failed (cluster ${i + 1}/${targets.length})`);
           return;
         }
         const parsed = GenerateUserStoriesResponseSchema.safeParse(raw);
-        if (!parsed.success) {
+        if (!parsed.success || parsed.data.kind !== 'corpus') {
           toast.error(`Unexpected generate response (cluster ${i + 1}/${targets.length})`);
           return;
         }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GenerateUserStoryDraftUseCase } from './generate-user-story-draft-usecase';
 import { ok, err } from '@repo/result';
-import { NotFoundError, ExternalServiceError, DatabaseError } from '@shared/errors/application-error';
+import { NotFoundError, ExternalServiceError, DatabaseError, ValidationError } from '@shared/errors/application-error';
 import type { IProjectRepository } from '@domain/project/project-repository';
 import type { IFeatureSplitRepository } from '@domain/feature-split/feature-split-repository';
 import type { IUserStoryCorpusRepository } from '@domain/user-stories/user-story-corpus-repository';
@@ -94,7 +94,8 @@ const makeMockCorpusRepo = (): IUserStoryCorpusRepository => ({
 });
 
 const makeMockDraftGenerator = (): IUserStoryDraftGenerator => ({
-  draftFromCluster: vi.fn(),
+  draftOutlines: vi.fn(),
+  draftSingleStory: vi.fn(),
 });
 
 describe('GenerateUserStoryDraftUseCase', () => {
@@ -135,110 +136,25 @@ describe('GenerateUserStoryDraftUseCase', () => {
       })])));
 
       const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      const result = await uc.execute('prj_1', 'usr_1', 'clu_1', 'template');
+      const result = await uc.execute('prj_1', 'usr_1', {
+        featureSplitClusterId: 'clu_1',
+        mode: 'template',
+      });
 
       expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        expect(result.unwrap().kind).toBe('corpus');
+      }
       expect(corpusRepo.save).toHaveBeenCalledWith(
         'prj_1',
         'clu_1',
         [{ sortOrder: 0, title: 'Payments', body: expectedBody }]
       );
     });
-
-    it('uses refinement placeholders when valueLine and boundaryCue are empty', async () => {
-      const projectRepo = makeMockProjectRepo();
-      const splitRepo = makeMockSplitRepo();
-      const corpusRepo = makeMockCorpusRepo();
-      const generator = makeMockDraftGenerator();
-      const cluster = makeCluster({ label: 'User Auth', valueLine: '', boundaryCue: '' });
-
-      const expectedBody =
-        '## Goal\n' +
-        'Turn this cluster into concrete, user-visible behaviors. Each capability below must be **distinct** — do not ship the cluster fields alone as the story.\n' +
-        '\n## Cluster reference (expand; do not use as sole story text)\n' +
-        '- Label: User Auth\n' +
-        '- Value line: _add during refinement_\n' +
-        '- Boundary cue: _add during refinement_' +
-        templateScaffoldSuffix;
-
-      vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
-      vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit(cluster)]));
-      vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([makeLine({ title: 'User Auth', body: expectedBody })])));
-
-      const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      const result = await uc.execute('prj_1', 'usr_1', 'clu_1', 'template');
-
-      expect(result.isOk()).toBe(true);
-      expect(corpusRepo.save).toHaveBeenCalledWith(
-        'prj_1',
-        'clu_1',
-        [{ sortOrder: 0, title: 'User Auth', body: expectedBody }]
-      );
-    });
-
-    it('uses "Feature story" fallback when label is also empty', async () => {
-      const projectRepo = makeMockProjectRepo();
-      const splitRepo = makeMockSplitRepo();
-      const corpusRepo = makeMockCorpusRepo();
-      const generator = makeMockDraftGenerator();
-      const cluster = makeCluster({ label: '', valueLine: '', boundaryCue: '' });
-
-      const expectedBody =
-        '## Goal\n' +
-        'Turn this cluster into concrete, user-visible behaviors. Each capability below must be **distinct** — do not ship the cluster fields alone as the story.\n' +
-        '\n## Cluster reference (expand; do not use as sole story text)\n' +
-        '- Label: Feature story\n' +
-        '- Value line: _add during refinement_\n' +
-        '- Boundary cue: _add during refinement_' +
-        templateScaffoldSuffix;
-
-      vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
-      vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit(cluster)]));
-      vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([
-        makeLine({ title: 'Feature story', body: expectedBody }),
-      ])));
-
-      const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      const result = await uc.execute('prj_1', 'usr_1', 'clu_1', 'template');
-
-      expect(result.isOk()).toBe(true);
-      const savedLines = vi.mocked(corpusRepo.save).mock.calls[0][2];
-      expect(savedLines[0].title).toBe('Feature story');
-      expect(savedLines[0].body).toBe(expectedBody);
-      expect(savedLines[0].title.length).toBeGreaterThan(0);
-      expect(savedLines[0].body.length).toBeGreaterThan(0);
-    });
-
-    it('strips whitespace-only valueLine and boundaryCue', async () => {
-      const projectRepo = makeMockProjectRepo();
-      const splitRepo = makeMockSplitRepo();
-      const corpusRepo = makeMockCorpusRepo();
-      const generator = makeMockDraftGenerator();
-      const cluster = makeCluster({ label: 'Search', valueLine: '   ', boundaryCue: '  ' });
-
-      const expectedBody =
-        '## Goal\n' +
-        'Turn this cluster into concrete, user-visible behaviors. Each capability below must be **distinct** — do not ship the cluster fields alone as the story.\n' +
-        '\n## Cluster reference (expand; do not use as sole story text)\n' +
-        '- Label: Search\n' +
-        '- Value line: _add during refinement_\n' +
-        '- Boundary cue: _add during refinement_' +
-        templateScaffoldSuffix;
-
-      vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
-      vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit(cluster)]));
-      vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([makeLine({ title: 'Search', body: expectedBody })])));
-
-      const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      await uc.execute('prj_1', 'usr_1', 'clu_1', 'template');
-
-      const savedLines = vi.mocked(corpusRepo.save).mock.calls[0][2];
-      expect(savedLines[0].body).toBe(expectedBody);
-    });
   });
 
   describe('ai mode', () => {
-    it('calls draftGenerator and saves AI-generated stories', async () => {
+    it('returns outlines on outline step', async () => {
       const projectRepo = makeMockProjectRepo();
       const splitRepo = makeMockSplitRepo();
       const corpusRepo = makeMockCorpusRepo();
@@ -246,34 +162,94 @@ describe('GenerateUserStoryDraftUseCase', () => {
 
       vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
       vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit()]));
-      vi.mocked(generator.draftFromCluster).mockResolvedValue(ok({
-        stories: [
-          { title: 'Story A', body: 'Given A When A Then A', sortOrder: 0 },
-          { title: 'Story B', body: 'Given B When B Then B', sortOrder: 1 },
-        ],
-      }));
-      vi.mocked(corpusRepo.save).mockResolvedValue(ok(makeCorpus([
-        makeLine({ id: 'l1', title: 'Story A', body: 'Given A When A Then A', sortOrder: 0 }),
-        makeLine({ id: 'l2', title: 'Story B', body: 'Given B When B Then B', sortOrder: 1 }),
-      ])));
+      vi.mocked(generator.draftOutlines).mockResolvedValue(
+        ok({ outlines: [{ title: 'A' }, { title: 'B' }] })
+      );
 
       const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      const result = await uc.execute('prj_1', 'usr_1', 'clu_1', 'ai');
+      const result = await uc.execute('prj_1', 'usr_1', {
+        featureSplitClusterId: 'clu_1',
+        mode: 'ai',
+        aiStep: 'outline',
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(generator.draftFromCluster).toHaveBeenCalledWith({
-        label: 'Payments',
-        valueLine: 'Collect money from users',
-        boundaryCue: 'No refund logic',
-      });
-      expect(corpusRepo.save).toHaveBeenCalledWith(
-        'prj_1',
-        'clu_1',
-        [
-          { sortOrder: 0, title: 'Story A', body: 'Given A When A Then A' },
-          { sortOrder: 1, title: 'Story B', body: 'Given B When B Then B' },
-        ]
+      if (result.isOk()) {
+        const value = result.unwrap();
+        expect(value.kind).toBe('outline');
+        if (value.kind === 'outline') {
+          expect(value.total).toBe(2);
+        }
+      }
+      expect(corpusRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('generates one story and appends to existing lines on story step', async () => {
+      const projectRepo = makeMockProjectRepo();
+      const splitRepo = makeMockSplitRepo();
+      const corpusRepo = makeMockCorpusRepo();
+      const generator = makeMockDraftGenerator();
+
+      vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
+      vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit()]));
+      vi.mocked(generator.draftSingleStory).mockResolvedValue(
+        ok({ title: 'Story B', body: 'Body B', sortOrder: 1 })
       );
+      vi.mocked(corpusRepo.save).mockResolvedValue(
+        ok(
+          makeCorpus([
+            makeLine({ title: 'Story A', body: 'Body A', sortOrder: 0 }),
+            makeLine({ id: 'l2', title: 'Story B', body: 'Body B', sortOrder: 1 }),
+          ])
+        )
+      );
+
+      const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
+      const result = await uc.execute('prj_1', 'usr_1', {
+        featureSplitClusterId: 'clu_1',
+        mode: 'ai',
+        aiStep: 'story',
+        outlines: [{ title: 'A' }, { title: 'B' }],
+        outlineIndex: 1,
+        existingLines: [{ sortOrder: 0, title: 'Story A', body: 'Body A' }],
+      });
+
+      expect(result.isOk()).toBe(true);
+      if (result.isOk()) {
+        const value = result.unwrap();
+        expect(value.kind).toBe('story');
+        if (value.kind === 'story') {
+          expect(value.progress).toEqual({ current: 2, total: 2, done: true });
+        }
+      }
+      expect(corpusRepo.save).toHaveBeenCalledWith('prj_1', 'clu_1', [
+        { sortOrder: 0, title: 'Story A', body: 'Body A' },
+        { sortOrder: 1, title: 'Story B', body: 'Body B' },
+      ]);
+    });
+
+    it('returns ValidationError when outlineIndex is out of range', async () => {
+      const projectRepo = makeMockProjectRepo();
+      const splitRepo = makeMockSplitRepo();
+      const corpusRepo = makeMockCorpusRepo();
+      const generator = makeMockDraftGenerator();
+
+      vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
+      vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit()]));
+
+      const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
+      const result = await uc.execute('prj_1', 'usr_1', {
+        featureSplitClusterId: 'clu_1',
+        mode: 'ai',
+        aiStep: 'story',
+        outlines: [{ title: 'A' }],
+        outlineIndex: 3,
+      });
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toBeInstanceOf(ValidationError);
+      }
     });
 
     it('returns ExternalServiceError when draft generator fails', async () => {
@@ -284,12 +260,16 @@ describe('GenerateUserStoryDraftUseCase', () => {
 
       vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
       vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit()]));
-      vi.mocked(generator.draftFromCluster).mockResolvedValue(
+      vi.mocked(generator.draftOutlines).mockResolvedValue(
         err(new ExternalServiceError('AI', 'AI returned invalid JSON for user stories'))
       );
 
       const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      const result = await uc.execute('prj_1', 'usr_1', 'clu_1', 'ai');
+      const result = await uc.execute('prj_1', 'usr_1', {
+        featureSplitClusterId: 'clu_1',
+        mode: 'ai',
+        aiStep: 'outline',
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -306,15 +286,21 @@ describe('GenerateUserStoryDraftUseCase', () => {
 
       vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
       vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit()]));
-      vi.mocked(generator.draftFromCluster).mockResolvedValue(ok({
-        stories: [{ title: 'Story', body: 'Body', sortOrder: 0 }],
-      }));
+      vi.mocked(generator.draftSingleStory).mockResolvedValue(
+        ok({ title: 'Story', body: 'Body', sortOrder: 0 })
+      );
       vi.mocked(corpusRepo.save).mockResolvedValue(
         err(new DatabaseError('Failed to save user story corpus'))
       );
 
       const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      const result = await uc.execute('prj_1', 'usr_1', 'clu_1', 'ai');
+      const result = await uc.execute('prj_1', 'usr_1', {
+        featureSplitClusterId: 'clu_1',
+        mode: 'ai',
+        aiStep: 'story',
+        outlines: [{ title: 'A' }],
+        outlineIndex: 0,
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -335,52 +321,14 @@ describe('GenerateUserStoryDraftUseCase', () => {
       );
 
       const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      const result = await uc.execute('prj_1', 'usr_1', 'clu_1', 'template');
+      const result = await uc.execute('prj_1', 'usr_1', {
+        featureSplitClusterId: 'clu_1',
+        mode: 'template',
+      });
 
       expect(result.isErr()).toBe(true);
       expect(splitRepo.findByProjectId).not.toHaveBeenCalled();
       expect(corpusRepo.save).not.toHaveBeenCalled();
-    });
-
-    it('returns NotFoundError when cluster is not confirmed', async () => {
-      const projectRepo = makeMockProjectRepo();
-      const splitRepo = makeMockSplitRepo();
-      const corpusRepo = makeMockCorpusRepo();
-      const generator = makeMockDraftGenerator();
-      const draftSplit: FeatureSplitDomain = {
-        ...makeFeatureSplit(),
-        status: 'draft',
-      };
-
-      vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
-      vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([draftSplit]));
-
-      const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      const result = await uc.execute('prj_1', 'usr_1', 'clu_1', 'template');
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(NotFoundError);
-      }
-      expect(corpusRepo.save).not.toHaveBeenCalled();
-    });
-
-    it('returns NotFoundError when cluster id does not exist', async () => {
-      const projectRepo = makeMockProjectRepo();
-      const splitRepo = makeMockSplitRepo();
-      const corpusRepo = makeMockCorpusRepo();
-      const generator = makeMockDraftGenerator();
-
-      vi.mocked(projectRepo.findByIdAndUserId).mockResolvedValue(ok(makeProject()));
-      vi.mocked(splitRepo.findByProjectId).mockResolvedValue(ok([makeFeatureSplit()]));
-
-      const uc = new GenerateUserStoryDraftUseCase(projectRepo, splitRepo, corpusRepo, generator);
-      const result = await uc.execute('prj_1', 'usr_1', 'WRONG_CLUSTER_ID', 'template');
-
-      expect(result.isErr()).toBe(true);
-      if (result.isErr()) {
-        expect(result.error).toBeInstanceOf(NotFoundError);
-      }
     });
   });
 });

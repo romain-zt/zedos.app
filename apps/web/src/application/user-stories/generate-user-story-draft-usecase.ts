@@ -3,12 +3,22 @@ import { IFeatureSplitRepository } from '@domain/feature-split/feature-split-rep
 import { IUserStoryCorpusRepository } from '@domain/user-stories/user-story-corpus-repository';
 import type { IUserStoryDraftGenerator } from '@domain/user-stories/user-story-draft-generator';
 import type { UserStoryCorpusDomain } from '@domain/user-stories/user-story-corpus';
+import type { GenerateUserStoriesRequest } from '@repo/contracts/user-stories';
 import { Result, ok, err } from '@repo/result';
-import { ApplicationError } from '@shared/errors/application-error';
+import { ApplicationError, ValidationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
 import { requireConfirmedClusterForUserStories } from './require-confirmed-cluster';
 
 const logger = createLogger({ operation: 'GenerateUserStoryDraftUseCase' });
+
+export type GenerateUserStoryDraftResult =
+  | { kind: 'corpus'; corpus: UserStoryCorpusDomain }
+  | { kind: 'outline'; outlines: { title: string }[]; total: number }
+  | {
+      kind: 'story';
+      corpus: UserStoryCorpusDomain;
+      progress: { current: number; total: number; done: boolean };
+    };
 
 /** Cheap template draft: structured scaffold; cluster fields are hints only (not the whole story). */
 function buildTemplateDraft(cluster: {
@@ -53,9 +63,86 @@ export class GenerateUserStoryDraftUseCase {
   async execute(
     projectId: string,
     userId: string,
-    featureSplitClusterId: string,
-    mode: 'template' | 'ai'
-  ): Promise<Result<UserStoryCorpusDomain, ApplicationError>> {
+    input: GenerateUserStoriesRequest
+  ): Promise<Result<GenerateUserStoryDraftResult, ApplicationError>> {
+    const clusterResult = await this.resolveCluster(projectId, userId, input.featureSplitClusterId);
+    if (clusterResult.isErr()) return err(clusterResult.error);
+    const cluster = clusterResult.unwrap();
+
+    if (input.mode === 'template') {
+      const { title, body } = buildTemplateDraft(cluster);
+      const saveResult = await this.corpusRepository.save(projectId, input.featureSplitClusterId, [
+        { sortOrder: 0, title, body },
+      ]);
+      if (saveResult.isErr()) return err(saveResult.error);
+      return ok({ kind: 'corpus', corpus: saveResult.unwrap() });
+    }
+
+    if (input.aiStep === 'outline') {
+      const outlinesResult = await this.draftGenerator.draftOutlines({
+        label: cluster.label,
+        valueLine: cluster.valueLine,
+        boundaryCue: cluster.boundaryCue,
+      });
+      if (outlinesResult.isErr()) return err(outlinesResult.error);
+      const outlines = outlinesResult.unwrap().outlines;
+      logger.info('User story outlines ready', { count: outlines.length });
+      return ok({ kind: 'outline', outlines, total: outlines.length });
+    }
+
+    const { outlines, outlineIndex, existingLines = [] } = input;
+    if (outlineIndex >= outlines.length) {
+      return err(new ValidationError('outlineIndex out of range'));
+    }
+
+    const storyResult = await this.draftGenerator.draftSingleStory(
+      {
+        label: cluster.label,
+        valueLine: cluster.valueLine,
+        boundaryCue: cluster.boundaryCue,
+      },
+      outlines[outlineIndex],
+      outlineIndex
+    );
+    if (storyResult.isErr()) return err(storyResult.error);
+
+    const story = storyResult.unwrap();
+    const lines = [
+      ...existingLines.map((line, i) => ({
+        sortOrder: line.sortOrder ?? i,
+        title: line.title,
+        body: line.body,
+      })),
+      {
+        sortOrder: story.sortOrder ?? outlineIndex,
+        title: story.title,
+        body: story.body,
+      },
+    ];
+
+    const saveResult = await this.corpusRepository.save(
+      projectId,
+      input.featureSplitClusterId,
+      lines
+    );
+    if (saveResult.isErr()) return err(saveResult.error);
+
+    const total = outlines.length;
+    const current = outlineIndex + 1;
+    return ok({
+      kind: 'story',
+      corpus: saveResult.unwrap(),
+      progress: { current, total, done: current >= total },
+    });
+  }
+
+  private async resolveCluster(
+    projectId: string,
+    userId: string,
+    featureSplitClusterId: string
+  ): Promise<
+    Result<{ label: string; valueLine: string; boundaryCue: string }, ApplicationError>
+  > {
     const projectResult = await this.projectRepository.findByIdAndUserId(projectId, userId);
     if (projectResult.isErr()) {
       logger.warn('Project not found or unauthorized', { projectId, userId });
@@ -68,33 +155,6 @@ export class GenerateUserStoryDraftUseCase {
       featureSplitClusterId
     );
     if (clusterResult.isErr()) return err(clusterResult.error);
-    const cluster = clusterResult.unwrap();
-
-    if (mode === 'template') {
-      const { title, body } = buildTemplateDraft(cluster);
-      return this.corpusRepository.save(projectId, featureSplitClusterId, [
-        {
-          sortOrder: 0,
-          title,
-          body,
-        },
-      ]);
-    }
-
-    const draftResult = await this.draftGenerator.draftFromCluster({
-      label: cluster.label,
-      valueLine: cluster.valueLine,
-      boundaryCue: cluster.boundaryCue,
-    });
-    if (draftResult.isErr()) return err(draftResult.error);
-
-    const stories = draftResult.unwrap().stories;
-    const lines = stories.map((s, i) => ({
-      sortOrder: s.sortOrder ?? i,
-      title: s.title,
-      body: s.body,
-    }));
-
-    return this.corpusRepository.save(projectId, featureSplitClusterId, lines);
+    return ok(clusterResult.unwrap());
   }
 }

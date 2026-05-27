@@ -26,8 +26,9 @@ export const CreditTransactionDTOSchema = z.object({
   userId: z.string(),
   type: z.enum(['grant', 'purchase', 'auto_reload', 'consumption']),
   amount: z.number(),
+  balanceAfter: z.number().optional(),
   operationType: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.unknown()).optional(),
   createdAt: z.date(),
 });
 

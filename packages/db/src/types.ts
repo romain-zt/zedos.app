@@ -15,6 +15,9 @@ export interface NewUserRow {
   creditBalance?: number;
   graceUsed?: boolean;
   starterCreditsGranted?: boolean;
+  marketingConsent?: boolean;
+  productUpdatesConsent?: boolean;
+  consentUpdatedAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -29,6 +32,9 @@ export interface UserUpdate {
   creditBalance?: number;
   graceUsed?: boolean;
   starterCreditsGranted?: boolean;
+  marketingConsent?: boolean;
+  productUpdatesConsent?: boolean;
+  consentUpdatedAt?: Date | null;
 }
 
 // Project insert type

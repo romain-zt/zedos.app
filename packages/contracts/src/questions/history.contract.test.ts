@@ -15,6 +15,16 @@ describe('ClarifyPostBodySchema', () => {
     const r = ClarifyPostBodySchema.safeParse({});
     expect(r.success).toBe(true);
   });
+
+  it('accepts null message and decisionResponse from auto-start clarify', () => {
+    const r = ClarifyPostBodySchema.safeParse({
+      message: null,
+      decisionResponse: null,
+      prdVersionId: null,
+      clientThread: [],
+    });
+    expect(r.success).toBe(true);
+  });
 });
 
 describe('ClarifyAiResponseSchema', () => {

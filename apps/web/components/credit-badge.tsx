@@ -1,30 +1,38 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Coins } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
+import { CREDITS_UPDATED_EVENT } from '@/lib/credits-events'
 
 export function CreditBadge() {
   const [balance, setBalance] = useState<number | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const res = await fetch('/api/credits')
-        if (res?.ok) {
-          const data = await res.json()
-          setBalance(data?.creditBalance ?? 0)
-        }
-      } catch {
-        // Silently fail
+  const fetchBalance = useCallback(async () => {
+    try {
+      const res = await fetch('/api/credits', { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        setBalance(data?.creditBalance ?? 0)
       }
+    } catch {
+      // Silently fail
     }
-    fetchBalance()
-    const interval = setInterval(fetchBalance, 30000)
-    return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    void fetchBalance()
+    const onCreditsUpdated = () => {
+      void fetchBalance()
+    }
+    window.addEventListener(CREDITS_UPDATED_EVENT, onCreditsUpdated)
+    const interval = setInterval(fetchBalance, 30000)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener(CREDITS_UPDATED_EVENT, onCreditsUpdated)
+    }
+  }, [fetchBalance])
 
   return (
     <button
