@@ -1,9 +1,11 @@
 ---
 type: state-handoff
-date: 2026-05-12
+date: 2026-05-28
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
+payments_tax_vat_tracking_pr: 125
+payments_tax_vat_tracking_branch: orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962307892
 parallel_pipeline_status: in-progress
 parallel_pipeline_status_prior_branch_note: blocked-awaiting-plan-approval — historic parallel orch branch gate (superseded on mainline where milestone work advanced to PR #97 + UI complete).
 current_phase_primary: orch-credit-system--tests-state-finalization
@@ -35,6 +37,18 @@ remediation_note: null
 ---
 
 # Cloud Agent State Handoff
+
+## Payments — tax and VAT legibility (`fa-payments--tax-and-vat-legibility`)
+
+- **Tracking PR:** **`#125`**, head **`orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962307892`** → **`main`**.
+- **Orchestration step:** **`blocked`** in `orchestration.steps["fa-payments--tax-and-vat-legibility"]`.
+- **Anchors:** `docs/product/feature-areas/payments.md`, `docs/product/scope-slices/payments--tax-and-vat-legibility.md`.
+- **Prerequisite:** `fa-payments--manual-credit-pack-checkout` is **`complete`** (checkout surfaces exist).
+- **Why blocked:** Scope slice is **`exploratory`** with **Readiness for User Stories: NOT READY** (empty UX States / Data Touched; checklist unchecked). Per **execution-bridge** §5, no User Story or approved Implementation Plan until **`/feature-area refine-slice`** + **`promote-slice`**.
+- **User story / plan:** None — correct until slice promotion.
+- **NEED_HUMAN:** Product/governance must fill UX states (pre-checkout tax display, receipt tax line, FR/EU vs US, error/loading), name data touched, run **`/feature-area promote-slice`**, then **`/plan`** with chat **`approved`** before **`contracts-domain`** layer.
+- **This run (2026-05-28):** Updated `status.json` + this HANDOFF; **no** `gh pr ready` — draft stays open.
+- **Safest next task:** Refine `payments--tax-and-vat-legibility.md`; reconcile dependency row for `manual-credit-pack-checkout` to **`ready-for-user-stories`** / complete; then architect User Story + Plan from slice only.
 
 ## User stories — corpus reliability, batch UI, draft quality (`fa-user-stories--corpus-reliability-batch-quality--impl`)
 
