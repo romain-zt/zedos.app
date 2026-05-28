@@ -45,7 +45,7 @@
       "fa-user-stories--corpus-reliability-batch-quality--impl": 1,
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1
     },
-    "blocker": "NEED_HUMAN: Scope slice docs/product/scope-slices/payments--auto-reload-opt-in-and-outcomes.md is exploratory (NOT READY) — empty UX States / Data Touched; no User Story or approved Implementation Plan. Run /feature-area refine-slice + promote-slice, then /plan with chat approved before db-migration layer."
+    "blocker": "NEED_HUMAN: Implementation Plan docs/execution/plans/payments--auto-reload-opt-in-and-outcomes--v0.plan.md is proposed (not approved). Reply chat approved to unblock db-migration Iteration 1. OQ-1 (trigger threshold) needed before Iteration 4."
   },
   "cursor_self_improve": {
     "status": "complete",
@@ -133,10 +133,12 @@
       "tracking_pr": 123,
       "tracking_branch": "orchestrator/tracking-fa-payments--auto-reload-opt-in-and-outcomes-1779962218974",
       "scope_slice": "docs/product/scope-slices/payments--auto-reload-opt-in-and-outcomes.md",
-      "user_story": null,
-      "implementation_plan": null,
-      "next_layer": "governance — refine-slice + promote-slice, then user story + approved plan",
-      "blocker": "NEED_HUMAN: Scope slice is exploratory (NOT READY). UX States and Data Touched are empty; readiness checklist unchecked. Per execution-bridge §5/§9, no User Story or code until slice is ready-for-user-stories and Plan is approved."
+      "scope_slice_status": "ready-for-user-stories",
+      "user_story": "docs/execution/user-stories/payments--auto-reload-opt-in-and-outcomes--v0.md",
+      "implementation_plan": "docs/execution/plans/payments--auto-reload-opt-in-and-outcomes--v0.plan.md",
+      "implementation_plan_status": "proposed",
+      "next_layer": "db-migration (Iteration 1 — after plan approved)",
+      "blocker": "NEED_HUMAN: Approve proposed Implementation Plan with chat approved (not ok) before db-migration. OQ-1 trigger event blocks Iteration 4 only."
     },
     "manual_credit_pack_checkout": {
       "status": "complete",
