@@ -79,11 +79,22 @@ export function comingUpPrdSectionsFromAssistantParsed(
   return PRD_SECTIONS.filter((section) => !touched.has(section)).slice(0, limit);
 }
 
+/** In-panel thread override (refine sheet / edit & regenerate) — skips DB history for the prompt. */
+export const ClarifyClientThreadMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
+  reasoning: z.string().optional(),
+});
+
+export type ClarifyClientThreadMessage = z.infer<typeof ClarifyClientThreadMessageSchema>;
+
 export const ClarifyPostBodySchema = z
   .object({
-    message: z.string().optional(),
-    decisionResponse: z.unknown().optional(),
+    message: z.string().nullish(),
+    decisionResponse: z.unknown().nullish(),
     prdVersionId: z.union([z.string().min(1), z.null()]).optional(),
+    clientThread: z.array(ClarifyClientThreadMessageSchema).optional(),
+    refinementContextLabel: z.string().optional(),
   })
   .passthrough();
 

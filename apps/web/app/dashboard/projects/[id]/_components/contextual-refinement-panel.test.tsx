@@ -232,6 +232,29 @@ describe('ContextualRefinementPanel', () => {
     expect(sendAfter.disabled).toBe(true)
   })
 
+  it('keeps reply textarea visible after assistant responds', async () => {
+    const resultJson = JSON.stringify({ message: 'What risks do you see?', reasoning: 'Need detail' })
+    fetchMock.mockResolvedValue(
+      new Response(
+        sseResponse([`data: {"status":"completed","result":${JSON.stringify(resultJson)}}\n\n`]),
+        { status: 200 }
+      )
+    )
+
+    renderPanel()
+
+    setTextareaValue(refinementTextarea(), 'My approach to ATS')
+    await act(async () => {
+      refinementSendButton()!.click()
+      await Promise.resolve()
+    })
+
+    expect(refinementTextarea()).not.toBeNull()
+    expect(refinementTextarea()?.disabled).toBe(false)
+    expect(refinementTextarea()?.placeholder).toMatch(/répondre|reply/i)
+    expect(document.body.textContent).toContain('Update PRD')
+  })
+
   it('calls onClose when Close is clicked after response', async () => {
     const resultJson = JSON.stringify({ message: 'ok' })
     fetchMock.mockResolvedValue(

@@ -17,6 +17,9 @@ export const users = pgTable('users', {
   creditBalance: integer('credit_balance').notNull().default(0),
   starterCreditsGranted: boolean('starter_credits_granted').notNull().default(false),
   graceUsed: boolean('grace_used').notNull().default(false),
+  marketingConsent: boolean('marketing_consent').notNull().default(false),
+  productUpdatesConsent: boolean('product_updates_consent').notNull().default(false),
+  consentUpdatedAt: timestamp('consent_updated_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().$onUpdate(() => new Date()),
 });

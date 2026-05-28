@@ -12,11 +12,8 @@
     "clean": "turbo clean"
   },
   "onlyBuiltDependencies": [
-    "@prisma/client",
-    "@prisma/engines",
     "es5-ext",
     "esbuild",
-    "prisma",
     "unrs-resolver"
   ],
   "devDependencies": {

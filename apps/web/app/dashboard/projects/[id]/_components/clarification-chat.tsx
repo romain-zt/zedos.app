@@ -8,19 +8,35 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Send, Sparkles, FileText, AlertTriangle, Loader2, RefreshCw,
-  HelpCircle, ChevronRight,
+  HelpCircle, Check, X,
 } from 'lucide-react'
+import {
+  ChatMessageToolbar,
+  copyTextToClipboard,
+  toastCopied,
+  toastCopyFailed,
+} from './chat-message-toolbar'
+import { messagesToClientThread } from './clarify-thread-utils'
 import { DecisionCard } from './decision-card'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
+import {
+  ClarifyDecisionUiSchema,
+  type ClarifyDecisionUi,
+} from '@repo/contracts/ai/decision-ui'
 import { comingUpPrdSectionsFromAssistantParsed } from '@repo/contracts/questions/history'
 import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 
 interface Message {
+  id: string
   role: 'user' | 'assistant' | 'system'
   content: string
-  parsed?: any
-  decisionResponse?: any
+  parsed?: Record<string, unknown>
+  decisionResponse?: Record<string, unknown>
+}
+
+function newMsgId(): string {
+  return crypto.randomUUID()
 }
 
 interface ClarificationChatProps {
@@ -37,8 +53,12 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
   const [generatingPrd, setGeneratingPrd] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [feedbackMilestone, setFeedbackMilestone] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const hasStarted = useRef(false)
+  /** Thread used for the in-flight clarify request (avoids stale append after truncate). */
+  const activeThreadRef = useRef<Message[]>([])
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -71,13 +91,18 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
           if (Array.isArray(data) && data.length > 0) {
             const historic: Message[] = []
             for (const q of data) {
-              const parsed: any = { message: q.structuredQuestion }
+              const parsed: Record<string, unknown> = { message: q.structuredQuestion }
               if (q.availableOptions) parsed.decision_ui = q.availableOptions
               if (q.aiInterpretation) parsed.reasoning = q.aiInterpretation
               if (q.prdImpact) parsed.prd_section_affected = q.prdImpact
-              historic.push({ role: 'assistant', content: q.structuredQuestion, parsed })
+              historic.push({
+                id: newMsgId(),
+                role: 'assistant',
+                content: q.structuredQuestion,
+                parsed,
+              })
               if (q.founderAnswer) {
-                historic.push({ role: 'user', content: q.founderAnswer })
+                historic.push({ id: newMsgId(), role: 'user', content: q.founderAnswer })
               }
             }
             setMessages(historic)
@@ -94,22 +119,34 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
     loadHistory()
   }, [projectId])
 
-  const sendMessage = async (userMessage: string | null, decisionResponse: any | null) => {
+  const sendMessage = async (
+    userMessage: string | null,
+    decisionResponse: Record<string, unknown> | null,
+    options?: { threadBase?: Message[]; skipAppendUser?: boolean }
+  ) => {
     if (streaming) return
 
-    // Add user message to chat
-    if (userMessage || decisionResponse) {
+    let thread = options?.threadBase ?? messages
+
+    if (!options?.skipAppendUser && (userMessage || decisionResponse)) {
       const displayContent = decisionResponse
         ? `Selected: ${JSON.stringify(decisionResponse?.selected ?? decisionResponse)}`
         : userMessage ?? ''
-      setMessages((prev: Message[]) => [
-        ...(prev ?? []),
-        { role: 'user', content: displayContent, decisionResponse },
-      ])
+      const userMsg: Message = {
+        id: newMsgId(),
+        role: 'user',
+        content: displayContent,
+        ...(decisionResponse ? { decisionResponse } : {}),
+      }
+      thread = [...thread, userMsg]
     }
+
+    activeThreadRef.current = thread
+    setMessages(thread)
 
     setStreaming(true)
     setInput('')
+    setEditingId(null)
 
     try {
       const res = await fetch(`/api/projects/${projectId}/clarify`, {
@@ -119,6 +156,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
           message: userMessage,
           decisionResponse,
           prdVersionId,
+          clientThread: messagesToClientThread(thread),
         }),
       })
 
@@ -138,9 +176,52 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
       const decoder = new TextDecoder()
       let partialRead = ''
       let assistantContent = ''
+      let streamCompleted = false
 
-      // Add placeholder assistant message
-      setMessages((prev: Message[]) => [...(prev ?? []), { role: 'assistant', content: '' }])
+      const appendAssistantFromBuffer = (raw: string) => {
+        let parsedResult: Record<string, unknown>
+        try {
+          parsedResult = JSON.parse(raw) as Record<string, unknown>
+        } catch {
+          parsedResult = { message: raw }
+        }
+        const messageText =
+          typeof parsedResult.message === 'string' ? parsedResult.message : raw
+
+        const assistantMsg: Message = {
+          id: newMsgId(),
+          role: 'assistant',
+          content: messageText,
+          parsed: parsedResult,
+        }
+        const nextThread = [...activeThreadRef.current, assistantMsg]
+        activeThreadRef.current = nextThread
+        setMessages(nextThread)
+      }
+
+      const handleSseLine = (line: string) => {
+        if (!line.startsWith('data: ')) return
+        const data = line.slice(6)
+        try {
+          const parsed = JSON.parse(data) as {
+            status?: string
+            partial?: string
+            result?: string
+            message?: string
+          }
+          if (parsed?.status === 'processing') {
+            assistantContent += parsed?.partial ?? ''
+          } else if (parsed?.status === 'completed') {
+            streamCompleted = true
+            assistantContent = parsed?.result ?? assistantContent
+            appendAssistantFromBuffer(assistantContent)
+          } else if (parsed?.status === 'error') {
+            toast.error(parsed?.message ?? 'AI error')
+          }
+        } catch {
+          /* ignore malformed chunk */
+        }
+      }
 
       while (reader) {
         const { done, value } = await reader.read()
@@ -151,59 +232,16 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         partialRead = lines.pop() ?? ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed?.status === 'processing') {
-                assistantContent += parsed?.partial ?? ''
-              } else if (parsed?.status === 'completed') {
-                assistantContent = parsed?.result ?? assistantContent
-                let parsedResult: any = null
-                try {
-                  parsedResult = JSON.parse(assistantContent)
-                } catch {
-                  parsedResult = { message: assistantContent }
-                }
-
-                setMessages((prev: Message[]) => {
-                  const updated = [...(prev ?? [])]
-                  if (updated.length > 0) {
-                    updated[updated.length - 1] = {
-                      role: 'assistant',
-                      content: parsedResult?.message ?? assistantContent,
-                      parsed: parsedResult,
-                    }
-                  }
-                  return updated
-                })
-              } else if (parsed?.status === 'error') {
-                toast.error(parsed?.message ?? 'AI error')
-              }
-            } catch {}
-          }
+          handleSseLine(line)
         }
+      }
 
-        // Update streaming content
-        setMessages((prev: Message[]) => {
-          const updated = [...(prev ?? [])]
-          if (updated.length > 0 && updated[updated.length - 1]?.role === 'assistant') {
-            try {
-              const partial = JSON.parse(assistantContent)
-              updated[updated.length - 1] = {
-                role: 'assistant',
-                content: partial?.message ?? assistantContent.slice(0, 200),
-                parsed: partial,
-              }
-            } catch {
-              updated[updated.length - 1] = {
-                ...updated[updated.length - 1],
-                content: assistantContent.slice(0, 200) + '...',
-              }
-            }
-          }
-          return updated
-        })
+      if (partialRead.trim()) {
+        handleSseLine(partialRead.trim())
+      }
+
+      if (!streamCompleted && assistantContent.trim()) {
+        appendAssistantFromBuffer(assistantContent)
       }
     } catch (error: any) {
       console.error('Clarification error:', error)
@@ -219,8 +257,72 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
     sendMessage(msg, null)
   }
 
-  const handleDecision = (response: any) => {
-    sendMessage(null, response)
+  const handleDecision = (response: Record<string, unknown>) => {
+    void sendMessage(null, response)
+  }
+
+  const handleCopy = async (text: string) => {
+    const ok = await copyTextToClipboard(text)
+    if (ok) toastCopied()
+    else toastCopyFailed()
+  }
+
+  const startEdit = (msg: Message) => {
+    if (streaming || msg.decisionResponse) return
+    setEditingId(msg.id)
+    setEditDraft(msg.content)
+  }
+
+  const submitEdit = async (messageId: string) => {
+    const text = editDraft.trim()
+    if (!text || streaming) return
+    const index = messages.findIndex((m) => m.id === messageId)
+    if (index < 0 || messages[index]?.role !== 'user') return
+    const thread = [
+      ...messages.slice(0, index),
+      { ...messages[index], content: text },
+    ]
+    activeThreadRef.current = thread
+    setMessages(thread)
+    setEditingId(null)
+    setEditDraft('')
+    await sendMessage(text, null, { threadBase: thread, skipAppendUser: true })
+  }
+
+  const resendFromUserMessage = async (userMessageId: string) => {
+    if (streaming) return
+    const userIndex = messages.findIndex((m) => m.id === userMessageId && m.role === 'user')
+    if (userIndex < 0) return
+    const userMsg = messages[userIndex]
+    const thread = messages.slice(0, userIndex + 1)
+    activeThreadRef.current = thread
+    setMessages(thread)
+    setEditingId(null)
+    setEditDraft('')
+    const prompt = userMsg.decisionResponse ? null : userMsg.content
+    await sendMessage(prompt, userMsg.decisionResponse ?? null, {
+      threadBase: thread,
+      skipAppendUser: true,
+    })
+  }
+
+  const regenerateAssistant = async (assistantId: string) => {
+    if (streaming) return
+    const aiIndex = messages.findIndex((m) => m.id === assistantId && m.role === 'assistant')
+    if (aiIndex < 0) return
+    let userIndex = aiIndex - 1
+    while (userIndex >= 0 && messages[userIndex]?.role !== 'user') userIndex -= 1
+    if (userIndex < 0) return
+    const userMsg = messages[userIndex]
+    const thread = messages.slice(0, aiIndex)
+    activeThreadRef.current = thread
+    setMessages(thread)
+    setEditingId(null)
+    const prompt = userMsg.decisionResponse ? null : userMsg.content
+    await sendMessage(prompt, userMsg.decisionResponse ?? null, {
+      threadBase: thread,
+      skipAppendUser: true,
+    })
   }
 
   const handleGeneratePrd = async () => {
@@ -269,7 +371,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
                   ...(prdVersionId ? { prdVersionId } : {}),
                 })
               }
-            } catch {}
+            } catch { }
           }
         }
       }
@@ -300,48 +402,125 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         )}
 
         {(messages ?? []).map((msg: Message, i: number) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div key={msg.id} className={`group flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.role === 'user' ? (
-              <div className="max-w-[80%] bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2.5">
-                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+              <div className="max-w-[85%] min-w-0 w-full flex justify-end flex-col">
+                <div className="flex items-start gap-1 min-w-0 w-full max-w-full">
+
+                  <div className="flex-1 min-w-0">
+                    {editingId === msg.id ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editDraft}
+                          onChange={(e) => setEditDraft(e.target.value)}
+                          rows={3}
+                          className="resize-none text-sm w-full h-[200px]"
+                          disabled={streaming}
+                          aria-label="Modifier le message"
+                        />
+                        <div className="flex flex-wrap justify-end gap-1">
+                          <Button type="button" size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                            <X className="h-3.5 w-3.5 mr-1" />
+                            Annuler
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => void submitEdit(msg.id)}
+                            disabled={!editDraft.trim() || streaming}
+                          >
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            Renvoyer
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2.5 w-full">
+                        <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {editingId !== msg.id && (
+                  <ChatMessageToolbar
+                    role="user"
+                    disabled={streaming || !!msg.decisionResponse}
+                    onCopy={() => void handleCopy(msg.content)}
+                    onEdit={msg.decisionResponse ? undefined : () => startEdit(msg)}
+                    onRegenerate={
+                      msg.decisionResponse ? undefined : () => void resendFromUserMessage(msg.id)
+                    }
+                  />
+                )}
               </div>
             ) : (
               <div className="max-w-[85%] space-y-3">
                 {/* Reasoning chip */}
-                {msg.parsed?.reasoning && (
+                {typeof msg.parsed?.reasoning === 'string' && msg.parsed.reasoning ? (
                   <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
                     <HelpCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                     <span>{msg.parsed.reasoning}</span>
                   </div>
-                )}
+                ) : null}
 
                 {/* Main message */}
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    {msg.parsed?.progress_hint && (
-                      <div className="mt-3 flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {msg.parsed.progress_hint}
-                        </Badge>
-                        {msg.parsed?.prd_section_affected && (
-                          <Badge variant="outline" className="text-xs">
-                            → {msg.parsed.prd_section_affected}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <div className="flex items-start gap-1 flex-col">
+                  <Card className="flex-1 min-w-0">
+                    <CardContent className="p-4">
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      {typeof msg.parsed?.progress_hint === 'string' && msg.parsed.progress_hint ? (
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={streaming}
+                            onClick={() => void sendMessage(msg.parsed?.progress_hint as string, null)}
+                            className="disabled:opacity-50"
+                          >
+                            <Badge variant="secondary" className="text-xs cursor-pointer">
+                              {msg.parsed.progress_hint as string}
+                            </Badge>
+                          </button>
+
+                          {typeof msg.parsed?.prd_section_affected === 'string' && msg.parsed.prd_section_affected ? (
+                            <Badge variant="outline" className="text-xs">
+                              → {msg.parsed.prd_section_affected as string}
+                            </Badge>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                  <div className="flex items-start gap-1 self-end">
+                    <ChatMessageToolbar
+                      role="assistant"
+                      disabled={streaming}
+                      onCopy={() =>
+                        void handleCopy(
+                          typeof msg.parsed?.reasoning === 'string'
+                            ? `${msg.content}\n\n${msg.parsed.reasoning}`
+                            : msg.content
+                        )
+                      }
+                      onRegenerate={() => void regenerateAssistant(msg.id)}
+                    />
+                  </div>
+                </div>
 
                 {/* Decision UI */}
-                {msg.parsed?.decision_ui && (
-                  <DecisionCard
-                    decision={msg.parsed.decision_ui}
-                    onSubmit={handleDecision}
-                    disabled={streaming || i !== (messages?.length ?? 0) - 1}
-                  />
-                )}
+                {(() => {
+                  const parsedDecision = ClarifyDecisionUiSchema.safeParse(
+                    msg.parsed?.decision_ui
+                  )
+                  if (!parsedDecision.success) return null
+                  const decisionUi: ClarifyDecisionUi = parsedDecision.data
+                  return (
+                    <DecisionCard
+                      decision={decisionUi}
+                      onSubmit={handleDecision}
+                      disabled={streaming || i !== (messages?.length ?? 0) - 1}
+                    />
+                  )
+                })()}
               </div>
             )}
           </div>

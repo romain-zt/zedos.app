@@ -10,6 +10,8 @@ import {
   GenerateUserStoriesRequestSchema,
   GenerateUserStoriesResponseSchema,
   UserStoryAiDraftListSchema,
+  UserStoryAiOutlineListSchema,
+  UserStoryAiSingleDraftSchema,
 } from './generate';
 
 describe('user-stories contracts', () => {
@@ -82,30 +84,56 @@ describe('user-stories contracts', () => {
     ).toBe(true);
   });
 
-  it('parses GenerateUserStoriesResponseSchema', () => {
-    const now = new Date().toISOString();
+  it('parses outline and single-story AI schemas', () => {
     expect(
-      GenerateUserStoriesResponseSchema.safeParse({
-        corpus: {
-          id: 'c1',
-          projectId: 'p1',
-          featureSplitClusterId: 'cl1',
-          reviewReadyAt: null,
+      UserStoryAiOutlineListSchema.safeParse({
+        outlines: [{ title: 'Sign in with email' }],
+      }).success
+    ).toBe(true);
+    expect(
+      UserStoryAiSingleDraftSchema.safeParse({
+        story: { title: 'Sign in', body: '### User-visible outcome\n…' },
+      }).success
+    ).toBe(true);
+  });
+
+  it('parses GenerateUserStoriesResponseSchema variants', () => {
+    const now = new Date().toISOString();
+    const corpus = {
+      id: 'c1',
+      projectId: 'p1',
+      featureSplitClusterId: 'cl1',
+      reviewReadyAt: null,
+      createdAt: now,
+      updatedAt: now,
+      lines: [
+        {
+          id: 'l1',
+          sortOrder: 0,
+          title: 't',
+          body: 'b',
+          archivedAt: null,
+          draftMarker: null,
           createdAt: now,
           updatedAt: now,
-          lines: [
-            {
-              id: 'l1',
-              sortOrder: 0,
-              title: 't',
-              body: 'b',
-              archivedAt: null,
-              draftMarker: null,
-              createdAt: now,
-              updatedAt: now,
-            },
-          ],
         },
+      ],
+    };
+    expect(
+      GenerateUserStoriesResponseSchema.safeParse({ kind: 'corpus', corpus }).success
+    ).toBe(true);
+    expect(
+      GenerateUserStoriesResponseSchema.safeParse({
+        kind: 'outline',
+        outlines: [{ title: 'Pay' }],
+        total: 1,
+      }).success
+    ).toBe(true);
+    expect(
+      GenerateUserStoriesResponseSchema.safeParse({
+        kind: 'story',
+        corpus,
+        progress: { current: 1, total: 2, done: false },
       }).success
     ).toBe(true);
   });

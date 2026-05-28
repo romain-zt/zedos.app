@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { FadeIn } from '@/components/ui/animate';
-import { Layers, Plus, Trash2, Wand2, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Layers, Plus, Trash2, Wand2, CheckCircle, ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import {
   FeatureSplitListResponseSchema,
@@ -17,6 +17,10 @@ import {
   type PrdVersionDTO,
 } from '@repo/contracts/prd/prd-contracts';
 import { ProposeFeatureSplitResponseSchema } from '@repo/contracts/ai/feature-split-proposal';
+import {
+  assessPrdSplitReadiness,
+  buildTemplateClustersFromPrd,
+} from '@/lib/prd-content-for-ai';
 
 interface FeatureSplitWorkspaceProps {
   projectId: string;
@@ -34,6 +38,16 @@ function emptyCluster(sortOrder: number): ClusterDraft {
   return { sortOrder, label: '', valueLine: '', boundaryCue: '' };
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const PROPOSAL_STATUS_MESSAGES = [
+  'Reading PRD sections…',
+  'Identifying deliverable areas…',
+  'Drafting cluster boundaries…',
+] as const;
+
 export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWorkspaceProps) {
   const [prdVersions, setPrdVersions] = useState<PrdVersionDTO[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
@@ -42,7 +56,20 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [proposing, setProposing] = useState(false);
+  const [buildingTemplate, setBuildingTemplate] = useState(false);
+  const [proposalStatus, setProposalStatus] = useState<string | null>(null);
+  const [revealedClusterCount, setRevealedClusterCount] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
+
+  const selectedVersion = useMemo(
+    () => prdVersions.find((version) => version.id === selectedVersionId) ?? null,
+    [prdVersions, selectedVersionId]
+  );
+
+  const prdReadiness = useMemo(
+    () => (selectedVersion?.content ? assessPrdSplitReadiness(selectedVersion.content) : null),
+    [selectedVersion]
+  );
 
   const fetchVersions = useCallback(async () => {
     try {
@@ -130,9 +157,62 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
     setClusters((prev) => prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)));
   };
 
+  const revealClustersSequentially = async (nextClusters: ClusterDraft[]) => {
+    setClusters([]);
+    setRevealedClusterCount(0);
+
+    for (let index = 0; index < nextClusters.length; index++) {
+      setProposalStatus(`Cluster ${index + 1} of ${nextClusters.length} ready`);
+      await sleep(220);
+      setClusters((prev) => [...prev, nextClusters[index]]);
+      setRevealedClusterCount(index + 1);
+    }
+
+    setProposalStatus(null);
+    setRevealedClusterCount(null);
+  };
+
+  const handleBuildFromSections = async () => {
+    if (!selectedVersion?.content) {
+      toast.error('No PRD content found for this version');
+      return;
+    }
+
+    const template = buildTemplateClustersFromPrd(selectedVersion.content);
+    if (template.length === 0) {
+      toast.error('No filled PRD sections to convert. Complete the PRD in the workspace first.');
+      return;
+    }
+
+    setBuildingTemplate(true);
+    try {
+      await revealClustersSequentially(template);
+      toast.success(`${template.length} clusters loaded from PRD sections — edit each field`);
+    } finally {
+      setBuildingTemplate(false);
+    }
+  };
+
   const handlePropose = async () => {
     if (!selectedVersionId) return;
+
+    if (prdReadiness && !prdReadiness.isReadyForAiSplit) {
+      toast.error(prdReadiness.message);
+      return;
+    }
+
     setProposing(true);
+    setProposalStatus(PROPOSAL_STATUS_MESSAGES[0]);
+    const statusTimer = window.setInterval(() => {
+      setProposalStatus((current) => {
+        const index = PROPOSAL_STATUS_MESSAGES.indexOf(
+          (current ?? PROPOSAL_STATUS_MESSAGES[0]) as (typeof PROPOSAL_STATUS_MESSAGES)[number]
+        );
+        const nextIndex = index < 0 ? 0 : (index + 1) % PROPOSAL_STATUS_MESSAGES.length;
+        return PROPOSAL_STATUS_MESSAGES[nextIndex];
+      });
+    }, 2500);
+
     try {
       const res = await fetch(`/api/projects/${projectId}/feature-split/propose`, {
         method: 'POST',
@@ -143,6 +223,12 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
       if (!res.ok) {
         if (res.status === 402) {
           toast.error('Insufficient credits for AI proposal');
+        } else if (res.status === 504) {
+          toast.error('AI request timed out. Try again or shorten your PRD.');
+        } else if (res.status === 503) {
+          toast.error('AI provider is not configured on this server.');
+        } else if (res.status === 400 || res.status === 422) {
+          toast.error(raw?.error ?? 'PRD is not ready for AI splitting');
         } else {
           toast.error(raw?.error ?? 'AI proposal failed');
         }
@@ -154,18 +240,19 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
         return;
       }
       const proposal = parsed.data.proposal;
-      setClusters(
-        proposal.clusters.map((c) => ({
-          sortOrder: c.sortOrder,
-          label: c.label,
-          valueLine: c.valueLine,
-          boundaryCue: c.boundaryCue,
-        }))
-      );
-      toast.success('AI proposal loaded — review and save as draft');
+      const mapped = proposal.clusters.map((cluster) => ({
+        sortOrder: cluster.sortOrder,
+        label: cluster.label,
+        valueLine: cluster.valueLine,
+        boundaryCue: cluster.boundaryCue,
+      }));
+      await revealClustersSequentially(mapped);
+      toast.success('AI proposal loaded — review each cluster, then save as draft');
     } catch {
       toast.error('Network error during AI proposal');
     } finally {
+      window.clearInterval(statusTimer);
+      setProposalStatus(null);
       setProposing(false);
     }
   };
@@ -308,14 +395,44 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
 
         {!loading && (
           <FadeIn>
+            {prdReadiness && !prdReadiness.isReadyForAiSplit && (
+              <div className="mb-6 rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+                <p className="font-medium text-foreground">PRD not ready for AI split</p>
+                <p className="text-muted-foreground mt-1">{prdReadiness.message}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button asChild variant="outline" size="sm" className="min-h-[44px]">
+                    <Link href={`/dashboard/projects/${projectId}`}>Open project workspace</Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="min-h-[44px]"
+                    disabled={buildingTemplate}
+                    onClick={() => void handleBuildFromSections()}
+                  >
+                    {buildingTemplate ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    <span className="ml-2">From PRD sections</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {(proposing || buildingTemplate || proposalStatus) && (
+              <div className="mb-6 rounded-md border bg-muted/30 p-4 text-sm flex items-center gap-3">
+                <Loader2 className="h-4 w-4 animate-spin shrink-0 text-primary" />
+                <span>{proposalStatus ?? 'Preparing clusters…'}</span>
+              </div>
+            )}
+
             {/* Actions */}
             {!isConfirmed && (
               <div className="flex flex-wrap gap-2 mb-6">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handlePropose}
-                  disabled={proposing || !selectedVersionId}
+                  onClick={() => void handlePropose()}
+                  disabled={proposing || buildingTemplate || !selectedVersionId || !prdReadiness?.isReadyForAiSplit}
                 >
                   <Wand2 className="h-4 w-4 mr-1" />
                   {proposing ? 'Generating…' : 'AI propose'}
@@ -323,7 +440,17 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => void handleBuildFromSections()}
+                  disabled={proposing || buildingTemplate || !selectedVersion?.content}
+                >
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  {buildingTemplate ? 'Building…' : 'From PRD sections'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleAddCluster}
+                  disabled={proposing || buildingTemplate}
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Add cluster
@@ -333,10 +460,15 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
 
             {/* Cluster list */}
             <div className="space-y-4">
-              {clusters.map((cluster, index) => (
+              {clusters.map((cluster, index) => {
+                const isRevealing =
+                  revealedClusterCount != null && index === revealedClusterCount - 1;
+                return (
                 <div
-                  key={index}
-                  className="border border-border rounded-lg p-4 space-y-3 bg-card"
+                  key={`${cluster.sortOrder}-${index}`}
+                  className={`border border-border rounded-lg p-4 space-y-3 bg-card transition-all duration-300 ${
+                    isRevealing ? 'ring-2 ring-primary/30' : ''
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -393,7 +525,8 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                     />
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Footer actions */}

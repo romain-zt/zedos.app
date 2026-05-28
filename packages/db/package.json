@@ -11,9 +11,10 @@
     "./schema": "./src/schema/index.ts"
   },
   "scripts": {
-    "generate": "drizzle-kit generate",
+    "check:migration-dupes": "node ./scripts/check-duplicate-migrations.mjs",
+    "generate": "pnpm run check:migration-dupes && drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "pnpm run check:migration-dupes && drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit",
     "test": "node --test src/migrations/better-auth-migration.node-test.mjs"
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
     "@types/node": "20.6.2",
+    "dotenv": "16.5.0",
     "drizzle-kit": "^0.28.0",
     "typescript": "5.2.2"
   }

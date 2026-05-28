@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Coins, Zap, CreditCard, ArrowUpRight, ArrowDownRight, Gift, Check, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
+import { FadeIn } from '@/components/ui/animate'
+import type { CreditTransactionDTO } from '@repo/contracts/credits/credits-contracts'
+import { CREDITS_UPDATED_EVENT } from '@/lib/credits-events'
 
 interface CreditPack {
   id: string
@@ -17,70 +19,98 @@ interface CreditPack {
   description: string
 }
 
+type CreditTransactionClient = Omit<CreditTransactionDTO, 'createdAt'> & {
+  createdAt?: string
+  balanceAfter?: number
+}
+
 export default function CreditsPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [balance, setBalance] = useState<number | null>(null)
   const [graceUsed, setGraceUsed] = useState(false)
-  const [transactions, setTransactions] = useState<any[]>([])
+  const [transactions, setTransactions] = useState<CreditTransactionClient[]>([])
   const [packs, setPacks] = useState<CreditPack[]>([])
   const [costs, setCosts] = useState<Record<string, number>>({})
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [credRes, packRes] = await Promise.all([
-          fetch('/api/credits'),
-          fetch('/api/credits/packs'),
-        ])
-        if (credRes?.ok) {
-          const data = await credRes.json()
-          setBalance(data?.creditBalance ?? 0)
-          setGraceUsed(data?.graceUsed ?? false)
-          setTransactions(data?.recentTransactions ?? [])
-        }
-        if (packRes?.ok) {
-          const data = await packRes.json()
-          setPacks(data?.packs ?? [])
-          setCosts(data?.costs ?? {})
-        }
-      } catch {} finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
+  const refreshCredits = useCallback(async (): Promise<void> => {
+    const credRes = await fetch('/api/credits', { cache: 'no-store' })
+    if (!credRes.ok) return
+
+    const data = await credRes.json()
+    setBalance(data?.creditBalance ?? 0)
+    setGraceUsed(data?.graceUsed ?? false)
+    setTransactions(data?.recentTransactions ?? [])
+    window.dispatchEvent(new Event(CREDITS_UPDATED_EVENT))
   }, [])
 
-  // Handle Stripe redirect
   useEffect(() => {
-    const success = searchParams?.get('success')
-    const sessionId = searchParams?.get('session_id')
-    if (success === 'true' && sessionId) {
-      const verifyPayment = async () => {
-        try {
-          const res = await fetch('/api/stripe/verify', {
+    let cancelled = false
+
+    const loadPage = async () => {
+      setLoading(true)
+      const success = searchParams?.get('success')
+      const sessionId = searchParams?.get('session_id')
+      const canceled = searchParams?.get('canceled') === 'true'
+
+      try {
+        if (canceled) {
+          toast.error('Paiement annulé')
+          router.replace('/dashboard/credits')
+        }
+
+        if (success === 'true' && sessionId) {
+          const verifyRes = await fetch('/api/stripe/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId }),
+            cache: 'no-store',
           })
-          if (res?.ok) {
-            const data = await res.json()
-            setBalance(data?.balance ?? 0)
-            if (!data?.alreadyProcessed) {
-              toast.success(`${data?.creditsAdded ?? 0} credits added to your account!`)
+
+          if (verifyRes.ok) {
+            const verifyData = await verifyRes.json()
+            if (!verifyData?.alreadyProcessed) {
+              toast.success(`${verifyData?.creditsAdded ?? 0} crédits ajoutés à votre compte !`)
             }
+          } else {
+            const errBody = await verifyRes.json().catch(() => ({}))
+            toast.error(
+              typeof errBody?.error === 'string' ? errBody.error : 'Échec de la vérification du paiement'
+            )
           }
-        } catch {
-          toast.error('Failed to verify payment')
+
+          router.replace('/dashboard/credits')
         }
+
+        const packRes = await fetch('/api/credits/packs', { cache: 'no-store' })
+        if (!cancelled) {
+          if (packRes.ok) {
+            const packData = await packRes.json()
+            setPacks(packData?.packs ?? [])
+            setCosts(packData?.costs ?? {})
+          } else {
+            toast.error('Impossible de charger les packs de crédits')
+          }
+        }
+
+        if (!cancelled) {
+          await refreshCredits()
+        }
+      } catch {
+        if (!cancelled) toast.error('Impossible de charger les crédits')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      verifyPayment()
     }
-    if (searchParams?.get('canceled') === 'true') {
-      toast.error('Payment was canceled')
+
+    void loadPage()
+
+    return () => {
+      cancelled = true
     }
-  }, [searchParams])
+  }, [searchParams, router, refreshCredits])
 
   const handlePurchase = async (packId: string) => {
     setPurchasing(packId)
@@ -91,10 +121,12 @@ export default function CreditsPage() {
         body: JSON.stringify({ packId }),
       })
       const data = await res.json()
-      if (data?.url) {
+      if (res.ok && data?.url) {
         window.location.href = data.url
+      } else if (res.status === 503) {
+        toast.error('Paiement indisponible : Stripe n’est pas configuré (STRIPE_SECRET_KEY).')
       } else {
-        toast.error(data?.error ?? 'Failed to start checkout')
+        toast.error(data?.error ?? 'Échec du démarrage du paiement')
       }
     } catch {
       toast.error('Failed to start checkout')
@@ -111,6 +143,11 @@ export default function CreditsPage() {
       case 'auto_reload': return <Zap className="h-4 w-4 text-purple-500" />
       default: return <Coins className="h-4 w-4" />
     }
+  }
+
+  const signedAmount = (tx: CreditTransactionClient): number => {
+    const amount = tx.amount ?? 0
+    return tx.type === 'consumption' ? -Math.abs(amount) : Math.abs(amount)
   }
 
   return (
@@ -153,13 +190,25 @@ export default function CreditsPage() {
       </FadeIn>
 
       {/* Credit Packs */}
-      <div className="space-y-4">
-        <h2 className="font-display text-lg font-semibold">Add Credits</h2>
-        <Stagger staggerDelay={0.1}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {(packs ?? []).map((pack: CreditPack) => (
-              <StaggerItem key={pack.id}>
-                <Card className="relative hover:shadow-md transition-shadow">
+      <FadeIn delay={0.15}>
+        <div className="space-y-4">
+          <h2 className="font-display text-lg font-semibold">Add Credits</h2>
+          {loading ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                Chargement des packs…
+              </CardContent>
+            </Card>
+          ) : (packs?.length ?? 0) === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                Aucun pack disponible. Réessaie dans un instant.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {(packs ?? []).map((pack: CreditPack) => (
+                <Card key={pack.id} className="relative hover:shadow-md transition-shadow">
                   {pack.id === 'pack_200' && (
                     <Badge className="absolute -top-2.5 right-4 bg-primary">Popular</Badge>
                   )}
@@ -184,11 +233,11 @@ export default function CreditsPage() {
                     </Button>
                   </CardContent>
                 </Card>
-              </StaggerItem>
-            ))}
-          </div>
-        </Stagger>
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </FadeIn>
 
       {/* Cost Reference */}
       <FadeIn delay={0.2}>
@@ -204,7 +253,7 @@ export default function CreditsPage() {
                 { label: 'Dynamic mini-form decision', cost: costs?.mini_form ?? 5 },
                 { label: 'PRD generation / major update', cost: costs?.prd_generation ?? 10 },
                 { label: 'PRD challenge / convergence', cost: costs?.prd_challenge ?? 15 },
-              ].map((item: any) => (
+              ].map((item: { label: string; cost: number }) => (
                 <div key={item.label} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
                   <span className="text-sm">{item.label}</span>
                   <Badge variant="secondary" className="font-mono">{item.cost}</Badge>
@@ -228,7 +277,10 @@ export default function CreditsPage() {
           <Card>
             <CardContent className="p-0">
               <div className="divide-y">
-                {(transactions ?? []).map((tx: any) => (
+                {(transactions ?? []).map((tx) => {
+                  const amt = signedAmount(tx)
+                  const isPositive = amt > 0
+                  return (
                   <div key={tx?.id} className="flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-3">
                       {getTransactionIcon(tx?.type)}
@@ -243,16 +295,17 @@ export default function CreditsPage() {
                     </div>
                     <div className="text-right">
                       <p className={`text-sm font-mono font-medium ${
-                        (tx?.amount ?? 0) > 0 ? 'text-green-600' : 'text-orange-600'
+                        isPositive ? 'text-green-600' : 'text-orange-600'
                       }`}>
-                        {(tx?.amount ?? 0) > 0 ? '+' : ''}{tx?.amount ?? 0}
+                        {isPositive ? '+' : ''}{amt}
                       </p>
                       <p className="text-xs text-muted-foreground font-mono">
                         bal: {tx?.balanceAfter ?? 0}
                       </p>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

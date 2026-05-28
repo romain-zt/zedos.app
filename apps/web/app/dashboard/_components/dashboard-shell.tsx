@@ -49,6 +49,16 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const userInitial = userName?.charAt(0)?.toUpperCase() ?? 'F'
   const workspaceProjectId = pathname?.match(/^\/dashboard\/projects\/([^/]+)/)?.[1] ?? null
 
+  const handleSignOut = async (): Promise<void> => {
+    await signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.replace('/')
+        },
+      },
+    })
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <RoadmapItemModal item={roadmapModal} onClose={() => setRoadmapModal(null)} />
@@ -114,7 +124,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   { href: `/dashboard/projects/${workspaceProjectId}/feature-split`, label: 'Feature split', icon: Layers },
                   { href: `/dashboard/projects/${workspaceProjectId}/user-stories`, label: 'User stories', icon: GitBranch },
                 ] as const).map((sub) => {
-                  const isSubActive = pathname === sub.href || pathname?.startsWith(`${sub.href}/`)
+                  const isSubActive = pathname === sub.href 
                   return (
                     <button
                       key={sub.href}
@@ -167,16 +177,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
           {/* User */}
           <div className="border-t p-3">
-            <div className="flex items-center gap-3 px-2 py-1">
-              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                {userInitial}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{userName}</p>
-                <p className="text-xs text-muted-foreground truncate">{session?.user?.email ?? ''}</p>
-              </div>
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => signOut({ callbackUrl: '/sign-in' })}
+                type="button"
+                onClick={() => {
+                  router.push('/dashboard/settings')
+                  setSidebarOpen(false)
+                }}
+                className="flex flex-1 items-center gap-3 rounded-md px-2 py-1 text-left transition-colors hover:bg-muted"
+                title="Open settings"
+              >
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                  {userInitial}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{session?.user?.email ?? ''}</p>
+                </div>
+              </button>
+              <button
+                onClick={() => void handleSignOut()}
                 className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 title="Sign out"
               >

@@ -7,10 +7,13 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith('/_next')) return true;
   if (pathname.startsWith('/share')) return true;
   if (
+    pathname === '/' ||
     pathname === '/sign-in' ||
     pathname === '/sign-up' ||
     pathname === '/login' ||
-    pathname === '/signup'
+    pathname === '/signup' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password'
   ) {
     return true;
   }

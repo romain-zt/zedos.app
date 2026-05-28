@@ -1,4 +1,5 @@
-export { db, type DrizzleDb } from './client';
+export { db, closeDatabaseConnections, type DrizzleDb } from './client';
+export { createTestDb, type TestDrizzleDb } from './test-client';
 export { grantStarterCreditsIfNeeded } from './starter-credits';
 export * from './schema';
 export * from './types';

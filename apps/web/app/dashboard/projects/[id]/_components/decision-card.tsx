@@ -8,24 +8,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { HelpCircle, Send, MessageSquare } from 'lucide-react'
-
-interface DecisionOption {
-  id: string
-  label: string
-  description?: string
-}
-
-interface DecisionUI {
-  type: 'single_choice' | 'multi_choice' | 'ranked' | 'modal_form'
-  title: string
-  description?: string
-  options: DecisionOption[]
-  allow_custom?: boolean
-  allow_not_sure?: boolean
-}
+import type {
+  ClarifyDecisionUi,
+  ClarifyDecisionOption,
+} from '@repo/contracts/ai/decision-ui'
 
 interface DecisionCardProps {
-  decision: DecisionUI
+  decision: ClarifyDecisionUi
   onSubmit: (response: any) => void
   disabled?: boolean
 }
@@ -34,7 +23,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
   const [singleChoice, setSingleChoice] = useState('')
   const [multiChoices, setMultiChoices] = useState<string[]>([])
   const [ranked, setRanked] = useState<string[]>(
-    () => (decision?.options ?? []).map((o: DecisionOption) => o.id)
+    () => (decision?.options ?? []).map((o: ClarifyDecisionOption) => o.id)
   )
   const [comment, setComment] = useState('')
   const [customInput, setCustomInput] = useState('')
@@ -48,7 +37,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
     type === 'single_choice' &&
     options.length >= 2 &&
     options.length <= 5 &&
-    options.every((o: DecisionOption) => !o.description) &&
+    options.every((o: ClarifyDecisionOption) => !o.description) &&
     !decision?.allow_custom
 
   const handleSubmit = () => {
@@ -58,17 +47,17 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
       case 'single_choice':
         if (!singleChoice && !customInput.trim()) return
         response.selected = singleChoice || `custom: ${customInput.trim()}`
-        response.label = options.find((o: DecisionOption) => o.id === singleChoice)?.label ?? customInput.trim()
+        response.label = options.find((o: ClarifyDecisionOption) => o.id === singleChoice)?.label ?? customInput.trim()
         break
       case 'multi_choice':
         if ((multiChoices?.length ?? 0) === 0 && !customInput.trim()) return
         response.selected = multiChoices
-        response.labels = multiChoices.map((id: string) => options.find((o: DecisionOption) => o.id === id)?.label ?? id)
+        response.labels = multiChoices.map((id: string) => options.find((o: ClarifyDecisionOption) => o.id === id)?.label ?? id)
         if (customInput.trim()) response.custom = customInput.trim()
         break
       case 'ranked':
         response.ranking = ranked
-        response.labels = ranked.map((id: string) => options.find((o: DecisionOption) => o.id === id)?.label ?? id)
+        response.labels = ranked.map((id: string) => options.find((o: ClarifyDecisionOption) => o.id === id)?.label ?? id)
         break
       case 'modal_form':
         response.selected = singleChoice || multiChoices
@@ -103,7 +92,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
   if (isSimpleChoice) {
     return (
       <div className="flex flex-wrap gap-1.5 mt-1">
-        {options.map((opt: DecisionOption) => (
+        {options.map((opt: ClarifyDecisionOption) => (
           <Button
             key={opt.id}
             variant="outline"
@@ -145,7 +134,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
         {type === 'single_choice' && (
           <RadioGroup value={singleChoice} onValueChange={setSingleChoice} disabled={disabled}>
             <div className="space-y-1.5">
-              {options.map((opt: DecisionOption) => (
+              {options.map((opt: ClarifyDecisionOption) => (
                 <div
                   key={opt.id}
                   className="flex items-start gap-2.5 p-2 rounded-md border hover:bg-muted/50 transition-colors cursor-pointer"
@@ -167,7 +156,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
         {/* Multi Choice */}
         {type === 'multi_choice' && (
           <div className="space-y-1.5">
-            {options.map((opt: DecisionOption) => (
+            {options.map((opt: ClarifyDecisionOption) => (
               <div
                 key={opt.id}
                 className="flex items-start gap-2.5 p-2 rounded-md border hover:bg-muted/50 transition-colors cursor-pointer"
@@ -194,7 +183,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
         {type === 'ranked' && (
           <div className="space-y-1">
             {(ranked ?? []).map((id: string, index: number) => {
-              const opt = options.find((o: DecisionOption) => o.id === id)
+              const opt = options.find((o: ClarifyDecisionOption) => o.id === id)
               return (
                 <div
                   key={id}

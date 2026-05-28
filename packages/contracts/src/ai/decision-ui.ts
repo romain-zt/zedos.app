@@ -16,4 +16,5 @@ export const ClarifyDecisionUiSchema = z.object({
   allow_not_sure: z.boolean(),
 });
 
+export type ClarifyDecisionOption = z.infer<typeof ClarifyDecisionOptionSchema>;
 export type ClarifyDecisionUi = z.infer<typeof ClarifyDecisionUiSchema>;

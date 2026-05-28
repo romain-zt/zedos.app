@@ -1,7 +1,24 @@
 // Thin AI gateway/service boundary for future provider swapping
 
-const API_URL = 'https://apps.abacus.ai/v1/chat/completions'
-const API_KEY = process.env.ABACUSAI_API_KEY
+// const API_URL = 'https://apps.abacus.ai/v1/chat/completions' // Abacus AI
+const API_URL = 'https://api.openai.com/v1/chat/completions'
+// const API_KEY = process.env.ABACUSAI_API_KEY
+const API_KEY = process.env.OPENAI_API_KEY
+
+const DEFAULT_AI_TIMEOUT_MS = 120_000
+const AI_MAX_RETRIES = 1
+
+function parsePositiveIntEnv(name: string, fallback: number): number {
+  const raw = process.env[name]?.trim()
+  if (!raw) return fallback
+  const n = Number.parseInt(raw, 10)
+  return Number.isFinite(n) && n > 0 ? n : fallback
+}
+
+export function resolveAiTimeoutMs(overrideMs?: number): number {
+  if (overrideMs !== undefined && overrideMs > 0) return overrideMs
+  return parsePositiveIntEnv('AI_REQUEST_TIMEOUT_MS', DEFAULT_AI_TIMEOUT_MS)
+}
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant'
@@ -14,20 +31,47 @@ export interface AIRequestOptions {
   stream?: boolean
   maxTokens?: number
   temperature?: number
-  responseFormat?: any
+  responseFormat?: { type: 'json_object' }
+  /** Per-call timeout; falls back to AI_REQUEST_TIMEOUT_MS (default 120s). */
+  timeoutMs?: number
+}
+
+export class AiServiceError extends Error {
+  readonly status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'AiServiceError'
+    this.status = status
+  }
+}
+
+function resolveApiKey(): string {
+  const key = API_KEY?.trim()
+  if (!key) {
+    throw new AiServiceError(503, 'AI API key is not configured (OPENAI_API_KEY)')
+  }
+  return key
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500
 }
 
 export async function callAI(options: AIRequestOptions): Promise<Response> {
   const {
-    model = 'gpt-5.4-mini',
+    model = 'gpt-4o-mini',
     messages,
     stream = false,
     maxTokens = 4000,
     temperature = 0.7,
     responseFormat,
+    timeoutMs,
   } = options
 
-  const body: any = {
+  const requestTimeoutMs = resolveAiTimeoutMs(timeoutMs)
+
+  const body: Record<string, unknown> = {
     model,
     messages,
     stream,
@@ -39,21 +83,49 @@ export async function callAI(options: AIRequestOptions): Promise<Response> {
     body.response_format = responseFormat
   }
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify(body),
-  })
+  const apiKey = resolveApiKey()
+  let lastError: AiServiceError | null = null
 
-  if (!response?.ok) {
-    const errorText = await response?.text?.() ?? 'Unknown AI error'
-    throw new Error(`AI API error: ${response?.status} - ${errorText}`)
+  for (let attempt = 0; attempt <= AI_MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(requestTimeoutMs),
+      })
+
+      if (response.ok) {
+        return response
+      }
+
+      const errorText = await response.text().catch(() => 'Unknown AI error')
+      lastError = new AiServiceError(response.status, `AI API error: ${response.status} - ${errorText}`)
+
+      if (attempt < AI_MAX_RETRIES && isRetryableStatus(response.status)) {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        continue
+      }
+
+      throw lastError
+    } catch (error) {
+      if (error instanceof AiServiceError) {
+        throw error
+      }
+
+      const message = error instanceof Error ? error.message : 'Unknown AI error'
+      if (message.includes('TimeoutError') || message.includes('timed out') || message.includes('aborted')) {
+        throw new AiServiceError(504, 'AI request timed out')
+      }
+
+      throw new AiServiceError(502, message)
+    }
   }
 
-  return response
+  throw lastError ?? new AiServiceError(502, 'AI request failed')
 }
 
 export function createStreamingResponse(aiResponse: Response): ReadableStream {

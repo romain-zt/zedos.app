@@ -11,5 +11,5 @@ import { auth } from '@repo/auth/server';
 export async function signOutAction() {
   const h = await headers();
   await auth.api.signOut({ headers: h });
-  redirect('/sign-in');
+  redirect('/');
 }
