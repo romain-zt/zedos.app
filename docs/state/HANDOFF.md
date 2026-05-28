@@ -79,18 +79,6 @@ remediation_note: null
 - **Blocker:** aucun (slice marquée complète).
 - **Safest next task:** aucun travail immédiat; garder en maintenance uniquement.
 
-## Payments — tax and VAT legibility (`fa-payments--tax-and-vat-legibility`)
-
-- **Tracking PR:** **`#124`**, head **`orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962221568`** → **`main`**.
-- **Orchestration step:** **`blocked`** in `docs/state/status.json` (do not mark complete until slice bridge + implementation ship).
-- **Anchor:** `docs/product/feature-areas/payments.md`, `docs/product/scope-slices/payments--tax-and-vat-legibility.md`.
-- **Prerequisite:** `manual-credit-pack-checkout` is **`complete`** in `status.json` (checkout/receipt surfaces exist for tax legibility to attach).
-- **Why blocked:** Scope slice is **`exploratory`** with **Readiness for User Stories: NOT READY** (empty UX States / Data Touched; checklist unchecked). Per **execution-bridge** (§5 inputs, §9), a **User Story must not be authored** until the slice is **`ready-for-user-stories`**; no **approved Implementation Plan** can gate code before that.
-- **User story / plan:** None yet — correct until slice promotion.
-- **NEED_HUMAN:** Product/governance must **`/feature-area refine-slice`** (fill UX states for checkout preview, receipt/confirmation, market detection FR/EU vs US, error/empty states; name data touched e.g. Stripe Checkout session tax lines) and **`/feature-area promote-slice`** to `ready-for-user-stories`, then run **`/plan`** with chat **`approved`** before any implementation layer (`db-migration` … `tests-state-finalization`).
-- **This run (2026-05-28):** Updated `status.json` (`orchestration.steps[...] = blocked`, `fa_payments.tax_and_vat_legibility`, `orchestration.blocker`) and this HANDOFF; **no** `gh pr ready` — draft stays open.
-- **Safest next task:** Refine `payments--tax-and-vat-legibility.md`; reconcile dependency row `manual-credit-pack-checkout` from exploratory → complete; then architect User Story + Plan from slice only.
-
 ## Payments — manual credit pack checkout (`fa-payments--manual-credit-pack-checkout`)
 
 - **Tracking PR:** **`#102`**, head **`orchestrator/tracking-fa-payments--manual-credit-pack-checkout-1778625061087`** → **`main`**.
