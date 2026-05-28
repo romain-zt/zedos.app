@@ -38,7 +38,7 @@
       "fa-owner-milestone-feedback--feedback-capture-and-attribution": "complete",
       "fa-user-stories--corpus-reliability-batch-quality--impl": "complete",
       "fa-payments--auto-reload-opt-in-and-outcomes": "not-started",
-      "fa-payments--tax-and-vat-legibility": "in-progress"
+      "fa-payments--tax-and-vat-legibility": "not-started"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
