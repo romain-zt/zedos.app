@@ -142,13 +142,15 @@
     },
     "tax_and_vat_legibility": {
       "status": "blocked",
-      "tracking_pr": 124,
-      "tracking_branch": "orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962221568",
+      "tracking_pr": 125,
+      "tracking_branch": "orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962307892",
       "scope_slice": "docs/product/scope-slices/payments--tax-and-vat-legibility.md",
       "user_story": null,
       "implementation_plan": null,
+      "layer_complete": null,
       "next_layer": "governance — refine-slice + promote-slice + approved plan",
-      "blocker": "NEED_HUMAN: Scope slice is exploratory with Readiness for User Stories NOT READY (empty UX States / Data Touched; checklist unchecked). Per execution-bridge §5/§9, User Story and Implementation Plan cannot gate code until slice is ready-for-user-stories and plan is chat-approved."
+      "blocker": "NEED_HUMAN: Scope slice is exploratory with Readiness for User Stories NOT READY (empty UX States / Data Touched; checklist unchecked). Per execution-bridge §5/§9, User Story and Implementation Plan cannot gate code until slice is ready-for-user-stories and plan is chat-approved.",
+      "prerequisite_manual_checkout": "complete"
     },
     "manual_credit_pack_checkout": {
       "status": "complete",
