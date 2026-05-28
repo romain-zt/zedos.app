@@ -1,6 +1,6 @@
 ---
 name: scope-critic
-model: gpt-5.5-medium
+model: gpt-4o-mini
 description: Stress-tests Feature Area and Scope Slice proposals for premature decomposition, architectural language, v0 boundary violations, and hidden blockers. Does not create artifacts or drive the workflow.
 ---
 

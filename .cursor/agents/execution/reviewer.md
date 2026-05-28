@@ -1,6 +1,6 @@
 ---
 name: reviewer
-model: gpt-5.5-medium
+model: gpt-4o-mini
 description: Adversarial review of the diff against architecture rules, Result discipline, contracts discipline, persistence patterns, and PR-sizing limits. Refuses scope creep. Pairs with implementer; never writes code.
 ---
 

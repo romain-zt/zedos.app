@@ -154,7 +154,7 @@ Per the documented Cursor model slugs:
 - `claude-opus-4-7-thinking-xhigh` — Lead-style multi-file synthesis (`prd-lead`, `feature-area-lead`, `architect`, `implementer`, `monorepo-analyst`)
 - `claude-4.6-opus-high-thinking` — Researcher (`prd-researcher`)
 - `claude-4.6-sonnet-medium-thinking` — Domain specialists (`bugfix`, `improver`, `drizzle-persistence`, `nextjs-routes`, `auth-better-auth`, `event-contracts`, `fa-project-workspace`, `fa-prd-versioning`, `fa-guided-clarification`)
-- `gpt-5.5-medium` — Adversarial pattern matchers (`prd-challenger`, `scope-critic`, `reviewer`, `domain-guardian`, `security-pii`)
+- `gpt-4o-mini` — Adversarial pattern matchers (`prd-challenger`, `scope-critic`, `reviewer`, `domain-guardian`, `security-pii`)
 - `composer-2-fast` — Fast deterministic checks (`verifier`, `test-runner`, `monorepo-explorer`)
 
 Update one place when the slug list changes.
