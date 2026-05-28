@@ -2,15 +2,11 @@
  * Stripe webhook signature verification (vendor-isolated).
  */
 
-import { WebhookEventEnvelopeSchema } from '@repo/contracts/payments/webhook';
 import { Result, ok, err } from '@repo/result';
 import { ExternalServiceError } from '@shared/errors/application-error';
 import Stripe from 'stripe';
 
-export type ParsedStripeWebhook = Result<
-  ReturnType<typeof WebhookEventEnvelopeSchema.parse>,
-  ExternalServiceError
->;
+export type ParsedStripeWebhook = Result<Stripe.Event, ExternalServiceError>;
 
 export function verifyStripeWebhookAndParseEnvelope(
   rawBody: string | Buffer,
@@ -33,17 +29,7 @@ export function verifyStripeWebhookAndParseEnvelope(
       apiVersion: Stripe.API_VERSION,
     });
     const constructed = stripe.webhooks.constructEvent(rawBody, signatureHeader, webhookSecret);
-    const parsed = WebhookEventEnvelopeSchema.safeParse(constructed);
-    if (!parsed.success) {
-      return err(
-        new ExternalServiceError(
-          'stripe',
-          `Webhook payload failed contract validation: ${parsed.error.message}`,
-          400
-        )
-      );
-    }
-    return ok(parsed.data);
+    return ok(constructed);
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Webhook verification failed';
     return err(new ExternalServiceError('stripe', msg, 400));

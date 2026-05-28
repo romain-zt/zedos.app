@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
+import { CheckoutSessionCompletedEventSchema } from '@/src/contracts/payments/webhook';
 import { verifyStripeWebhookAndParseEnvelope } from '@infrastructure/payments/stripe-webhook-verify';
 import {
   getUserCreditBalance,
@@ -22,16 +23,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: e.message }, { status: e.statusCode ?? 400 });
   }
 
-  const envelope = verified.unwrap();
+  const event = verified.unwrap();
 
-  if (envelope.type === 'payment_intent.succeeded') {
+  if (event.type === 'payment_intent.succeeded') {
     return NextResponse.json({ received: true });
   }
 
-  if (envelope.type !== 'checkout.session.completed') {
+  if (event.type !== 'checkout.session.completed') {
     return NextResponse.json({ received: true });
   }
 
+  const parsedCheckoutEvent = CheckoutSessionCompletedEventSchema.safeParse(event);
+  if (!parsedCheckoutEvent.success) {
+    return NextResponse.json(
+      {
+        error: `Webhook payload failed contract validation: ${parsedCheckoutEvent.error.message}`,
+      },
+      { status: 400 }
+    );
+  }
+
+  const envelope = parsedCheckoutEvent.data;
   const outcome = await processCheckoutSessionCompletedWebhook(envelope);
 
   if (outcome.isErr()) {

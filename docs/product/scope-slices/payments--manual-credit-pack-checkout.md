@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -50,7 +50,14 @@ Founder can buy a prepaid credit pack (100, 200, or 1000 credits) via a one-time
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Empty / no selection yet | Founder opens recharge before selecting a pack | Three available prepaid packs (100 / 200 / 1000) are presented with clear one-time purchase messaging. |
+| Checkout entry | Founder has insufficient credits or proactively opens recharge | Clear choice of three prepaid packs (100 / 200 / 1000) with explicit one-time purchase wording (not subscription). |
+| In progress / payment processing | Founder confirms pack and payment is being processed | Founder sees that payment confirmation is in progress and that credits are not added until success is confirmed. |
+| Redirect to Stripe checkout | Founder confirms a selected pack | Founder is redirected to secure Stripe checkout to complete one-time payment. |
+| Successful purchase return | Stripe confirms payment success | Founder returns to app with success confirmation and updated credit balance reflecting the exact purchased pack. |
+| Payment canceled by founder | Founder abandons or cancels checkout | Founder returns without credit change, with clear message that no purchase was completed. |
+| Payment failed / declined | Stripe cannot complete payment | Founder sees actionable error and can retry checkout or choose another payment attempt later; credits remain unchanged. |
+| Temporary verification required | Payment flow requires additional payer action | Founder is informed that payment needs completion before credits are added; no credits are added until successful completion. |
 
 ---
 
@@ -58,7 +65,11 @@ Founder can buy a prepaid credit pack (100, 200, or 1000 credits) via a one-time
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| Credit pack purchase | Create | Record one-time pack purchase intent for selected denomination (100 / 200 / 1000). |
+| Credit pack purchase | Update | Mark final purchase outcome (succeeded, canceled, failed) after checkout returns. |
+| AI credit balance | Update | Increase owner balance only on successful payment by the exact purchased pack quantity. |
+| Credit ledger | Create | Add a top-up entry that makes the credit addition traceable and auditable at product level. |
+| User account | Read | Resolve signed-in owner identity to attribute purchase and resulting credit addition. |
 
 ---
 
@@ -84,9 +95,9 @@ None — completing a credit pack purchase is not a defined owner milestone trig
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| Credit system | Feature Area | exploratory (NEED_HUMAN) | Ledger must apply purchased credits correctly; FA has open commercial-config blockers but they do not prevent defining this slice's product boundary |
+| Credit system | Feature Area | pending | Ledger must apply purchased credits exactly once on successful checkout and never on canceled/failed outcomes. |
 | Stripe as named payment provider | Constraint | ready | Integration Boundaries in PRD |
-| Account & session | Feature Area | pending | Owner identity required to attribute the purchase |
+| Account & session | Feature Area | ready | Signed-in owner identity is required to attribute purchase and credit addition to the correct account. |
 
 ---
 
@@ -100,24 +111,24 @@ None — completing a credit pack purchase is not a defined owner milestone trig
 
 ## Acceptance-Level Outcome
 
-A signed-in founder can choose a credit pack size (100, 200, or 1000), complete a one-time Stripe payment, and immediately see the purchased credits reflected in their account balance; the flow clearly communicates it is a one-time prepaid purchase; failed payments do not add credits.
+A signed-in founder can select a 100, 200, or 1000 credit pack, complete a one-time Stripe checkout, and see credits added to their balance only after successful payment, with explicit prepaid (non-subscription) messaging and no credit addition on canceled or failed payment outcomes.
 
 ---
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -126,3 +137,4 @@ A signed-in founder can choose a credit pack size (100, 200, or 1000), complete 
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice payments` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-28 | Promoted to ready-for-user-stories after CLEAR readiness check (`/feature-area promote-slice`) | — |
