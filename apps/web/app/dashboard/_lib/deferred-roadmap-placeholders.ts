@@ -1,6 +1,10 @@
 /**
  * Single source of truth for deferred (post-PRD) roadmap placeholders —
  * dashboard home + sidebar stay visually aligned.
+ *
+ * Product decision (2026-05-28):
+ * - `test-first-workflows` remains out of v0 (coming in v1).
+ * - `delivery` remains out of v0 (coming in v1).
  */
 
 /** Contact shown in the "need it fast?" CTA inside roadmap modals. */
