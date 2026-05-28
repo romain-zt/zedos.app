@@ -45,7 +45,7 @@
       "fa-user-stories--corpus-reliability-batch-quality--impl": 1,
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1
     },
-    "blocker": "NEED_HUMAN: Scope slice docs/product/scope-slices/payments--tax-and-vat-legibility.md is exploratory (NOT READY) — empty UX States / Data Touched; readiness checklist unchecked; no User Story or approved Implementation Plan. Run /feature-area refine-slice + promote-slice on payments--tax-and-vat-legibility, then /plan with chat approved before contracts-domain layer."
+    "blocker": "NEED_HUMAN: Implementation Plan docs/execution/plans/payments--auto-reload-opt-in-and-outcomes--v0.plan.md is proposed (not approved). Reply chat approved to unblock db-migration Iteration 1. OQ-1 (trigger threshold) needed before Iteration 4."
   },
   "cursor_self_improve": {
     "status": "complete",
@@ -136,8 +136,8 @@
       "user_story": null,
       "implementation_plan": null,
       "layer_complete": null,
-      "next_layer": null,
-      "blocker": "NEED_HUMAN: Scope slice exploratory (NOT READY). Refine UX States + Data Touched; promote to ready-for-user-stories; author User Story + Implementation Plan; chat-approved PIS before code.",
+      "next_layer": "governance — refine-slice + promote-slice + approved plan",
+      "blocker": "NEED_HUMAN: Scope slice is exploratory with Readiness for User Stories NOT READY (empty UX States / Data Touched; checklist unchecked). Per execution-bridge §5/§9, User Story and Implementation Plan cannot gate code until slice is ready-for-user-stories and plan is chat-approved.",
       "prerequisite_manual_checkout": "complete"
     },
     "manual_credit_pack_checkout": {

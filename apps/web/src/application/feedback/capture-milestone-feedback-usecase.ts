@@ -54,7 +54,7 @@ export class CaptureMilestoneFeedbackUseCase {
     }
 
     const created = await this.repository.createFeedback(input.userId, input.request);
-    if (created.isErr()) return created;
+    if (created.isErr()) return err(created.error);
     return ok({ kind: 'created', row: created.unwrap() });
   }
 }
