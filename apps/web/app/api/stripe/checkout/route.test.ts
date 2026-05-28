@@ -14,7 +14,7 @@ vi.mock('@repo/auth/guards', () => ({
   requireUser: requireUserMock,
 }));
 
-vi.mock('@application/payments/stripe-checkout-flows', () => ({
+vi.mock('@infrastructure/payments/stripe-checkout-flows', () => ({
   createCheckoutSessionForUser: createCheckoutSessionForUserMock,
 }));
 

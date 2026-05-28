@@ -5,7 +5,7 @@ import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { getCreditPacks } from '@/lib/config'
 import { CreateCheckoutSessionRequestSchema } from '@repo/contracts/payments'
-import { createCheckoutSessionForUser } from '@application/payments/stripe-checkout-flows'
+import { createCheckoutSessionForUser } from '@infrastructure/payments/stripe-checkout-flows'
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.length > 0) {
