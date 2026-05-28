@@ -37,7 +37,7 @@
       "fa-payments--manual-credit-pack-checkout": "complete",
       "fa-owner-milestone-feedback--feedback-capture-and-attribution": "complete",
       "fa-user-stories--corpus-reliability-batch-quality--impl": "complete",
-      "fa-payments--auto-reload-opt-in-and-outcomes": "not-started",
+      "fa-payments--auto-reload-opt-in-and-outcomes": "blocked",
       "fa-payments--tax-and-vat-legibility": "not-started"
     },
     "remediation_counts": {
@@ -45,7 +45,7 @@
       "fa-user-stories--corpus-reliability-batch-quality--impl": 1,
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1
     },
-    "blocker": null
+    "blocker": "NEED_HUMAN: Scope slice docs/product/scope-slices/payments--auto-reload-opt-in-and-outcomes.md is exploratory (NOT READY) — empty UX States / Data Touched; no User Story or approved Implementation Plan. Run /feature-area refine-slice + promote-slice, then /plan with chat approved before db-migration layer."
   },
   "cursor_self_improve": {
     "status": "complete",
