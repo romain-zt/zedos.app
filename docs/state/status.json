@@ -128,6 +128,18 @@
     "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532809796"
   },
   "fa_payments": {
+    "auto_reload_opt_in_and_outcomes": {
+      "status": "blocked",
+      "tracking_pr": 123,
+      "tracking_branch": "orchestrator/tracking-fa-payments--auto-reload-opt-in-and-outcomes-1779962218974",
+      "scope_slice": "docs/product/scope-slices/payments--auto-reload-opt-in-and-outcomes.md",
+      "scope_slice_status": "ready-for-user-stories",
+      "user_story": "docs/execution/user-stories/payments--auto-reload-opt-in-and-outcomes--v0.md",
+      "implementation_plan": "docs/execution/plans/payments--auto-reload-opt-in-and-outcomes--v0.plan.md",
+      "implementation_plan_status": "proposed",
+      "next_layer": "db-migration (Iteration 1 — after plan approved)",
+      "blocker": "NEED_HUMAN: Approve proposed Implementation Plan with chat approved (not ok) before db-migration. OQ-1 trigger event blocks Iteration 4 only."
+    },
     "tax_and_vat_legibility": {
       "status": "blocked",
       "tracking_pr": 125,
