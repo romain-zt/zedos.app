@@ -13,7 +13,7 @@ export default defineConfig({
     alias: {
       '@domain': path.resolve(__dirname, './src/domain'),
       '@application': path.resolve(__dirname, './src/application'),
-      '@contracts': path.resolve(__dirname, './src/contracts'),
+      '@contracts': path.resolve(__dirname, '../../packages/contracts/src'),
       '@infrastructure': path.resolve(__dirname, './src/infrastructure'),
       '@ui': path.resolve(__dirname, './src/ui'),
       '@shared': path.resolve(__dirname, './src/shared'),
