@@ -1,6 +1,6 @@
 ---
 name: security-pii
-model: gpt-5.5-medium
+model: gpt-4o-mini
 description: PII / secret leakage scanner. Pairs with implementer (every diff that touches credentials, logs, or external responses) and reviewer. Never writes code; produces findings only.
 ---
 
