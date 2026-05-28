@@ -38,14 +38,14 @@
       "fa-owner-milestone-feedback--feedback-capture-and-attribution": "complete",
       "fa-user-stories--corpus-reliability-batch-quality--impl": "complete",
       "fa-payments--auto-reload-opt-in-and-outcomes": "not-started",
-      "fa-payments--tax-and-vat-legibility": "not-started"
+      "fa-payments--tax-and-vat-legibility": "blocked"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
       "fa-user-stories--corpus-reliability-batch-quality--impl": 1,
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1
     },
-    "blocker": null
+    "blocker": "NEED_HUMAN: Scope slice payments--tax-and-vat-legibility is exploratory / NOT READY — refine UX states + data touched, promote to ready-for-user-stories, then approve Implementation Plan before any code layer."
   },
   "cursor_self_improve": {
     "status": "complete",
@@ -128,6 +128,16 @@
     "tracking_branch": "orchestrator/tracking-fa-guided-clarification--question-preview-and-progress-score-1778532809796"
   },
   "fa_payments": {
+    "tax_and_vat_legibility": {
+      "status": "blocked",
+      "tracking_pr": 124,
+      "tracking_branch": "orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962221568",
+      "scope_slice": "docs/product/scope-slices/payments--tax-and-vat-legibility.md",
+      "user_story": null,
+      "implementation_plan": null,
+      "next_layer": "governance — refine-slice + promote-slice + approved plan",
+      "blocker": "NEED_HUMAN: Scope slice is exploratory with Readiness for User Stories NOT READY (empty UX States / Data Touched; checklist unchecked). Per execution-bridge §5/§9, User Story and Implementation Plan cannot gate code until slice is ready-for-user-stories and plan is chat-approved."
+    },
     "manual_credit_pack_checkout": {
       "status": "complete",
       "tracking_pr": 102,
