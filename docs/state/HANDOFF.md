@@ -1,9 +1,11 @@
 ---
 type: state-handoff
-date: 2026-05-12
+date: 2026-05-28
 author: cloud-agent (orchestrator pipeline)
 workspace: /workspace
 status: handoff-ready
+payments_tax_vat_tracking_pr: 125
+payments_tax_vat_tracking_branch: orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962307892
 parallel_pipeline_status: in-progress
 parallel_pipeline_status_prior_branch_note: blocked-awaiting-plan-approval — historic parallel orch branch gate (superseded on mainline where milestone work advanced to PR #97 + UI complete).
 current_phase_primary: orch-credit-system--tests-state-finalization
@@ -36,6 +38,30 @@ remediation_note: null
 
 # Cloud Agent State Handoff
 
+## Payments — auto-reload opt-in and outcomes (`fa-payments--auto-reload-opt-in-and-outcomes`)
+
+- **Tracking PR:** **`#123`**, head **`orchestrator/tracking-fa-payments--auto-reload-opt-in-and-outcomes-1779962218974`** → **`main`**.
+- **Orchestration step:** **`blocked`** in `docs/state/status.json` — governance bridge advanced; **no code** until Implementation Plan chat **`approved`**.
+- **Anchor:** `docs/product/feature-areas/payments.md`, `docs/product/scope-slices/payments--auto-reload-opt-in-and-outcomes.md`.
+- **Slice:** **`ready-for-user-stories`** (UX states, data touched, dependencies reconciled 2026-05-28).
+- **User story:** `docs/execution/user-stories/payments--auto-reload-opt-in-and-outcomes--v0.md` (`ready-for-implementation`).
+- **Implementation plan:** `docs/execution/plans/payments--auto-reload-opt-in-and-outcomes--v0.plan.md` (**`proposed`** — not approved).
+- **NEED_HUMAN:** Review proposed plan; reply chat **`approved`** (not `ok`) to unblock **`db-migration`** (Iteration 1). Resolve **OQ-1** (auto-reload trigger threshold/event) before Iteration 4 trigger wiring.
+- **This run (2026-05-28):** Refined + promoted scope slice; authored user story + proposed stacked plan; updated `status.json` / HANDOFF; **no** `gh pr ready`.
+- **Safest next task:** Human approves plan → implement **`db-migration`** layer only per plan Iteration 1.
+
+## Payments — tax and VAT legibility (`fa-payments--tax-and-vat-legibility`)
+
+- **Tracking PR:** **`#125`**, head **`orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962307892`** → **`main`**.
+- **Orchestration step:** **`blocked`** in `orchestration.steps["fa-payments--tax-and-vat-legibility"]`.
+- **Anchors:** `docs/product/feature-areas/payments.md`, `docs/product/scope-slices/payments--tax-and-vat-legibility.md`.
+- **Prerequisite:** `fa-payments--manual-credit-pack-checkout` is **`complete`** (checkout surfaces exist).
+- **Why blocked:** Scope slice is **`exploratory`** with **Readiness for User Stories: NOT READY** (empty UX States / Data Touched; checklist unchecked). Per **execution-bridge** §5, no User Story or approved Implementation Plan until **`/feature-area refine-slice`** + **`promote-slice`**.
+- **User story / plan:** None — correct until slice promotion.
+- **NEED_HUMAN:** Product/governance must fill UX states (pre-checkout tax display, receipt tax line, FR/EU vs US, error/loading), name data touched, run **`/feature-area promote-slice`**, then **`/plan`** with chat **`approved`** before **`contracts-domain`** layer.
+- **This run (2026-05-28):** Updated `status.json` + this HANDOFF; **no** `gh pr ready` — draft stays open.
+- **Safest next task:** Refine `payments--tax-and-vat-legibility.md`; reconcile dependency row for `manual-credit-pack-checkout` to **`ready-for-user-stories`** / complete; then architect User Story + Plan from slice only.
+
 ## User stories — corpus reliability, batch UI, draft quality (`fa-user-stories--corpus-reliability-batch-quality--impl`)
 
 - **Tracking PR:** **`#118`**, head **`orchestrator/tracking-fa-user-stories--corpus-reliability-batch-quality--impl-1778838044060`** → **`main`**.
@@ -52,18 +78,6 @@ remediation_note: null
 - **User story / plan:** `docs/execution/user-stories/owner-milestone-feedback--feedback-capture-and-attribution--v0.md` + `docs/execution/plans/owner-milestone-feedback--feedback-capture-and-attribution--v0.plan.md` (approuvé).
 - **Blocker:** aucun (slice marquée complète).
 - **Safest next task:** aucun travail immédiat; garder en maintenance uniquement.
-
-## Payments — tax and VAT legibility (`fa-payments--tax-and-vat-legibility`)
-
-- **Tracking PR:** **`#124`**, head **`orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962221568`** → **`main`**.
-- **Orchestration step:** **`blocked`** in `docs/state/status.json` (do not mark complete until slice bridge + implementation ship).
-- **Anchor:** `docs/product/feature-areas/payments.md`, `docs/product/scope-slices/payments--tax-and-vat-legibility.md`.
-- **Prerequisite:** `manual-credit-pack-checkout` is **`complete`** in `status.json` (checkout/receipt surfaces exist for tax legibility to attach).
-- **Why blocked:** Scope slice is **`exploratory`** with **Readiness for User Stories: NOT READY** (empty UX States / Data Touched; checklist unchecked). Per **execution-bridge** (§5 inputs, §9), a **User Story must not be authored** until the slice is **`ready-for-user-stories`**; no **approved Implementation Plan** can gate code before that.
-- **User story / plan:** None yet — correct until slice promotion.
-- **NEED_HUMAN:** Product/governance must **`/feature-area refine-slice`** (fill UX states for checkout preview, receipt/confirmation, market detection FR/EU vs US, error/empty states; name data touched e.g. Stripe Checkout session tax lines) and **`/feature-area promote-slice`** to `ready-for-user-stories`, then run **`/plan`** with chat **`approved`** before any implementation layer (`db-migration` … `tests-state-finalization`).
-- **This run (2026-05-28):** Updated `status.json` (`orchestration.steps[...] = blocked`, `fa_payments.tax_and_vat_legibility`, `orchestration.blocker`) and this HANDOFF; **no** `gh pr ready` — draft stays open.
-- **Safest next task:** Refine `payments--tax-and-vat-legibility.md`; reconcile dependency row `manual-credit-pack-checkout` from exploratory → complete; then architect User Story + Plan from slice only.
 
 ## Payments — manual credit pack checkout (`fa-payments--manual-credit-pack-checkout`)
 
