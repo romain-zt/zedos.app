@@ -46,8 +46,8 @@ describe('SettingsPage', () => {
 
   it('renders the settings headings', async () => {
     render(<SettingsPage />);
-    expect(screen.getByText('Parametres du compte')).toBeTruthy();
-    expect(screen.getByText('Consentements RGPD')).toBeTruthy();
-    expect(screen.getByText('Sessions actives')).toBeTruthy();
+    expect(screen.getByText('Account settings')).toBeTruthy();
+    expect(screen.getByText('Privacy consent')).toBeTruthy();
+    expect(screen.getByText('Active sessions')).toBeTruthy();
   });
 });

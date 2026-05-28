@@ -94,6 +94,10 @@ export class GenerateUserStoryDraftUseCase {
     if (outlineIndex >= outlines.length) {
       return err(new ValidationError('outlineIndex out of range'));
     }
+    const selectedOutline = outlines[outlineIndex];
+    if (!selectedOutline?.title) {
+      return err(new ValidationError('outline title is required'));
+    }
 
     const storyResult = await this.draftGenerator.draftSingleStory(
       {
@@ -101,7 +105,7 @@ export class GenerateUserStoryDraftUseCase {
         valueLine: cluster.valueLine,
         boundaryCue: cluster.boundaryCue,
       },
-      outlines[outlineIndex],
+      { title: selectedOutline.title },
       outlineIndex
     );
     if (storyResult.isErr()) return err(storyResult.error);

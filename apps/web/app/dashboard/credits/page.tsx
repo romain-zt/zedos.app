@@ -21,6 +21,7 @@ interface CreditPack {
 
 type CreditTransactionClient = Omit<CreditTransactionDTO, 'createdAt'> & {
   createdAt?: string
+  balanceAfter?: number
 }
 
 export default function CreditsPage() {
