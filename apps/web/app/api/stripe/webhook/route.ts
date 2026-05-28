@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { CheckoutSessionCompletedEventSchema } from '@/src/contracts/payments/webhook';
+import { CheckoutSessionCompletedEventSchema } from '@repo/contracts/payments';
 import { verifyStripeWebhookAndParseEnvelope } from '@infrastructure/payments/stripe-webhook-verify';
 import {
   getUserCreditBalance,

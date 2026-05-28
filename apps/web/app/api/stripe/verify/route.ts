@@ -3,83 +3,35 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { db, purchases, users, eq, sql } from '@repo/db'
-import { addPurchaseCreditsForApi } from '@infrastructure/http/credits-http-bridge'
-import Stripe from 'stripe'
+import { VerifySessionRequestSchema } from '@repo/contracts/payments'
+import { verifyCheckoutSessionForUser } from '@application/payments/stripe-checkout-flows'
 
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-04-30.basil' as any })
-  : null
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.length > 0) {
+    return error.message
+  }
+  return fallback
+}
 
 export async function POST(request: NextRequest) {
   try {
-    if (!stripe) {
-      return NextResponse.json({ error: 'Stripe is not configured' }, { status: 503 })
-    }
-
     const userResult = await requireUser(headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const userId = userResult.unwrap().id
 
-    const body = await request.json()
-    const { sessionId } = body ?? {}
-
-    if (!sessionId) {
+    const parsedBody = VerifySessionRequestSchema.safeParse(await request.json())
+    if (!parsedBody.success) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 })
     }
+    const { sessionId } = parsedBody.data
 
-    const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId)
-
-    if (checkoutSession.payment_status !== 'paid') {
-      return NextResponse.json({ error: 'Payment not completed' }, { status: 400 })
+    const result = await verifyCheckoutSessionForUser({ userId, sessionId })
+    if (result.ok === false) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
     }
-
-    const purchaseId = checkoutSession.metadata?.purchaseId
-    const packSize = parseInt(checkoutSession.metadata?.packSize ?? '0', 10)
-
-    if (!purchaseId || !packSize) {
-      return NextResponse.json({ error: 'Invalid session metadata' }, { status: 400 })
-    }
-
-    const [purchase] = await db
-      .select()
-      .from(purchases)
-      .where(eq(purchases.id, purchaseId))
-      .limit(1)
-
-    if (!purchase) {
-      return NextResponse.json({ error: 'Purchase not found' }, { status: 404 })
-    }
-
-    if (purchase.status === 'completed') {
-      const [user] = await db
-        .select({ creditBalance: users.creditBalance })
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1)
-      return NextResponse.json({ balance: user?.creditBalance ?? 0, alreadyProcessed: true })
-    }
-
-    const grantResult = await addPurchaseCreditsForApi(userId, packSize, {
-      purchaseId,
-      stripeSessionId: sessionId,
-      packSize,
-    })
-
-    if (grantResult.isErr()) {
-      return NextResponse.json({ error: grantResult.error.message }, { status: grantResult.error.statusCode ?? 500 })
-    }
-
-    const newBalance = grantResult.unwrap()
-
-    const paymentIntent = (checkoutSession as any).payment_intent as string | null ?? null
-    await db.execute(
-      sql`UPDATE purchases SET status = 'completed', stripe_payment_intent_id = ${paymentIntent} WHERE id = ${purchaseId}`
-    )
-
-    return NextResponse.json({ balance: newBalance, creditsAdded: packSize })
-  } catch (error: any) {
+    return NextResponse.json(result.value)
+  } catch (error: unknown) {
     console.error('Stripe verify error:', error)
-    return NextResponse.json({ error: error?.message ?? 'Verification failed' }, { status: 500 })
+    return NextResponse.json({ error: errorMessage(error, 'Verification failed') }, { status: 500 })
   }
 }
