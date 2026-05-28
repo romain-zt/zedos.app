@@ -16,7 +16,7 @@
 
 ## Status
 
-`proposed`
+`approved`
 
 > **Layout in effect:** pre-migration → post-migration (this Plan performs the migration)
 > **Architecture Surface:** resolved
@@ -228,12 +228,12 @@ main
 
 ## Approval
 
-- [ ] User reviewed and approved this Plan
+- [x] User reviewed and approved this Plan
 - [ ] Patch Intent Summary will be produced before any code edit
 - [ ] Verification steps (typecheck / lint / test / build) defined in §Tests above
 
-**Approval status:** pending
-**Approval date:** —
+**Approval status:** approved
+**Approval date:** 2026-05-28
 
 ---
 
@@ -242,3 +242,4 @@ main
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-10 | Initial draft from `docs/retro/zedos-monorepo-retro.md` §6 P0.1–P0.6 and `docs/product/scope-slices/turborepo-migration--phase-0-scaffold.md` | Cloud Agent |
+| 2026-05-28 | Decision recorded: approved | Product + Engineering lead |

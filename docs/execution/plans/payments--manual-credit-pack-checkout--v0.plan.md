@@ -6,7 +6,7 @@
 
 ## Status
 
-`draft`
+`approved`
 
 > **Layout in effect:** post-migration (`apps/web/` + `packages/`)
 > **Architecture Surface:** resolved
@@ -131,11 +131,11 @@ Revert implementation commits on the working branch; no migration rollback requi
 
 ## Approval
 
-- [ ] User reviewed and approved this Plan
+- [x] User reviewed and approved this Plan
 - [ ] Patch Intent Summary will be produced before any code edit
 - [ ] Verification steps (`typecheck`/`build`/tests) confirmed
 
-**Approval status:** pending
+**Approval status:** approved
 
 ---
 
@@ -144,3 +144,4 @@ Revert implementation commits on the working branch; no migration rollback requi
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-28 | Initial implementation plan from promoted manual checkout scope slice | — |
+| 2026-05-28 | Decision recorded: approved | Product + Engineering lead |

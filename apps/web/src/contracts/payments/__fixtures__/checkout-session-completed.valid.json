@@ -1,24 +1,24 @@
 {
-  "id": "evt_test_placeholder_001",
+  "id": "evt_1QzXy2ABCD1234efg567hijk",
   "object": "event",
   "type": "checkout.session.completed",
   "livemode": false,
   "created": 1746835200,
   "data": {
     "object": {
-      "id": "cs_test_placeholder_001",
+      "id": "cs_test_a1B2c3D4e5F6g7H8i9J0kLmN",
       "object": "checkout.session",
       "payment_status": "paid",
       "status": "complete",
       "metadata": {
-        "userId": "user_placeholder_001",
-        "purchaseId": "purchase_placeholder_001",
+        "userId": "user_8f5f0f22-7a8e-45df-98e5-d7d57e71f3f1",
+        "purchaseId": "pur_2f9b7b24-8f44-4d7b-9d2d-5c6f24f395c4",
         "packSize": "100"
       },
-      "payment_intent": "pi_test_placeholder_001",
+      "payment_intent": "pi_3R0AaBcdEfGHiJkLmNoPqRsT",
       "amount_total": 900,
       "currency": "eur",
-      "customer": null
+      "customer": "cus_S9kQ2m3n4p5r6t"
     }
   }
 }
