@@ -36,6 +36,17 @@ remediation_note: null
 
 # Cloud Agent State Handoff
 
+## Payments — auto-reload opt-in and outcomes (`fa-payments--auto-reload-opt-in-and-outcomes`)
+
+- **Tracking PR:** **`#123`**, head **`orchestrator/tracking-fa-payments--auto-reload-opt-in-and-outcomes-1779962218974`** → **`main`**.
+- **Orchestration step:** **`blocked`** in `docs/state/status.json` — no code until governance bridge is satisfied.
+- **Anchor:** `docs/product/feature-areas/payments.md`, `docs/product/scope-slices/payments--auto-reload-opt-in-and-outcomes.md`.
+- **Why blocked:** Scope slice is **`exploratory`** with **Readiness for User Stories: NOT READY** (empty UX States / Data Touched; checklist unchecked). Per **execution-bridge** §5/§9, a **User Story must not be authored** until the slice is **`ready-for-user-stories`**; no **approved Implementation Plan** can gate code before that.
+- **User story / plan:** None — correct until slice promotion.
+- **NEED_HUMAN:** Product/governance must **`/feature-area refine-slice`** (fill UX states, data touched, dependencies — reconcile `manual-credit-pack-checkout` dependency status) and **`/feature-area promote-slice`** to `ready-for-user-stories`, then run **`/plan`** with chat **`approved`** before any implementation layer (`db-migration` onward).
+- **This run (2026-05-28):** Updated `status.json` (`orchestration.steps[...] = blocked`, `fa_payments.auto_reload_opt_in_and_outcomes`, `orchestration.blocker`) and this HANDOFF; **no** `gh pr ready` — draft stays open.
+- **Safest next task:** Refine `payments--auto-reload-opt-in-and-outcomes.md`; then architect User Story + Plan from slice only.
+
 ## User stories — corpus reliability, batch UI, draft quality (`fa-user-stories--corpus-reliability-batch-quality--impl`)
 
 - **Tracking PR:** **`#118`**, head **`orchestrator/tracking-fa-user-stories--corpus-reliability-batch-quality--impl-1778838044060`** → **`main`**.
