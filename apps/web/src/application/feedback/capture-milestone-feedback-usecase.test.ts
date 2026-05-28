@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { ok } from '@repo/result';
 import type {
   MilestoneFeedbackRowDTO,
   MilestoneFeedbackSubmitRequest,
@@ -35,7 +36,7 @@ describe('CaptureMilestoneFeedbackUseCase', () => {
     const repository = {
       isProjectOwnedByUser: vi.fn(async () => false),
       findDuplicate: vi.fn(async () => false),
-      createFeedback: vi.fn(async () => makeRow()),
+      createFeedback: vi.fn(async () => ok(makeRow())),
     };
     const useCase = new CaptureMilestoneFeedbackUseCase(repository);
 
@@ -53,7 +54,7 @@ describe('CaptureMilestoneFeedbackUseCase', () => {
     const repository = {
       isProjectOwnedByUser: vi.fn(async () => true),
       findDuplicate: vi.fn(async () => true),
-      createFeedback: vi.fn(async () => makeRow()),
+      createFeedback: vi.fn(async () => ok(makeRow())),
     };
     const useCase = new CaptureMilestoneFeedbackUseCase(repository);
 
@@ -73,7 +74,7 @@ describe('CaptureMilestoneFeedbackUseCase', () => {
     const repository = {
       isProjectOwnedByUser: vi.fn(async () => true),
       findDuplicate: vi.fn(async () => false),
-      createFeedback: vi.fn(async () => makeRow()),
+      createFeedback: vi.fn(async () => ok(makeRow())),
     };
     const useCase = new CaptureMilestoneFeedbackUseCase(repository);
 

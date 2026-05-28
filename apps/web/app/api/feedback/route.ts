@@ -19,6 +19,8 @@ import {
   MilestoneFeedbackRowDTOSchema,
   MilestoneFeedbackDuplicateResponseSchema,
 } from '@repo/contracts/feedback/submit'
+import { err, ok } from '@repo/result'
+import { ExternalServiceError } from '@shared/errors/application-error'
 import { CaptureMilestoneFeedbackUseCase } from '@/src/application/feedback/capture-milestone-feedback-usecase'
 
 export async function POST(request: NextRequest) {
@@ -83,9 +85,10 @@ export async function POST(request: NextRequest) {
         const [feedback] = await db.insert(milestoneFeedback).values(feedbackInsert).returning()
         const dto = MilestoneFeedbackRowDTOSchema.safeParse(feedback)
         if (!dto.success) {
-          throw new Error('Feedback row DTO validation failed')
+          console.error('Feedback row DTO validation failed:', dto.error.flatten())
+          return err(new ExternalServiceError('db', 'Internal validation error', 500))
         }
-        return dto.data
+        return ok(dto.data)
       },
     })
 

@@ -1,5 +1,5 @@
 import { err, ok, type Result } from '@repo/result';
-import { ForbiddenError } from '@shared/errors/application-error';
+import { ExternalServiceError, ForbiddenError } from '@shared/errors/application-error';
 import type {
   MilestoneFeedbackRowDTO,
   MilestoneFeedbackSubmitRequest,
@@ -21,7 +21,7 @@ export interface CaptureMilestoneFeedbackRepository {
   createFeedback(
     userId: string,
     request: MilestoneFeedbackSubmitRequest
-  ): Promise<MilestoneFeedbackRowDTO>;
+  ): Promise<Result<MilestoneFeedbackRowDTO, ExternalServiceError>>;
 }
 
 export type CaptureMilestoneFeedbackOutput =
@@ -33,7 +33,7 @@ export class CaptureMilestoneFeedbackUseCase {
 
   async execute(
     input: CaptureMilestoneFeedbackInput
-  ): Promise<Result<CaptureMilestoneFeedbackOutput, ForbiddenError>> {
+  ): Promise<Result<CaptureMilestoneFeedbackOutput, ForbiddenError | ExternalServiceError>> {
     const ownsProject = await this.repository.isProjectOwnedByUser(
       input.request.projectId,
       input.userId
@@ -53,7 +53,8 @@ export class CaptureMilestoneFeedbackUseCase {
       return ok({ kind: 'duplicate', message: 'Feedback already submitted' });
     }
 
-    const row = await this.repository.createFeedback(input.userId, input.request);
-    return ok({ kind: 'created', row });
+    const created = await this.repository.createFeedback(input.userId, input.request);
+    if (created.isErr()) return created;
+    return ok({ kind: 'created', row: created.unwrap() });
   }
 }
