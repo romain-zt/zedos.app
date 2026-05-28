@@ -1,20 +1,20 @@
 {
-  "id": "evt_test_placeholder_003",
+  "id": "evt_1QzXy4ABCD1234efg567hijm",
   "object": "event",
   "type": "payment_intent.succeeded",
   "livemode": false,
   "created": 1746835200,
   "data": {
     "object": {
-      "id": "pi_test_placeholder_001",
+      "id": "pi_3R0AaBcdEfGHiJkLmNoPqRsT",
       "object": "payment_intent",
       "status": "succeeded",
       "amount": 900,
       "currency": "eur",
       "metadata": {
-        "purchaseId": "purchase_placeholder_001"
+        "purchaseId": "pur_2f9b7b24-8f44-4d7b-9d2d-5c6f24f395c4"
       },
-      "customer": null
+      "customer": "cus_S9kQ2m3n4p5r6t"
     }
   }
 }

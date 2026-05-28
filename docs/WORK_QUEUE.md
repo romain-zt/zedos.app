@@ -28,4 +28,4 @@ Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc`
 | US-user-stories--corpus-reliability-batch-quality | User Story | SS-user-stories--story-generation-from-feature-split | complete | P1 | false | false | — | Aucun (terminé, vérifié) |
 | FA-test-first-workflows | Feature Area | — | complete | P2 | false | false | — | Aucun (terminé) |
 | SS-test-first-workflows--task-splitting-with-prompts | Scope Slice | FA-test-first-workflows | complete | P2 | false | false | — | Aucun (terminé) |
-| FA-delivery | Feature Area | — | queued | P2 | false | true | — | Décider du prochain scope (`scaffold-slices` puis plan/impl) ou retirer du backlog actif si non prioritaire |
+| FA-delivery | Feature Area | — | queued | P2 | false | false | — | Décision actée: garder `FA-delivery` actif et lancer le prochain scope via `scaffold-slices`, puis `/plan` et `/implement` |

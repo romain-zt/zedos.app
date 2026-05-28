@@ -1,12 +1,12 @@
 {
-  "id": "evt_test_placeholder_004",
+  "id": "evt_1QzXy5ABCD1234efg567hijn",
   "object": "event",
   "type": "customer.subscription.created",
   "livemode": false,
   "created": 1746835200,
   "data": {
     "object": {
-      "id": "sub_test_placeholder_001",
+      "id": "sub_1R2s3T4u5V6w7X8y9Z0aBcDe",
       "object": "subscription"
     }
   }

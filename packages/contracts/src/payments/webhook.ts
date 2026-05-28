@@ -3,7 +3,6 @@
  *
  * Zod schemas for inbound Stripe webhook event shapes.
  * These are derived from Stripe's published API reference docs.
- * TODO: Replace placeholder fixtures with real captured Stripe sandbox payloads before merge.
  */
 
 import { z } from 'zod';

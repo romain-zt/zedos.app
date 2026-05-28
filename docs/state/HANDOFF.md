@@ -73,24 +73,20 @@ remediation_note: null
 ## Owner milestone feedback — feedback capture and attribution (`fa-owner-milestone-feedback--feedback-capture-and-attribution`)
 
 - **Tracking PR:** **`#104`**, head **`orchestrator/tracking-fa-owner-milestone-feedback--feedback-capture-and-attribution-1778629061701`** → **`main`**.
-- **Orchestration step:** **`blocked`** in `docs/state/status.json` — no code until governance bridge is satisfied.
+- **Orchestration step:** **`complete`** in `docs/state/status.json`.
 - **Anchor:** `docs/product/feature-areas/owner-milestone-feedback.md`, `docs/product/scope-slices/owner-milestone-feedback--feedback-capture-and-attribution.md`.
-- **Why blocked:** Scope slice is **`exploratory`** with **Readiness for User Stories: NOT READY** (UX States / Data Touched empty; checklist unchecked). Per **execution-bridge** §5, a **User Story must not be authored** until the slice is **`ready-for-user-stories`**; no **approved Implementation Plan** can gate code before that. Dependency row still lists **`milestone-detection-and-prompt`** as exploratory — reconcile with shipped **#99** when refining.
-- **User story / plan:** None — correct until slice promotion.
-- **NEED_HUMAN:** Product/governance must **`/feature-area refine-slice`** (fill UX states, data touched, dependencies) and **`/feature-area promote-slice`** to `ready-for-user-stories`, then run **`/plan`** with chat **`approved`** before any implementation layer (`db-migration` onward).
-- **This run (2026-05-12):** Updated `status.json` (`orchestration.steps[...] = blocked`, `fa_owner_milestone_feedback.feedback_capture_and_attribution`, `orchestration.blocker`) and this HANDOFF; **no** `gh pr ready` — draft stays open.
-- **Safest next task:** Refine `owner-milestone-feedback--feedback-capture-and-attribution.md`; then architect User Story + Plan from slice only.
+- **User story / plan:** `docs/execution/user-stories/owner-milestone-feedback--feedback-capture-and-attribution--v0.md` + `docs/execution/plans/owner-milestone-feedback--feedback-capture-and-attribution--v0.plan.md` (approuvé).
+- **Blocker:** aucun (slice marquée complète).
+- **Safest next task:** aucun travail immédiat; garder en maintenance uniquement.
 
 ## Payments — manual credit pack checkout (`fa-payments--manual-credit-pack-checkout`)
 
 - **Tracking PR:** **`#102`**, head **`orchestrator/tracking-fa-payments--manual-credit-pack-checkout-1778625061087`** → **`main`**.
-- **Orchestration step:** **`blocked`** in `docs/state/status.json` (do not mark complete until slice bridge + implementation ship).
+- **Orchestration step:** **`complete`** in `docs/state/status.json`.
 - **Anchor:** `docs/product/feature-areas/payments.md`, `docs/product/scope-slices/payments--manual-credit-pack-checkout.md`.
-- **Prerequisite:** `orch-credit-system--ledger-concurrency-and-stripe-webhook` is **`complete`** in `status.json` (operator “blocked until credit system” no longer applies).
-- **Why blocked:** The scope slice is **`exploratory`** with **Readiness for User Stories: NOT READY** (empty UX States / Data Touched; checklist unchecked). Per **execution-bridge** (§5 inputs, §9), a **User Story must not be authored** until the parent slice is **`ready-for-user-stories`**; no **approved Implementation Plan** can gate code before that.
-- **User story / plan:** None yet — correct until slice promotion.
-- **NEED_HUMAN:** Product/governance must **`/feature-area refine-slice`** (fill UX states, data touched, dependencies) and **`/feature-area promote-slice`** to `ready-for-user-stories`, then run **`/plan`** with chat **`approved`** before any implementation layer (`db-migration` … `tests-state-finalization`).
-- **Safest next task:** Refine `payments--manual-credit-pack-checkout.md`; then architect User Story + Plan from slice only (no scope beyond Included Behavior).
+- **User story / plan:** `docs/execution/user-stories/payments--manual-credit-pack-checkout--v0.md` + `docs/execution/plans/payments--manual-credit-pack-checkout--v0.plan.md` (approuvé).
+- **Blocker:** aucun (slice marquée complète).
+- **Safest next task:** aucun travail immédiat; garder en maintenance uniquement.
 
 ## Orchestration — credits slice (`orch-credit-system--ledger-concurrency-and-stripe-webhook`)
 
@@ -164,10 +160,9 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 
 ## Next actions (compact)
 
-1. **Déploiement secrets (owner):** configurer / vérifier `STRIPE_WEBHOOK_SECRET` en environnement de déploiement pour `POST /api/stripe/webhook`.
-2. **PR tracking crédits:** quand CI est vert, exécuter `gh pr ready 100 --repo romain-zt/zedos.app` (et `#98` uniquement si cette PR est encore la surface opérateur).
-3. **Source de vérité cohérente:** conserver `status.json`, `WORK_QUEUE.md` et ce `HANDOFF.md` synchronisés (les slices payments + feedback capture sont désormais `complete`).
-4. **Milestone prompt (#105):** aucun travail supplémentaire tant qu’il n’y a pas de nouveau besoin produit.
+1. **Déploiement secrets (owner):** configurer puis vérifier `STRIPE_WEBHOOK_SECRET` sur l’environnement de déploiement pour `POST /api/stripe/webhook`.
+2. **FA-delivery (priorité produit):** lancer le prochain scope via `scaffold-slices`, puis enchaîner `/plan` et `/implement`.
+3. **Hygiène d’état:** maintenir `status.json`, `WORK_QUEUE.md` et `HANDOFF.md` alignés après chaque décision/statu update.
 
 ## Key files (milestone detection slice)
 
