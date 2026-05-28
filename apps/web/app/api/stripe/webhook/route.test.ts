@@ -20,12 +20,17 @@ function makeCheckoutEnvelope(overrides: {
   metadata?: Record<string, string>;
 } = {}) {
   return {
+    object: 'event' as const,
     type: 'checkout.session.completed' as const,
     id: 'evt_placeholder_1',
+    livemode: false,
+    created: 1_717_000_000,
     data: {
       object: {
         id: 'cs_placeholder',
+        object: 'checkout.session' as const,
         payment_status: 'paid' as const,
+        status: 'complete' as const,
         metadata: {
           userId: 'user-1',
           purchaseId: 'pur-1',

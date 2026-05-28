@@ -11,7 +11,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -46,7 +46,13 @@ When the owner submits feedback, the rating and optional comment are stored with
 
 | State | When | What the user sees / experiences |
 |-------|------|----------------------------------|
-|       |      |                                  |
+| Prompt ready | A defined owner milestone just occurred and owner is eligible | Owner sees a lightweight feedback prompt with stars (1-5) or like/dislike and an optional comment field. |
+| Empty comment | Owner selects a rating signal but leaves comment empty | Owner can still submit; optional comment remains truly optional. |
+| In progress | Owner submits feedback | Owner sees submission in progress and avoids duplicate submit action while request is processing. |
+| Success | Feedback save succeeds | Owner sees confirmation that feedback was recorded; prompt is dismissed for that milestone event. |
+| Skip | Owner chooses to skip prompt | Prompt closes without creating any feedback record. |
+| Error / retry | Save fails or cannot be completed | Owner sees an error message and can retry submission without losing selected input. |
+| Not eligible | Viewer is anonymous or actor is not signed-in owner | No feedback capture UI is shown for this slice. |
 
 ---
 
@@ -54,7 +60,11 @@ When the owner submits feedback, the rating and optional comment are stored with
 
 | Object | Operation | Notes |
 |--------|-----------|-------|
-|        |           |       |
+| Milestone feedback | Create | Stores rating signal (stars or like/dislike) and optional comment. |
+| PRD version | Read | Resolves version attribution for the stored feedback row. |
+| Project | Read | Resolves project attribution for the stored feedback row. |
+| Milestone event context | Read | Resolves milestone type and capture timestamp at submit time. |
+| Milestone feedback | No-op on skip | Skip path must not create an empty or placeholder record. |
 
 ---
 
@@ -80,7 +90,9 @@ This slice **is** the capture mechanism. It stores the structured response that 
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| `milestone-detection-and-prompt` | Scope Slice | exploratory | The prompt must exist and surface before a response can be submitted |
+| `milestone-detection-and-prompt` | Scope Slice | pending | Prompt eligibility and rendering must exist before capture can occur. |
+| `project-workspace--create-project` | Scope Slice | ready | Project context is required for attribution. |
+| `prd-versioning--create-or-capture-prd-version` | Scope Slice | ready | PRD version context is required for attribution. |
 
 ---
 
@@ -100,18 +112,18 @@ When a signed-in founder submits a feedback response after a milestone prompt, t
 
 ## Readiness for User Stories
 
-- [ ] User value stated without implementation language
-- [ ] Exact boundary defined (included + excluded)
-- [ ] UX states enumerated (including error and empty states)
-- [ ] Business objects named
-- [ ] Credit / payment impact assessed
-- [ ] Sharing / privacy surface assessed
-- [ ] Feedback / instrumentation impact assessed
-- [ ] All dependencies named and their status known
-- [ ] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome is behavioral (not a test or code spec)
+- [x] User value stated without implementation language
+- [x] Exact boundary defined (included + excluded)
+- [x] UX states enumerated (including error and empty states)
+- [x] Business objects named
+- [x] Credit / payment impact assessed
+- [x] Sharing / privacy surface assessed
+- [x] Feedback / instrumentation impact assessed
+- [x] All dependencies named and their status known
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set
+- [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** NOT READY
+**Verdict:** READY FOR USER STORIES
 
 ---
 
@@ -120,3 +132,4 @@ When a signed-in founder submits a feedback response after a milestone prompt, t
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice owner-milestone-feedback` proposal via `/feature-area scaffold-slices` | — |
+| 2026-05-28 | Promoted to ready-for-user-stories after CLEAR readiness check (`/feature-area promote-slice`) | — |

@@ -8,7 +8,7 @@ parallel_pipeline_status: in-progress
 parallel_pipeline_status_prior_branch_note: blocked-awaiting-plan-approval — historic parallel orch branch gate (superseded on mainline where milestone work advanced to PR #97 + UI complete).
 current_phase_primary: orch-credit-system--tests-state-finalization
 current_phase_primary_prior_branch_note: fa-owner-milestone-feedback--emitter-wiring-next — older bookkeeping before main advanced credits tests-finalization focus; fa-owner-milestone-feedback--ui-next — older parallel bookkeeping on credits orch tracking branch.
-current_phase_milestone_feedback: fa-owner-milestone-feedback--feedback-capture-and-attribution--blocked
+current_phase_milestone_feedback: fa-owner-milestone-feedback--feedback-capture-and-attribution--complete
 current_phase_milestone_feedback_prior_branch_note: fa-owner-milestone-feedback--milestone-detection-and-prompt — complete on tracking PR #99; fa-owner-milestone-feedback--milestone-detection-and-prompt--ui-layer-complete — prior state before milestone marked complete on main; fa-owner-milestone-feedback--milestone-detection-and-prompt--contracts-complete — prior parallel narrative when milestone tracked on PR #93.
 current_phase_aggregate: fa-owner-milestone-feedback--milestone-detection-and-prompt--complete
 current_phase_aggregate_prior_branch_note: fa-owner-milestone-feedback--milestone-detection-and-prompt--emitter-wiring-next — prior aggregate before completion; fa-owner-milestone-feedback--milestone-detection-and-prompt--blocked-plan-approval — superseded where contracts/UI landed on subsequent tracking PRs.
@@ -18,7 +18,7 @@ parallel_current_blocker: null
 parallel_current_blocker_prior_branch_note: NEED_HUMAN — Approve Implementation Plan before Iteration‑1 contracts code (historic on parallel branch; superseded where contracts landed on tracking PR #93 then advanced on PR #97).
 payments_tracking_pr: 102
 payments_tracking_branch: orchestrator/tracking-fa-payments--manual-credit-pack-checkout-1778625061087
-fa_payments_manual_credit_pack_checkout: blocked
+fa_payments_manual_credit_pack_checkout: complete
 tracking_pr: 100
 parallel_credit_tracking_pr: 98
 milestone_feedback_tracking_pr: 105
@@ -136,17 +136,12 @@ Orchestration: `orchestration.steps["orch-credit-system--ledger-concurrency-and-
 - UI layer + milestone emitters + `docs/state/status.json` / `HANDOFF` updated; orchestration step marked `complete`.
 - **#97** milestone shell / `milestonePayload` / `signalMilestone` bookkeeping preserved above as historical reference; active shipping path is **Provider + `notifyMilestone`** (stack reconciled on **#105**).
 
-## Safest next task
+## Next actions (compact)
 
-**Credits:**
-
-1. Slice **`orch-credit-system--ledger-concurrency-and-stripe-webhook`** is **complete** in repo state; after CI green on mainline tracking PR **`#100`**, run **`gh pr ready 100 --repo romain-zt/zedos.app`**. Parallel credits tracking PR **`#98`** branch merged **`origin/main`** via conflict-resolution merge commit — verify CI then **`gh pr ready 98`** if that PR remains the operator-visible surface.
-2. Configure **`STRIPE_WEBHOOK_SECRET`** in deployment for **`POST /api/stripe/webhook`** (operator-owned secret; not set from this repo).
-3. **Deployment (duplicate emphasis):** configure **`STRIPE_WEBHOOK_SECRET`** in the environment for `POST /api/stripe/webhook`.
-
-**Owner milestone (#105):**
-
-- No further automated work on this slice unless product changes the prompt UX. If revisiting **#97**-only integrations, prefer **`notifyMilestone`** + **`OwnerMilestonePromptProvider`** at callsites.
+1. **Déploiement secrets (owner):** configurer / vérifier `STRIPE_WEBHOOK_SECRET` en environnement de déploiement pour `POST /api/stripe/webhook`.
+2. **PR tracking crédits:** quand CI est vert, exécuter `gh pr ready 100 --repo romain-zt/zedos.app` (et `#98` uniquement si cette PR est encore la surface opérateur).
+3. **Source de vérité cohérente:** conserver `status.json`, `WORK_QUEUE.md` et ce `HANDOFF.md` synchronisés (les slices payments + feedback capture sont désormais `complete`).
+4. **Milestone prompt (#105):** aucun travail supplémentaire tant qu’il n’y a pas de nouveau besoin produit.
 
 ## Key files (milestone detection slice)
 

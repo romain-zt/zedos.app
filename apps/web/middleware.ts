@@ -4,6 +4,8 @@ import { requireSession } from '@repo/auth/guards-middleware';
 
 function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith('/api/auth')) return true;
+  // Stripe webhook must bypass session auth, signature is the guard.
+  if (pathname === '/api/stripe/webhook') return true;
   if (pathname.startsWith('/_next')) return true;
   if (pathname.startsWith('/share')) return true;
   if (

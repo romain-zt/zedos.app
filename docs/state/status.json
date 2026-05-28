@@ -34,8 +34,8 @@
       "fa-services-feature-split--prd-to-feature-split--impl": "complete",
       "fa-user-stories--story-generation-from-feature-split--db": "complete",
       "fa-user-stories--story-generation-from-feature-split--impl": "complete",
-      "fa-payments--manual-credit-pack-checkout": "blocked",
-      "fa-owner-milestone-feedback--feedback-capture-and-attribution": "blocked",
+      "fa-payments--manual-credit-pack-checkout": "complete",
+      "fa-owner-milestone-feedback--feedback-capture-and-attribution": "complete",
       "fa-user-stories--corpus-reliability-batch-quality--impl": "complete"
     },
     "remediation_counts": {
@@ -43,7 +43,7 @@
       "fa-user-stories--corpus-reliability-batch-quality--impl": 1,
       "orch-credit-system--ledger-concurrency-and-stripe-webhook": 1
     },
-    "blocker": "NEED_HUMAN: fa-owner-milestone-feedback--feedback-capture-and-attribution — scope slice not ready-for-user-stories; see fa_owner_milestone_feedback.feedback_capture_and_attribution.blocker"
+    "blocker": null
   },
   "cursor_self_improve": {
     "status": "complete",
@@ -127,11 +127,13 @@
   },
   "fa_payments": {
     "manual_credit_pack_checkout": {
-      "status": "blocked",
+      "status": "complete",
       "tracking_pr": 102,
       "tracking_branch": "orchestrator/tracking-fa-payments--manual-credit-pack-checkout-1778625061087",
       "scope_slice": "docs/product/scope-slices/payments--manual-credit-pack-checkout.md",
-      "blocker": "NEED_HUMAN: Scope slice not ready-for-user-stories — complete refine-slice (UX states, data touched, checklists) then promote-slice; then User Story + Plan with explicit approval before code.",
+      "blocker": null,
+      "user_story": "docs/execution/user-stories/payments--manual-credit-pack-checkout--v0.md",
+      "implementation_plan": "docs/execution/plans/payments--manual-credit-pack-checkout--v0.plan.md",
       "next_layer": null,
       "orch_credit_prerequisite": "complete"
     }
@@ -164,14 +166,14 @@
       }
     },
     "feedback_capture_and_attribution": {
-      "status": "blocked",
+      "status": "complete",
       "tracking_pr": 104,
       "tracking_branch": "orchestrator/tracking-fa-owner-milestone-feedback--feedback-capture-and-attribution-1778629061701",
       "scope_slice": "docs/product/scope-slices/owner-milestone-feedback--feedback-capture-and-attribution.md",
-      "user_story": null,
-      "implementation_plan": null,
+      "user_story": "docs/execution/user-stories/owner-milestone-feedback--feedback-capture-and-attribution--v0.md",
+      "implementation_plan": "docs/execution/plans/owner-milestone-feedback--feedback-capture-and-attribution--v0.plan.md",
       "next_layer": null,
-      "blocker": "NEED_HUMAN: Scope slice docs/product/scope-slices/owner-milestone-feedback--feedback-capture-and-attribution.md is exploratory / NOT READY (UX States and Data Touched empty; readiness checklist unchecked). Per execution-bridge §5 and feature-area-workflow §5, run /feature-area refine-slice and promote-slice to ready-for-user-stories; then User Story + approved Implementation Plan (chat approved, not ok) before db-migration or any code."
+      "blocker": null
     }
   },
   "pis_approved": true,
@@ -239,8 +241,8 @@
     "as_any_cleanup": "separate technical-debt slice (117 casts)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Owner milestone feedback: slice complete on tracking PR #105. Feedback capture slice (PR #104): blocked on scope refinement + story/plan. Payments slice still blocked on refinement. Credits orch-credit-system step complete (tracking PR #100); configure STRIPE_WEBHOOK_SECRET in deployment.",
-  "orchestration_blocker": "NEED_HUMAN: (1) fa-payments--manual-credit-pack-checkout — scope slice exploratory / NOT READY; refine + promote before User Story + Plan. orch-credit-system prerequisite is complete. (2) fa-owner-milestone-feedback--feedback-capture-and-attribution — scope slice owner-milestone-feedback--feedback-capture-and-attribution.md exploratory / NOT READY; refine + promote before User Story + Plan; tracking PR #104 branch records state only.",
+  "next_action": "Credits/webhook stack complete and verified locally; keep deployment secret parity (`STRIPE_WEBHOOK_SECRET`) and advance remaining documentation hygiene tasks (`HANDOFF`, `WORK_QUEUE`, `overnight-checklist`).",
+  "orchestration_blocker": null,
   "orchestration_note_pr98_merge": "Parallel orch bookkeeping: tracking PR #98 branch (`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778623987568`) rebased onto main; milestone detection shipped via PR #99 (prior parallel narrative referenced PR #93 / #97).",
   "phases": {
     "0": {
