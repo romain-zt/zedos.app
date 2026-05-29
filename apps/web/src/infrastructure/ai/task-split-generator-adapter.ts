@@ -1,5 +1,5 @@
 import type { ITaskSplitGenerator, GeneratedTaskDraft } from '@domain/task-split/task-split-generator';
-import { Result } from '@repo/result';
+import { Result, ok, err } from '@repo/result';
 import type { ApplicationError } from '@shared/errors/application-error';
 import { generateTasksFromStories } from './task-split-generator';
 
@@ -8,6 +8,8 @@ export class TaskSplitGeneratorAdapter implements ITaskSplitGenerator {
     storySummary: string,
     projectContext: string
   ): Promise<Result<GeneratedTaskDraft[], ApplicationError>> {
-    return generateTasksFromStories(storySummary, projectContext);
+    const result = await generateTasksFromStories(storySummary, projectContext);
+    if (result.isErr()) return err(result.error);
+    return ok(result.unwrap().map((t) => ({ title: t.title, promptBody: t.promptBody })));
   }
 }
