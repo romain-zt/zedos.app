@@ -10,4 +10,5 @@ export interface ITaskSplitBundleRepository {
     meta: { sourceUserStoryKey?: string | null; storyTitleSnapshot?: string | null }
   ): Promise<Result<TaskSplitBundleDomain, ApplicationError>>;
   lock(projectId: string): Promise<Result<TaskSplitBundleDomain, ApplicationError>>;
+  unlock(projectId: string): Promise<Result<TaskSplitBundleDomain, ApplicationError>>;
 }

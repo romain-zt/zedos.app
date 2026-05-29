@@ -5,7 +5,12 @@ import { GetProjectUseCase } from '@application/project/get-project-usecase';
 import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository';
 import { TaskSplitWorkspace } from './_components/task-split-workspace';
 
-export default async function TaskSplitPage({ params }: { params: { id: string } }) {
+interface TaskSplitPageProps {
+  params: { id: string };
+  searchParams: { storyKey?: string; storyTitle?: string };
+}
+
+export default async function TaskSplitPage({ params, searchParams }: TaskSplitPageProps) {
   const userResult = await requireUser(headers());
   if (userResult.isErr()) redirect('/sign-in');
   const userId = userResult.unwrap().id;
@@ -16,5 +21,12 @@ export default async function TaskSplitPage({ params }: { params: { id: string }
 
   const project = result.unwrap();
 
-  return <TaskSplitWorkspace projectId={project.id} projectName={project.name} />;
+  return (
+    <TaskSplitWorkspace
+      projectId={project.id}
+      projectName={project.name}
+      sourceUserStoryKey={searchParams.storyKey}
+      storyTitleSnapshot={searchParams.storyTitle}
+    />
+  );
 }

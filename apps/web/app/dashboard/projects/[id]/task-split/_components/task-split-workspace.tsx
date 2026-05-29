@@ -9,6 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import type { TaskSplitBundleDTO, TaskSplitTaskDTO } from '@repo/contracts/task-split';
 
+interface GenerateOptions {
+  sourceUserStoryKey?: string;
+  storyTitleSnapshot?: string;
+}
+
 interface Task {
   id?: string;
   sortOrder: number;
@@ -20,14 +25,19 @@ interface Task {
 interface Props {
   projectId: string;
   projectName: string;
+  /** Optional context passed from user stories page */
+  sourceUserStoryKey?: string;
+  storyTitleSnapshot?: string;
 }
 
-export function TaskSplitWorkspace({ projectId, projectName }: Props) {
+export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey, storyTitleSnapshot }: Props) {
   const [bundle, setBundle] = useState<TaskSplitBundleDTO | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [locking, setLocking] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const apiBase = `/api/projects/${projectId}/task-split`;
@@ -124,6 +134,56 @@ export function TaskSplitWorkspace({ projectId, projectName }: Props) {
     }
   }
 
+  async function unlock() {
+    setUnlocking(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBase}/unlock`, { method: 'POST' });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error ?? 'Unlock failed');
+      }
+      const data = await res.json();
+      setBundle(data as TaskSplitBundleDTO);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unlock failed');
+    } finally {
+      setUnlocking(false);
+    }
+  }
+
+  async function generate(opts?: GenerateOptions) {
+    setGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBase}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceUserStoryKey: opts?.sourceUserStoryKey ?? sourceUserStoryKey,
+          storyTitleSnapshot: opts?.storyTitleSnapshot ?? storyTitleSnapshot,
+        }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error ?? 'Generation failed');
+      }
+      const data = await res.json();
+      setBundle(data as TaskSplitBundleDTO);
+      setTasks((data as TaskSplitBundleDTO).tasks.map((t: TaskSplitTaskDTO) => ({
+        id: t.id,
+        sortOrder: t.sortOrder,
+        title: t.title,
+        promptBody: t.promptBody,
+        manual: t.manual,
+      })));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   const isLocked = Boolean(bundle?.lockedAt);
   const userStoriesHref = `/dashboard/projects/${projectId}/user-stories`;
 
@@ -171,11 +231,20 @@ export function TaskSplitWorkspace({ projectId, projectName }: Props) {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Add tasks manually or return to User stories to mark a story review-ready first.
+              {storyTitleSnapshot
+                ? `Generating tasks from: "${storyTitleSnapshot}"`
+                : 'Generate tasks from your PRD with AI, add them manually, or return to user stories.'}
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button onClick={addTask} className="min-h-11">Add task</Button>
-              <Button asChild variant="outline" className="min-h-11">
+              <Button
+                onClick={() => generate()}
+                disabled={generating}
+                className="min-h-11"
+              >
+                {generating ? 'Generating…' : 'Generate with AI'}
+              </Button>
+              <Button onClick={addTask} variant="outline" className="min-h-11">Add task manually</Button>
+              <Button asChild variant="ghost" className="min-h-11">
                 <Link href={userStoriesHref}>Open user stories</Link>
               </Button>
             </div>
@@ -245,7 +314,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: Props) {
       )}
 
       {!isLocked && (
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {tasks.length > 0 && (
             <Button onClick={addTask} variant="outline" className="min-h-11 sm:order-first">
               + Add task
@@ -258,6 +327,16 @@ export function TaskSplitWorkspace({ projectId, projectName }: Props) {
               className="min-h-11"
             >
               {saving ? 'Saving…' : 'Save tasks'}
+            </Button>
+          )}
+          {tasks.length > 0 && (
+            <Button
+              onClick={() => generate()}
+              disabled={generating || saving}
+              variant="outline"
+              className="min-h-11"
+            >
+              {generating ? 'Generating…' : 'Regenerate with AI'}
             </Button>
           )}
           {bundle && tasks.length > 0 && (
@@ -274,8 +353,8 @@ export function TaskSplitWorkspace({ projectId, projectName }: Props) {
       )}
 
       {isLocked && (
-        <Button onClick={() => { setBundle({ ...bundle!, lockedAt: null } as TaskSplitBundleDTO); setSaving(false); }} variant="outline" className="min-h-11">
-          Unlock to edit
+        <Button onClick={unlock} disabled={unlocking} variant="outline" className="min-h-11">
+          {unlocking ? 'Unlocking…' : 'Unlock to edit'}
         </Button>
       )}
     </div>
