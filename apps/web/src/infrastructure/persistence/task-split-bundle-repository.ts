@@ -5,8 +5,11 @@
  */
 import { randomUUID } from 'node:crypto';
 import type { ITaskSplitBundleRepository } from '@domain/task-split/task-split-bundle-repository';
-import type { TaskSplitBundleDomain, TaskSplitTaskDomain } from '@domain/task-split/task-split-bundle';
-import type { SaveTaskInput } from '@domain/task-split/task-split-bundle';
+import type {
+  SaveTaskInput,
+  TaskSplitBundleDomain,
+  TaskSplitTaskDomain,
+} from '@domain/task-split/task-split-bundle';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, DatabaseError, NotFoundError } from '@shared/errors/application-error';
 import { db, taskSplitBundles, taskSplitTasks, eq, asc, sql } from '@repo/db';
