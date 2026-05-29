@@ -8,6 +8,7 @@ import { DrizzleProjectRepository } from '@infrastructure/persistence/project-re
 import { GetProjectUseCase } from '@application/project/get-project-usecase'
 import { UpdateProjectUseCase } from '@application/project/update-project-usecase'
 import { DeleteProjectUseCase } from '@application/project/delete-project-usecase'
+import { toNextErrorResponse } from '@shared/http'
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const userResult = await requireUser(await headers())
@@ -56,8 +57,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   })
 
   if (result.isErr()) {
-    const e = result.error as any
-    return NextResponse.json({ error: e.message }, { status: e.statusCode || 500 })
+    return toNextErrorResponse(result.error)
   }
   return NextResponse.json(result.unwrap())
 }
@@ -72,8 +72,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
   const result = await useCase.execute(params.id, userId)
 
   if (result.isErr()) {
-    const e = result.error as any
-    return NextResponse.json({ error: e.message }, { status: e.statusCode || 500 })
+    return toNextErrorResponse(result.error)
   }
   return NextResponse.json({ success: true })
 }

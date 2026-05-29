@@ -39,13 +39,13 @@ export interface ErrorContext {
   code: ErrorCode;
   message: string;
   statusCode: number;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export class ApplicationError extends Error {
   readonly code: ErrorCode;
   readonly statusCode: number;
-  readonly details: Record<string, any>;
+  readonly details: Record<string, unknown>;
 
   constructor(context: ErrorContext) {
     super(context.message);
@@ -57,7 +57,7 @@ export class ApplicationError extends Error {
 }
 
 export class ValidationError extends ApplicationError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super({
       code: ErrorCode.VALIDATION_ERROR,
       message,
@@ -72,7 +72,7 @@ export class NotFoundError extends ApplicationError {
   constructor(
     message: string,
     code: ErrorCode = ErrorCode.NOT_FOUND,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super({
       code,
@@ -85,7 +85,7 @@ export class NotFoundError extends ApplicationError {
 }
 
 export class UnauthorizedError extends ApplicationError {
-  constructor(message: string = 'Unauthorized', details?: Record<string, any>) {
+  constructor(message: string = 'Unauthorized', details?: Record<string, unknown>) {
     super({
       code: ErrorCode.UNAUTHORIZED,
       message,
@@ -97,7 +97,7 @@ export class UnauthorizedError extends ApplicationError {
 }
 
 export class ForbiddenError extends ApplicationError {
-  constructor(message: string = 'Forbidden', details?: Record<string, any>) {
+  constructor(message: string = 'Forbidden', details?: Record<string, unknown>) {
     super({
       code: ErrorCode.FORBIDDEN,
       message,
@@ -109,7 +109,7 @@ export class ForbiddenError extends ApplicationError {
 }
 
 export class InsufficientCreditsError extends ApplicationError {
-  constructor(required: number, available: number, details?: Record<string, any>) {
+  constructor(required: number, available: number, details?: Record<string, unknown>) {
     super({
       code: ErrorCode.INSUFFICIENT_CREDITS,
       message: `Insufficient credits. Required: ${required}, Available: ${available}`,
@@ -125,7 +125,7 @@ export class ExternalServiceError extends ApplicationError {
     service: string,
     message: string,
     statusCode: number = 502,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     const code =
       service === 'ai'
@@ -144,7 +144,7 @@ export class ExternalServiceError extends ApplicationError {
 }
 
 export class DatabaseError extends ApplicationError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super({
       code: ErrorCode.DATABASE_ERROR,
       message: `Database error: ${message}`,

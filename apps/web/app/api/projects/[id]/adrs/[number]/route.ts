@@ -7,6 +7,7 @@ import { PrismaProjectRepository } from '@infrastructure/persistence/project-rep
 import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'
 import { GetAdrUseCase } from '@application/adr/get-adr-usecase'
 import { UpdateAdrUseCase } from '@application/adr/update-adr-usecase'
+import { toNextErrorResponse } from '@shared/http'
 
 export async function GET(
   req: Request,
@@ -23,8 +24,7 @@ export async function GET(
   const result = await useCase.execute(params.id, userId, adrNumber)
 
   if (result.isErr()) {
-    const e = result.error as any
-    return NextResponse.json({ error: e.message }, { status: e.statusCode || 500 })
+    return toNextErrorResponse(result.error)
   }
   return NextResponse.json(result.unwrap())
 }
@@ -52,8 +52,7 @@ export async function PATCH(
   })
 
   if (result.isErr()) {
-    const e = result.error as any
-    return NextResponse.json({ error: e.message }, { status: e.statusCode || 500 })
+    return toNextErrorResponse(result.error)
   }
   return NextResponse.json(result.unwrap())
 }

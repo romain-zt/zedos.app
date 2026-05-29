@@ -12,7 +12,7 @@ export interface LogContext {
   projectId?: string;
   operation?: string;
   traceId?: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | undefined;
 }
 
 export class Logger {
@@ -27,7 +27,7 @@ export class Logger {
     return logger;
   }
 
-  private log(level: LogLevel, message: string, data?: any) {
+  private log(level: LogLevel, message: string, data?: Record<string, unknown>) {
     const logEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -47,21 +47,21 @@ export class Logger {
     }
   }
 
-  debug(message: string, data?: any) {
+  debug(message: string, data?: Record<string, unknown>) {
     if (process.env.NODE_ENV === 'development') {
       this.log('debug', message, data);
     }
   }
 
-  info(message: string, data?: any) {
+  info(message: string, data?: Record<string, unknown>) {
     this.log('info', message, data);
   }
 
-  warn(message: string, data?: any) {
+  warn(message: string, data?: Record<string, unknown>) {
     this.log('warn', message, data);
   }
 
-  error(message: string, error?: Error | any) {
+  error(message: string, error?: Error | Record<string, unknown>) {
     const errorData =
       error instanceof Error
         ? {

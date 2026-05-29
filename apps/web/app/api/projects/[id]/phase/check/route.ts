@@ -6,6 +6,7 @@ import { requireUser } from '@repo/auth/guards'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
 import { CheckPhaseUseCase } from '@application/adr/check-phase-usecase'
+import { toNextErrorResponse } from '@shared/http'
 
 export async function POST(
   req: Request,
@@ -21,8 +22,7 @@ export async function POST(
   const result = await useCase.execute(params.id, userId)
 
   if (result.isErr()) {
-    const e = result.error as any
-    return NextResponse.json({ error: e.message }, { status: e.statusCode || 500 })
+    return toNextErrorResponse(result.error)
   }
   return NextResponse.json(result.unwrap())
 }

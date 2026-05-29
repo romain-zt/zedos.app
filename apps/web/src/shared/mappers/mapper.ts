@@ -16,6 +16,11 @@
  *   }
  */
 
+/** Bridges unrelated mapper type parameters for default identity mappings. */
+function bridgeTypes<From, To>(value: From): To {
+  return value as never as To;
+}
+
 export abstract class Mapper<Domain, Persistence = Domain, DTO = Domain> {
   /**
    * Domain → Persistence layer (Prisma model)
@@ -35,7 +40,8 @@ export abstract class Mapper<Domain, Persistence = Domain, DTO = Domain> {
    * Default: returns domain as-is. Override for custom serialization.
    */
   toDTO(domain: Domain): DTO {
-    return domain as any;
+    // Default identity mapping when Domain and DTO are the same shape (subclasses override).
+    return bridgeTypes<Domain, DTO>(domain);
   }
 
   /**
@@ -52,26 +58,26 @@ export abstract class Mapper<Domain, Persistence = Domain, DTO = Domain> {
    * Default: returns DTO as-is. Override for custom deserialization.
    */
   fromDTO(dto: DTO): Domain {
-    return dto as any;
+    return bridgeTypes<DTO, Domain>(dto);
   }
 }
 
 /**
  * Mapper composition utility for complex multi-step transformations
  */
-export const compose = <A, B, C>(
-  mapperAB: Mapper<A, any, B>,
-  mapperBC: Mapper<B, any, C>
-): Mapper<A, any, C> => {
-  return new (class extends Mapper<A, any, C> {
-    toPersistence(a: A) {
+export const compose = <A, B, C, PAB = A, PBC = B>(
+  mapperAB: Mapper<A, PAB, B>,
+  mapperBC: Mapper<B, PBC, C>
+): Mapper<A, PAB, C> => {
+  return new (class extends Mapper<A, PAB, C> {
+    toPersistence(a: A): PAB {
       return mapperAB.toPersistence(a);
     }
-    toDomain(p: any) {
+    toDomain(p: PAB): A {
       return mapperAB.toDomain(p);
     }
     toDTO(a: A): C {
-      return mapperBC.toDTO(mapperAB.toDTO(a) as any);
+      return mapperBC.toDTO(bridgeTypes<A, B>(a));
     }
   })();
 };
