@@ -148,6 +148,43 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
     }
   }
 
+  async unlock(projectId: string): Promise<Result<TaskSplitBundleDomain, ApplicationError>> {
+    try {
+      const [bundleRow] = await db
+        .select()
+        .from(taskSplitBundles)
+        .where(eq(taskSplitBundles.projectId, projectId));
+
+      if (!bundleRow) {
+        return err(new NotFoundError('Task split bundle not found'));
+      }
+
+      const now = new Date();
+      const nowIso = now.toISOString();
+      await db.execute(
+        sql`UPDATE task_split_bundles SET locked_at = NULL, updated_at = ${nowIso} WHERE id = ${bundleRow.id}`
+      );
+
+      const [updated] = await db
+        .select()
+        .from(taskSplitBundles)
+        .where(eq(taskSplitBundles.id, bundleRow.id));
+
+      if (!updated) return err(new DatabaseError('Bundle row missing after unlock'));
+
+      const taskRows = await db
+        .select()
+        .from(taskSplitTasks)
+        .where(eq(taskSplitTasks.bundleId, bundleRow.id))
+        .orderBy(asc(taskSplitTasks.sortOrder));
+
+      return ok(mapBundle(updated, taskRows));
+    } catch (error) {
+      logger.error('Failed to unlock task split bundle', error);
+      return err(new DatabaseError('Failed to unlock task split bundle'));
+    }
+  }
+
   async lock(projectId: string): Promise<Result<TaskSplitBundleDomain, ApplicationError>> {
     try {
       const [bundleRow] = await db
