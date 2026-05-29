@@ -57,7 +57,7 @@ const makeDeliveryRepo = (bundles: ExportEligibleBundle[]): IDeliveryExportRepos
 });
 
 const makeAssembler = (): ICursorPackageAssembler => ({
-  assembleZip: vi.fn().mockResolvedValue(Buffer.from('PK\x03\x04mock-zip')),
+  assembleZip: vi.fn().mockResolvedValue(ok(Buffer.from('PK\x03\x04mock-zip'))),
 });
 
 describe('BuildDeliveryPackageUseCase', () => {

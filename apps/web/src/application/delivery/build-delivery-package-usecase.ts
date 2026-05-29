@@ -79,7 +79,10 @@ export class BuildDeliveryPackageUseCase {
       );
     }
 
-    const zipBuffer = await this.packageAssembler.assembleZip(ordered);
+    const zipResult = await this.packageAssembler.assembleZip(ordered);
+    if (zipResult.isErr()) return forwardErr(zipResult);
+
+    const zipBuffer = zipResult.unwrap();
     const filename = `zedos-delivery-${projectId.slice(0, 8)}.zip`;
 
     return ok({

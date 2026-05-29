@@ -5,6 +5,8 @@
 import archiver from 'archiver';
 import type { ExportEligibleBundle } from '@domain/delivery/export-bundle';
 import type { ICursorPackageAssembler } from '@domain/delivery/cursor-package-assembler-port';
+import { Result, ok, err } from '@repo/result';
+import { ApplicationError, ExternalServiceError } from '@shared/errors/application-error';
 
 export type PackageFile = {
   path: string;
@@ -90,8 +92,8 @@ export function buildPackageFiles(bundles: ExportEligibleBundle[]): PackageFile[
   return files;
 }
 
-export function zipPackageFiles(files: PackageFile[]): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
+export function zipPackageFiles(files: PackageFile[]): Promise<Result<Buffer, ApplicationError>> {
+  return new Promise((resolve) => {
     const archive = archiver('zip', { zlib: { level: 9 } });
     const chunks: Buffer[] = [];
 
@@ -99,10 +101,11 @@ export function zipPackageFiles(files: PackageFile[]): Promise<Buffer> {
       chunks.push(chunk);
     });
     archive.on('error', (archiveError: Error) => {
-      reject(archiveError);
+      const message = archiveError instanceof Error ? archiveError.message : 'ZIP assembly failed';
+      resolve(err(new ExternalServiceError('archiver', message, 502)));
     });
     archive.on('end', () => {
-      resolve(Buffer.concat(chunks));
+      resolve(ok(Buffer.concat(chunks)));
     });
 
     for (const file of files) {
@@ -113,13 +116,20 @@ export function zipPackageFiles(files: PackageFile[]): Promise<Buffer> {
   });
 }
 
-export async function assembleDeliveryZip(bundles: ExportEligibleBundle[]): Promise<Buffer> {
-  const files = buildPackageFiles(bundles);
-  return zipPackageFiles(files);
+export async function assembleDeliveryZip(
+  bundles: ExportEligibleBundle[]
+): Promise<Result<Buffer, ApplicationError>> {
+  try {
+    const files = buildPackageFiles(bundles);
+    return await zipPackageFiles(files);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'ZIP assembly failed';
+    return err(new ExternalServiceError('archiver', message, 502));
+  }
 }
 
 export class CursorPackageAssembler implements ICursorPackageAssembler {
-  assembleZip(bundles: ExportEligibleBundle[]): Promise<Buffer> {
+  assembleZip(bundles: ExportEligibleBundle[]): Promise<Result<Buffer, ApplicationError>> {
     return assembleDeliveryZip(bundles);
   }
 }
