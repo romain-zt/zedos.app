@@ -153,9 +153,14 @@ export function TaskSplitWorkspace({ projectId, projectName }: Props) {
       )}
 
       {isLocked && (
-        <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-          <Badge variant="secondary">Locked</Badge>
-          <span>This bundle is export-ready. Editing requires a new save.</span>
+        <div className="flex flex-col gap-2 rounded-md border bg-muted/40 px-3 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-center gap-2">
+            <Badge variant="secondary">Locked</Badge>
+            <span>This bundle is export-ready. Editing requires a new save.</span>
+          </span>
+          <Button asChild size="sm" className="min-h-11 shrink-0">
+            <Link href={`/dashboard/projects/${projectId}/delivery`}>Open delivery export</Link>
+          </Button>
         </div>
       )}
 

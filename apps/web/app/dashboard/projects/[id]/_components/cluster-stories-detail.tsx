@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle,
+  ListChecks,
   Loader2,
   Plus,
   Trash2,
@@ -315,6 +316,12 @@ export function ClusterStoriesDetail({
                     <CheckCircle className="h-4 w-4 mr-2" />
                   )}
                   Mark review-ready
+                </Button>
+                <Button asChild className="min-h-[44px] sm:flex-1">
+                  <Link href={`/dashboard/projects/${projectId}/task-split`}>
+                    <ListChecks className="h-4 w-4 mr-2" />
+                    Split into tasks
+                  </Link>
                 </Button>
               </div>
             </div>

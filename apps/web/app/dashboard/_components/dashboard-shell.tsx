@@ -24,6 +24,7 @@ import {
   X,
   Layers,
   FileText,
+  Package,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -124,6 +125,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   { href: `/dashboard/projects/${workspaceProjectId}/feature-split`, label: 'Feature split', icon: Layers, exact: false },
                   { href: `/dashboard/projects/${workspaceProjectId}/user-stories`, label: 'User stories', icon: GitBranch, exact: false },
                   { href: `/dashboard/projects/${workspaceProjectId}/task-split`, label: 'Task splitting', icon: BarChart3, exact: false },
+                  { href: `/dashboard/projects/${workspaceProjectId}/delivery`, label: 'Delivery', icon: Package, exact: false },
                 ] as const).map((sub) => {
                   const isSubActive = sub.exact
                     ? pathname === sub.href
@@ -152,11 +154,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </>
             )}
 
-            <div className="pt-4 pb-2">
-              <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Coming in v1
-              </p>
-            </div>
+            {DEFERRED_ROADMAP_PLACEHOLDERS.length > 0 && (
+              <div className="pt-4 pb-2">
+                <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Coming in v1
+                </p>
+              </div>
+            )}
             {DEFERRED_ROADMAP_PLACEHOLDERS.map((item) => {
               const Icon = PLACEHOLDER_ICONS[item.id] ?? Construction
               return (
