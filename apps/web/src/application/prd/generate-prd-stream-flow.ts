@@ -181,7 +181,10 @@ export async function generatePrdStreamForProject(
       }
       await db.insert(prdVersions).values(prdInsert)
     } catch (error: unknown) {
-      logger.error('Failed to save PRD version', error)
+      logger.error(
+        'Failed to save PRD version',
+        error instanceof Error ? error : { error: String(error) }
+      )
     }
   })
 
