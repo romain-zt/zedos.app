@@ -9,6 +9,7 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:watch": "turbo test:watch",
+    "test:e2e": "turbo test:e2e",
     "clean": "turbo clean"
   },
   "onlyBuiltDependencies": [
