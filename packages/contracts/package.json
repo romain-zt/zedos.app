@@ -29,7 +29,8 @@
     "./feedback/submit": "./src/feedback/submit.ts",
     "./feedback/milestone-prompt": "./src/feedback/milestone-prompt.ts",
     "./feature-split": "./src/feature-split/index.ts",
-    "./user-stories": "./src/user-stories/index.ts"
+    "./user-stories": "./src/user-stories/index.ts",
+    "./delivery": "./src/delivery/delivery-contracts.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
