@@ -18,6 +18,7 @@ Use when the Plan adds a use case under `application/<context>/<operation>.useca
 ## Read first
 
 - `.cursor/rules/72-hexagonal-boundaries.mdc` (`application/` import matrix)
+- `.cursor/rules/81-critical-flow-extraction.mdc` (multi-step flows belong here, not inline in handlers)
 - `.cursor/rules/73-result-rop.mdc` (Result discipline)
 - `.cursor/rules/74-contracts-zod.mdc` (input/output types via `z.infer`)
 - `.cursor/rules/75-drizzle.mdc` §5 (transactions, when persistence is touched)

@@ -24,6 +24,7 @@ This rule complements:
 
 - `.cursor/rules/73-result-rop.mdc` — error handling across boundaries
 - `.cursor/rules/74-contracts-zod.mdc` — contract layer is the only source of cross-layer DTOs
+- `.cursor/rules/81-critical-flow-extraction.mdc` — named functions inside each layer; handlers delegate multi-step flows
 - `.cursor/agents/execution/domain-guardian.md` — agent that enforces this rule on every diff
 
 ---
@@ -58,7 +59,7 @@ Rules:
 
 ### 2.2 Application (`src/application/*`)
 
-Use-case orchestration. Depends only on domain + contracts + shared.
+Use-case orchestration. Depends only on domain + contracts + shared. Multi-step flows are **named** here (or in private helpers), not inlined in route handlers — see `81-critical-flow-extraction.mdc`.
 
 - Use-case handlers (CreateProject, GeneratePrd, UnlockArchitecture)
 - Application Services (ProjectService, PrdService)

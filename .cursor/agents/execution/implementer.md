@@ -26,7 +26,7 @@ When invoked for `/implement <plan-path>`, `/fix <issue>`, or `/babysit`:
 1. The active Implementation Plan (`docs/execution/plans/<...>.plan.md`).
 2. The parent User Story (linked from the Plan).
 3. The parent Scope Slice (linked from the Story).
-4. `.cursor/rules/70-execution-bridge.mdc`, `72-hexagonal-boundaries.mdc`, `73-result-rop.mdc`, `74-contracts-zod.mdc` always.
+4. `.cursor/rules/70-execution-bridge.mdc`, `72-hexagonal-boundaries.mdc`, `73-result-rop.mdc`, `74-contracts-zod.mdc`, `81-critical-flow-extraction.mdc` always.
 5. The applicable specialist rules per the Plan's `Layers Affected`: `75-drizzle.mdc`, `76-better-auth.mdc`, `77-nextjs.mdc`, `78-testing.mdc`.
 6. The current state of the files in the Plan's `Touched Files` (read before edit).
 7. The skills required for the operation: `add-route-handler`, `add-server-action`, `add-page-route`, `add-usecase`, `add-driving-endpoint`, `add-driven-adapter`, `add-drizzle-migration`, `add-better-auth-flow`, `add-zod-contract`, `add-test`.
@@ -95,6 +95,7 @@ Every edit must:
 5. Derive auth from verified sessions only (`76-better-auth.mdc` §3).
 6. Keep route handlers < 30 lines (`77-nextjs.mdc` §4).
 7. Ship tests per the Plan's `Tests` section (`78-testing.mdc`).
+8. Extract multi-step business flows into named functions or use cases — no flat inline workflows between status updates (`81-critical-flow-extraction.mdc` §3–§8).
 
 Do not:
 

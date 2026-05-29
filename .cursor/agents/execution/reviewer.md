@@ -62,21 +62,28 @@ You produce a **Review Report** using `.cursor/templates/execution/review-report
 - Missing `loading.tsx` / `error.tsx` in dynamic-data segments.
 - AI streamed JSON without zod validation pre-side-effect.
 
-## 7. Testing discipline (per `78-testing.mdc`)
+## 7. Critical flow extraction (per `81-critical-flow-extraction.mdc`)
+
+- Multi-step logic inlined in handlers, webhooks, server actions, or `for`/`while` loops when §3 triggers apply (status + validation + I/O + side effects in one block).
+- Status sandwich: `processing` → long anonymous block → `done` without a named middle step.
+- Business logic in routes that should be a use case (`application/*.usecase.ts`).
+- Orchestration scripts (`.github/scripts/`) with phase logic in anonymous blocks instead of named functions.
+
+## 8. Testing discipline (per `78-testing.mdc`)
 
 - New code without tests.
 - Concurrency-critical code without a concurrent integration test.
 - Schemas without contract tests.
 - Coverage drop below floor.
 
-## 8. PR-sizing (per `79-pr-sizing.mdc`)
+## 9. PR-sizing (per `79-pr-sizing.mdc`)
 
 - Net lines > 400 without exemption.
 - Files > 15 without exemption.
 - Layers > 3 without exemption.
 - Schema migrations > 1.
 
-## 9. Scope creep (the highest-leverage check)
+## 10. Scope creep (the highest-leverage check)
 
 Cross-reference the diff with:
 
