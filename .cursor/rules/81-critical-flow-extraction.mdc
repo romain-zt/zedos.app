@@ -1,0 +1,171 @@
+---
+description: Requires named extraction of multi-step business flows. Bans flat inline workflows in handlers, loops, workers, and status-update sequences. Prioritizes readable orchestration over minimal function count.
+globs:
+  - zedos/nextjs_space/src/**/*.ts
+  - zedos/nextjs_space/src/**/*.tsx
+  - zedos/nextjs_space/app/**/*.ts
+  - zedos/nextjs_space/app/**/*.tsx
+  - apps/**/*.ts
+  - apps/**/*.tsx
+  - packages/**/*.ts
+  - packages/**/*.tsx
+  - services/**/*.ts
+  - .github/scripts/**/*.ts
+alwaysApply: false
+---
+
+# Critical Flow Extraction
+
+## 1. Purpose
+
+Features must be **correct** and **immediately understandable**. A handler, loop, or job runner that works but hides 80 lines of business logic between two status updates is a maintenance and review liability.
+
+This rule governs **intra-module structure**: how named functions are carved out inside a layer. It complements (does not replace):
+
+- `.cursor/rules/72-hexagonal-boundaries.mdc` — *which layer* owns orchestration vs domain vs I/O
+- `.cursor/rules/77-nextjs.mdc` — route handlers stay thin (< 30 lines)
+- `.cursor/skills/execution/add-usecase/SKILL.md` — use cases as the default home for multi-step application flows
+
+---
+
+## 2. Core principle
+
+**If a flow can be named, it should usually become a function.**
+
+The parent scope (handler, loop, worker, use case entry) owns **orchestration**: status transitions, iteration, delegation, error routing.
+
+Dedicated functions own **business intent**: validations, transformations, retries, side effects, persistence, external calls.
+
+---
+
+## 3. Extraction trigger (mandatory review)
+
+When implementing or reviewing a sequence, flag it for extraction if it contains **two or more** of:
+
+| Signal | Examples |
+|---|---|
+| Status updates | `job.status = "processing"`, enum transitions, workflow state |
+| Retries | backoff, re-attempt loops, idempotency replays |
+| Validations | zod `safeParse`, domain invariants, preconditions |
+| Transformations | mapping DTOs, aggregations, normalisation |
+| Side effects | events emitted, emails, cache invalidation |
+| Async operations | `await` chains, `Promise.all`, streams |
+| Database writes | inserts, updates, transactions |
+| External API calls | Stripe, LLM vendors, webhooks |
+
+The logic **between** those steps must usually live in a **named function**, not inline in the parent.
+
+---
+
+## 4. Desired structure
+
+### 4.1 Bad — flat workflow embedded in the parent
+
+```typescript
+for (const job of jobs) {
+  job.status = "processing";
+
+  // 80 lines: validate, transform, call API, write DB, retry, emit event
+
+  job.status = "done";
+}
+```
+
+### 4.2 Good — orchestration vs business logic
+
+```typescript
+for (const job of jobs) {
+  job.status = "processing";
+
+  const result = await processJob(job);
+  if (result.isErr()) {
+    job.status = "failed";
+    continue;
+  }
+
+  job.status = "done";
+}
+```
+
+### 4.3 Layer mapping (zedos)
+
+| Parent scope | Typical extraction target |
+|---|---|
+| Route / webhook handler | `application/*/*.usecase.ts` (preferred) or a colocated `*.handler.ts` helper in the same adapter file |
+| Server action | Use case; action only parses + maps `Result` → response shape |
+| `for` / `while` over jobs, rows, events | `processX`, `handleYEvent`, `reconcileZ` — one semantic name per item |
+| Use case `execute` / public entry | Private functions or sub-steps (`loadContext`, `chargeCredits`, `persistOutcome`) |
+| Domain | Pure functions (`calculateFee`, `assertEligible`) — no I/O |
+| CI / orchestration scripts (`.github/scripts/`) | Named `async function` per phase step; main loop only sequences |
+
+Handlers and loops **must not** accumulate business logic to stay under the 30-line route limit (`77-nextjs.mdc`). Extraction is the mechanism, not a reason to violate layer boundaries.
+
+---
+
+## 5. Decision checklist
+
+Before merging, the author (or reviewer) must be able to answer:
+
+1. What is the **actual business flow** in one sentence?
+2. What is the **critical operation** (the step that must not be wrong)?
+3. What deserves a **semantic function name** a new developer would search for?
+4. What would be **easier to test** in isolation?
+5. What logic is **hidden between two status changes**?
+
+If any answer is "a block inside the handler/loop", extract it.
+
+---
+
+## 6. Pure functions when possible
+
+Prefer **pure** helpers for:
+
+- calculations
+- eligibility checks
+- DTO mapping with no I/O
+- aggregations over in-memory data
+
+Keep **impure** steps (DB, HTTP, queues) in clearly named async functions so tests can mock at the port boundary (`72-hexagonal-boundaries.mdc`).
+
+---
+
+## 7. Priority order
+
+When tradeoffs arise, prefer (in order):
+
+1. **Readability** — a human grasps the flow in one pass
+2. **Separation of concerns** — orchestration vs business vs I/O
+3. **Explicit business intent** — names reflect domain language
+4. **Testability** — critical steps unit-testable without spinning the whole handler
+5. **Maintainability** — safe to change one step without re-reading 200 lines
+
+**Do not** optimise for minimal file count or minimal function count.
+
+---
+
+## 8. Hard rules
+
+1. **No flat workflows** in route handlers, webhooks, server actions, or job/event loops when §3 triggers apply — extract or delegate to a use case.
+2. **Status sandwich anti-pattern** — `status = processing` → long inline block → `status = done` requires a named middle step.
+3. **Use cases for multi-step application flows** — if the Plan's `Layers Affected` includes `application`, new multi-step logic belongs in `*.usecase.ts`, not a growing handler (`add-usecase` skill).
+4. **Extraction does not bypass hexagonal rules** — extracted functions still obey import matrix and `Result` discipline; moving code inline into `infrastructure/` from a route to "shorten" the handler is a violation.
+5. **Scripts** — `.github/scripts/` phase orchestrators sequence named steps; each step's business logic lives in a function, not an anonymous block in `main`.
+
+---
+
+## 9. Plan and review expectations
+
+- **Architect** — Plans that touch multi-step flows name the target functions / use cases in `Touched Files` (e.g. `processCheckoutWebhook.usecase.ts`).
+- **Implementer** — applies §3–§8 on every edit batch.
+- **Reviewer** — flags inline workflows per §3 even when line count is under route limits.
+
+---
+
+## 10. Enforced by
+
+| Mechanism | Enforces |
+|---|---|
+| `.cursor/agents/execution/implementer.md` | §8 at implementation time |
+| `.cursor/agents/execution/reviewer.md` | §3–§5 at review time |
+| `.cursor/skills/execution/add-usecase/SKILL.md` | §4.3 default extraction target |
+| Human review | §5 checklist — not yet ESLint-automated |

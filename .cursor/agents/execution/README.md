@@ -92,7 +92,8 @@ A Plan without adversarial review is not approvable. A diff without `reviewer` +
 2. `.cursor/rules/72-hexagonal-boundaries.mdc` — hexagonal layer definitions and enforcement
 3. `.cursor/rules/73-result-rop.mdc` — Result discipline
 4. `.cursor/rules/74-contracts-zod.mdc` — contracts as the single source of truth
-5. `.cursor/rules/80-change-policy.mdc` — what each command may and may not do
+5. `.cursor/rules/81-critical-flow-extraction.mdc` — named business flows vs flat inline handlers
+6. `.cursor/rules/80-change-policy.mdc` — what each command may and may not do
 6. This README + the per-agent files
 
 ## Hard rules

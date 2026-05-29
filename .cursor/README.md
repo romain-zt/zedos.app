@@ -89,7 +89,7 @@ The bridge is governed by `.cursor/rules/70-execution-bridge.mdc` — the single
 ├── rules/
 │   ├── 00-siso.mdc                     (SISO — request-quality gate)
 │   ├── 10-prd-discovery.mdc, 11-prd-question-loop.mdc, feature-area-workflow.mdc, execution-loop.mdc  (discovery rules)
-│   └── 70-execution-bridge.mdc, 71-monorepo-context.mdc, 72-hexagonal-boundaries.mdc, 73-result-rop.mdc, 74-contracts-zod.mdc, 75-drizzle.mdc, 76-better-auth.mdc, 77-nextjs.mdc, 78-testing.mdc, 79-pr-sizing.mdc, 80-change-policy.mdc  (execution rules)
+│   └── 70-execution-bridge.mdc, 71-monorepo-context.mdc, 72-hexagonal-boundaries.mdc, 73-result-rop.mdc, 74-contracts-zod.mdc, 75-drizzle.mdc, 76-better-auth.mdc, 77-nextjs.mdc, 78-testing.mdc, 79-pr-sizing.mdc, 80-change-policy.mdc, 81-critical-flow-extraction.mdc  (execution rules)
 ├── skills/
 │   ├── prd/prd-builder/                (PRD construction skill — supporting docs split out)
 │   ├── feature-area/feature-area-builder/  (decomposition skill)
