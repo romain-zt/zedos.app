@@ -1,11 +1,9 @@
 import { IPrdRepository } from '@domain/prd/prd-repository';
 import { PrdVersionWithRelations } from '@domain/prd/prd';
 import { IProjectRepository } from '@domain/project/project-repository';
-import { Result, err } from '@repo/result';
+import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
-import { createLogger } from '@shared/observability/logger';
-
-const logger = createLogger({ operation: 'GetPrdVersionsUseCase' });
+import { forwardErr } from '@shared/result/propagate';
 
 export class GetPrdVersionsUseCase {
   constructor(
@@ -13,11 +11,13 @@ export class GetPrdVersionsUseCase {
     private prdRepository: IPrdRepository
   ) {}
 
-  async execute(projectId: string, userId: string): Promise<Result<PrdVersionWithRelations[], ApplicationError>> {
-    // Verify ownership
+  async execute(
+    projectId: string,
+    userId: string
+  ): Promise<Result<PrdVersionWithRelations[], ApplicationError>> {
     const projectResult = await this.projectRepository.findByIdAndUserId(projectId, userId);
     if (projectResult.isErr()) {
-      return projectResult as any;
+      return forwardErr(projectResult);
     }
 
     return this.prdRepository.findByProjectId(projectId);

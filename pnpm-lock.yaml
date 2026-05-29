@@ -13,7 +13,7 @@ importers:
         version: 2.31.0(@types/node@20.6.2)
       next:
         specifier: 14.2.28
-        version: 14.2.28(@babel/core@7.29.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        version: 14.2.28(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       syncpack:
         specifier: ^12.3.1
         version: 12.4.0(typescript@5.2.2)
@@ -217,7 +217,7 @@ importers:
         version: 4.7.1
       next:
         specifier: 14.2.28
-        version: 14.2.28(@babel/core@7.29.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        version: 14.2.28(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       next-themes:
         specifier: 0.3.0
         version: 0.3.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -300,6 +300,9 @@ importers:
       '@next/swc-wasm-nodejs':
         specifier: 13.5.1
         version: 13.5.1
+      '@playwright/test':
+        specifier: ^1.51.0
+        version: 1.60.0
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
@@ -407,10 +410,10 @@ importers:
         version: 2.4.3
       better-auth:
         specifier: ^1.6.10
-        version: 1.6.10(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.2.2))(typescript@5.2.2))(next@14.2.28(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(prisma@6.7.0(typescript@5.2.2))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(vitest@4.1.5(@types/node@20.6.2)(happy-dom@17.6.3)(vite@8.0.11(@types/node@20.6.2)(esbuild@0.28.0)(jiti@1.21.7)(terser@5.47.1)(tsx@4.22.3)(yaml@2.8.4)))
+        version: 1.6.10(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.2.2))(typescript@5.2.2))(next@14.2.28(@playwright/test@1.60.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(prisma@6.7.0(typescript@5.2.2))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(vitest@4.1.5(@types/node@20.6.2)(happy-dom@17.6.3)(vite@8.0.11(@types/node@20.6.2)(esbuild@0.28.0)(jiti@1.21.7)(terser@5.47.1)(tsx@4.22.3)(yaml@2.8.4)))
       next:
         specifier: '>=14'
-        version: 14.2.28(@babel/core@7.29.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+        version: 14.2.28(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
     devDependencies:
       '@repo/tsconfig':
         specifier: workspace:*
@@ -2010,6 +2013,11 @@ packages:
   '@pkgr/core@0.1.2':
     resolution: {integrity: sha512-fdDH1LSGfZdTH2sxdpVMw31BanV28K/Gry0cVFxaNP77neJSkd82mM8ErPNYs9e+0O7SdHBLTDzDgwUuy18RnQ==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
+
+  '@playwright/test@1.60.0':
+    resolution: {integrity: sha512-O71yZIbAh/PxDMNGns37GHBIfrVkEVyn+AXyIa5dOTfb4/xNvRWV+Vv/NMbNCtODB/pO7vLlF2OTmMVLhmr7Ag==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@plotly/d3-sankey-circular@0.33.1':
     resolution: {integrity: sha512-FgBV1HEvCr3DV7RHhDsPXyryknucxtfnLwPtCKKxdolKyTFYoLX/ibEfX39iFYIL7DYbVeRtP43dbFcrHNE+KQ==}
@@ -5145,6 +5153,11 @@ packages:
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -6431,6 +6444,16 @@ packages:
   pirates@4.0.7:
     resolution: {integrity: sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA==}
     engines: {node: '>= 6'}
+
+  playwright-core@1.60.0:
+    resolution: {integrity: sha512-9bW6zvX/m0lEbgTKJ6YppOKx8H3VOPBMOCFh2irXFOT4BbHgrx5hPjwJYLT40Lu+4qtD36qKc/Hn56StUW57IA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.60.0:
+    resolution: {integrity: sha512-hheHdokM8cdqCb0lcE3s+zT4t4W+vvjpGxsZlDnikarzx8tSzMebh3UiFtgqwFwnTnjYQcsyMF8ei2mCO/tpeA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   plotly.js@2.35.3:
     resolution: {integrity: sha512-7RaC6FxmCUhpD6H4MpD+QLUu3hCn76I11rotRefrh3m1iDvWqGnVqVk9dSaKmRAhFD3vsNsYea0OxnR1rc2IzQ==}
@@ -9549,6 +9572,10 @@ snapshots:
 
   '@pkgr/core@0.1.2': {}
 
+  '@playwright/test@1.60.0':
+    dependencies:
+      playwright: 1.60.0
+
   '@plotly/d3-sankey-circular@0.33.1':
     dependencies:
       d3-array: 1.2.4
@@ -11646,7 +11673,7 @@ snapshots:
 
   bcryptjs@2.4.3: {}
 
-  better-auth@1.6.10(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.2.2))(typescript@5.2.2))(next@14.2.28(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(prisma@6.7.0(typescript@5.2.2))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(vitest@4.1.5(@types/node@20.6.2)(happy-dom@17.6.3)(vite@8.0.11(@types/node@20.6.2)(esbuild@0.28.0)(jiti@1.21.7)(terser@5.47.1)(tsx@4.22.3)(yaml@2.8.4))):
+  better-auth@1.6.10(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.2.2))(typescript@5.2.2))(next@14.2.28(@playwright/test@1.60.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(prisma@6.7.0(typescript@5.2.2))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(vitest@4.1.5(@types/node@20.6.2)(happy-dom@17.6.3)(vite@8.0.11(@types/node@20.6.2)(esbuild@0.28.0)(jiti@1.21.7)(terser@5.47.1)(tsx@4.22.3)(yaml@2.8.4))):
     dependencies:
       '@better-auth/core': 1.6.10(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0)
       '@better-auth/drizzle-adapter': 1.6.10(@better-auth/core@1.6.10(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)
@@ -11667,7 +11694,7 @@ snapshots:
       zod: 4.4.3
     optionalDependencies:
       '@prisma/client': 6.7.0(prisma@6.7.0(typescript@5.2.2))(typescript@5.2.2)
-      next: 14.2.28(@babel/core@7.29.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      next: 14.2.28(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       prisma: 6.7.0(typescript@5.2.2)
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
@@ -13104,6 +13131,9 @@ snapshots:
   fs.realpath@1.0.0:
     optional: true
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -14203,7 +14233,7 @@ snapshots:
 
   next-tick@1.1.0: {}
 
-  next@14.2.28(@babel/core@7.29.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
+  next@14.2.28(@babel/core@7.29.0)(@playwright/test@1.60.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:
       '@next/env': 14.2.28
       '@swc/helpers': 0.5.5
@@ -14224,6 +14254,7 @@ snapshots:
       '@next/swc-win32-arm64-msvc': 14.2.28
       '@next/swc-win32-ia32-msvc': 14.2.28
       '@next/swc-win32-x64-msvc': 14.2.28
+      '@playwright/test': 1.60.0
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
@@ -14484,6 +14515,14 @@ snapshots:
   pify@4.0.1: {}
 
   pirates@4.0.7: {}
+
+  playwright-core@1.60.0: {}
+
+  playwright@1.60.0:
+    dependencies:
+      playwright-core: 1.60.0
+    optionalDependencies:
+      fsevents: 2.3.2
 
   plotly.js@2.35.3(mapbox-gl@1.13.3)(webpack@5.99.5(esbuild@0.28.0)(postcss@8.4.30)):
     dependencies:

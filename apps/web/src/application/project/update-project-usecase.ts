@@ -1,8 +1,10 @@
 import { IProjectRepository } from '@domain/project/project-repository';
-import { Result, ok, err } from '@repo/result';
+import { Result, ok } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { ProjectDTO } from '@repo/contracts/project/project-contracts';
 import { createLogger } from '@shared/observability/logger';
+import { forwardErr } from '@shared/result/propagate';
+import { toProjectDTO } from '@application/project/project-dto';
 
 const logger = createLogger({ operation: 'UpdateProjectUseCase' });
 
@@ -19,7 +21,7 @@ export class UpdateProjectUseCase {
   async execute(input: UpdateProjectInput): Promise<Result<ProjectDTO, ApplicationError>> {
     const findResult = await this.projectRepository.findByIdAndUserId(input.projectId, input.userId);
     if (findResult.isErr()) {
-      return findResult as any;
+      return forwardErr(findResult);
     }
 
     const existing = findResult.unwrap();
@@ -32,11 +34,11 @@ export class UpdateProjectUseCase {
 
     const updateResult = await this.projectRepository.update(updated);
     if (updateResult.isErr()) {
-      return updateResult as any;
+      return forwardErr(updateResult);
     }
 
     const saved = updateResult.unwrap();
     logger.info('Project updated', { projectId: input.projectId });
-    return ok(saved as ProjectDTO) as any;
+    return ok(toProjectDTO(saved));
   }
 }

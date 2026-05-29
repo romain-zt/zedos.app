@@ -2,9 +2,10 @@ import { IUserRepository } from '@domain/user/user-repository';
 import { UserDomainService } from '@domain/user/user-service';
 import { ICreditsRepository } from '@domain/credits/credits-repository';
 import { Result, ok, err } from '@repo/result';
-import { ApplicationError, ValidationError } from '@shared/errors/application-error';
+import { ApplicationError, ErrorCode, ValidationError } from '@shared/errors/application-error';
 import { UserDTO } from '@repo/contracts/auth/auth-contracts';
 import { createLogger } from '@shared/observability/logger';
+import { forwardErr } from '@shared/result/propagate';
 import { v4 as uuidv4 } from 'uuid';
 
 const logger = createLogger({ operation: 'SignUpUseCase' });
@@ -23,41 +24,36 @@ export class SignUpUseCase {
 
   async execute(input: SignUpInput): Promise<Result<UserDTO, ApplicationError>> {
     try {
-      // 1. Validate email
       const emailValidation = UserDomainService.validateEmail(input.email);
       if (emailValidation.isErr()) {
-        return emailValidation as any;
+        return err<UserDTO, ApplicationError>(emailValidation.error);
       }
       const email = emailValidation.unwrap();
 
-      // 2. Check if user already exists
       const existingUser = await this.userRepository.findByEmail(email);
       if (existingUser.isOk()) {
-        const validationErr = new ValidationError('User with this email already exists');
         logger.warn('Sign up failed: user already exists', { email: email.value });
-        return err(validationErr);
+        return err<UserDTO, ApplicationError>(
+          new ValidationError('User with this email already exists')
+        );
       }
 
-      // 3. Hash password
       const hashResult = await UserDomainService.hashPassword(input.password);
       if (hashResult.isErr()) {
-        return hashResult as any;
+        return err<UserDTO, ApplicationError>(hashResult.error);
       }
       const passwordHash = hashResult.unwrap();
 
-      // 4. Create user entity
       const userId = uuidv4();
       const user = UserDomainService.createUser(userId, email, input.name, passwordHash);
 
-      // 5. Persist user
       const createResult = await this.userRepository.create(user);
       if (createResult.isErr()) {
         logger.error('Sign up failed: user creation error', createResult.error);
-        return createResult as any;
+        return forwardErr(createResult);
       }
       const createdUser = createResult.unwrap();
 
-      // 6. Grant starter credits (idempotent correlation tied to account)
       const STARTER_CREDITS = parseInt(process.env.STARTER_CREDITS || '20', 10);
       const creditsResult = await this.creditsRepository.addCredits(
         userId,
@@ -70,27 +66,28 @@ export class SignUpUseCase {
       );
       if (creditsResult.isErr()) {
         logger.error('Sign up failed: starter credits grant error', creditsResult.error);
-        return creditsResult as any;
+        return forwardErr(creditsResult);
       }
       const creditedBalance = creditsResult.unwrap().amount;
 
       logger.info('User signed up successfully', { userId, email: email.value });
 
-      // 7. Return DTO
       const dto: UserDTO = {
         id: createdUser.id,
         email: createdUser.email,
         name: createdUser.name,
         creditBalance: creditedBalance,
       };
-      return ok(dto) as any;
-    } catch (error: any) {
-      logger.error('SignUp unexpected error', error);
-      return err(new ApplicationError({
-        code: 'INTERNAL_SERVER_ERROR' as any,
-        message: 'Unexpected error',
-        statusCode: 500,
-      }));
+      return ok<UserDTO, ApplicationError>(dto);
+    } catch (error: unknown) {
+      logger.error('SignUp unexpected error', error instanceof Error ? error : { error });
+      return err<UserDTO, ApplicationError>(
+        new ApplicationError({
+          code: ErrorCode.INTERNAL_SERVER_ERROR,
+          message: 'Unexpected error',
+          statusCode: 500,
+        })
+      );
     }
   }
 }

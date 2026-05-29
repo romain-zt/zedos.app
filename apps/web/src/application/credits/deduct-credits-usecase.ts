@@ -1,10 +1,11 @@
 import { ICreditsRepository, CreditsLedgerMutationOptions } from '@domain/credits/credits-repository';
 import { CreditsDomainService } from '@domain/credits/credits-service';
 import { OperationType } from '@domain/credits/credits';
-import { Result, ok, err } from '@repo/result';
+import { Result, ok } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { CreditBalanceDTO } from '@repo/contracts/credits/credits-contracts';
 import { createLogger } from '@shared/observability/logger';
+import { forwardErr } from '@shared/result/propagate';
 
 const logger = createLogger({ operation: 'DeductCreditsUseCase' });
 
@@ -12,7 +13,6 @@ export interface DeductCreditsInput {
   userId: string;
   amount: number;
   operationType: OperationType;
-  /** Idempotency + merged into persistence metadata */
   correlationId?: string | null;
   metadata?: Record<string, unknown>;
 }
@@ -37,7 +37,7 @@ export class DeductCreditsUseCase {
 
     if (deductResult.isErr()) {
       logger.error('Deduct credits failed', { userId: input.userId, amount: input.amount });
-      return deductResult as any;
+      return forwardErr(deductResult);
     }
 
     const newBalance = deductResult.unwrap();
@@ -49,6 +49,6 @@ export class DeductCreditsUseCase {
       graceUsed: newBalance.graceUsed,
       starterCreditsGranted: false,
     };
-    return ok(dto) as any;
+    return ok(dto);
   }
 }

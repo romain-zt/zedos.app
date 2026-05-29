@@ -10,7 +10,7 @@ import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 
 export interface ProjectWithCounts extends Project {
-  latestPrdVersion?: { versionNumber: number; content: any } | null;
+  latestPrdVersion?: { versionNumber: number; content: Record<string, unknown> } | null;
   prdVersionCount: number;
   questionHistoryCount: number;
 }

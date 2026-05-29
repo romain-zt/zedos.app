@@ -47,7 +47,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     }
 
     return NextResponse.json(validated.data)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Questions GET error:', error)
     return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 })
   }

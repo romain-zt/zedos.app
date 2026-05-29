@@ -4,6 +4,7 @@ import { ProjectDomainService } from '@domain/project/project-service';
 import { Result, ok } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { PhaseCheckResponse } from '@repo/contracts/adr/adr-contracts';
+import { forwardErr } from '@shared/result/propagate';
 
 export class CheckPhaseUseCase {
   constructor(
@@ -11,13 +12,16 @@ export class CheckPhaseUseCase {
     private prdRepository: IPrdRepository
   ) {}
 
-  async execute(projectId: string, userId: string): Promise<Result<PhaseCheckResponse, ApplicationError>> {
+  async execute(
+    projectId: string,
+    userId: string
+  ): Promise<Result<PhaseCheckResponse, ApplicationError>> {
     const projectResult = await this.projectRepository.findByIdAndUserId(projectId, userId);
-    if (projectResult.isErr()) return projectResult as any;
+    if (projectResult.isErr()) return forwardErr(projectResult);
     const project = projectResult.unwrap();
 
     const prdResult = await this.prdRepository.findLatestByProjectId(projectId);
-    if (prdResult.isErr()) return prdResult as any;
+    if (prdResult.isErr()) return forwardErr(prdResult);
     const latestPrd = prdResult.unwrap();
 
     const { isStable } = ProjectDomainService.checkPrdStability(
@@ -26,10 +30,11 @@ export class CheckPhaseUseCase {
 
     const { reason } = ProjectDomainService.canUnlockArchitecture(project, isStable);
 
-    return ok({
+    const response: PhaseCheckResponse = {
       isStable,
       message: reason,
       currentPhase: project.phase,
-    }) as any;
+    };
+    return ok(response);
   }
 }

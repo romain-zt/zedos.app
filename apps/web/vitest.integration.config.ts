@@ -6,8 +6,15 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.integration.ts', 'app/**/*.integration.ts'],
+    setupFiles: ['./src/test-helpers/integration-setup.ts'],
     testTimeout: 30000,
     hookTimeout: 30000,
+    /** One worker — migrations + TRUNCATE must not run in parallel across files */
+    maxWorkers: 1,
+    fileParallelism: false,
+    sequence: {
+      concurrent: false,
+    },
   },
   resolve: {
     alias: {

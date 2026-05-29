@@ -11,6 +11,17 @@ import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'ProjectRepository' });
 
+function toPrdContentRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return {};
+  }
+  const record: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    record[key] = entry;
+  }
+  return record;
+}
+
 export class DrizzleProjectRepository implements IProjectRepository {
   // Constructor kept for API compatibility - argument is ignored since we use the singleton db
   constructor(_db?: unknown) {}
@@ -102,7 +113,10 @@ export class DrizzleProjectRepository implements IProjectRepository {
           return {
             ...this.mapToDomain(p),
             latestPrdVersion: latestPrd
-              ? { versionNumber: latestPrd.versionNumber, content: latestPrd.content }
+              ? {
+                  versionNumber: latestPrd.versionNumber,
+                  content: toPrdContentRecord(latestPrd.content),
+                }
               : null,
             prdVersionCount,
             questionHistoryCount,

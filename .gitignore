@@ -13,6 +13,11 @@ out/
 coverage/
 *.tsbuildinfo
 
+# Playwright
+playwright-report/
+test-results/
+apps/web/e2e/.auth/
+
 # Turbo
 .turbo/
 
@@ -26,3 +31,7 @@ node_modules/
 # IDE
 .vscode/
 .idea/
+
+# Topo
+topo.md
+todo.md

@@ -28,7 +28,13 @@
     "CREDIT_COST_MINI_FORM",
     "CREDIT_COST_PRD_GENERATION",
     "CREDIT_COST_PRD_CHALLENGE",
-    "GRACE_CREDIT_CEILING"
+    "GRACE_CREDIT_CEILING",
+    "E2E_USER_EMAIL",
+    "E2E_USER_PASSWORD",
+    "E2E_NO_CREDITS_EMAIL",
+    "E2E_NO_CREDITS_PASSWORD",
+    "PLAYWRIGHT_BASE_URL",
+    "E2E_MODE"
   ],
   "tasks": {
     "build": {
@@ -53,6 +59,13 @@
     "test:watch": {
       "cache": false,
       "persistent": true
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "e2e:seed": {
+      "cache": false
     },
     "clean": {
       "cache": false
