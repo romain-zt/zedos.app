@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { VerifySessionRequestSchema } from '@repo/contracts/payments'
-import { verifyCheckoutSessionForUser } from '@application/payments/stripe-checkout-flows'
+import { verifyCheckoutSessionForUser } from '@infrastructure/payments/stripe-checkout-flows'
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.length > 0) {

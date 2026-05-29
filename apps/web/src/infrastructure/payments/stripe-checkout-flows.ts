@@ -1,6 +1,11 @@
 import Stripe from 'stripe'
 import { db, purchases, users, eq, sql, type PurchaseInsert } from '@repo/db'
 import { addPurchaseCreditsForApi } from '@infrastructure/http/credits-http-bridge'
+import {
+  buildE2eCheckoutSessionId,
+  isE2eMode,
+  parseE2eCheckoutSessionId,
+} from '@/lib/e2e-mode'
 
 type FlowResult<T> =
   | { ok: true; value: T }
@@ -46,11 +51,6 @@ function getPaymentIntentId(paymentIntent: string | Stripe.PaymentIntent | null)
 export async function createCheckoutSessionForUser(
   input: CreateCheckoutInput
 ): Promise<FlowResult<CreateCheckoutOutput>> {
-  const stripe = stripeClient()
-  if (!stripe) {
-    return { ok: false, status: 503, error: 'Stripe is not configured' }
-  }
-
   const pack = input.packs.find((p) => p.id === input.packId)
   if (!pack) {
     return { ok: false, status: 400, error: 'Invalid pack' }
@@ -63,6 +63,23 @@ export async function createCheckoutSessionForUser(
     status: 'pending',
   }
   const [purchase] = await db.insert(purchases).values(purchaseInsert).returning()
+
+  if (isE2eMode()) {
+    const sessionId = buildE2eCheckoutSessionId(purchase.id)
+    await db.execute(sql`UPDATE purchases SET stripe_session_id = ${sessionId} WHERE id = ${purchase.id}`)
+    const origin = input.origin.replace(/\/$/, '')
+    return {
+      ok: true,
+      value: {
+        url: `${origin}/dashboard/credits?success=true&session_id=${encodeURIComponent(sessionId)}`,
+      },
+    }
+  }
+
+  const stripe = stripeClient()
+  if (!stripe) {
+    return { ok: false, status: 503, error: 'Stripe is not configured' }
+  }
 
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
@@ -101,6 +118,45 @@ export async function createCheckoutSessionForUser(
 export async function verifyCheckoutSessionForUser(
   input: VerifyCheckoutInput
 ): Promise<FlowResult<VerifyCheckoutOutput>> {
+  const e2ePurchaseId = isE2eMode() ? parseE2eCheckoutSessionId(input.sessionId) : null
+  if (e2ePurchaseId) {
+    const [purchase] = await db.select().from(purchases).where(eq(purchases.id, e2ePurchaseId)).limit(1)
+    if (!purchase || purchase.userId !== input.userId) {
+      return { ok: false, status: 404, error: 'Purchase not found' }
+    }
+
+    if (purchase.status === 'completed') {
+      const [user] = await db
+        .select({ creditBalance: users.creditBalance })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1)
+      return { ok: true, value: { balance: user?.creditBalance ?? 0, alreadyProcessed: true } }
+    }
+
+    const grantResult = await addPurchaseCreditsForApi(input.userId, purchase.packSize, {
+      purchaseId: purchase.id,
+      stripeSessionId: input.sessionId,
+      packSize: purchase.packSize,
+    })
+    if (grantResult.isErr()) {
+      return {
+        ok: false,
+        status: grantResult.error.statusCode ?? 500,
+        error: grantResult.error.message,
+      }
+    }
+
+    await db.execute(
+      sql`UPDATE purchases SET status = 'completed', stripe_payment_intent_id = ${'pi_e2e_stub'} WHERE id = ${purchase.id}`
+    )
+
+    return {
+      ok: true,
+      value: { balance: grantResult.unwrap(), creditsAdded: purchase.packSize },
+    }
+  }
+
   const stripe = stripeClient()
   if (!stripe) {
     return { ok: false, status: 503, error: 'Stripe is not configured' }

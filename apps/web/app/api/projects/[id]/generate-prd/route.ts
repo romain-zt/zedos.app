@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { generatePrdStreamForProject } from '@application/prd/generate-prd-stream-flow'
+import { generatePrdStreamForProject } from '@infrastructure/prd/generate-prd-stream-flow'
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.length > 0) {
