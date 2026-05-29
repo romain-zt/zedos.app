@@ -6,7 +6,7 @@
 import { randomUUID } from 'node:crypto';
 import type { ITaskSplitBundleRepository } from '@domain/task-split/task-split-bundle-repository';
 import type { TaskSplitBundleDomain, TaskSplitTaskDomain } from '@domain/task-split/task-split-bundle';
-import type { TaskSplitTaskSaveInput } from '@repo/contracts';
+import type { SaveTaskInput } from '@domain/task-split/task-split-bundle';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, DatabaseError, NotFoundError } from '@shared/errors/application-error';
 import { db, taskSplitBundles, taskSplitTasks, eq, asc, sql } from '@repo/db';
@@ -70,7 +70,7 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
 
   async save(
     projectId: string,
-    tasks: TaskSplitTaskSaveInput[],
+    tasks: SaveTaskInput[],
     meta: { sourceUserStoryKey?: string | null; storyTitleSnapshot?: string | null }
   ): Promise<Result<TaskSplitBundleDomain, ApplicationError>> {
     try {
@@ -123,7 +123,7 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
           .from(taskSplitBundles)
           .where(eq(taskSplitBundles.id, bundleId));
 
-        if (!bundleRow) throw new Error('Bundle row missing after save');
+        if (!bundleRow) return null;
 
         const taskRows = await tx
           .select()
@@ -133,6 +133,10 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
 
         return mapBundle(bundleRow, taskRows);
       });
+
+      if (saved === null) {
+        return err(new DatabaseError('Bundle row missing after save'));
+      }
 
       return ok(saved);
     } catch (error) {
