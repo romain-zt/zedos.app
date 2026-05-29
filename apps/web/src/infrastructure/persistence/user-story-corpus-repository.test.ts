@@ -171,7 +171,7 @@ describe('DrizzleUserStoryCorpusRepository.markReviewReady', () => {
     }
   });
 
-  it('runs SQL update with now() then reloads the corpus row', async () => {
+  it('runs SQL update with ISO timestamps then reloads the corpus row', async () => {
     const dbMod = await import('@repo/db');
     const repo = new DrizzleUserStoryCorpusRepository();
     const result = await repo.markReviewReady('proj_a', 'cluster_a');
