@@ -14,8 +14,7 @@ import {
   eq,
   and,
   asc,
-  type NewFeatureSplitRow,
-  type NewFeatureSplitClusterRow,
+  type NewFeatureSplitCluster,
   type FeatureSplitUpdate,
 } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
@@ -148,20 +147,16 @@ export class DrizzleFeatureSplitRepository implements IFeatureSplitRepository {
           .limit(1);
 
         if (!existing) {
-          const newSplit: NewFeatureSplitRow = {
-            id: randomUUID(),
-            projectId,
-            sourcePrdVersionId,
-            status: 'draft',
-            updatedAt: new Date(),
-          };
-          const [inserted] = await tx.insert(featureSplits).values(newSplit as any).returning();
+          const [inserted] = await tx
+            .insert(featureSplits)
+            .values({ projectId, sourcePrdVersionId, status: 'draft' })
+            .returning();
           existing = inserted;
         } else {
-          const updateData: FeatureSplitUpdate = { status: 'draft', updatedAt: new Date() };
+          const draftHeader: FeatureSplitUpdate = { status: 'draft', updatedAt: new Date() };
           const [updated] = await tx
             .update(featureSplits)
-            .set(updateData as any)
+            .set(draftHeader)
             .where(eq(featureSplits.id, existing.id))
             .returning();
           existing = updated;
@@ -172,19 +167,18 @@ export class DrizzleFeatureSplitRepository implements IFeatureSplitRepository {
           .delete(featureSplitClusters)
           .where(eq(featureSplitClusters.featureSplitId, existing.id));
 
-        const clusterRows: NewFeatureSplitClusterRow[] = clusters.map((c) => ({
+        const clusterRows: NewFeatureSplitCluster[] = clusters.map((c) => ({
           id: randomUUID(),
           featureSplitId: existing.id,
           sortOrder: c.sortOrder,
           label: c.label,
           valueLine: c.valueLine,
           boundaryCue: c.boundaryCue,
-          updatedAt: new Date(),
         }));
 
         const insertedClusters =
           clusterRows.length > 0
-            ? await tx.insert(featureSplitClusters).values(clusterRows as any).returning()
+            ? await tx.insert(featureSplitClusters).values(clusterRows).returning()
             : [];
 
         return mapToDomain(existing, insertedClusters);
@@ -199,10 +193,13 @@ export class DrizzleFeatureSplitRepository implements IFeatureSplitRepository {
 
   async confirm(id: string): Promise<Result<FeatureSplitDomain, ApplicationError>> {
     try {
-      const confirmUpdate: FeatureSplitUpdate = { status: 'confirmed', updatedAt: new Date() };
+      const confirmedHeader: FeatureSplitUpdate = {
+        status: 'confirmed',
+        updatedAt: new Date(),
+      };
       const [updated] = await db
         .update(featureSplits)
-        .set(confirmUpdate as any)
+        .set(confirmedHeader)
         .where(eq(featureSplits.id, id))
         .returning();
 

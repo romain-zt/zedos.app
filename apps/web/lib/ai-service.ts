@@ -137,19 +137,23 @@ export async function callAI(options: AIRequestOptions): Promise<Response> {
 export function createStreamingResponse(aiResponse: Response): ReadableStream {
   return new ReadableStream({
     async start(controller) {
-      const reader = aiResponse?.body?.getReader()
+      const reader = aiResponse.body?.getReader()
       const decoder = new TextDecoder()
       const encoder = new TextEncoder()
+      if (!reader) {
+        controller.close()
+        return
+      }
       try {
         while (true) {
-          const { done, value } = await (reader as any).read()
+          const { done, value } = await reader.read()
           if (done) break
           const chunk = decoder.decode(value)
           controller.enqueue(encoder.encode(chunk))
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error('Stream error:', error)
-        controller.error(error)
+        controller.error(error instanceof Error ? error : new Error('Stream error'))
       } finally {
         controller.close()
       }

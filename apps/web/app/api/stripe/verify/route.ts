@@ -5,6 +5,10 @@ import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { VerifySessionRequestSchema } from '@repo/contracts/payments'
 import { verifyCheckoutSessionForUser } from '@infrastructure/payments/stripe-checkout-flows'
+import { createLogger } from '@shared/observability/logger'
+import { redactOpaqueId } from '@shared/observability/log-safe'
+
+const logger = createLogger({ operation: 'stripe/verify' })
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.length > 0) {
@@ -14,16 +18,20 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  let userId: string | undefined
+  let sessionIdHint: string | undefined
+
   try {
     const userResult = await requireUser(headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = userResult.unwrap().id
+    userId = userResult.unwrap().id
 
     const parsedBody = VerifySessionRequestSchema.safeParse(await request.json())
     if (!parsedBody.success) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 })
     }
     const { sessionId } = parsedBody.data
+    sessionIdHint = redactOpaqueId(sessionId)
 
     const result = await verifyCheckoutSessionForUser({ userId, sessionId })
     if (result.ok === false) {
@@ -31,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(result.value)
   } catch (error: unknown) {
-    console.error('Stripe verify error:', error)
+    logger.withContext({ userId, sessionId: sessionIdHint }).error('Stripe verify failed', error)
     return NextResponse.json({ error: errorMessage(error, 'Verification failed') }, { status: 500 })
   }
 }

@@ -8,7 +8,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from 'dotenv';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { eq, sql, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import {
   createTestDb,
   closeDatabaseConnections,

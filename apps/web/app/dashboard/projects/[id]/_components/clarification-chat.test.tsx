@@ -38,7 +38,7 @@ describe('ClarificationChat — Coming up chips', () => {
   })
 
   it('shows next canonical sections based on assistant prd_section_affected from loaded history', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
       const url = String(input)
       if (url.endsWith('/api/projects/proj-1/questions')) {
         return new Response(

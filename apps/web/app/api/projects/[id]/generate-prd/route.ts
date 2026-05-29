@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { generatePrdStreamForProject } from '@infrastructure/prd/generate-prd-stream-flow'
+import { createLogger } from '@shared/observability/logger'
+
+const logger = createLogger({ operation: 'generate-prd' })
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.length > 0) {
@@ -13,12 +16,15 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function POST(_request: NextRequest, { params }: { params: { id: string } }) {
+  const projectId = params.id
+  let userId: string | undefined
+
   try {
     const userResult = await requireUser(headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = userResult.unwrap().id
+    userId = userResult.unwrap().id
 
-    const flowResult = await generatePrdStreamForProject({ projectId: params.id, userId })
+    const flowResult = await generatePrdStreamForProject({ projectId, userId })
     if (flowResult.ok === false) {
       if (flowResult.status === 402 && flowResult.details) {
         const details = flowResult.details as { message?: string; balance?: number; cost?: number }
@@ -43,7 +49,7 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
       },
     })
   } catch (error: unknown) {
-    console.error('Generate PRD error:', error)
+    logger.withContext({ projectId, userId }).error('Generate PRD failed', error)
     return NextResponse.json({ error: errorMessage(error, 'PRD generation failed') }, { status: 500 })
   }
 }

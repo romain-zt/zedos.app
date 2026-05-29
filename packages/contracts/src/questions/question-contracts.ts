@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { ClarifyDecisionResponseSchema } from '../ai/decision-ui';
 import { IdSchema } from '../shared/common';
 
 /** POST /api/projects/:id/clarify body */
 export const ProjectClarifyRequestSchema = z.object({
   message: z.string().optional(),
   optionalComment: z.string().max(8000).optional(),
-  decisionResponse: z.record(z.unknown()).optional(),
+  decisionResponse: ClarifyDecisionResponseSchema.optional(),
   prdVersionId: IdSchema.nullable().optional(),
 });
 

@@ -6,6 +6,9 @@ import { requireUser } from '@repo/auth/guards'
 import { getCreditPacks } from '@/lib/config'
 import { CreateCheckoutSessionRequestSchema } from '@repo/contracts/payments'
 import { createCheckoutSessionForUser } from '@infrastructure/payments/stripe-checkout-flows'
+import { createLogger } from '@shared/observability/logger'
+
+const logger = createLogger({ operation: 'stripe/checkout' })
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.length > 0) {
@@ -15,16 +18,19 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  let userId: string | undefined
+  let packId: string | undefined
+
   try {
     const userResult = await requireUser(headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = userResult.unwrap().id
+    userId = userResult.unwrap().id
 
     const parsedBody = CreateCheckoutSessionRequestSchema.safeParse(await request.json())
     if (!parsedBody.success) {
       return NextResponse.json({ error: 'Invalid checkout payload' }, { status: 400 })
     }
-    const { packId } = parsedBody.data
+    packId = parsedBody.data.packId
 
     const result = await createCheckoutSessionForUser({
       userId,
@@ -38,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(result.value)
   } catch (error: unknown) {
-    console.error('Stripe checkout error:', error)
+    logger.withContext({ userId, packId }).error('Stripe checkout failed', error)
     return NextResponse.json({ error: errorMessage(error, 'Checkout failed') }, { status: 500 })
   }
 }

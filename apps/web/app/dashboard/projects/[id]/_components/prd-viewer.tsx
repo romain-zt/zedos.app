@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -14,6 +14,10 @@ import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
+import {
+  GeneratePrdAiResponseSchema,
+  type GeneratePrdSection,
+} from '@repo/contracts/ai/generate-prd-stream'
 import { ShareLinkMintResponseSchema, ShareLinkSummarySchema } from '@repo/contracts/share/mint'
 import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 
@@ -67,12 +71,9 @@ export function PrdViewer({
     })
   }, [projectId, selectedVersion?.id, notifyMilestone])
 
-  const content = selectedVersion?.content as Record<string, unknown> & {
-    title?: string
-    sections?: unknown[]
-    version_summary?: string
- }
-  const sections = content?.sections ?? []
+  const parsedContent = GeneratePrdAiResponseSchema.safeParse(selectedVersion?.content)
+  const content = parsedContent.success ? parsedContent.data : null
+  const sections: GeneratePrdSection[] = content?.sections ?? []
 
   const handleShare = async () => {
     if (!selectedVersion?.id) return
@@ -266,7 +267,7 @@ export function PrdViewer({
       {/* PRD Sections */}
       <Stagger staggerDelay={0.05}>
         <div className="space-y-3">
-          {(sections ?? []).map((section: any, i: number) => (
+          {sections.map((section, i) => (
             <StaggerItem key={section?.id ?? i}>
               <Card className="group">
                 <CardHeader className="pb-2">

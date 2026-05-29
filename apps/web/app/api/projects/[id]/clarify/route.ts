@@ -18,17 +18,24 @@ import {
   normalizePrdSection,
   type ClientThreadMessage,
 } from '@/lib/clarify-prompt'
+import { createLogger } from '@shared/observability/logger'
+import { validationFailureData } from '@shared/observability/log-safe'
+
+const logger = createLogger({ operation: 'clarify' })
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const projectId = params.id
+  let userId: string | undefined
+
   try {
     const userResult = await requireUser(await headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = userResult.unwrap().id
+    userId = userResult.unwrap().id
 
     const [project] = await db
       .select()
       .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, userId)))
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
       .limit(1)
 
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
@@ -74,7 +81,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const history = await db
       .select()
       .from(questionHistory)
-      .where(eq(questionHistory.projectId, params.id))
+      .where(eq(questionHistory.projectId, projectId))
       .orderBy(asc(questionHistory.createdAt))
       .limit(20)
 
@@ -116,23 +123,31 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const founderAnswer = message ?? (decisionResponse ? JSON.stringify(decisionResponse) : null)
 
+    const routeLogger = logger.withContext({ projectId, userId })
+
     const persistAfterValidStream = async (result: string) => {
       try {
         const raw = JSON.parse(result)
         const validated = ClarifyAiResponseSchema.safeParse(raw)
         if (!validated.success) {
-          console.error('Clarify: stream schema validation failed', validated.error.flatten())
+          routeLogger.error(
+            'Clarify stream schema validation failed',
+            validationFailureData(validated.error.flatten())
+          )
           return
         }
         const ai = validated.data
         try {
-          await deductCredits(userId, opType, { projectId: params.id, prdVersionId: prdVersionIdResolved ?? undefined })
+          await deductCredits(userId, opType, {
+            projectId,
+            prdVersionId: prdVersionIdResolved ?? undefined,
+          })
         } catch (e: unknown) {
-          console.error('Clarify: credit deduction failed after validated AI response', e)
+          routeLogger.error('Clarify credit deduction failed after validated AI response', e)
           return
         }
         const qhInsert: QuestionHistoryInsert = {
-          projectId: params.id,
+          projectId,
           prdVersionId: prdVersionIdResolved,
           structuredQuestion: ai.message,
           availableOptions: ai.decision_ui,
@@ -143,7 +158,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         }
         await db.insert(questionHistory).values(qhInsert)
       } catch (e: unknown) {
-        console.error('Clarify: failed to persist question history', e)
+        routeLogger.error('Clarify failed to persist question history', e)
       }
     }
 
@@ -157,7 +172,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       },
     })
   } catch (error: unknown) {
-    console.error('Clarify error:', error)
+    logger.withContext({ projectId, userId }).error('Clarify request failed', error)
     const msg = error instanceof Error ? error.message : 'Clarification failed'
     return NextResponse.json({ error: msg }, { status: 500 })
   }

@@ -9,9 +9,9 @@ export const featureSplits = pgTable('feature_splits', {
   sourcePrdVersionId: text('source_prd_version_id')
     .notNull()
     .references(() => prdVersions.id, { onDelete: 'cascade' }),
-  status: text('status').notNull().default('draft'),
+  status: text('status').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().$onUpdate(() => new Date()),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (t) => [
   unique('feature_splits_project_prd_version_unique').on(t.projectId, t.sourcePrdVersionId),
   index('feature_splits_project_id_idx').on(t.projectId),

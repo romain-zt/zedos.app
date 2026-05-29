@@ -57,7 +57,7 @@ export function RoadmapItemModal({ item, onClose }: RoadmapItemModalProps) {
           <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4 space-y-2">
             <p className="text-sm font-medium">Need this sooner?</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              If you're in a hurry and want this built for your team as a custom project, reach out directly — we can scope it together.
+              If you&apos;re in a hurry and want this built for your team as a custom project, reach out directly — we can scope it together.
             </p>
             <Button
               size="sm"

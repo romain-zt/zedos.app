@@ -13,6 +13,10 @@ import {
   ExternalServiceError,
   NotFoundError,
 } from '@shared/errors/application-error';
+import { createLogger } from '@shared/observability/logger';
+import { redactOpaqueId, validationFailureData } from '@shared/observability/log-safe';
+
+const logger = createLogger({ operation: 'share/read' });
 
 function mapApplicationError(error: ApplicationError) {
   if (error instanceof NotFoundError) {
@@ -36,7 +40,9 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
   if (result.isErr()) {
     const e = result.error;
     if (!(e instanceof NotFoundError || e instanceof ExternalServiceError || e instanceof DatabaseError)) {
-      console.error('Share GET:', e);
+      logger
+        .withContext({ token: redactOpaqueId(tokenParsed.data) })
+        .error('Share GET unexpected application error', e);
     }
     return mapApplicationError(e);
   }
@@ -49,7 +55,9 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
     createdAt: snap.createdAt,
   });
   if (!out.success) {
-    console.error('Share GET outbound validation', out.error.flatten());
+    logger
+      .withContext({ token: redactOpaqueId(tokenParsed.data) })
+      .error('Share GET outbound validation failed', validationFailureData(out.error.flatten()));
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 

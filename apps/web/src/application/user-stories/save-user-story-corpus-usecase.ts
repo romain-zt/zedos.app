@@ -2,7 +2,7 @@ import { IProjectRepository } from '@domain/project/project-repository';
 import { IFeatureSplitRepository } from '@domain/feature-split/feature-split-repository';
 import { IUserStoryCorpusRepository } from '@domain/user-stories/user-story-corpus-repository';
 import type { SaveUserStoryLineInput, UserStoryCorpusDomain } from '@domain/user-stories/user-story-corpus';
-import { Result, ok, err } from '@repo/result';
+import { Result, err } from '@repo/result';
 import { ApplicationError, ValidationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
 import { requireConfirmedClusterForUserStories } from './require-confirmed-cluster';

@@ -11,19 +11,46 @@ import { HelpCircle, Send, MessageSquare } from 'lucide-react'
 import type {
   ClarifyDecisionUi,
   ClarifyDecisionOption,
+  ClarifyDecisionResponse,
 } from '@repo/contracts/ai/decision-ui'
 
 interface DecisionCardProps {
   decision: ClarifyDecisionUi
-  onSubmit: (response: any) => void
+  onSubmit: (response: ClarifyDecisionResponse) => void
   disabled?: boolean
+}
+
+type ClarifyDecisionResponseWithComment = Exclude<
+  ClarifyDecisionResponse,
+  { type: 'not_sure' }
+>
+
+function withOptionalComment(
+  response: ClarifyDecisionResponseWithComment,
+  comment: string,
+): ClarifyDecisionResponseWithComment {
+  const trimmed = comment.trim()
+  if (!trimmed) {
+    return response
+  }
+
+  switch (response.type) {
+    case 'single_choice':
+      return { ...response, comment: trimmed }
+    case 'multi_choice':
+      return { ...response, comment: trimmed }
+    case 'ranked':
+      return { ...response, comment: trimmed }
+    case 'modal_form':
+      return { ...response, comment: trimmed }
+  }
 }
 
 export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionCardProps) {
   const [singleChoice, setSingleChoice] = useState('')
   const [multiChoices, setMultiChoices] = useState<string[]>([])
   const [ranked, setRanked] = useState<string[]>(
-    () => (decision?.options ?? []).map((o: ClarifyDecisionOption) => o.id)
+    () => (decision?.options ?? []).map((o: ClarifyDecisionOption) => o.id),
   )
   const [comment, setComment] = useState('')
   const [customInput, setCustomInput] = useState('')
@@ -32,7 +59,6 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
   const options = decision?.options ?? []
   const type = decision?.type ?? 'single_choice'
 
-  // Simple choice: single_choice with 2-5 options, no per-option descriptions, no custom input
   const isSimpleChoice =
     type === 'single_choice' &&
     options.length >= 2 &&
@@ -41,42 +67,79 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
     !decision?.allow_custom
 
   const handleSubmit = () => {
-    let response: any = { type }
-
     switch (type) {
-      case 'single_choice':
+      case 'single_choice': {
         if (!singleChoice && !customInput.trim()) return
-        response.selected = singleChoice || `custom: ${customInput.trim()}`
-        response.label = options.find((o: ClarifyDecisionOption) => o.id === singleChoice)?.label ?? customInput.trim()
-        break
-      case 'multi_choice':
+        const selected = singleChoice || `custom: ${customInput.trim()}`
+        const label =
+          options.find((o: ClarifyDecisionOption) => o.id === singleChoice)?.label ??
+          customInput.trim()
+        onSubmit(
+          withOptionalComment({ type: 'single_choice', selected, label }, comment),
+        )
+        return
+      }
+      case 'multi_choice': {
         if ((multiChoices?.length ?? 0) === 0 && !customInput.trim()) return
-        response.selected = multiChoices
-        response.labels = multiChoices.map((id: string) => options.find((o: ClarifyDecisionOption) => o.id === id)?.label ?? id)
-        if (customInput.trim()) response.custom = customInput.trim()
-        break
-      case 'ranked':
-        response.ranking = ranked
-        response.labels = ranked.map((id: string) => options.find((o: ClarifyDecisionOption) => o.id === id)?.label ?? id)
-        break
-      case 'modal_form':
-        response.selected = singleChoice || multiChoices
-        break
+        const response: ClarifyDecisionResponse = {
+          type: 'multi_choice',
+          selected: multiChoices,
+          labels: multiChoices.map(
+            (id: string) =>
+              options.find((o: ClarifyDecisionOption) => o.id === id)?.label ?? id,
+          ),
+        }
+        if (customInput.trim()) {
+          onSubmit(
+            withOptionalComment({ ...response, custom: customInput.trim() }, comment),
+          )
+        } else {
+          onSubmit(withOptionalComment(response, comment))
+        }
+        return
+      }
+      case 'ranked': {
+        onSubmit(
+          withOptionalComment(
+            {
+              type: 'ranked',
+              ranking: ranked,
+              labels: ranked.map(
+                (id: string) =>
+                  options.find((o: ClarifyDecisionOption) => o.id === id)?.label ?? id,
+              ),
+            },
+            comment,
+          ),
+        )
+        return
+      }
+      case 'modal_form': {
+        onSubmit(
+          withOptionalComment(
+            {
+              type: 'modal_form',
+              selected: singleChoice || multiChoices,
+            },
+            comment,
+          ),
+        )
+      }
     }
-
-    if (comment.trim()) response.comment = comment.trim()
-    onSubmit(response)
   }
 
   const handleNotSure = () => {
-    onSubmit({ type: 'not_sure', message: "I'm not sure about this. Can you ask differently?" })
+    onSubmit({
+      type: 'not_sure',
+      message: "I'm not sure about this. Can you ask differently?",
+    })
   }
 
   const toggleMulti = (id: string) => {
     setMultiChoices((prev: string[]) =>
       (prev ?? []).includes(id)
         ? (prev ?? []).filter((x: string) => x !== id)
-        : [...(prev ?? []), id]
+        : [...(prev ?? []), id],
     )
   }
 
@@ -88,7 +151,6 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
     setRanked(newRanked)
   }
 
-  // Compact pill buttons for simple single_choice (2-5 options, no descriptions, no custom)
   if (isSimpleChoice) {
     return (
       <div className="flex flex-wrap gap-1.5 mt-1">
@@ -100,7 +162,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
             disabled={disabled}
             onClick={() => {
               if (disabled) return
-              onSubmit({ type, selected: opt.id, label: opt.label })
+              onSubmit({ type: 'single_choice', selected: opt.id, label: opt.label })
             }}
             className="h-8 text-xs rounded-full px-3 hover:bg-primary hover:text-primary-foreground transition-colors"
           >
@@ -122,7 +184,6 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
     )
   }
 
-  // Full card for complex cases (multi_choice, ranked, options with descriptions, allow_custom)
   return (
     <Card className="border-border/60 bg-muted/30">
       <CardContent className="p-3 space-y-3">
@@ -130,7 +191,6 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
           <p className="text-xs text-muted-foreground">{decision.description}</p>
         )}
 
-        {/* Single Choice */}
         {type === 'single_choice' && (
           <RadioGroup value={singleChoice} onValueChange={setSingleChoice} disabled={disabled}>
             <div className="space-y-1.5">
@@ -142,7 +202,9 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
                 >
                   <RadioGroupItem value={opt.id} id={opt.id} className="mt-0.5 shrink-0" />
                   <div>
-                    <Label htmlFor={opt.id} className="text-sm font-medium cursor-pointer leading-tight">{opt.label}</Label>
+                    <Label htmlFor={opt.id} className="text-sm font-medium cursor-pointer leading-tight">
+                      {opt.label}
+                    </Label>
                     {opt.description && (
                       <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
                     )}
@@ -153,7 +215,6 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
           </RadioGroup>
         )}
 
-        {/* Multi Choice */}
         {type === 'multi_choice' && (
           <div className="space-y-1.5">
             {options.map((opt: ClarifyDecisionOption) => (
@@ -179,7 +240,6 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
           </div>
         )}
 
-        {/* Ranked */}
         {type === 'ranked' && (
           <div className="space-y-1">
             {(ranked ?? []).map((id: string, index: number) => {
@@ -189,10 +249,13 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
                   key={id}
                   className="flex items-center gap-2 p-2 rounded-md border bg-background"
                 >
-                  <span className="text-xs font-mono text-muted-foreground w-4 shrink-0">{index + 1}.</span>
+                  <span className="text-xs font-mono text-muted-foreground w-4 shrink-0">
+                    {index + 1}.
+                  </span>
                   <span className="text-sm font-medium flex-1">{opt?.label ?? id}</span>
                   <div className="flex flex-col shrink-0">
                     <button
+                      type="button"
                       onClick={() => moveRanked(index, index - 1)}
                       disabled={index === 0 || disabled}
                       className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-xs p-0.5"
@@ -200,6 +263,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
                       ▲
                     </button>
                     <button
+                      type="button"
                       onClick={() => moveRanked(index, index + 1)}
                       disabled={index === (ranked?.length ?? 0) - 1 || disabled}
                       className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-xs p-0.5"
@@ -213,7 +277,6 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
           </div>
         )}
 
-        {/* Custom input */}
         {decision?.allow_custom && type !== 'ranked' && (
           <Textarea
             placeholder="Or type your own answer..."
@@ -225,7 +288,6 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
           />
         )}
 
-        {/* Comment (collapsed by default) */}
         {showComment ? (
           <Textarea
             placeholder="Add a comment..."
@@ -238,6 +300,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
           />
         ) : (
           <button
+            type="button"
             onClick={() => setShowComment(true)}
             disabled={disabled}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -247,7 +310,6 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
           </button>
         )}
 
-        {/* Actions */}
         <div className="flex items-center gap-2">
           <Button
             size="sm"

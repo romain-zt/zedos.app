@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Lock, ArrowRight, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
+import type { AdrDTO } from '@repo/contracts/adr/adr-contracts'
+import type { QuestionCoverageReadinessScoreResponse } from '@repo/contracts/questions/history'
 
 interface ArchitecturePanelProps {
   projectId: string
@@ -37,11 +39,11 @@ export function ArchitecturePanel({
   activePrdVersionId,
   onOpenRefinement,
 }: ArchitecturePanelProps) {
-  const [adrs, setAdrs] = useState<any[]>([])
+  const [adrs, setAdrs] = useState<AdrDTO[]>([])
   const [isLocked, setIsLocked] = useState(phase === 'intake')
   const [unlocking, setUnlocking] = useState(false)
   const [checking, setChecking] = useState(false)
-  const [score, setScore] = useState<any>(null)
+  const [score, setScore] = useState<QuestionCoverageReadinessScoreResponse | null>(null)
 
   useEffect(() => {
     setIsLocked(phase === 'intake')
@@ -86,7 +88,7 @@ export function ArchitecturePanel({
     try {
       const res = await fetch(`/api/projects/${projectId}/phase/unlock`, { method: 'POST' })
       if (res.ok) {
-        const data = await res.json()
+        await res.json()
         toast.success('Architecture phase unlocked!')
         setIsLocked(false)
       } else {
@@ -115,7 +117,7 @@ export function ArchitecturePanel({
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-gray-700">
-              The Architecture phase becomes available after you've clarified and stabilized your product definition. This ensures all decisions are made with full context.
+              The Architecture phase becomes available after you&apos;ve clarified and stabilized your product definition. This ensures all decisions are made with full context.
             </p>
             <div className="flex gap-2">
               <Button onClick={handleCheckStability} disabled={checking} variant="outline" size="sm">

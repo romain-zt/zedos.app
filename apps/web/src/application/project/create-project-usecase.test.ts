@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, type Mocked } from 'vitest';
 import { CreateProjectUseCase } from './create-project-usecase';
 import { ok, err } from '@repo/result';
-import { DatabaseError, ValidationError } from '@shared/errors/application-error';
+import { DatabaseError } from '@shared/errors/application-error';
+import type { IProjectRepository } from '@domain/project/project-repository';
 
-const makeMockRepo = () => ({
+const makeMockRepo = (): Mocked<IProjectRepository> => ({
   findById: vi.fn(),
   findByIdAndUserId: vi.fn(),
   findAllByUserId: vi.fn(),
@@ -26,7 +27,7 @@ describe('CreateProjectUseCase', () => {
       updatedAt: new Date(),
     }));
 
-    const uc = new CreateProjectUseCase(repo as any);
+    const uc = new CreateProjectUseCase(repo);
     const result = await uc.execute({ userId: 'u1', name: 'Test', description: null });
     expect(result.isOk()).toBe(true);
     expect(repo.create).toHaveBeenCalledOnce();
@@ -34,7 +35,7 @@ describe('CreateProjectUseCase', () => {
 
   it('returns validation error for empty name', async () => {
     const repo = makeMockRepo();
-    const uc = new CreateProjectUseCase(repo as any);
+    const uc = new CreateProjectUseCase(repo);
     const result = await uc.execute({ userId: 'u1', name: '   ', description: null });
     expect(result.isErr()).toBe(true);
   });
@@ -43,7 +44,7 @@ describe('CreateProjectUseCase', () => {
     const repo = makeMockRepo();
     repo.create.mockResolvedValue(err(new DatabaseError('fail')));
 
-    const uc = new CreateProjectUseCase(repo as any);
+    const uc = new CreateProjectUseCase(repo);
     const result = await uc.execute({ userId: 'u1', name: 'Valid', description: null });
     expect(result.isErr()).toBe(true);
   });

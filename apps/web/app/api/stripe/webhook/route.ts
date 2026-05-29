@@ -7,6 +7,9 @@ import {
   getUserCreditBalance,
   processCheckoutSessionCompletedWebhook,
 } from '@infrastructure/payments/checkout-session-webhook-processor';
+import { createLogger } from '@shared/observability/logger';
+
+const logger = createLogger({ operation: 'stripe/webhook' });
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -20,6 +23,9 @@ export async function POST(request: Request) {
 
   if (verified.isErr()) {
     const e = verified.error;
+    logger.warn('Stripe webhook signature verification failed', {
+      statusCode: e.statusCode ?? 400,
+    });
     return NextResponse.json({ error: e.message }, { status: e.statusCode ?? 400 });
   }
 
@@ -35,6 +41,10 @@ export async function POST(request: Request) {
 
   const parsedCheckoutEvent = CheckoutSessionCompletedEventSchema.safeParse(event);
   if (!parsedCheckoutEvent.success) {
+    logger.error('Stripe webhook payload validation failed', {
+      eventType: event.type,
+      eventId: event.id,
+    });
     return NextResponse.json(
       {
         error: `Webhook payload failed contract validation: ${parsedCheckoutEvent.error.message}`,
@@ -48,6 +58,9 @@ export async function POST(request: Request) {
 
   if (outcome.isErr()) {
     const e = outcome.error;
+    logger
+      .withContext({ eventId: envelope.id, eventType: envelope.type })
+      .error('Stripe webhook processing failed', e);
     return NextResponse.json({ error: e.message }, { status: e.statusCode ?? 500 });
   }
 

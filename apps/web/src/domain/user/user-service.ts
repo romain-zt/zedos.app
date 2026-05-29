@@ -5,7 +5,7 @@
  * Pure functions; no I/O; depends only on domain and Result.
  */
 
-import { User, Email, UserId } from './user';
+import { User, Email } from './user';
 import { Result, ok, err } from '@repo/result';
 import { ValidationError } from '@shared/errors/application-error';
 import * as bcrypt from 'bcryptjs';
