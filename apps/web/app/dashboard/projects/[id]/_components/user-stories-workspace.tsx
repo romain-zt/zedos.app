@@ -11,6 +11,7 @@ import {
   BookOpen,
   CheckCircle,
   ExternalLink,
+  ListChecks,
   Loader2,
   Plus,
   Sparkles,
@@ -542,6 +543,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" asChild className="min-h-[44px]">
                 <Link href={`/dashboard/projects/${projectId}/feature-split`}>Feature split</Link>
+              </Button>
+              <Button asChild className="min-h-[44px]">
+                <Link href={`/dashboard/projects/${projectId}/task-split`}>
+                  <ListChecks className="h-4 w-4" />
+                  <span className="ml-2">Split into tasks</span>
+                </Link>
               </Button>
             </div>
           </div>
