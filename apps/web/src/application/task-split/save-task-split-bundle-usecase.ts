@@ -1,6 +1,6 @@
 import { IProjectRepository } from '@domain/project/project-repository';
 import type { ITaskSplitBundleRepository } from '@domain/task-split/task-split-bundle-repository';
-import type { TaskSplitBundleDomain } from '@domain/task-split/task-split-bundle';
+import type { SaveTaskInput, TaskSplitBundleDomain } from '@domain/task-split/task-split-bundle';
 import { SaveTaskSplitBundleRequestSchema } from '@repo/contracts';
 import type { z } from 'zod';
 import { Result, err } from '@repo/result';
@@ -32,7 +32,15 @@ export class SaveTaskSplitBundleUseCase {
       return err(new ValidationError('At least one task is required'));
     }
 
-    return this.bundleRepository.save(projectId, input.tasks, {
+    const tasks: SaveTaskInput[] = input.tasks.map((task) => ({
+      id: task.id,
+      sortOrder: task.sortOrder,
+      title: task.title,
+      promptBody: task.promptBody,
+      manual: task.manual ?? false,
+    }));
+
+    return this.bundleRepository.save(projectId, tasks, {
       sourceUserStoryKey: input.sourceUserStoryKey,
       storyTitleSnapshot: input.storyTitleSnapshot,
     });
