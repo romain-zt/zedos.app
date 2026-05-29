@@ -22,12 +22,18 @@ import {
 import { err, ok } from '@repo/result'
 import { ExternalServiceError } from '@shared/errors/application-error'
 import { CaptureMilestoneFeedbackUseCase } from '@/src/application/feedback/capture-milestone-feedback-usecase'
+import { createLogger } from '@shared/observability/logger'
+import { validationFailureData } from '@shared/observability/log-safe'
+
+const logger = createLogger({ operation: 'feedback' })
 
 export async function POST(request: NextRequest) {
+  let userId: string | undefined
+
   try {
     const userResult = await requireUser(headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = userResult.unwrap().id
+    userId = userResult.unwrap().id
 
     const rawBody = await request.json().catch(() => null)
     const parsed = MilestoneFeedbackSubmitRequestSchema.safeParse(rawBody)
@@ -85,7 +91,12 @@ export async function POST(request: NextRequest) {
         const [feedback] = await db.insert(milestoneFeedback).values(feedbackInsert).returning()
         const dto = MilestoneFeedbackRowDTOSchema.safeParse(feedback)
         if (!dto.success) {
-          console.error('Feedback row DTO validation failed:', dto.error.flatten())
+          logger
+            .withContext({ userId, projectId: requestBody.projectId })
+            .error(
+              'Feedback row DTO validation failed',
+              validationFailureData(dto.error.flatten())
+            )
           return err(new ExternalServiceError('db', 'Internal validation error', 500))
         }
         return ok(dto.data)
@@ -109,16 +120,18 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result.value.row, { status: 201 })
   } catch (error: unknown) {
-    console.error('Feedback POST error:', error)
+    logger.withContext({ userId }).error('Feedback POST failed', error)
     return NextResponse.json({ error: 'Failed to save feedback' }, { status: 500 })
   }
 }
 
 export async function GET() {
+  let userId: string | undefined
+
   try {
     const userResult = await requireUser(headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = userResult.unwrap().id
+    userId = userResult.unwrap().id
 
     const rows = await db
       .select()
@@ -134,12 +147,14 @@ export async function GET() {
     const listSchema = MilestoneFeedbackRowDTOSchema.array()
     const validated = listSchema.safeParse(dtoList)
     if (!validated.success) {
-      console.error('Feedback GET list validation failed:', validated.error.flatten())
+      logger
+        .withContext({ userId })
+        .error('Feedback GET list validation failed', validationFailureData(validated.error.flatten()))
       return NextResponse.json({ error: 'Internal validation error' }, { status: 500 })
     }
     return NextResponse.json(validated.data)
   } catch (error: unknown) {
-    console.error('Feedback GET error:', error)
+    logger.withContext({ userId }).error('Feedback GET failed', error)
     return NextResponse.json({ error: 'Failed to fetch feedback' }, { status: 500 })
   }
 }

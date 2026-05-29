@@ -14,7 +14,7 @@ describe('ProjectClarifyRequestSchema', () => {
     const r = ProjectClarifyRequestSchema.safeParse({
       message: 'hello',
       optionalComment: 'note',
-      decisionResponse: { type: 'single_choice', optionId: 'a' },
+      decisionResponse: { type: 'single_choice', selected: 'a' },
       prdVersionId: 'ver_1',
     });
     expect(r.success).toBe(true);

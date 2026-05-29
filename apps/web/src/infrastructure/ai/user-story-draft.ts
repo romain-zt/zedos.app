@@ -10,7 +10,7 @@ import {
 } from '@repo/contracts';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, ExternalServiceError } from '@shared/errors/application-error';
-import { AiServiceError, callAI } from '@/lib/ai-service';
+import { callAI } from '@/lib/ai-service';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'UserStoryDraftAI' });

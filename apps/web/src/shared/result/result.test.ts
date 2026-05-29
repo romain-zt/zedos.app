@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ok, err, Ok, Err, collect } from './result';
+import { ok, err, collect } from './result';
 
 describe('Result<T,E>', () => {
   describe('Ok', () => {
@@ -51,7 +51,7 @@ describe('Result<T,E>', () => {
     });
 
     it('getOrElse returns fallback', () => {
-      const r = err(new Error('bad')) as any;
+      const r = err<number, Error>(new Error('bad'));
       expect(r.getOrElse(99)).toBe(99);
     });
 

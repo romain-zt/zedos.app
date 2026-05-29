@@ -8,17 +8,24 @@ import {
   QuestionCoverageReadinessScoreResponseSchema,
   buildReadinessScoreFromQuestionRows,
 } from '@repo/contracts/questions/history'
+import { createLogger } from '@shared/observability/logger'
+import { validationFailureData } from '@shared/observability/log-safe'
+
+const logger = createLogger({ operation: 'readiness-score' })
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const projectId = params.id
+  let userId: string | undefined
+
   try {
     const userResult = await requireUser(await headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = userResult.unwrap().id
+    userId = userResult.unwrap().id
 
     const [project] = await db
       .select({ id: projects.id })
       .from(projects)
-      .where(and(eq(projects.id, params.id), eq(projects.userId, userId)))
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
       .limit(1)
 
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
@@ -29,12 +36,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         prdImpact: questionHistory.prdImpact,
       })
       .from(questionHistory)
-      .where(eq(questionHistory.projectId, params.id))
+      .where(eq(questionHistory.projectId, projectId))
 
     const [prdCountRow] = await db
       .select({ c: count() })
       .from(prdVersions)
-      .where(eq(prdVersions.projectId, params.id))
+      .where(eq(prdVersions.projectId, projectId))
 
     const hasPrdVersion = (prdCountRow?.c ?? 0) > 0
 
@@ -48,13 +55,18 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
     const validated = QuestionCoverageReadinessScoreResponseSchema.safeParse(payload)
     if (!validated.success) {
-      console.error('Readiness score outbound validation failed:', validated.error.flatten())
+      logger
+        .withContext({ projectId, userId })
+        .error(
+          'Readiness score outbound validation failed',
+          validationFailureData(validated.error.flatten())
+        )
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     return NextResponse.json(validated.data)
-  } catch (e) {
-    console.error('Readiness score GET error:', e)
+  } catch (error: unknown) {
+    logger.withContext({ projectId, userId }).error('Readiness score GET failed', error)
     return NextResponse.json({ error: 'Failed to compute readiness' }, { status: 500 })
   }
 }

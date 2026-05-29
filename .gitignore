@@ -12,6 +12,7 @@ build/
 out/
 coverage/
 *.tsbuildinfo
+apps/web/eslint-report.json
 
 # Playwright
 playwright-report/

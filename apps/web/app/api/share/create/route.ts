@@ -9,6 +9,10 @@ import {
 } from '@repo/contracts/share/mint'
 import { MintReadOnlyShareLinkUseCase } from '@application/prd'
 import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
+import { createLogger } from '@shared/observability/logger'
+import { validationFailureData } from '@shared/observability/log-safe'
+
+const logger = createLogger({ operation: 'share/create' })
 
 export async function POST(request: NextRequest) {
   const userResult = await requireUser(headers())
@@ -49,7 +53,9 @@ export async function POST(request: NextRequest) {
     disabledAt: link.disabledAt,
   })
   if (!out.success) {
-    console.error('Share mint outbound validation failed', out.error.flatten())
+    logger
+      .withContext({ userId, prdVersionId: parsed.data.prdVersionId })
+      .error('Share mint outbound validation failed', validationFailureData(out.error.flatten()))
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 

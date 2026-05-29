@@ -1,7 +1,7 @@
 import { IProjectRepository } from '@domain/project/project-repository';
 import { IUserStoryCorpusRepository } from '@domain/user-stories/user-story-corpus-repository';
 import type { UserStoryCorpusDomain } from '@domain/user-stories/user-story-corpus';
-import { Result, ok, err } from '@repo/result';
+import { Result, err } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
 

@@ -1,10 +1,10 @@
 /**
  * Result<T, E> type - explicit error handling without exceptions across boundaries.
  * Based on Rust's Result and Railway-Oriented Programming (ROP) patterns.
- * 
+ *
  * - Ok(value): Represents successful computation
  * - Err(error): Represents failed computation
- * 
+ *
  * Enforces explicit error handling and prevents unhandled exceptions from crossing layer boundaries.
  */
 
@@ -25,15 +25,15 @@ export class Ok<T> {
     return new Ok(fn(this.value));
   }
 
-  mapErr<E2>(fn: (err: never) => E2): Result<T, E2> {
-    return this as any;
+  mapErr<E2>(_fn: (err: never) => E2): Result<T, E2> {
+    return this;
   }
 
   flatMap<U, E2 = Error>(fn: (value: T) => Result<U, E2>): Result<U, E2> {
     return fn(this.value);
   }
 
-  getOrElse(defaultValue: T): T {
+  getOrElse(_defaultValue: T): T {
     return this.value;
   }
 
@@ -53,19 +53,19 @@ export class Err<E = Error> {
     return true;
   }
 
-  map<U>(fn: (value: never) => U): Result<U, E> {
-    return this as any;
+  map<U>(_fn: (value: never) => U): Result<U, E> {
+    return this as Result<U, E>;
   }
 
   mapErr<E2>(fn: (err: E) => E2): Result<never, E2> {
     return new Err(fn(this.error));
   }
 
-  flatMap<U, E2 = Error>(fn: (value: never) => Result<U, E2>): Result<U, E | E2> {
-    return this as any;
+  flatMap<U, E2 = Error>(_fn: (value: never) => Result<U, E2>): Result<U, E | E2> {
+    return this as Result<U, E | E2>;
   }
 
-  getOrElse(defaultValue: any): any {
+  getOrElse<T>(defaultValue: T): T {
     return defaultValue;
   }
 
@@ -75,19 +75,19 @@ export class Err<E = Error> {
 }
 
 // Utility functions
-export const ok = <T>(value: T): Result<T> => new Ok(value);
-export const err = <E = Error>(error: E): Result<never, E> => new Err(error);
+export const ok = <T, E = Error>(value: T): Result<T, E> => new Ok(value);
+export const err = <T = never, E = Error>(error: E): Result<T, E> => new Err(error);
 
 /**
  * Combinator: collect results and return first error or array of successes
  */
-export const collect = <T, E = Error>(results: Result<T, E>[]): Result<T[], E | Error> => {
+export const collect = <T, E = Error>(results: Result<T, E>[]): Result<T[], E> => {
   const values: T[] = [];
   for (const result of results) {
     if (result.isErr()) {
-      return result as any;
+      return result;
     }
-    values.push((result as Ok<T>).unwrap());
+    values.push(result.unwrap());
   }
-  return ok(values) as any;
+  return ok<T[], E>(values);
 };

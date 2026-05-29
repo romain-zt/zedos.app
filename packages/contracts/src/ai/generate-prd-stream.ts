@@ -20,3 +20,4 @@ export const GeneratePrdAiResponseSchema = z.object({
 });
 
 export type GeneratePrdAiResponse = z.infer<typeof GeneratePrdAiResponseSchema>;
+export type GeneratePrdSection = z.infer<typeof GeneratePrdSectionSchema>;

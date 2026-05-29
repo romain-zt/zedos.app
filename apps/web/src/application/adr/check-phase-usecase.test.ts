@@ -2,11 +2,48 @@ import { describe, it, expect, vi } from 'vitest';
 import { CheckPhaseUseCase } from './check-phase-usecase';
 import { ok, err } from '@repo/result';
 import { NotFoundError } from '@shared/errors/application-error';
+import type { IProjectRepository } from '@domain/project/project-repository';
+import type { IPrdRepository } from '@domain/prd/prd-repository';
+import type { Project } from '@domain/project/project';
+import type { PrdVersion } from '@domain/prd/prd';
 
-const makeProjectRepo = (project: any = null) => ({
+const fullContent: Record<string, string> = {
+  vision: 'x',
+  target_users: 'x',
+  core_features: 'x',
+  user_journeys: 'x',
+  technical: 'x',
+  success_metrics: 'x',
+  out_of_scope: 'x',
+  risks: 'x',
+};
+
+const baseProject = (overrides: Partial<Project>): Project => ({
+  id: 'p1',
+  userId: 'u1',
+  name: 'Test',
+  description: null,
+  phase: 'intake',
+  architectureStartedAt: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
+const basePrd = (content: Record<string, string> | null): PrdVersion => ({
+  id: 'prd-1',
+  projectId: 'p1',
+  versionNumber: 1,
+  content,
+  status: 'draft',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
+
+const makeProjectRepo = (project: Project | null = null): IProjectRepository => ({
   findById: vi.fn(),
   findByIdAndUserId: vi.fn().mockResolvedValue(
-    project ? ok(project) : err(new NotFoundError('Not found'))
+    project ? ok(project) : err(new NotFoundError('Not found')),
   ),
   findAllByUserId: vi.fn(),
   create: vi.fn(),
@@ -14,22 +51,22 @@ const makeProjectRepo = (project: any = null) => ({
   delete: vi.fn(),
 });
 
-const makePrdRepo = (prd: any = null) => ({
+const makePrdRepo = (prd: PrdVersion | null = null): IPrdRepository => ({
   findByProjectId: vi.fn(),
   findLatestByProjectId: vi.fn().mockResolvedValue(ok(prd)),
+  ensureFirstVersion: vi.fn(),
+  mintReadOnlyShareLink: vi.fn(),
+  revokeReadOnlyShareLink: vi.fn(),
+  getAnonymousPrdVersionByShareToken: vi.fn(),
+  findVersionByIdForOwner: vi.fn(),
 });
-
-const fullContent = {
-  vision: 'x', target_users: 'x', core_features: 'x', user_journeys: 'x',
-  technical: 'x', success_metrics: 'x', out_of_scope: 'x', risks: 'x',
-};
 
 describe('CheckPhaseUseCase', () => {
   it('returns stable when all PRD sections filled', async () => {
-    const projectRepo = makeProjectRepo({ id: 'p1', userId: 'u1', phase: 'intake' });
-    const prdRepo = makePrdRepo({ content: fullContent });
-
-    const uc = new CheckPhaseUseCase(projectRepo as any, prdRepo as any);
+    const uc = new CheckPhaseUseCase(
+      makeProjectRepo(baseProject({ id: 'p1', userId: 'u1', phase: 'intake' })),
+      makePrdRepo(basePrd(fullContent)),
+    );
     const result = await uc.execute('p1', 'u1');
     expect(result.isOk()).toBe(true);
     const data = result.unwrap();
@@ -37,10 +74,10 @@ describe('CheckPhaseUseCase', () => {
   });
 
   it('returns unstable when no PRD', async () => {
-    const projectRepo = makeProjectRepo({ id: 'p1', userId: 'u1', phase: 'intake' });
-    const prdRepo = makePrdRepo(null);
-
-    const uc = new CheckPhaseUseCase(projectRepo as any, prdRepo as any);
+    const uc = new CheckPhaseUseCase(
+      makeProjectRepo(baseProject({ id: 'p1', userId: 'u1', phase: 'intake' })),
+      makePrdRepo(null),
+    );
     const result = await uc.execute('p1', 'u1');
     expect(result.isOk()).toBe(true);
     const data = result.unwrap();
@@ -48,10 +85,7 @@ describe('CheckPhaseUseCase', () => {
   });
 
   it('returns error when project not found', async () => {
-    const projectRepo = makeProjectRepo();
-    const prdRepo = makePrdRepo();
-
-    const uc = new CheckPhaseUseCase(projectRepo as any, prdRepo as any);
+    const uc = new CheckPhaseUseCase(makeProjectRepo(), makePrdRepo());
     const result = await uc.execute('p1', 'u1');
     expect(result.isErr()).toBe(true);
   });

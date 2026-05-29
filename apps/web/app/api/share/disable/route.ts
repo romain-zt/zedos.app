@@ -5,12 +5,19 @@ import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { DisableShareLinkRequestSchema, ShareLinkMintResponseSchema } from '@repo/contracts/share'
 import { db, shareLinks, prdVersions, projects, eq, sql } from '@repo/db'
+import { createLogger } from '@shared/observability/logger'
+import { validationFailureData } from '@shared/observability/log-safe'
+
+const logger = createLogger({ operation: 'share/disable' })
 
 export async function POST(request: NextRequest) {
+  let userId: string | undefined
+  let shareLinkId: string | undefined
+
   try {
     const userResult = await requireUser(headers())
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = userResult.unwrap().id
+    userId = userResult.unwrap().id
 
     let raw: unknown
     try {
@@ -26,7 +33,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       )
     }
-    const { shareLinkId } = parsed.data
+    shareLinkId = parsed.data.shareLinkId
 
     const [shareLink] = await db
       .select({ id: shareLinks.id, projectUserId: projects.userId })
@@ -49,13 +56,15 @@ export async function POST(request: NextRequest) {
 
     const out = ShareLinkMintResponseSchema.safeParse(updated)
     if (!out.success) {
-      console.error('Share disable outbound validation', out.error.flatten())
+      logger
+        .withContext({ userId, shareLinkId })
+        .error('Share disable outbound validation failed', validationFailureData(out.error.flatten()))
       return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
     }
 
     return NextResponse.json(out.data)
   } catch (error: unknown) {
-    console.error('Share disable error:', error)
+    logger.withContext({ userId, shareLinkId }).error('Share disable failed', error)
     return NextResponse.json({ error: 'Failed to disable share link' }, { status: 500 })
   }
 }

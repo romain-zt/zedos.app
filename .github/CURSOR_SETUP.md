@@ -36,7 +36,7 @@ In **Settings → Branches → Add rule** for `main`:
 | Setting | Value |
 |---|---|
 | Require a pull request before merging | ✅ |
-| Require status checks to pass before merging | ✅ — add `cursor-review-and-merge` |
+| Require status checks to pass before merging | ✅ — add `quality` (CI: typecheck, lint, test, build) and optionally `playwright` (E2E) |
 | Require branches to be up to date before merging | ✅ |
 | Restrict who can push to matching branches | ✅ (only the bot / admins) |
 

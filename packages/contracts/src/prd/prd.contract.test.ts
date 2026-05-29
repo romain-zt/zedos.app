@@ -10,8 +10,29 @@ describe('CreateOrCapturePrdVersionRequestSchema', () => {
     expect(CreateOrCapturePrdVersionRequestSchema.safeParse({}).success).toBe(true);
   });
 
-  it('accepts optional content as record', () => {
-    const r = CreateOrCapturePrdVersionRequestSchema.safeParse({ content: { sections: [] } });
+  it('accepts optional intake content as string record', () => {
+    const r = CreateOrCapturePrdVersionRequestSchema.safeParse({
+      content: { vision: 'Build X' },
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('accepts optional AI-generated content shape', () => {
+    const r = CreateOrCapturePrdVersionRequestSchema.safeParse({
+      content: {
+        title: 'PRD',
+        version_summary: 'v1',
+        sections: [
+          {
+            id: 'vision',
+            title: 'Vision',
+            content: '...',
+            confidence: 'high',
+            open_questions: [],
+          },
+        ],
+      },
+    });
     expect(r.success).toBe(true);
   });
 
@@ -37,6 +58,21 @@ describe('CapturedPrdVersionResponseSchema', () => {
 
   it('parses valid payload with ISO date strings', () => {
     expect(CapturedPrdVersionResponseSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('parses AI-generated content on version', () => {
+    const withAiContent = {
+      ...valid,
+      version: {
+        ...valid.version,
+        content: {
+          title: 'PRD',
+          version_summary: 'First draft',
+          sections: [],
+        },
+      },
+    };
+    expect(CapturedPrdVersionResponseSchema.safeParse(withAiContent).success).toBe(true);
   });
 
   it('rejects when version object missing', () => {

@@ -5,9 +5,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
-  Send, Sparkles, FileText, AlertTriangle, Loader2, RefreshCw,
+  Send, Sparkles, FileText, Loader2,
   HelpCircle, Check, X,
 } from 'lucide-react'
 import {
@@ -23,6 +22,7 @@ import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
 import {
   ClarifyDecisionUiSchema,
   type ClarifyDecisionUi,
+  type ClarifyDecisionResponse,
 } from '@repo/contracts/ai/decision-ui'
 import { comingUpPrdSectionsFromAssistantParsed } from '@repo/contracts/questions/history'
 import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
@@ -32,7 +32,22 @@ interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
   parsed?: Record<string, unknown>
-  decisionResponse?: Record<string, unknown>
+  decisionResponse?: ClarifyDecisionResponse
+}
+
+function formatDecisionSelection(response: ClarifyDecisionResponse): string {
+  switch (response.type) {
+    case 'not_sure':
+      return response.message
+    case 'single_choice':
+      return response.label ?? response.selected
+    case 'multi_choice':
+      return (response.labels ?? response.selected).join(', ')
+    case 'ranked':
+      return (response.labels ?? response.ranking).join(', ')
+    case 'modal_form':
+      return Array.isArray(response.selected) ? response.selected.join(', ') : response.selected
+  }
 }
 
 function newMsgId(): string {
@@ -59,6 +74,10 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
   const hasStarted = useRef(false)
   /** Thread used for the in-flight clarify request (avoids stale append after truncate). */
   const activeThreadRef = useRef<Message[]>([])
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
+  const streamingRef = useRef(streaming)
+  streamingRef.current = streaming
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -78,59 +97,19 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
 
   useEffect(() => { scrollToBottom() }, [messages, scrollToBottom])
 
-  // Load existing history on mount; auto-start only when there are no prior messages.
-  useEffect(() => {
-    if (hasStarted.current) return
-    hasStarted.current = true
+  const sendMessage = useCallback(
+    async (
+      userMessage: string | null,
+      decisionResponse: ClarifyDecisionResponse | null,
+      options?: { threadBase?: Message[]; skipAppendUser?: boolean }
+    ) => {
+    if (streamingRef.current) return
 
-    const loadHistory = async () => {
-      try {
-        const res = await fetch(`/api/projects/${projectId}/questions`)
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data) && data.length > 0) {
-            const historic: Message[] = []
-            for (const q of data) {
-              const parsed: Record<string, unknown> = { message: q.structuredQuestion }
-              if (q.availableOptions) parsed.decision_ui = q.availableOptions
-              if (q.aiInterpretation) parsed.reasoning = q.aiInterpretation
-              if (q.prdImpact) parsed.prd_section_affected = q.prdImpact
-              historic.push({
-                id: newMsgId(),
-                role: 'assistant',
-                content: q.structuredQuestion,
-                parsed,
-              })
-              if (q.founderAnswer) {
-                historic.push({ id: newMsgId(), role: 'user', content: q.founderAnswer })
-              }
-            }
-            setMessages(historic)
-            return
-          }
-        }
-      } catch {
-        // Fall through to auto-start on error
-      }
-      // No history (or fetch failed) — start a fresh clarification session
-      sendMessage(null, null)
-    }
-
-    loadHistory()
-  }, [projectId])
-
-  const sendMessage = async (
-    userMessage: string | null,
-    decisionResponse: Record<string, unknown> | null,
-    options?: { threadBase?: Message[]; skipAppendUser?: boolean }
-  ) => {
-    if (streaming) return
-
-    let thread = options?.threadBase ?? messages
+    let thread = options?.threadBase ?? messagesRef.current
 
     if (!options?.skipAppendUser && (userMessage || decisionResponse)) {
       const displayContent = decisionResponse
-        ? `Selected: ${JSON.stringify(decisionResponse?.selected ?? decisionResponse)}`
+        ? `Selected: ${formatDecisionSelection(decisionResponse)}`
         : userMessage ?? ''
       const userMsg: Message = {
         id: newMsgId(),
@@ -243,13 +222,54 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
       if (!streamCompleted && assistantContent.trim()) {
         appendAssistantFromBuffer(assistantContent)
       }
-    } catch (error: any) {
-      console.error('Clarification error:', error)
+    } catch {
       toast.error('Failed to get AI response')
     } finally {
       setStreaming(false)
     }
-  }
+    },
+    [projectId, prdVersionId]
+  )
+
+  // Load existing history on mount; auto-start only when there are no prior messages.
+  useEffect(() => {
+    if (hasStarted.current) return
+    hasStarted.current = true
+
+    const loadHistory = async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/questions`)
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data) && data.length > 0) {
+            const historic: Message[] = []
+            for (const q of data) {
+              const parsed: Record<string, unknown> = { message: q.structuredQuestion }
+              if (q.availableOptions) parsed.decision_ui = q.availableOptions
+              if (q.aiInterpretation) parsed.reasoning = q.aiInterpretation
+              if (q.prdImpact) parsed.prd_section_affected = q.prdImpact
+              historic.push({
+                id: newMsgId(),
+                role: 'assistant',
+                content: q.structuredQuestion,
+                parsed,
+              })
+              if (q.founderAnswer) {
+                historic.push({ id: newMsgId(), role: 'user', content: q.founderAnswer })
+              }
+            }
+            setMessages(historic)
+            return
+          }
+        }
+      } catch {
+        // Fall through to auto-start on error
+      }
+      await sendMessage(null, null)
+    }
+
+    void loadHistory()
+  }, [projectId, sendMessage])
 
   const handleSend = () => {
     const msg = input.trim()
@@ -257,7 +277,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
     sendMessage(msg, null)
   }
 
-  const handleDecision = (response: Record<string, unknown>) => {
+  const handleDecision = (response: ClarifyDecisionResponse) => {
     void sendMessage(null, response)
   }
 
@@ -375,7 +395,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
           }
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PRD generation error:', error)
       toast.error('Failed to generate PRD')
     } finally {

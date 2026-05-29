@@ -8,11 +8,12 @@ const nextConfig = {
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../../'),
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: false,
+  },
+  // Lint is enforced by `pnpm lint` (ESLint 9 + scripts/lint.cjs). Next's built-in runner still expects ESLint 8 options.
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   images: { unoptimized: true },
   webpack: (config, { isServer }) => {
@@ -25,3 +26,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+

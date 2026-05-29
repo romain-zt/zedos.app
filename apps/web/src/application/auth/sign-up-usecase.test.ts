@@ -1,11 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mocked } from 'vitest';
 import { SignUpUseCase } from './sign-up-usecase';
 import { ok, err } from '@repo/result';
 import { ValidationError, DatabaseError } from '@shared/errors/application-error';
 import { CreditBalance } from '@domain/credits/credits';
 import { UserId } from '@domain/user/user';
+import type { IUserRepository } from '@domain/user/user-repository';
+import type { ICreditsRepository } from '@domain/credits/credits-repository';
+import type { User } from '@domain/user/user';
 
-const makeValidUser = () => ({
+const makeValidUser = (): User => ({
   id: 'user-123',
   email: 'test@example.com',
   name: 'Test User',
@@ -17,29 +20,32 @@ const makeValidUser = () => ({
   updatedAt: new Date(),
 });
 
-const makeMockUserRepo = () => ({
+const makeMockUserRepo = (): Mocked<IUserRepository> => ({
   findByEmail: vi.fn(),
   findById: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
 });
 
-const makeMockCreditsRepo = () => ({
+const makeMockCreditsRepo = (): Mocked<ICreditsRepository> => ({
   getBalance: vi.fn(),
   addCredits: vi.fn(),
   deductCredits: vi.fn(),
-  findByUserId: vi.fn(),
+  reverseCredits: vi.fn(),
+  recordTransaction: vi.fn(),
+  getTransactionHistory: vi.fn(),
+  useGracePeriod: vi.fn(),
 });
 
 describe('SignUpUseCase', () => {
-  let userRepo: ReturnType<typeof makeMockUserRepo>;
-  let creditsRepo: ReturnType<typeof makeMockCreditsRepo>;
+  let userRepo: Mocked<IUserRepository>;
+  let creditsRepo: Mocked<ICreditsRepository>;
   let useCase: SignUpUseCase;
 
   beforeEach(() => {
     userRepo = makeMockUserRepo();
     creditsRepo = makeMockCreditsRepo();
-    useCase = new SignUpUseCase(userRepo as any, creditsRepo as any);
+    useCase = new SignUpUseCase(userRepo, creditsRepo);
   });
 
   it('creates a new user successfully', async () => {
@@ -91,7 +97,7 @@ describe('SignUpUseCase', () => {
 
     const result = await useCase.execute({
       email: 'test@example.com',
-      password: 'short', // 5 characters - too short
+      password: 'short',
       name: 'Test User',
     });
 

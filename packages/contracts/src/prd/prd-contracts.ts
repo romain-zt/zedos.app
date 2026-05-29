@@ -5,11 +5,23 @@
  */
 
 import { z } from 'zod';
+import { GeneratePrdAiResponseSchema } from '../ai/generate-prd-stream';
 import { ShareLinkSummarySchema } from '../share/mint';
+
+/** Intake-era PRD body: section slug → text (pre–AI-generated shape). */
+export const IntakePrdContentSchema = z.record(z.string());
+
+/** Stored PRD JSON: AI-generated structure or legacy intake map. */
+export const PrdVersionContentSchema = z.union([
+  GeneratePrdAiResponseSchema,
+  IntakePrdContentSchema,
+]);
+
+export type PrdVersionContent = z.infer<typeof PrdVersionContentSchema>;
 
 /** Optional body when capturing the first in-project PRD version (v1 draft). */
 export const CreateOrCapturePrdVersionRequestSchema = z.object({
-  content: z.record(z.unknown()).optional(),
+  content: PrdVersionContentSchema.optional(),
 });
 
 export type CreateOrCapturePrdVersionRequest = z.infer<typeof CreateOrCapturePrdVersionRequestSchema>;
@@ -20,7 +32,7 @@ export const CapturedPrdVersionResponseSchema = z.object({
     id: z.string(),
     projectId: z.string(),
     versionNumber: z.number().int().positive(),
-    content: z.any().nullable(),
+    content: PrdVersionContentSchema.nullable(),
     status: z.string(),
     createdAt: z.coerce.date(),
     updatedAt: z.coerce.date(),
@@ -33,7 +45,7 @@ export const PrdVersionDTOSchema = z.object({
   id: z.string(),
   projectId: z.string(),
   versionNumber: z.number().int(),
-  content: z.any().nullable(),
+  content: PrdVersionContentSchema.nullable(),
   status: z.string(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),

@@ -34,11 +34,12 @@
     "E2E_NO_CREDITS_EMAIL",
     "E2E_NO_CREDITS_PASSWORD",
     "PLAYWRIGHT_BASE_URL",
-    "E2E_MODE"
+    "E2E_MODE",
+    "ESLINT_USE_FLAT_CONFIG"
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "lint"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },

@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mocked } from 'vitest';
 import { SignInUseCase } from './sign-in-usecase';
 import { ok, err } from '@repo/result';
 import { ValidationError, UnauthorizedError } from '@shared/errors/application-error';
+import type { IUserRepository } from '@domain/user/user-repository';
+import type { User } from '@domain/user/user';
 import * as bcrypt from 'bcryptjs';
 
 vi.mock('bcryptjs', () => ({
@@ -9,7 +11,7 @@ vi.mock('bcryptjs', () => ({
   hash: vi.fn(),
 }));
 
-const makeValidUser = () => ({
+const makeValidUser = (): User => ({
   id: 'user-123',
   email: 'test@example.com',
   name: 'Test User',
@@ -21,7 +23,7 @@ const makeValidUser = () => ({
   updatedAt: new Date(),
 });
 
-const makeMockUserRepo = () => ({
+const makeMockUserRepo = (): Mocked<IUserRepository> => ({
   findByEmail: vi.fn(),
   findById: vi.fn(),
   create: vi.fn(),
@@ -29,19 +31,19 @@ const makeMockUserRepo = () => ({
 });
 
 describe('SignInUseCase', () => {
-  let userRepo: ReturnType<typeof makeMockUserRepo>;
+  let userRepo: Mocked<IUserRepository>;
   let useCase: SignInUseCase;
 
   beforeEach(() => {
     userRepo = makeMockUserRepo();
-    useCase = new SignInUseCase(userRepo as any);
+    useCase = new SignInUseCase(userRepo);
     vi.clearAllMocks();
   });
 
   it('signs in user successfully with valid credentials', async () => {
     const user = makeValidUser();
     userRepo.findByEmail.mockResolvedValue(ok(user));
-    (bcrypt.compare as any).mockResolvedValue(true);
+    vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(true));
 
     const result = await useCase.execute({
       email: 'test@example.com',
@@ -85,7 +87,7 @@ describe('SignInUseCase', () => {
 
   it('returns UnauthorizedError when password is incorrect', async () => {
     userRepo.findByEmail.mockResolvedValue(ok(makeValidUser()));
-    (bcrypt.compare as any).mockResolvedValue(false);
+    vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(false));
 
     const result = await useCase.execute({
       email: 'test@example.com',
@@ -108,7 +110,7 @@ describe('SignInUseCase', () => {
     });
 
     userRepo.findByEmail.mockResolvedValue(ok(makeValidUser()));
-    (bcrypt.compare as any).mockResolvedValue(false);
+    vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(false));
 
     const resultWrongPassword = await useCase.execute({
       email: 'test@example.com',
@@ -128,7 +130,7 @@ describe('SignInUseCase', () => {
     const user = makeValidUser();
     user.creditBalance = 100;
     userRepo.findByEmail.mockResolvedValue(ok(user));
-    (bcrypt.compare as any).mockResolvedValue(true);
+    vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(true));
 
     const result = await useCase.execute({
       email: 'test@example.com',
