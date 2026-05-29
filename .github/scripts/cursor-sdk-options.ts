@@ -1,7 +1,7 @@
 /**
  * Shared Cursor cloud SDK options for CI scripts in this directory.
  */
-const DEFAULT_AGENT_MODEL_ID = "composer-2";
+const DEFAULT_AGENT_MODEL_ID = "composer-2.5";
 
 export function buildCursorCloudOptions(
   apiKey: string,
