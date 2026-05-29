@@ -6,7 +6,7 @@
 
 ## Status
 
-`draft`
+`approved`
 
 > **Layout in effect:** post-migration (`apps/web/` + `packages/`)
 > **Architecture Surface:** resolved
@@ -101,7 +101,7 @@ Implement a thin feedback-capture path that accepts owner milestone feedback inp
 
 ## Rollback
 
-Revert feature commits on working branch; no forward-only migration required by this plan draft.
+Revert feature commits on working branch; no forward-only migration required by this plan.
 
 ---
 
@@ -125,11 +125,11 @@ Revert feature commits on working branch; no forward-only migration required by 
 
 ## Approval
 
-- [ ] User reviewed and approved this Plan
+- [x] User reviewed and approved this Plan
 - [ ] Patch Intent Summary will be produced before any code edit
 - [ ] Verification steps (`typecheck` / `build` / tests) confirmed
 
-**Approval status:** pending
+**Approval status:** approved
 
 ---
 
@@ -138,3 +138,4 @@ Revert feature commits on working branch; no forward-only migration required by 
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-28 | Initial implementation plan for feedback capture and attribution slice | — |
+| 2026-05-28 | Decision recorded: approved | Product + Engineering lead |

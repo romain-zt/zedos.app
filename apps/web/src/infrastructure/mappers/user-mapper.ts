@@ -1,29 +1,35 @@
 /**
  * User Mapper
- * 
- * Converts between: Domain User ↔ Prisma User ↔ UserDTO
+ *
+ * Converts between: Domain User ↔ Drizzle User row ↔ UserDTO
  */
 
 import { Mapper } from '@shared/mappers/mapper';
 import { User } from '@domain/user/user';
 import { UserDTO } from '@repo/contracts/auth/auth-contracts';
+import type { User as DbUser } from '@repo/db';
 
-export class UserMapper extends Mapper<User, any, UserDTO> {
-  toPersistence(domain: User): any {
+export class UserMapper extends Mapper<User, DbUser, UserDTO> {
+  toPersistence(domain: User): DbUser {
     return {
       id: domain.id,
       email: domain.email,
-      name: domain.name,
+      emailVerified: false,
+      image: null,
+      name: domain.name ?? '',
       passwordHash: domain.passwordHash,
       creditBalance: domain.creditBalance,
       graceUsed: domain.graceUsed,
       starterCreditsGranted: domain.starterCreditsGranted,
+      marketingConsent: false,
+      productUpdatesConsent: false,
+      consentUpdatedAt: null,
       createdAt: domain.createdAt,
       updatedAt: domain.updatedAt,
     };
   }
 
-  toDomain(persistence: any): User {
+  toDomain(persistence: DbUser): User {
     return {
       id: persistence.id,
       email: persistence.email,

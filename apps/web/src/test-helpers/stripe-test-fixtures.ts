@@ -4,6 +4,10 @@
  */
 
 import crypto from 'crypto';
+import {
+  CheckoutSessionCompletedEventSchema,
+  type CheckoutSessionCompletedEvent,
+} from '@repo/contracts/payments';
 
 const TEST_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? 'whsec_test_placeholder';
 
@@ -33,8 +37,8 @@ export function buildCheckoutSessionCompletedEvent(overrides?: {
   userId?: string;
   purchaseId?: string;
   packSize?: number;
-}) {
-  return {
+}): CheckoutSessionCompletedEvent {
+  return CheckoutSessionCompletedEventSchema.parse({
     id: overrides?.eventId ?? 'evt_test_001',
     object: 'event',
     type: 'checkout.session.completed',
@@ -54,8 +58,7 @@ export function buildCheckoutSessionCompletedEvent(overrides?: {
         payment_intent: 'pi_test_001',
         amount_total: 900,
         currency: 'eur',
-        customer: null,
       },
     },
-  };
+  });
 }

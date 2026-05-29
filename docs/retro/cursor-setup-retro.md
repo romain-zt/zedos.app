@@ -41,9 +41,9 @@ Secondary issues that are real but recoverable: (a) the `model:` slugs declared 
 
 1. **No execution-side counterpart exists.** There is no symmetric `/implement`, `/review`, `/pr`, `/commit`, `/fix`, `/explore`, `/plan` workflow analogous to `/prd` and `/feature-area`. The `/execute-prd loop` explicitly stops at the Scope Slice → User Story boundary by design (see `.cursor/rules/execution-loop.mdc` §11.1). Once a Scope Slice is `ready-for-user-stories` there is **zero workspace governance for what happens next**. ZedOS's `.cursor/` shows the right shape: `architect`, `bugfix`, `domain-guardian`, `drizzle-persistence`, `event-contracts`, `improver`, `monorepo-analyst`, `monorepo-explorer`, `nest-integration`, `security-pii`, `test-runner`, `verifier` agents + `add-driven-adapter`, `add-driving-endpoint`, `add-usecase`, `split-technical-story` skills.
 
-2. **Agent model slugs are not valid Cursor model identifiers.** Per the Task tool's documented model list (the only valid slugs are `claude-4.6-opus-high-thinking`, `claude-4.6-sonnet-medium-thinking`, `claude-opus-4-7-thinking-xhigh`, `composer-2-fast`, `gpt-5.4-medium`, `gpt-5.5-medium`), the workspace agents declare:
+2. **Agent model slugs are not valid Cursor model identifiers.** Per the Task tool's documented model list (the only valid slugs are `claude-4.6-opus-high-thinking`, `claude-4.6-sonnet-medium-thinking`, `claude-opus-4-7-thinking-xhigh`, `composer-2-fast`, `gpt-5.4-medium`, `gpt-4o-mini`), the workspace agents declare:
    - `prd-lead.md`: `model: claude-opus-4-7` (close to but not equal to `claude-opus-4-7-thinking-xhigh`)
-   - `prd-challenger.md`: `model: gpt-5.5` (should be `gpt-5.5-medium`)
+   - `prd-challenger.md`: `model: gpt-5.5` (should be `gpt-4o-mini`)
    - `prd-researcher.md`: `model: claude-opus-4-6` + `is_background: true` (should be `claude-4.6-opus-high-thinking`; `is_background` is not a documented agent frontmatter field)
    - `feature-area-lead.md`, `scope-critic.md`: `model: claude-opus-4-7` (same issue)
    
@@ -353,7 +353,7 @@ To make this concrete, the missing half includes:
 | Agent | Current | Proposed | Rationale |
 |---|---|---|---|
 | prd-lead | `claude-opus-4-7` | `claude-opus-4-7-thinking-xhigh` | Reads many files, produces structured brief — high reasoning, high context. |
-| prd-challenger | `gpt-5.5` | `gpt-5.5-medium` | Adversarial, lots of pattern matching — `gpt-5.5-medium` is an explicit valid slug. |
+| prd-challenger | `gpt-5.5` | `gpt-4o-mini` | Adversarial, lots of pattern matching — `gpt-4o-mini` is an explicit valid slug. |
 | prd-researcher | `claude-opus-4-6` + `is_background: true` | `claude-4.6-opus-high-thinking` (drop `is_background`) | `is_background` is not in any documented agent frontmatter spec; if the user wants background execution that's controlled by `Task.run_in_background` at invocation time. |
 | feature-area-lead | `claude-opus-4-7` | `claude-opus-4-7-thinking-xhigh` | Same as prd-lead. |
 | scope-critic | `claude-opus-4-7` | `claude-4.6-opus-high-thinking` (or `claude-opus-4-7-thinking-xhigh`) | Diversification — having Critic on a different model than Lead reduces correlated blind spots. |
@@ -768,9 +768,9 @@ Today every agent declares one model. There is no policy.
 | Workload | Model | Why |
 |---|---|---|
 | Long-form context reconstruction | `claude-opus-4-7-thinking-xhigh` | Best at multi-file synthesis. |
-| Adversarial / pattern-matching | `gpt-5.5-medium` | Good defaults for skeptical critique without overthinking. |
+| Adversarial / pattern-matching | `gpt-4o-mini` | Good defaults for skeptical critique without overthinking. |
 | High-volume capture / lightweight notes | `composer-2-fast` | Cheap and quick for `/prd note` and discovery routine. |
-| Code editing | `claude-opus-4-7-thinking-xhigh` or `gpt-5.5-medium` | User preference; document explicitly. |
+| Code editing | `claude-opus-4-7-thinking-xhigh` or `gpt-4o-mini` | User preference; document explicitly. |
 | Background/offline tasks | per-task; never tied to `is_background` frontmatter | Documented frontmatter doesn't have it. |
 
 Cite this policy from each agent file's frontmatter `description:` rather than hard-coding the model — which keeps model drift to one file.

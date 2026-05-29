@@ -5,6 +5,7 @@ import { Result, ok, err } from '@repo/result';
 import { ApplicationError, ValidationError } from '@shared/errors/application-error';
 import { PhaseUnlockResponse } from '@repo/contracts/adr/adr-contracts';
 import { createLogger } from '@shared/observability/logger';
+import { forwardErr } from '@shared/result/propagate';
 
 const logger = createLogger({ operation: 'UnlockPhaseUseCase' });
 
@@ -14,13 +15,16 @@ export class UnlockPhaseUseCase {
     private prdRepository: IPrdRepository
   ) {}
 
-  async execute(projectId: string, userId: string): Promise<Result<PhaseUnlockResponse, ApplicationError>> {
+  async execute(
+    projectId: string,
+    userId: string
+  ): Promise<Result<PhaseUnlockResponse, ApplicationError>> {
     const projectResult = await this.projectRepository.findByIdAndUserId(projectId, userId);
-    if (projectResult.isErr()) return projectResult as any;
+    if (projectResult.isErr()) return forwardErr(projectResult);
     const project = projectResult.unwrap();
 
     const prdResult = await this.prdRepository.findLatestByProjectId(projectId);
-    if (prdResult.isErr()) return prdResult as any;
+    if (prdResult.isErr()) return forwardErr(prdResult);
     const latestPrd = prdResult.unwrap();
 
     if (!latestPrd) {
@@ -36,18 +40,18 @@ export class UnlockPhaseUseCase {
       return err(new ValidationError(reason));
     }
 
-    // Transition via domain service
     const transitioned = ProjectDomainService.transitionToArchitecture(project);
     const updateResult = await this.projectRepository.update(transitioned);
-    if (updateResult.isErr()) return updateResult as any;
+    if (updateResult.isErr()) return forwardErr(updateResult);
 
     const saved = updateResult.unwrap();
     logger.info('Phase unlocked to architecture', { projectId });
 
-    return ok({
+    const response: PhaseUnlockResponse = {
       message: 'Project transitioned to ARCHITECTURE phase',
       phase: saved.phase,
       architectureStartedAt: saved.architectureStartedAt,
-    }) as any;
+    };
+    return ok(response);
   }
 }

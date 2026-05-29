@@ -4,7 +4,11 @@ import type {
   MilestoneFeedbackRowDTO,
   MilestoneFeedbackSubmitRequest,
 } from '@repo/contracts/feedback/submit';
-import { CaptureMilestoneFeedbackUseCase } from './capture-milestone-feedback-usecase';
+import { ExternalServiceError } from '@shared/errors/application-error';
+import {
+  CaptureMilestoneFeedbackUseCase,
+  type CaptureMilestoneFeedbackRepository,
+} from './capture-milestone-feedback-usecase';
 
 function makeRequest(): MilestoneFeedbackSubmitRequest {
   return {
@@ -31,13 +35,27 @@ function makeRow(): MilestoneFeedbackRowDTO {
   };
 }
 
+function makeRepository(
+  overrides: Partial<CaptureMilestoneFeedbackRepository>
+): CaptureMilestoneFeedbackRepository {
+  return {
+    isProjectOwnedByUser: async () => true,
+    findDuplicate: async () => false,
+    createFeedback: async () =>
+      ok<MilestoneFeedbackRowDTO, ExternalServiceError>(makeRow()),
+    ...overrides,
+  };
+}
+
 describe('CaptureMilestoneFeedbackUseCase', () => {
   it('returns forbidden when project is not owned', async () => {
-    const repository = {
+    const repository = makeRepository({
       isProjectOwnedByUser: vi.fn(async () => false),
       findDuplicate: vi.fn(async () => false),
-      createFeedback: vi.fn(async () => ok(makeRow())),
-    };
+      createFeedback: vi.fn(async () =>
+        ok<MilestoneFeedbackRowDTO, ExternalServiceError>(makeRow())
+      ),
+    });
     const useCase = new CaptureMilestoneFeedbackUseCase(repository);
 
     const result = await useCase.execute({
@@ -51,11 +69,13 @@ describe('CaptureMilestoneFeedbackUseCase', () => {
   });
 
   it('returns duplicate without persisting when feedback exists', async () => {
-    const repository = {
+    const repository = makeRepository({
       isProjectOwnedByUser: vi.fn(async () => true),
       findDuplicate: vi.fn(async () => true),
-      createFeedback: vi.fn(async () => ok(makeRow())),
-    };
+      createFeedback: vi.fn(async () =>
+        ok<MilestoneFeedbackRowDTO, ExternalServiceError>(makeRow())
+      ),
+    });
     const useCase = new CaptureMilestoneFeedbackUseCase(repository);
 
     const result = await useCase.execute({
@@ -71,11 +91,13 @@ describe('CaptureMilestoneFeedbackUseCase', () => {
   });
 
   it('creates attributed feedback when owner and non-duplicate', async () => {
-    const repository = {
+    const repository = makeRepository({
       isProjectOwnedByUser: vi.fn(async () => true),
       findDuplicate: vi.fn(async () => false),
-      createFeedback: vi.fn(async () => ok(makeRow())),
-    };
+      createFeedback: vi.fn(async () =>
+        ok<MilestoneFeedbackRowDTO, ExternalServiceError>(makeRow())
+      ),
+    });
     const useCase = new CaptureMilestoneFeedbackUseCase(repository);
 
     const result = await useCase.execute({

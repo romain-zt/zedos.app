@@ -1,9 +1,10 @@
 import { ICreditsRepository } from '@domain/credits/credits-repository';
 import { CreditsDomainService } from '@domain/credits/credits-service';
 import { OperationType, CreditCheckResult } from '@domain/credits/credits';
-import { Result, ok, err } from '@repo/result';
+import { Result, ok } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
+import { forwardErr } from '@shared/result/propagate';
 
 const logger = createLogger({ operation: 'CheckCreditsUseCase' });
 
@@ -20,7 +21,7 @@ export class CheckCreditsUseCase {
     const balanceResult = await this.creditsRepository.getBalance(input.userId);
     if (balanceResult.isErr()) {
       logger.error('Check credits failed', { userId: input.userId });
-      return balanceResult as any;
+      return forwardErr(balanceResult);
     }
     const balance = balanceResult.unwrap();
 
@@ -47,6 +48,6 @@ export class CheckCreditsUseCase {
       canProceed,
     });
 
-    return ok(result) as any;
+    return ok(result);
   }
 }

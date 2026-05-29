@@ -21,7 +21,7 @@ export class UserDomainService {
 
     try {
       const hash = await bcrypt.hash(password, 10);
-      return ok(hash) as any;
+      return ok(hash);
     } catch (error) {
       return err(new ValidationError('Failed to hash password'));
     }
@@ -42,7 +42,7 @@ export class UserDomainService {
   /**
    * Validate email format
    */
-  static validateEmail(emailStr: string): Result<Email> {
+  static validateEmail(emailStr: string): Result<Email, ValidationError> {
     try {
       const email = new Email(emailStr);
       return ok(email);

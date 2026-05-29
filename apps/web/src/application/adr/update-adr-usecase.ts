@@ -4,6 +4,7 @@ import { Adr } from '@domain/adr/adr';
 import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
+import { forwardErr } from '@shared/result/propagate';
 
 const logger = createLogger({ operation: 'UpdateAdrUseCase' });
 
@@ -23,8 +24,11 @@ export class UpdateAdrUseCase {
   ) {}
 
   async execute(input: UpdateAdrInput): Promise<Result<Adr, ApplicationError>> {
-    const projectResult = await this.projectRepository.findByIdAndUserId(input.projectId, input.userId);
-    if (projectResult.isErr()) return projectResult as any;
+    const projectResult = await this.projectRepository.findByIdAndUserId(
+      input.projectId,
+      input.userId
+    );
+    if (projectResult.isErr()) return forwardErr(projectResult);
 
     const result = await this.adrRepository.update(input.projectId, input.adrNumber, {
       title: input.title,

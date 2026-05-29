@@ -210,9 +210,13 @@ for (const pr of conflicted) {
       console.log(`✅ Agent completed for PR #${pr.number}.`);
     }
   } catch (err) {
-    if (err instanceof CursorAgentError) {
+    if (err instanceof Error) {
+      const retryable =
+        err instanceof CursorAgentError
+          ? (err as Error & { isRetryable?: boolean }).isRetryable ?? false
+          : false;
       console.error(
-        `❌ Agent could not start for PR #${pr.number}: ${err.message} (retryable=${err.isRetryable})`
+        `❌ Agent could not start for PR #${pr.number}: ${err.message} (retryable=${retryable})`
       );
     } else {
       console.error(`❌ Unexpected error for PR #${pr.number}:`, err);

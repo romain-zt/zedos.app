@@ -1,5 +1,7 @@
 // Thin AI gateway/service boundary for future provider swapping
 
+import { createE2eAiStreamResponse, isE2eMode } from '@/lib/e2e-mode'
+
 // const API_URL = 'https://apps.abacus.ai/v1/chat/completions' // Abacus AI
 const API_URL = 'https://api.openai.com/v1/chat/completions'
 // const API_KEY = process.env.ABACUSAI_API_KEY
@@ -70,6 +72,10 @@ export async function callAI(options: AIRequestOptions): Promise<Response> {
   } = options
 
   const requestTimeoutMs = resolveAiTimeoutMs(timeoutMs)
+
+  if (isE2eMode() && stream) {
+    return createE2eAiStreamResponse()
+  }
 
   const body: Record<string, unknown> = {
     model,

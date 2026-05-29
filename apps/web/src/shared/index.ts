@@ -18,3 +18,9 @@ export type { LogLevel, LogContext } from './observability';
 
 // Mappers
 export { Mapper, compose } from './mappers';
+
+// HTTP adapters
+export { applicationErrorJson, toNextErrorResponse, catchUnknownError } from './http';
+
+// Result helpers
+export { forwardErr } from './result/propagate';

@@ -12,12 +12,8 @@ import {
   ValidationError,
 } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
-import { addPurchaseCreditsForApi } from '@infrastructure/http/credits-http-bridge';
 import {
-  findPurchaseById,
-  insertProcessedStripeWebhookEvent,
-  isStripeWebhookEventRecorded,
-  markPurchaseCompletedWithPaymentIntent,
+  processCheckoutWebhookAtomically,
   getUserCreditBalance as loadUserCreditBalance,
 } from '@infrastructure/persistence/stripe-checkout-webhook-persistence';
 
@@ -29,10 +25,6 @@ export async function processCheckoutSessionCompletedWebhook(
   const eventId = event.id;
 
   try {
-    if (await isStripeWebhookEventRecorded(eventId)) {
-      return ok({ balance: 0, duplicateStripeEvent: true });
-    }
-
     const session = event.data.object;
     if (session.payment_status !== 'paid') {
       return err(new ValidationError('Checkout session not paid; skipping credit grant'));
@@ -46,35 +38,28 @@ export async function processCheckoutSessionCompletedWebhook(
       return err(new ValidationError('Invalid checkout session metadata for credit grant'));
     }
 
-    const purchase = await findPurchaseById(purchaseId);
-
-    if (!purchase) {
-      return err(new ValidationError('Purchase not found'));
-    }
-    if (purchase.userId !== userId) {
-      return err(new ValidationError('Purchase user mismatch'));
-    }
-
-    const addResult = await addPurchaseCreditsForApi(userId, packSize, {
-      purchaseId,
-      stripeSessionId: session.id,
-      packSize,
-    });
-
-    if (addResult.isErr()) {
-      return err(addResult.error);
-    }
-
-    const newBalance = addResult.unwrap();
     const paymentIntent =
       typeof session.payment_intent === 'string' && session.payment_intent.length > 0
         ? session.payment_intent
         : null;
 
-    await markPurchaseCompletedWithPaymentIntent(purchaseId, paymentIntent);
-    await insertProcessedStripeWebhookEvent(eventId, event.type);
+    const processResult = await processCheckoutWebhookAtomically({
+      eventId,
+      eventType: event.type,
+      userId,
+      purchaseId,
+      packSize,
+      stripeSessionId: session.id,
+      paymentIntent,
+    });
 
-    return ok({ balance: newBalance, duplicateStripeEvent: false });
+    if (processResult.kind === 'duplicate') {
+      return ok({ balance: processResult.balance, duplicateStripeEvent: true });
+    }
+    if (processResult.kind === 'invalid_purchase') {
+      return err(new ValidationError('Purchase not found or user mismatch'));
+    }
+    return ok({ balance: processResult.balance, duplicateStripeEvent: false });
   } catch (error) {
     logger.error('Checkout webhook processing failed', error);
     return err(new DatabaseError('Failed to process checkout webhook'));

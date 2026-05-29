@@ -6,6 +6,7 @@ import { AdrDomainService } from '@domain/adr/adr-service';
 import { Result, ok } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { ReadinessScoreResponse } from '@repo/contracts/adr/adr-contracts';
+import { forwardErr } from '@shared/result/propagate';
 
 export class ReadinessScoreUseCase {
   constructor(
@@ -14,32 +15,38 @@ export class ReadinessScoreUseCase {
     private adrRepository: IAdrRepository
   ) {}
 
-  async execute(projectId: string, userId: string): Promise<Result<ReadinessScoreResponse, ApplicationError>> {
+  async execute(
+    projectId: string,
+    userId: string
+  ): Promise<Result<ReadinessScoreResponse, ApplicationError>> {
     const projectResult = await this.projectRepository.findByIdAndUserId(projectId, userId);
-    if (projectResult.isErr()) return projectResult as any;
+    if (projectResult.isErr()) return forwardErr(projectResult);
     const project = projectResult.unwrap();
 
-    // PRD stability
     const prdResult = await this.prdRepository.findLatestByProjectId(projectId);
-    if (prdResult.isErr()) return prdResult as any;
+    if (prdResult.isErr()) return forwardErr(prdResult);
     const latestPrd = prdResult.unwrap();
 
     const { filledCount, totalRequired } = ProjectDomainService.checkPrdStability(
       latestPrd?.content as Record<string, unknown> | null
     );
 
-    // ADR completion
     const adrResult = await this.adrRepository.countCompleteCore(projectId);
-    if (adrResult.isErr()) return adrResult as any;
+    if (adrResult.isErr()) return forwardErr(adrResult);
     const { total: adrCount, complete: completeAdrs } = adrResult.unwrap();
 
-    const score = AdrDomainService.calculateReadinessScore(filledCount, totalRequired, completeAdrs);
+    const score = AdrDomainService.calculateReadinessScore(
+      filledCount,
+      totalRequired,
+      completeAdrs
+    );
 
-    return ok({
+    const response: ReadinessScoreResponse = {
       ...score,
       phase: project.phase,
-      prdVersion: latestPrd?.versionNumber || 0,
+      prdVersion: latestPrd?.versionNumber ?? 0,
       adrCount,
-    }) as any;
+    };
+    return ok(response);
   }
 }

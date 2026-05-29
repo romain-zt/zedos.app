@@ -3,7 +3,6 @@
  *
  * Thin HTTP adapter layer.
  * Validates input → calls use-case → returns DTO.
- * No business logic; all logic in application layer.
  */
 
 export const dynamic = 'force-dynamic';
@@ -13,11 +12,10 @@ import { SignUpRequestSchema } from '@contracts/auth/auth-contracts';
 import { SignUpUseCase } from '@application/auth/sign-up-usecase';
 import { DrizzleUserRepository } from '@infrastructure/persistence/user-repository';
 import { DrizzleCreditsRepository } from '@infrastructure/persistence/credits-repository';
-import { ApplicationError } from '@shared/errors/application-error';
+import { applicationErrorJson, catchUnknownError } from '@shared/http';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Parse & validate request body
     const body = await request.json();
     const parseResult = SignUpRequestSchema.safeParse(body);
 
@@ -29,23 +27,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const input = parseResult.data as any;
-
-    // 2. Instantiate repositories
     const userRepository = new DrizzleUserRepository();
     const creditsRepository = new DrizzleCreditsRepository();
-
-    // 3. Execute use-case
     const useCase = new SignUpUseCase(userRepository, creditsRepository);
-    const result = await useCase.execute(input);
+    const { email, password, name } = parseResult.data;
+    const result = await useCase.execute({ email, password, name });
 
-    // 4. Map result to HTTP response
     if (result.isErr()) {
-      const error = result.error as ApplicationError;
-      return NextResponse.json(
-        { error: error.message, details: error.details },
-        { status: error.statusCode }
-      );
+      return NextResponse.json(applicationErrorJson(result.error), {
+        status: result.error.statusCode,
+      });
     }
 
     const userDTO = result.unwrap();
@@ -53,11 +44,7 @@ export async function POST(request: NextRequest) {
       { user: userDTO, message: 'Sign up successful' },
       { status: 201 }
     );
-  } catch (error: any) {
-    console.error('Sign up error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return catchUnknownError(error, 'Internal server error');
   }
 }

@@ -1,9 +1,11 @@
 import { IProjectRepository } from '@domain/project/project-repository';
 import { ProjectDomainService } from '@domain/project/project-service';
 import { Result, ok, err } from '@repo/result';
-import { ApplicationError, ValidationError } from '@shared/errors/application-error';
+import { ApplicationError, ErrorCode, ValidationError } from '@shared/errors/application-error';
 import { ProjectDTO } from '@repo/contracts/project/project-contracts';
 import { createLogger } from '@shared/observability/logger';
+import { forwardErr } from '@shared/result/propagate';
+import { toProjectDTO } from '@application/project/project-dto';
 import { v4 as uuidv4 } from 'uuid';
 
 const logger = createLogger({ operation: 'CreateProjectUseCase' });
@@ -32,20 +34,22 @@ export class CreateProjectUseCase {
 
       const createResult = await this.projectRepository.create(project);
       if (createResult.isErr()) {
-        return createResult as any;
+        return forwardErr(createResult);
       }
 
       const created = createResult.unwrap();
       logger.info('Project created', { projectId: created.id, userId: input.userId });
 
-      return ok(created as ProjectDTO) as any;
-    } catch (error: any) {
-      logger.error('CreateProject unexpected error', error);
-      return err(new ApplicationError({
-        code: 'INTERNAL_SERVER_ERROR' as any,
-        message: 'Unexpected error creating project',
-        statusCode: 500,
-      }));
+      return ok(toProjectDTO(created));
+    } catch (error: unknown) {
+      logger.error('CreateProject unexpected error', error instanceof Error ? error : { error });
+      return err(
+        new ApplicationError({
+          code: ErrorCode.INTERNAL_SERVER_ERROR,
+          message: 'Unexpected error creating project',
+          statusCode: 500,
+        })
+      );
     }
   }
 }

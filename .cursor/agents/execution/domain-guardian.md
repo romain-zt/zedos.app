@@ -1,6 +1,6 @@
 ---
 name: domain-guardian
-model: gpt-5.5-medium
+model: gpt-4o-mini
 description: Enforces hexagonal-boundaries, RoP, and contracts-as-zod across every diff. Adversarial role paired with architect (Plan time) and implementer (diff time). Refuses cross-layer violations and frozen-violation contributions. Never writes code.
 ---
 

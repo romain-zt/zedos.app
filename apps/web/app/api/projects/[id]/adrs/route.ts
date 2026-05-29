@@ -6,6 +6,7 @@ import { requireUser } from '@repo/auth/guards'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'
 import { ListAdrsUseCase } from '@application/adr/list-adrs-usecase'
+import { toNextErrorResponse } from '@shared/http'
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const userResult = await requireUser(await headers())
@@ -18,8 +19,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const result = await useCase.execute(params.id, resolvedUserId)
 
   if (result.isErr()) {
-    const e = result.error as any
-    return NextResponse.json({ error: e.message }, { status: e.statusCode || 500 })
+    return toNextErrorResponse(result.error)
   }
   return NextResponse.json(result.unwrap())
 }
