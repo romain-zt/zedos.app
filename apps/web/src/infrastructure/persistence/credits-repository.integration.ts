@@ -108,7 +108,7 @@ describe('DrizzleCreditsRepository (integration)', () => {
     );
 
     expect(results.every((r) => r.isOk())).toBe(true);
-    const balances = results.filter((r) => r.isOk()).map((r) => r.value.amount);
+    const balances = results.flatMap((r) => (r.isOk() ? [r.unwrap().amount] : []));
     expect(new Set(balances)).toEqual(new Set([43]));
     expect(await countCreditTransactionsForUser(user.id)).toBe(1);
   });

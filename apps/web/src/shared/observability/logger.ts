@@ -61,15 +61,19 @@ export class Logger {
     this.log('warn', message, data);
   }
 
-  error(message: string, error?: Error | Record<string, unknown>) {
-    const errorData =
+  error(message: string, error?: unknown) {
+    const errorData: Record<string, unknown> | undefined =
       error instanceof Error
         ? {
             errorName: error.name,
             errorMessage: error.message,
             errorStack: error.stack,
           }
-        : error;
+        : error !== undefined && error !== null && typeof error === 'object'
+          ? (error as Record<string, unknown>)
+          : error !== undefined
+            ? { error: String(error) }
+            : undefined;
     this.log('error', message, errorData);
   }
 }

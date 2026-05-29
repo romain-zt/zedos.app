@@ -16,6 +16,9 @@ import {
   questionHistory,
   users,
   type NewProjectRow,
+  type ProjectUpdate,
+  type QuestionHistoryInsert,
+  type UserUpdate,
 } from '@repo/db';
 import { auth } from '@repo/auth/server';
 
@@ -74,46 +77,53 @@ async function ensureBetterAuthUser(
   throw new Error(`Failed to sign up E2E user ${email}`);
 }
 
+type E2eClarificationSeedRow = Omit<QuestionHistoryInsert, 'projectId'>;
+
+const E2E_CLARIFICATION_ROWS: readonly E2eClarificationSeedRow[] = [
+  {
+    structuredQuestion: 'What problem does your product solve?',
+    founderAnswer: 'Helps founders turn ideas into structured PRDs.',
+    aiInterpretation: 'Clear problem statement for vision section.',
+    prdImpact: 'vision',
+    questionType: 'clarification',
+  },
+  {
+    structuredQuestion: 'Who is the primary user?',
+    founderAnswer: 'Solo founders and small product teams.',
+    aiInterpretation: 'Target users identified.',
+    prdImpact: 'target_users',
+    questionType: 'clarification',
+  },
+];
+
 async function seedClarificationHistory(
   db: ReturnType<typeof createTestDb>['db'],
   projectId: string,
 ): Promise<void> {
   await db.delete(questionHistory).where(eq(questionHistory.projectId, projectId));
 
-  await db.insert(questionHistory).values([
-    {
-      projectId,
-      structuredQuestion: 'What problem does your product solve?',
-      founderAnswer: 'Helps founders turn ideas into structured PRDs.',
-      aiInterpretation: 'Clear problem statement for vision section.',
-      prdImpact: 'vision',
-      questionType: 'clarification',
-    },
-    {
-      projectId,
-      structuredQuestion: 'Who is the primary user?',
-      founderAnswer: 'Solo founders and small product teams.',
-      aiInterpretation: 'Target users identified.',
-      prdImpact: 'target_users',
-      questionType: 'clarification',
-    },
-  ]);
+  for (const row of E2E_CLARIFICATION_ROWS) {
+    const insert: QuestionHistoryInsert = { ...row, projectId };
+    await db.insert(questionHistory).values(insert);
+  }
 }
 
 async function upsertProject(
   db: ReturnType<typeof createTestDb>['db'],
   project: NewProjectRow,
 ): Promise<void> {
+  const onConflict: ProjectUpdate = {
+    name: project.name,
+    description: project.description ?? null,
+    userId: project.userId,
+  };
+
   await db
     .insert(projects)
     .values(project)
     .onConflictDoUpdate({
       target: projects.id,
-      set: {
-        name: project.name,
-        description: project.description,
-        userId: project.userId,
-      },
+      set: onConflict,
     });
 }
 
@@ -136,8 +146,10 @@ async function main(): Promise<void> {
     'E2E No Credits User',
   );
 
-  await db.update(users).set({ creditBalance: 100 }).where(eq(users.id, mainUserId));
-  await db.update(users).set({ creditBalance: 0 }).where(eq(users.id, noCreditsUserId));
+  const mainCredits: UserUpdate = { creditBalance: 100 };
+  const noCreditsBalance: UserUpdate = { creditBalance: 0 };
+  await db.update(users).set(mainCredits).where(eq(users.id, mainUserId));
+  await db.update(users).set(noCreditsBalance).where(eq(users.id, noCreditsUserId));
 
   await upsertProject(db, {
     id: E2E_PROJECT_ID,
