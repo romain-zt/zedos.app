@@ -1,5 +1,5 @@
 import { err, type Result } from '@repo/result';
-import type { ApplicationError } from '@shared/errors/application-error';
+import { ApplicationError, ErrorCode } from '@shared/errors/application-error';
 
 /**
  * Propagate an Err from a narrower success type to a use-case return type.
@@ -12,5 +12,11 @@ export function forwardErr(
   if (result.isErr()) {
     return err(result.error);
   }
-  throw new Error('forwardErr called on Ok result');
+  return err(
+    new ApplicationError({
+      code: ErrorCode.INTERNAL_SERVER_ERROR,
+      message: 'forwardErr called on Ok result',
+      statusCode: 500,
+    })
+  );
 }

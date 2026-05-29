@@ -1,6 +1,6 @@
 // Thin AI gateway/service boundary for future provider swapping
 
-import { createE2eAiStreamResponse, isE2eMode } from '@/lib/e2e-mode'
+import { createE2eAiStreamResponse, isE2eMode } from '@infrastructure/e2e/e2e-mode'
 
 // const API_URL = 'https://apps.abacus.ai/v1/chat/completions' // Abacus AI
 const API_URL = 'https://api.openai.com/v1/chat/completions'
