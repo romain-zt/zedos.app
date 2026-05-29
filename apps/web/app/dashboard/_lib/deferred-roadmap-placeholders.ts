@@ -2,8 +2,8 @@
  * Single source of truth for deferred (post-PRD) roadmap placeholders —
  * dashboard home + sidebar stay visually aligned.
  *
- * Product decision (2026-05-28):
- * - `test-first-workflows` remains out of v0 (coming in v1).
+ * Product decision (2026-05-29):
+ * - `test-first-workflows` (Task splitting) is in v0 — project nav, not deferred.
  * - `delivery` remains out of v0 (coming in v1).
  */
 
@@ -24,16 +24,6 @@ export type DeferredRoadmapPlaceholder = {
 }
 
 export const DEFERRED_ROADMAP_PLACEHOLDERS: readonly DeferredRoadmapPlaceholder[] = [
-  {
-    id: 'test-first-workflows',
-    title: 'Test-first workflows',
-    summary: 'Stories with tasks and prompts per task',
-    tooltip: 'Coming in v1 — tap to learn more.',
-    description:
-      'For each user story, generate a task list with one focused implementation prompt per task. Everything your AI coding agent needs to start building — in the right order, with the right context.',
-    why:
-      'AI coding agents work best with small, precise prompts. This step pre-chews your stories into bite-sized tasks so Cursor or any AI tool can ship them reliably, without you hand-holding every instruction.',
-  },
   {
     id: 'delivery',
     title: 'Delivery',

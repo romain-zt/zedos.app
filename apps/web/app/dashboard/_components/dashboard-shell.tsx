@@ -35,8 +35,7 @@ const NAV_ITEMS = [
 
 const PLACEHOLDER_ICONS: Record<string, LucideIcon> = {
   'services-feature-split': GitBranch,
-  'test-first-workflows': BarChart3,
-  'delivery': Zap,
+  delivery: Zap,
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -124,6 +123,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   { href: `/dashboard/projects/${workspaceProjectId}`, label: 'Workspace', icon: FileText, exact: true },
                   { href: `/dashboard/projects/${workspaceProjectId}/feature-split`, label: 'Feature split', icon: Layers, exact: false },
                   { href: `/dashboard/projects/${workspaceProjectId}/user-stories`, label: 'User stories', icon: GitBranch, exact: false },
+                  { href: `/dashboard/projects/${workspaceProjectId}/task-split`, label: 'Task splitting', icon: BarChart3, exact: false },
                 ] as const).map((sub) => {
                   const isSubActive = sub.exact
                     ? pathname === sub.href
