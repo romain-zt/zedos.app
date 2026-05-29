@@ -16,3 +16,4 @@ export * from './share';
 export * from './feedback';
 export * from './feature-split';
 export * from './user-stories';
+export * from './task-split';
