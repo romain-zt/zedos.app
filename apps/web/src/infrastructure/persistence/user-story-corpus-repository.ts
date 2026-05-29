@@ -184,9 +184,10 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
       }
 
       const now = new Date();
-      // Drizzle v0.38 type inference omits nullable timestamp() columns from .set(); use raw SQL.
+      const nowIso = now.toISOString();
+      // Drizzle v0.38 omits nullable timestamp() from .set(); libSQL raw SQL needs ISO strings, not Date.
       await db.execute(
-        sql`UPDATE user_story_corpora SET review_ready_at = ${now}, updated_at = ${now} WHERE id = ${corpusRow.id}`
+        sql`UPDATE user_story_corpora SET review_ready_at = ${nowIso}, updated_at = ${nowIso} WHERE id = ${corpusRow.id}`
       );
 
       const [updatedCorpusRow] = await db
