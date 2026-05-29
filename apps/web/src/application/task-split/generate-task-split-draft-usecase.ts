@@ -4,7 +4,7 @@ import { IPrdRepository } from '@domain/prd/prd-repository';
 import type { ITaskSplitGenerator } from '@domain/task-split/task-split-generator';
 import type { TaskSplitBundleDomain } from '@domain/task-split/task-split-bundle';
 import type { GenerateTaskSplitRequest } from '@repo/contracts/task-split';
-import { Result, ok, err } from '@repo/result';
+import { Result, err } from '@repo/result';
 import { ApplicationError, ExternalServiceError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
 
