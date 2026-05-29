@@ -32,17 +32,21 @@ export class SaveTaskSplitBundleUseCase {
       return err(new ValidationError('At least one task is required'));
     }
 
-    const tasks: SaveTaskInput[] = input.tasks.map((task) => ({
-      id: task.id,
-      sortOrder: task.sortOrder,
-      title: task.title,
-      promptBody: task.promptBody,
-      manual: task.manual ?? false,
-    }));
-
-    return this.bundleRepository.save(projectId, tasks, {
-      sourceUserStoryKey: input.sourceUserStoryKey,
-      storyTitleSnapshot: input.storyTitleSnapshot,
-    });
+    return this.bundleRepository.save(
+      projectId,
+      input.tasks.map(
+        (t): SaveTaskInput => ({
+          id: t.id,
+          sortOrder: t.sortOrder,
+          title: t.title,
+          promptBody: t.promptBody,
+          manual: t.manual ?? false,
+        })
+      ),
+      {
+        sourceUserStoryKey: input.sourceUserStoryKey,
+        storyTitleSnapshot: input.storyTitleSnapshot,
+      }
+    );
   }
 }
