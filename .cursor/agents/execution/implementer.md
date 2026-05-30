@@ -43,7 +43,7 @@ When invoked for `/implement <plan-path>`, `/fix <issue>`, or `/babysit`:
 5. Apply edits, restricted to the PIS's "Files to change".
 6. Route to verifier (`.cursor/agents/execution/verifier.md`).
 7. On verifier PASS → route to reviewer (`.cursor/agents/execution/reviewer.md`).
-8. On reviewer PASS or REVISE-without-criticals → route to /commit.
+8. On reviewer PASS or REVISE-without-criticals → produce Iteration Synthesis (`.cursor/templates/execution/iteration-synthesis.template.md`), then route to /commit.
 9. On verifier or reviewer FAIL/BLOCK → produce a fresh PIS targeting the failure; loop.
 ```
 
@@ -147,6 +147,8 @@ When invoked for `/babysit`:
 
 # Output shape
 
+## Per iteration (in-loop)
+
 Every iteration ends with:
 
 ```txt
@@ -159,6 +161,18 @@ Verifier verdict: PASS | FAIL — <first failing line if FAIL>
 Reviewer verdict: PASS | REVISE | BLOCK — <count of findings>
 
 Next step:
-- PASS / PASS → /commit, then /pr
+- PASS / PASS → if loop complete, produce Iteration Synthesis; else /commit is premature
 - FAIL or BLOCK → fresh Patch Intent Summary targeting <issue>
 ```
+
+## Loop completion (before /commit)
+
+When verifier PASS and reviewer PASS or REVISE-without-criticals and no further PIS is needed, produce an **Iteration Synthesis** using `.cursor/templates/execution/iteration-synthesis.template.md`.
+
+Read the parent User Story (Acceptance Criteria, Test Plan), Implementation Plan (Tests, Out of Scope), and Scope Slice (Dependencies, remaining acceptance-level outcome) to populate:
+
+1. **What shipped** — cumulative behavior and files across all iterations; map to AC rows.
+2. **How to QA** — automated commands + manual verification steps; edge cases.
+3. **Next steps** — `/commit` + `/pr` checklist; follow-up User Stories or Scope Slices; recommended status updates; suggested next command.
+
+Do not recommend `/commit` until the synthesis is emitted.

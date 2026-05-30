@@ -55,9 +55,19 @@ Larger or more architectural changes route to `/plan` + `/implement`.
 6. Apply edits restricted to PIS "Files to change".
 7. Route to verifier — typecheck / lint / test / build.
 8. On verifier PASS → route to reviewer + domain-guardian.
-9. On reviewer PASS or REVISE-without-criticals → recommend /commit + /pr.
+9. On reviewer PASS or REVISE-without-criticals → produce Iteration Synthesis (`.cursor/templates/execution/iteration-synthesis.template.md`), then recommend /commit + /pr.
 10. On verifier FAIL or reviewer BLOCK → fresh PIS targeting the failure; loop.
 ```
+
+### After loop completion
+
+Same synthesis as `/implement` — adapted for Plan-Lite scope:
+
+| Section | Content |
+|---|---|
+| **What shipped** | Fix statement + reproducer now passing; files changed; tests added |
+| **How to QA** | Reproducer steps (now expected to pass) + regression spot-checks |
+| **Next steps** | `/commit` + `/pr`; adjacent issues left in Plan-Lite Out of Scope |
 
 ### Plan-Lite shape (chat artifact)
 
