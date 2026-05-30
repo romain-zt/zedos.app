@@ -48,20 +48,37 @@ export async function generateTasksFromStories(
     return err(new ExternalServiceError('AI', message, 502));
   }
 
-  let raw: unknown;
+  let envelope: unknown;
   try {
-    raw = await aiResponse.json();
+    envelope = await aiResponse.json();
   } catch (e) {
     const message = e instanceof Error ? e.message : 'unknown error';
     logger.error('Failed to parse AI response JSON for task split', { error: message });
     return err(new ExternalServiceError('AI', 'Failed to parse AI response', 502));
   }
 
-  const parsed = GenerateTaskSplitAiResponseSchema.safeParse(raw);
-  if (!parsed.success) {
-    logger.error('Task split AI response validation failed', { errors: parsed.error.flatten() });
+  const text: string =
+    typeof envelope === 'object' && envelope !== null && 'choices' in envelope
+      ? String(
+          (envelope as { choices?: { message?: { content?: string } }[] }).choices?.[0]?.message
+            ?.content ?? '{}'
+        )
+      : '{}';
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'unknown error';
+    logger.error('AI returned non-JSON content for task split', { text, error: message });
+    return err(new ExternalServiceError('AI', 'AI returned invalid JSON for task split', 502));
+  }
+
+  const validated = GenerateTaskSplitAiResponseSchema.safeParse(parsed);
+  if (!validated.success) {
+    logger.error('Task split AI response validation failed', { errors: validated.error.flatten() });
     return err(new ExternalServiceError('AI', 'Invalid AI response shape for task split', 502));
   }
 
-  return ok(parsed.data.tasks);
+  return ok(validated.data.tasks);
 }
