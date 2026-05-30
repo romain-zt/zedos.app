@@ -24,8 +24,7 @@ function isMissingTaskSplitTables(error: unknown): boolean {
 type BundleRow = {
   id: string;
   project_id: string;
-  story_title: string | null;
-  story_body: string | null;
+  story_title_snapshot: string | null;
   locked_at: Date;
   task_count: number;
 };
@@ -42,8 +41,8 @@ function mapBundleSummary(row: BundleRow, tasks: ExportTask[]): ExportEligibleBu
   return {
     id: row.id,
     projectId: row.project_id,
-    storyTitle: row.story_title ?? 'Untitled story',
-    storyBody: row.story_body ?? '',
+    storyTitle: row.story_title_snapshot ?? 'Untitled story',
+    storyBody: '',
     lockedAt: row.locked_at,
     taskCount: row.task_count,
     tasks,
@@ -77,14 +76,12 @@ export class DrizzleDeliveryExportRepository implements IDeliveryExportRepositor
         SELECT
           b.id,
           b.project_id,
-          b.story_title,
-          b.story_body,
+          b.story_title_snapshot,
           b.locked_at,
           (
             SELECT COUNT(*)::int
             FROM task_split_tasks t
             WHERE t.bundle_id = b.id
-              AND t.deleted_at IS NULL
           ) AS task_count
         FROM task_split_bundles b
         WHERE b.project_id = ${projectId}
@@ -119,14 +116,12 @@ export class DrizzleDeliveryExportRepository implements IDeliveryExportRepositor
         SELECT
           b.id,
           b.project_id,
-          b.story_title,
-          b.story_body,
+          b.story_title_snapshot,
           b.locked_at,
           (
             SELECT COUNT(*)::int
             FROM task_split_tasks t
             WHERE t.bundle_id = b.id
-              AND t.deleted_at IS NULL
           ) AS task_count
         FROM task_split_bundles b
         WHERE b.project_id = ${projectId}
@@ -154,7 +149,6 @@ export class DrizzleDeliveryExportRepository implements IDeliveryExportRepositor
           ids.map((id) => sql`${id}`),
           sql`, `
         )})
-          AND t.deleted_at IS NULL
         ORDER BY t.bundle_id, t.sort_order ASC
       `);
 
