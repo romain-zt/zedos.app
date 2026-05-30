@@ -18,9 +18,9 @@
 ### Starting the dev environment
 
 1. Start Docker if not running: `sudo dockerd &>/dev/null &`
-2. Start PostgreSQL: `sudo docker compose -f apps/web/docker-compose.yml up -d postgres`
-3. Wait for health check: container should report `(healthy)` within ~10s
-4. Run migrations (idempotent): `cd packages/db && pnpm db:migrate`
+2. Start PostgreSQL: `docker compose -f apps/web/docker-compose.yml up -d postgres --wait`
+3. Run migrations (idempotent, Drizzle CLI only): `cd packages/db && pnpm db:migrate`
+   - Do not hand-write migration SQL; use `pnpm generate` after schema edits (see `.cursor/rules/75-drizzle.mdc` §4).
 5. Start dev server: `pnpm dev` (from workspace root)
 
 ### Environment files

@@ -31,3 +31,13 @@ test('migration 0003 allows null password_hash for better-auth users', () => {
   const sql = fs.readFileSync(sqlPath, 'utf8');
   assert.match(sql, /password_hash/i);
 });
+
+test('migration 0010 defines task split bundle and task tables', () => {
+  const sqlPath = path.join(__dirname, '0010_task_split_tables.sql');
+  assert.ok(fs.existsSync(sqlPath), `missing migration file: ${sqlPath}`);
+  const sql = fs.readFileSync(sqlPath, 'utf8');
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS "task_split_bundles"/);
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS "task_split_tasks"/);
+  assert.match(sql, /task_split_bundles_project_id_projects_id_fk/);
+  assert.match(sql, /task_split_tasks_bundle_id_task_split_bundles_id_fk/);
+});

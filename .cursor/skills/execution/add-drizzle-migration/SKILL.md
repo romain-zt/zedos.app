@@ -13,7 +13,7 @@ For pre-migration Prisma changes, the equivalent skill is "add-prisma-migration"
 ## When to use
 
 - The Plan adds, modifies, or drops a column / table / index.
-- The Plan touches `packages/database/src/schema/`.
+- The Plan touches `packages/db/src/schema/`.
 - The codebase is post-migration (Phase 1+ of `docs/retro/zedos-monorepo-retro.md`).
 
 ## Read first
@@ -25,10 +25,10 @@ For pre-migration Prisma changes, the equivalent skill is "add-prisma-migration"
 
 ### Step 1 — Edit the schema file
 
-Schema lives under `packages/database/src/schema/<context>.ts`. Edit per `75-drizzle.mdc` §3 conventions:
+Schema lives under `packages/db/src/schema/<context>.ts`. Edit per `75-drizzle.mdc` §3 conventions:
 
 ```typescript
-// packages/database/src/schema/credits.ts
+// packages/db/src/schema/credits.ts
 import { pgTable, uuid, integer, timestamp, text, index } from 'drizzle-orm/pg-core';
 import { users } from './auth';
 
@@ -64,14 +64,14 @@ Hard rules:
 - Named indexes: `<table-prefix>_<column>_idx`.
 - `correlation_id` on every event/transaction table.
 
-### Step 2 — Generate the migration
+### Step 2 — Generate the migration (required — never hand-write SQL)
 
 ```bash
-cd packages/database
-pnpm drizzle-kit generate
+cd packages/db
+pnpm generate
 ```
 
-Produces `packages/database/src/migrations/NNNN_<auto-name>.sql`. Rename `NNNN_<auto-name>.sql` to `NNNN_<descriptive-name>.sql` if the auto-name is generic.
+Runs `drizzle-kit generate` (with duplicate-migration guard). Produces `packages/db/src/migrations/NNNN_<auto-name>.sql` and `meta/NNNN_snapshot.json`. Rename the SQL file only when the auto-name is unusably generic; do not edit `_journal.json` by hand.
 
 ### Step 3 — Inspect the generated migration
 
@@ -94,9 +94,12 @@ Never collapse expand–migrate–contract into a single migration.
 
 ### Step 4 — Apply locally + run tests
 
+Start Postgres via `apps/web/docker-compose.yml` (not a host-installed Postgres):
+
 ```bash
-pnpm db:migrate          # applies migrations to local dev DB
-pnpm test:integration    # runs persistence integration tests against the new schema
+docker compose -f apps/web/docker-compose.yml up -d postgres --wait
+cd packages/db && pnpm db:migrate
+cd ../.. && pnpm --filter @repo/web test:integration
 ```
 
 If integration tests fail, **fix the migration** (edit the SQL or regenerate) — do not patch tests around a broken migration.
@@ -141,8 +144,10 @@ Route to `verifier`.
 
 ## Hard rules
 
+- **CLI-only migrations:** `pnpm generate` in `packages/db` — never hand-write `NNNN_*.sql` or `_journal.json` entries.
 - Forward-only. Down migrations are not maintained in v0.
 - One logical change per migration.
 - Multi-step expand–migrate–contract for column drops/renames.
 - Concurrent integration test mandatory for credit / payment / quota schema changes.
 - Schema migration PRs touch only schema + generated migration + minimal adapter wiring.
+- Apply with `pnpm db:migrate` against the compose Postgres URL (`75-drizzle.mdc` §4.3).

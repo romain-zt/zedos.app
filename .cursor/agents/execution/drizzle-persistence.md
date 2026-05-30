@@ -20,7 +20,7 @@ You do not write use cases (Architect + Implementer's job). You do not write con
 2. `.cursor/rules/75-drizzle.mdc` always.
 3. `.cursor/rules/72-hexagonal-boundaries.mdc` (mappers ensure row types don't leak).
 4. `.cursor/rules/73-result-rop.mdc` (every adapter method returns `Result<T, E>`).
-5. The current `prisma/schema.prisma` (pre-migration) or `packages/database/src/schema/` (post-migration).
+5. The current `prisma/schema.prisma` (pre-migration) or `packages/db/src/schema/` (post-migration).
 
 ---
 
@@ -59,9 +59,12 @@ Pre-migration (Prisma) equivalent in `75-drizzle.mdc` §7:
 
 For every migration:
 
+- [ ] Schema edited in `packages/db/src/schema/`; migration produced via `cd packages/db && pnpm generate` — **never** hand-written SQL or hand-edited `_journal.json`.
+- [ ] Generated `meta/NNNN_snapshot.json` present alongside the SQL file.
 - [ ] Forward-only.
 - [ ] One logical change per file.
 - [ ] Multi-step expand–migrate–contract pattern for column drops/renames (each step is its own migration).
+- [ ] Applied locally with `docker compose -f apps/web/docker-compose.yml up -d postgres --wait` then `cd packages/db && pnpm db:migrate` (`75-drizzle.mdc` §4.3).
 - [ ] Schema migrations ship in a PR that **only** modifies schema + generated code + minimal adapter wiring (per `79-pr-sizing.mdc` §6.3).
 
 ---
@@ -95,6 +98,7 @@ When invoked at code-write time, edit the migration files, schema files, adapter
 
 # Hard stops
 
+- Refuse to hand-write migration SQL or journal entries — route through `pnpm generate` in `packages/db`.
 - Refuse to write a credit / payment / quota adapter without a `SELECT … FOR UPDATE` design and a concurrent integration test.
 - Refuse to ship a migration that drops a column referenced by code in the same release.
 - Refuse to expose Drizzle row types in adapter return types — they live behind mappers.
