@@ -54,7 +54,7 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1747113697000,
+      "when": 1778615760001,
       "tag": "0007_fix_updated_at_defaults",
       "breakpoints": true
     },
@@ -75,7 +75,7 @@
     {
       "idx": 10,
       "version": "7",
-      "when": 1748534400000,
+      "when": 1779871200001,
       "tag": "0010_task_split_tables",
       "breakpoints": true
     }
