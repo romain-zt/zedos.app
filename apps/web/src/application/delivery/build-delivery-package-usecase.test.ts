@@ -87,13 +87,16 @@ describe('BuildDeliveryPackageUseCase', () => {
 });
 
 describe('PD-001 package files (assembler)', () => {
-  it('includes WORK_QUEUE rows and per-story markdown', () => {
-    const files = buildPackageFiles([sampleBundle()]);
+  it('includes WORK_QUEUE rows and per-task prompt files', () => {
+    const bundle = sampleBundle();
+    const files = buildPackageFiles([bundle]);
     const workQueue = files.find((f) => f.path === 'WORK_QUEUE.md');
-    const storyFile = files.find((f) => f.path.includes('docs/execution/user-stories/'));
+    // Task prompt files live at {story-slug}/{n}-{task-slug}.md
+    const taskFile = files.find((f) => f.path.endsWith('.md') && !f.path.startsWith('WORK_QUEUE') && !f.path.startsWith('.cursor'));
     expect(workQueue?.content).toContain('DEL-');
     expect(workQueue?.content).toContain('Add checkout route');
-    expect(storyFile?.content).toContain('Implement POST /api/checkout');
-    expect(storyFile?.content).toContain('Wire Stripe session');
+    expect(taskFile).toBeDefined();
+    expect(taskFile?.content).toContain('Implement POST /api/checkout');
+    expect(files.find((f) => f.path.includes('wire-stripe-session'))?.content).toContain('Wire Stripe session');
   });
 });

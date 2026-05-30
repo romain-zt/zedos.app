@@ -12,7 +12,7 @@ import type {
 } from '@domain/task-split/task-split-bundle';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, DatabaseError, NotFoundError } from '@shared/errors/application-error';
-import { db, taskSplitBundles, taskSplitTasks, eq, asc, sql } from '@repo/db';
+import { db, taskSplitBundles, taskSplitTasks, eq, asc, sql, isNull, isNotNull, and } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'TaskSplitBundleRepository' });
@@ -51,10 +51,12 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
     projectId: string
   ): Promise<Result<TaskSplitBundleDomain | null, ApplicationError>> {
     try {
+      // Prefer the unlocked bundle so the task-split UI always shows
+      // the editable bundle (locked bundles are committed to delivery).
       const [bundleRow] = await db
         .select()
         .from(taskSplitBundles)
-        .where(eq(taskSplitBundles.projectId, projectId));
+        .where(and(eq(taskSplitBundles.projectId, projectId), isNull(taskSplitBundles.lockedAt)));
 
       if (!bundleRow) return ok(null);
 
@@ -78,10 +80,12 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
   ): Promise<Result<TaskSplitBundleDomain, ApplicationError>> {
     try {
       const saved = await db.transaction(async (tx) => {
+        // Only reuse unlocked bundles — locked bundles represent completed stories
+        // and must remain intact. A save after all bundles are locked creates a fresh one.
         const [existing] = await tx
           .select()
           .from(taskSplitBundles)
-          .where(eq(taskSplitBundles.projectId, projectId));
+          .where(and(eq(taskSplitBundles.projectId, projectId), isNull(taskSplitBundles.lockedAt)));
 
         const now = new Date();
         const nowIso = now.toISOString();
@@ -150,10 +154,11 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
 
   async unlock(projectId: string): Promise<Result<TaskSplitBundleDomain, ApplicationError>> {
     try {
+      // Find the most recently locked bundle for the project
       const [bundleRow] = await db
         .select()
         .from(taskSplitBundles)
-        .where(eq(taskSplitBundles.projectId, projectId));
+        .where(and(eq(taskSplitBundles.projectId, projectId), isNotNull(taskSplitBundles.lockedAt)));
 
       if (!bundleRow) {
         return err(new NotFoundError('Task split bundle not found'));
@@ -187,10 +192,11 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
 
   async lock(projectId: string): Promise<Result<TaskSplitBundleDomain, ApplicationError>> {
     try {
+      // Lock the unlocked bundle (there should be exactly one unlocked at a time)
       const [bundleRow] = await db
         .select()
         .from(taskSplitBundles)
-        .where(eq(taskSplitBundles.projectId, projectId));
+        .where(and(eq(taskSplitBundles.projectId, projectId), isNull(taskSplitBundles.lockedAt)));
 
       if (!bundleRow) {
         return err(new NotFoundError('Task split bundle not found'));

@@ -7,7 +7,18 @@ import { TaskSplitWorkspace } from './_components/task-split-workspace';
 
 interface TaskSplitPageProps {
   params: { id: string };
-  searchParams: { storyKey?: string; storyTitle?: string };
+  searchParams: { storyKey?: string; storyTitle?: string; storyTitles?: string };
+}
+
+function parseBatchStoryTitles(raw: string | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.filter((t): t is string => typeof t === 'string');
+  } catch {
+    // ignore
+  }
+  return [];
 }
 
 export default async function TaskSplitPage({ params, searchParams }: TaskSplitPageProps) {
@@ -20,6 +31,7 @@ export default async function TaskSplitPage({ params, searchParams }: TaskSplitP
   if (result.isErr()) redirect('/dashboard/projects');
 
   const project = result.unwrap();
+  const batchStoryTitles = parseBatchStoryTitles(searchParams.storyTitles);
 
   return (
     <TaskSplitWorkspace
@@ -27,6 +39,7 @@ export default async function TaskSplitPage({ params, searchParams }: TaskSplitP
       projectName={project.name}
       sourceUserStoryKey={searchParams.storyKey}
       storyTitleSnapshot={searchParams.storyTitle}
+      batchStoryTitles={batchStoryTitles.length > 0 ? batchStoryTitles : undefined}
     />
   );
 }

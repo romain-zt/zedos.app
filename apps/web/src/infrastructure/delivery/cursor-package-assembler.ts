@@ -1,5 +1,11 @@
 /**
  * Assembles PD-001 delivery artifacts and ZIP archive (in-memory).
+ *
+ * ZIP layout:
+ *   {story-slug}/
+ *     01-{task-slug}.md   ← full prompt for each task
+ *   WORK_QUEUE.md
+ *   .cursor/README.md
  */
 
 import archiver from 'archiver';
@@ -13,6 +19,16 @@ export type PackageFile = {
   content: string;
 };
 
+/** Converts a string to a safe directory/file slug (lowercase, hyphens, no specials). */
+export function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    || 'untitled';
+}
+
 const WORK_QUEUE_HEADER =
   '| ID | Type | Parent | Status | Priority | NEED_HUMAN | NEED_UPDATE | Blocked By | Next Action |\n' +
   '|---|---|---|---|:---:|:---:|:---:|---|---|\n';
@@ -20,45 +36,30 @@ const WORK_QUEUE_HEADER =
 export function buildWorkQueueMarkdown(bundles: ExportEligibleBundle[]): string {
   const rows: string[] = [WORK_QUEUE_HEADER];
   for (const bundle of bundles) {
+    const storySlug = toSlug(bundle.storyTitle);
     for (const task of bundle.tasks) {
       const rowId = `DEL-${bundle.id.slice(0, 8)}-T${task.sortOrder}`;
       const parent = bundle.storyTitle.replace(/\|/g, '\\|');
+      const taskSlug = `${String(task.sortOrder + 1).padStart(2, '0')}-${toSlug(task.title)}`;
       rows.push(
-        `| ${rowId} | Task | ${parent} | queued | P2 | false | false | — | ${task.title.replace(/\|/g, '\\|')} |\n`
+        `| ${rowId} | Task | ${parent} | queued | P2 | false | false | — | [${task.title.replace(/\|/g, '\\|')}](${storySlug}/${taskSlug}.md) |\n`
       );
     }
   }
   return `# WORK_QUEUE — Zedos delivery export\n\n${rows.join('')}`;
 }
 
-export function buildStoryMarkdown(bundle: ExportEligibleBundle): string {
-  const lines: string[] = [
-    `# User Story: ${bundle.storyTitle}`,
+export function buildTaskMarkdown(bundle: ExportEligibleBundle, taskIndex: number): string {
+  const task = bundle.tasks[taskIndex];
+  if (!task) return '';
+  return [
+    `# Task: ${task.title}`,
     '',
-    '## Status',
+    `> Story: **${bundle.storyTitle}**`,
     '',
-    '`ready-for-implementation` (exported from Zedos)',
+    task.promptBody.trim(),
     '',
-    '## Story',
-    '',
-    bundle.storyBody.trim() || '_No narrative body on bundle snapshot._',
-    '',
-    '## Tasks and prompts',
-    '',
-  ];
-
-  for (const task of bundle.tasks) {
-    lines.push(
-      `### ${task.sortOrder + 1}. ${task.title}`,
-      '',
-      '```text',
-      task.promptBody,
-      '```',
-      ''
-    );
-  }
-
-  return lines.join('\n');
+  ].join('\n');
 }
 
 export function buildPackageFiles(bundles: ExportEligibleBundle[]): PackageFile[] {
@@ -74,19 +75,24 @@ export function buildPackageFiles(bundles: ExportEligibleBundle[]): PackageFile[
         '',
         'Drop this folder into your repository root and open it in Cursor.',
         '',
-        '- Start from `WORK_QUEUE.md` for ordered tasks.',
-        '- Per-story detail lives under `docs/execution/user-stories/`.',
+        '- Start from `WORK_QUEUE.md` for the ordered task list.',
+        '- Each story has its own folder. Open the task `.md` files for the full implementation prompt.',
         '',
       ].join('\n'),
     },
   ];
 
   for (const bundle of bundles) {
-    const safeId = bundle.id.replace(/[^a-zA-Z0-9-_]/g, '-');
-    files.push({
-      path: `docs/execution/user-stories/${safeId}.md`,
-      content: buildStoryMarkdown(bundle),
-    });
+    const storySlug = toSlug(bundle.storyTitle);
+    for (let i = 0; i < bundle.tasks.length; i++) {
+      const task = bundle.tasks[i];
+      if (!task) continue;
+      const taskSlug = `${String(task.sortOrder + 1).padStart(2, '0')}-${toSlug(task.title)}`;
+      files.push({
+        path: `${storySlug}/${taskSlug}.md`,
+        content: buildTaskMarkdown(bundle, i),
+      });
+    }
   }
 
   return files;

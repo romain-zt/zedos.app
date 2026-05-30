@@ -39,7 +39,9 @@ export function DeliveryExportWorkspace({ projectId, projectName }: Props) {
       if (!res.ok) throw new Error('Could not load export-ready bundles');
       const parsed = ExportEligibleListResponseSchema.safeParse(await res.json());
       if (!parsed.success) throw new Error('Unexpected response');
-      setBundles(parsed.data.bundles);
+      const loaded = parsed.data.bundles;
+      setBundles(loaded);
+      setSelected(new Set(loaded.map((b) => b.id)));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load bundles');
     } finally {

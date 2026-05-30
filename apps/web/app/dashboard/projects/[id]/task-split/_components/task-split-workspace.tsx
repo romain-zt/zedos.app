@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { ChevronRight } from 'lucide-react';
 import type { TaskSplitBundleDTO, TaskSplitTaskDTO } from '@repo/contracts/task-split';
 
 interface GenerateOptions {
@@ -28,9 +29,13 @@ interface Props {
   /** Optional context passed from user stories page */
   sourceUserStoryKey?: string;
   storyTitleSnapshot?: string;
+  /** When set, drives a batch workflow through multiple stories */
+  batchStoryTitles?: string[];
 }
 
-export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey, storyTitleSnapshot }: Props) {
+export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey, storyTitleSnapshot, batchStoryTitles }: Props) {
+  const [batchIndex, setBatchIndex] = useState(0);
+  const activeBatchTitle = batchStoryTitles?.[batchIndex];
   const [bundle, setBundle] = useState<TaskSplitBundleDTO | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +73,14 @@ export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey,
 
   useEffect(() => { load(); }, [load]);
 
+  // When advancing to the next batch story, reload the current (now empty) bundle slot
+  useEffect(() => {
+    if (isBatch && batchIndex > 0) {
+      load();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchIndex]);
+
   function addTask() {
     setTasks((prev) => [
       ...prev,
@@ -101,7 +114,10 @@ export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey,
       const res = await fetch(apiBase, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tasks: tasks.map((t, i) => ({ ...t, sortOrder: i })) }),
+        body: JSON.stringify({
+          tasks: tasks.map((t, i) => ({ ...t, sortOrder: i })),
+          ...(activeBatchTitle ? { storyTitleSnapshot: activeBatchTitle } : storyTitleSnapshot ? { storyTitleSnapshot } : {}),
+        }),
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
@@ -161,7 +177,7 @@ export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sourceUserStoryKey: opts?.sourceUserStoryKey ?? sourceUserStoryKey,
-          storyTitleSnapshot: opts?.storyTitleSnapshot ?? storyTitleSnapshot,
+          storyTitleSnapshot: opts?.storyTitleSnapshot ?? activeBatchTitle ?? storyTitleSnapshot,
         }),
       });
       if (!res.ok) {
@@ -186,6 +202,17 @@ export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey,
 
   const isLocked = Boolean(bundle?.lockedAt);
   const userStoriesHref = `/dashboard/projects/${projectId}/user-stories`;
+  const isBatch = batchStoryTitles && batchStoryTitles.length > 0;
+  const isLastBatchStory = isBatch && batchIndex >= (batchStoryTitles?.length ?? 0) - 1;
+
+  function advanceBatch() {
+    if (!isLastBatchStory) {
+      setBatchIndex((i) => i + 1);
+      setBundle(null);
+      setTasks([]);
+      setError(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -206,6 +233,53 @@ export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey,
         <p className="mt-1 text-sm text-muted-foreground">{projectName}</p>
       </div>
 
+      {isBatch && (
+        <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">
+              Story {batchIndex + 1} of {batchStoryTitles?.length}
+            </p>
+            {!isLastBatchStory && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="min-h-11 gap-1"
+                onClick={advanceBatch}
+              >
+                Next story <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+            {isLastBatchStory && (
+              <Button asChild size="sm" variant="ghost" className="min-h-11">
+                <Link href={`/dashboard/projects/${projectId}/delivery`}>Go to delivery →</Link>
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {batchStoryTitles?.map((title, i) => (
+              <span
+                key={i}
+                className={`rounded px-2 py-0.5 text-xs ${
+                  i === batchIndex
+                    ? 'bg-primary text-primary-foreground'
+                    : i < batchIndex
+                    ? 'bg-muted line-through text-muted-foreground'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                {title}
+              </span>
+            ))}
+          </div>
+          {activeBatchTitle && (
+            <p className="text-sm text-muted-foreground">
+              Generating tasks for: <strong>{activeBatchTitle}</strong>
+            </p>
+          )}
+        </div>
+      )}
+
       {error && (
         <p className="rounded border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
@@ -216,11 +290,18 @@ export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey,
         <div className="flex flex-col gap-2 rounded-md border bg-muted/40 px-3 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <span className="flex items-center gap-2">
             <Badge variant="secondary">Locked</Badge>
-            <span>This bundle is export-ready. Editing requires a new save.</span>
+            <span>This bundle is export-ready.</span>
           </span>
-          <Button asChild size="sm" className="min-h-11 shrink-0">
-            <Link href={`/dashboard/projects/${projectId}/delivery`}>Open delivery export</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {isBatch && !isLastBatchStory && (
+              <Button size="sm" variant="outline" className="min-h-11" onClick={advanceBatch}>
+                Next story <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            )}
+            <Button asChild size="sm" className="min-h-11 shrink-0">
+              <Link href={`/dashboard/projects/${projectId}/delivery`}>Open delivery export</Link>
+            </Button>
+          </div>
         </div>
       )}
 
@@ -231,8 +312,8 @@ export function TaskSplitWorkspace({ projectId, projectName, sourceUserStoryKey,
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {storyTitleSnapshot
-                ? `Generating tasks from: "${storyTitleSnapshot}"`
+              {(activeBatchTitle ?? storyTitleSnapshot)
+                ? `Generating tasks for: "${activeBatchTitle ?? storyTitleSnapshot}"`
                 : 'Generate tasks from your PRD with AI, add them manually, or return to user stories.'}
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">

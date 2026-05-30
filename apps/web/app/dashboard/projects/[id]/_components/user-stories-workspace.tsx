@@ -17,6 +17,7 @@ import {
   Sparkles,
   Trash2,
   Wand2,
+  Zap,
 } from 'lucide-react';
 import {
   FeatureSplitListResponseSchema,
@@ -702,6 +703,37 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                     <span className="ml-2">Draft with AI</span>
                   </Button>
                 </div>
+                {batchClusterIds.length > 0 && (
+                  <div className="border-t border-primary/10 pt-3">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Ready to split into tasks? Open task-split with all selected stories pre-loaded.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      asChild
+                      className="min-h-[44px] w-full sm:w-auto"
+                    >
+                      <Link
+                        href={`/dashboard/projects/${projectId}/task-split?storyTitles=${encodeURIComponent(
+                          JSON.stringify(
+                            batchClusterIds
+                              .map((id) => {
+                                const c = clusters.find((cl) => cl.id === id);
+                                return c ? c.label : null;
+                              })
+                              .filter(Boolean)
+                          )
+                        )}`}
+                      >
+                        <Zap className="h-4 w-4" />
+                        <span className="ml-2">
+                          Split all into tasks ({batchClusterIds.length})
+                        </span>
+                      </Link>
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
