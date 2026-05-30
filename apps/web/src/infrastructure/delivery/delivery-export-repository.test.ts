@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -16,19 +17,24 @@ vi.mock('@repo/db', async (importOriginal) => {
 
 import { DrizzleDeliveryExportRepository } from './delivery-export-repository';
 
-function sqlText(query: unknown): string {
-  if (!query || typeof query !== 'object') return '';
-  const chunks = (query as { queryChunks?: unknown[] }).queryChunks;
-  if (!Array.isArray(chunks)) return String(query);
-  return chunks.map((chunk) => (typeof chunk === 'string' ? chunk : '')).join('');
-}
+const repositorySource = readFileSync(
+  new URL('./delivery-export-repository.ts', import.meta.url),
+  'utf8'
+);
 
 describe('DrizzleDeliveryExportRepository', () => {
   beforeEach(() => {
     mocks.execute.mockReset();
   });
 
-  it('queries task_split schema columns when listing eligible bundles', async () => {
+  it('uses actual task_split column names in SQL', () => {
+    expect(repositorySource).toContain('story_title_snapshot');
+    expect(repositorySource).not.toMatch(/\bstory_title\b(?!_snapshot)/);
+    expect(repositorySource).not.toContain('story_body');
+    expect(repositorySource).not.toContain('deleted_at');
+  });
+
+  it('maps story_title_snapshot rows when listing eligible bundles', async () => {
     mocks.execute.mockResolvedValue([
       {
         id: 'bundle-1',
@@ -48,15 +54,9 @@ describe('DrizzleDeliveryExportRepository', () => {
     expect(bundles[0]?.storyTitle).toBe('Checkout flow');
     expect(bundles[0]?.storyBody).toBe('');
     expect(bundles[0]?.taskCount).toBe(2);
-
-    const query = sqlText(mocks.execute.mock.calls[0]?.[0]);
-    expect(query).toContain('story_title_snapshot');
-    expect(query).not.toContain('story_title');
-    expect(query).not.toContain('story_body');
-    expect(query).not.toContain('deleted_at');
   });
 
-  it('loads tasks without deleted_at filter when fetching bundles by id', async () => {
+  it('loads tasks when fetching bundles by id', async () => {
     mocks.execute
       .mockResolvedValueOnce([
         {
@@ -84,11 +84,5 @@ describe('DrizzleDeliveryExportRepository', () => {
     const bundles = result.unwrap();
     expect(bundles[0]?.tasks).toHaveLength(1);
     expect(bundles[0]?.tasks[0]?.title).toBe('Add route');
-
-    const bundleQuery = sqlText(mocks.execute.mock.calls[0]?.[0]);
-    const taskQuery = sqlText(mocks.execute.mock.calls[1]?.[0]);
-    expect(bundleQuery).toContain('story_title_snapshot');
-    expect(bundleQuery).not.toContain('deleted_at');
-    expect(taskQuery).not.toContain('deleted_at');
   });
 });
