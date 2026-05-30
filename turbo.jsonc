@@ -1,11 +1,15 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  // New migrations must bust build cache so deploy runs db:migrate in build.cjs.
+  "globalDependencies": ["packages/db/src/migrations/**"],
   // Platform / app env vars must be listed here or Turbo strips them from tasks (Vercel + local CI).
   "globalEnv": [
     "NODE_ENV",
     "VERCEL",
     "VERCEL_URL",
+    "RUN_DB_MIGRATE",
+    "SKIP_DB_MIGRATE",
     "DATABASE_URL",
     "TEST_DATABASE_URL",
     "NEXTAUTH_SECRET",
