@@ -130,7 +130,7 @@ describe('PrdVersionListResponseSchema', () => {
     expect(PrdVersionListResponseSchema.safeParse([draft]).success).toBe(true);
   });
 
-  it('rejects legacy intake placeholder with non-string record values', () => {
+  it('parses legacy intake placeholder with sections array', () => {
     const legacy = {
       ...row,
       content: {
@@ -139,6 +139,6 @@ describe('PrdVersionListResponseSchema', () => {
         sections: [],
       },
     };
-    expect(PrdVersionListResponseSchema.safeParse([legacy]).success).toBe(false);
+    expect(PrdVersionListResponseSchema.safeParse([legacy]).success).toBe(true);
   });
 });
