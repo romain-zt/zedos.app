@@ -66,12 +66,32 @@ interface PrRow {
   number: number;
   title: string;
   headRefName: string;
+  headRefOid: string;
   isDraft: boolean;
   url: string;
   baseRefName: string;
   createdAt: string;
   mergeable: string;
   mergeStateStatus: string;
+}
+
+function requiredChecksPass(pr: PrRow): boolean {
+  try {
+    execSync("bash .github/scripts/wait-for-required-pr-checks.sh", {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        REPO: repo,
+        PR_NUMBER: String(pr.number),
+        PR_SHA: pr.headRefOid,
+        REQUIRED_CHECKS: "quality,playwright",
+        WAIT_MODE: "strict",
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 interface StatusJson {
@@ -81,7 +101,7 @@ interface StatusJson {
 
 function listOpenTrackingPRs(): PrRow[] {
   const raw = gh(
-    `pr list --repo "${repo}" --state open --json number,title,headRefName,isDraft,url,baseRefName,createdAt,mergeable,mergeStateStatus`,
+    `pr list --repo "${repo}" --state open --json number,title,headRefName,headRefOid,isDraft,url,baseRefName,createdAt,mergeable,mergeStateStatus`,
   );
   const all = JSON.parse(raw) as PrRow[];
   return all.filter((pr) => extractStepFromTitle(pr.title) !== null && pr.baseRefName === trackingBase);
@@ -195,6 +215,13 @@ async function main(): Promise<void> {
 
     if (pr.mergeable !== "MERGEABLE" || pr.mergeStateStatus === "BLOCKED") {
       console.log(`  ⚠️  PR #${pr.number} (${step}) is not mergeable (mergeable=${pr.mergeable}, state=${pr.mergeStateStatus}) — skipping auto-merge.`);
+      continue;
+    }
+
+    if (!requiredChecksPass(pr)) {
+      console.log(
+        `  ⚠️  PR #${pr.number} (${step}) — CI quality or E2E playwright not green — skipping auto-merge.`,
+      );
       continue;
     }
 

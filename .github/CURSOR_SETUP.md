@@ -36,7 +36,7 @@ In **Settings → Branches → Add rule** for `main`:
 | Setting | Value |
 |---|---|
 | Require a pull request before merging | ✅ |
-| Require status checks to pass before merging | ✅ — add `quality` (CI: typecheck, lint, test, build) and optionally `playwright` (E2E) |
+| Require status checks to pass before merging | ✅ — **required:** `quality` (CI) and `playwright` (E2E) |
 | Require branches to be up to date before merging | ✅ |
 | Restrict who can push to matching branches | ✅ (only the bot / admins) |
 
@@ -67,10 +67,13 @@ gh pr create --draft --title "test: Cursor PR automation" --body "Testing automa
 ```
 
 The workflow will:
-1. Detect the draft, call `gh pr ready` to undraft it
-2. Spin up a Cursor cloud agent against the repo
-3. Read `docs/state/HANDOFF.md`, review the diff, check rules
-4. Approve and squash-merge if everything passes
+1. **Wait** until `quality` (CI) and `playwright` (E2E) checks pass on the PR head
+2. Detect the draft, call `gh pr ready` to undraft it (if needed)
+3. Spin up a Cursor cloud agent against the repo
+4. Read `docs/state/HANDOFF.md`, review the diff, check rules
+5. Approve and squash-merge **only if** checks are still green and review passes
+
+`pr-ready.yml` and `pr-cascade.yml` use the same gate before auto-merging tracking or stacked PRs.
 
 Watch the Actions tab for live output.
 

@@ -116,4 +116,29 @@ describe('PrdVersionListResponseSchema', () => {
         .success,
     ).toBe(false);
   });
+
+  it('parses draft placeholder content from ensure-first PRD version', () => {
+    const draft = {
+      ...row,
+      status: 'draft',
+      content: {
+        title: 'Draft PRD',
+        version_summary: 'Initial in-app placeholder',
+        sections: [],
+      },
+    };
+    expect(PrdVersionListResponseSchema.safeParse([draft]).success).toBe(true);
+  });
+
+  it('rejects legacy intake placeholder with non-string record values', () => {
+    const legacy = {
+      ...row,
+      content: {
+        source: 'in_app',
+        summary: 'placeholder',
+        sections: [],
+      },
+    };
+    expect(PrdVersionListResponseSchema.safeParse([legacy]).success).toBe(false);
+  });
 });

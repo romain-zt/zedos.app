@@ -21,6 +21,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      checks: read
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
@@ -106,6 +107,16 @@ jobs:
 
             echo "→ Rebasing PR #$PR_NUM base onto $MERGED_BASE"
             gh pr edit "$PR_NUM" --repo "$REPO" --base "$MERGED_BASE"
+
+            PR_SHA=$(gh pr view "$PR_NUM" --repo "$REPO" --json headRefOid --jq '.headRefOid')
+            echo "→ Waiting for CI quality and E2E playwright on $PR_SHA"
+            if ! PR_NUMBER="$PR_NUM" PR_SHA="$PR_SHA" REPO="$REPO" REQUIRED_CHECKS=quality,playwright \
+              bash .github/scripts/wait-for-required-pr-checks.sh; then
+              echo "  ⚠️ Skipping merge for PR #$PR_NUM — required checks did not pass"
+              git checkout "$MERGED_BASE"
+              git pull origin "$MERGED_BASE" --ff-only 2>/dev/null || true
+              continue
+            fi
 
             echo "→ Merging PR #$PR_NUM"
             gh pr merge "$PR_NUM" --repo "$REPO" --merge --delete-branch \

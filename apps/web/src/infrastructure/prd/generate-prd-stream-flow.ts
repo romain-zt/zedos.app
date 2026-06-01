@@ -173,11 +173,13 @@ export async function generatePrdStreamForProject(
         return
       }
       await deductCredits(input.userId, 'prd_generation', { projectId: input.projectId })
+      const now = new Date()
       const prdInsert: PrdVersionInsert = {
         projectId: input.projectId,
         versionNumber: nextVersionNumber,
         content: validated.data,
         status: 'generated',
+        updatedAt: now,
       }
       await db.insert(prdVersions).values(prdInsert)
     } catch (error: unknown) {

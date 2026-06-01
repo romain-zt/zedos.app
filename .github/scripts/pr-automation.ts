@@ -11,6 +11,7 @@ const prDraft = process.env.PR_DRAFT === "true";
 const repo = process.env.REPO; // e.g. "org/repo"
 const baseBranch = process.env.BASE_BRANCH ?? "main";
 const headBranch = process.env.HEAD_BRANCH ?? "";
+const prSha = process.env.PR_SHA ?? "";
 
 if (!apiKey) {
   console.error("❌ CURSOR_API_KEY is not set. Add it as a GitHub Actions secret.");
@@ -24,6 +25,26 @@ if (!prNumber || !repo) {
   console.error("❌ PR_NUMBER or REPO env vars are missing.");
   process.exit(1);
 }
+
+// --- Required CI / E2E gate (workflow also waits; belt-and-suspenders) ------
+
+function assertRequiredChecks(): void {
+  console.log("⏳ Verifying required checks (quality, playwright)…");
+  execSync("bash .github/scripts/wait-for-required-pr-checks.sh", {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      GH_TOKEN: ghToken,
+      REPO: repo,
+      PR_NUMBER: prNumber,
+      PR_SHA: prSha,
+      REQUIRED_CHECKS: "quality,playwright",
+      WAIT_MODE: "strict",
+    },
+  });
+}
+
+assertRequiredChecks();
 
 // --- Undraft if needed -----------------------------------------------------
 
@@ -55,7 +76,11 @@ You are a senior automated reviewer and merge bot for the ZedOS project.
 ## Step 1 — Load project context
 Read \`docs/state/HANDOFF.md\` to understand the current architecture, active work, and any known issues.
 
-## Step 2 — Review the PR diff
+## Step 2 — Verify CI (mandatory)
+Run \`gh pr checks ${prNumber}\`. **quality** (CI) and **playwright** (E2E) must be **pass** on the latest commit.
+If either is pending, failing, or missing: post a comment explaining which check blocks merge and **stop** — do not approve or merge.
+
+## Step 3 — Review the PR diff
 Run \`gh pr diff ${prNumber}\` to get the full diff, then check for:
 
 1. **Hexagonal boundary violations** — per \`.cursor/rules/72-hexagonal-boundaries.mdc\`. Domain must not import infrastructure; use-cases must not import route handlers; etc.
@@ -64,7 +89,7 @@ Run \`gh pr diff ${prNumber}\` to get the full diff, then check for:
 4. **PR size** — per \`.cursor/rules/79-pr-sizing.mdc\`. Flag if the PR is too large; do not block on size alone unless the rule specifies a hard stop.
 5. **Merge conflicts** — run \`git merge-tree \$(git merge-base HEAD origin/${baseBranch}) HEAD origin/${baseBranch}\` to surface conflicts. If conflicts exist and the intent of both sides is clearly the same (e.g. identical logic written two ways), resolve them and push to the head branch. If intent is ambiguous, post a comment explaining each conflict and stop — do NOT merge.
 
-## Step 3 — Decision
+## Step 4 — Decision
 
 **If review passes AND no ambiguous conflicts:**
 - Approve the PR: \`gh pr review ${prNumber} --approve --body "✅ Automated review passed. Approving for squash merge."\`
