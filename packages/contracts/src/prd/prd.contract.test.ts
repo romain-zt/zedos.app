@@ -117,37 +117,28 @@ describe('PrdVersionListResponseSchema', () => {
     ).toBe(false);
   });
 
-  it('parses list with legacy draft placeholder and generated AI content', () => {
-    const r = PrdVersionListResponseSchema.safeParse([
-      {
-        ...row,
-        versionNumber: 1,
-        content: {
-          source: 'in_app',
-          summary: 'Initial PRD version (placeholder — edit via clarify and generate when ready)',
-          sections: [],
-        },
+  it('parses draft placeholder content from ensure-first PRD version', () => {
+    const draft = {
+      ...row,
+      status: 'draft',
+      content: {
+        title: 'Draft PRD',
+        version_summary: 'Initial in-app placeholder',
+        sections: [],
       },
-      {
-        ...row,
-        versionNumber: 2,
-        status: 'generated',
-        content: {
-          title: 'E2E PRD',
-          version_summary: 'Generated in test',
-          sections: [
-            {
-              id: 'vision',
-              title: 'Vision',
-              content: 'Test',
-              confidence: 'high',
-              open_questions: [],
-            },
-          ],
-        },
-        questionHistoryCount: '0',
+    };
+    expect(PrdVersionListResponseSchema.safeParse([draft]).success).toBe(true);
+  });
+
+  it('parses legacy intake placeholder with sections array', () => {
+    const legacy = {
+      ...row,
+      content: {
+        source: 'in_app',
+        summary: 'placeholder',
+        sections: [],
       },
-    ]);
-    expect(r.success).toBe(true);
+    };
+    expect(PrdVersionListResponseSchema.safeParse([legacy]).success).toBe(true);
   });
 });

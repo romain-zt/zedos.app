@@ -40,4 +40,5 @@ test('migration 0010 defines task split bundle and task tables', () => {
   assert.match(sql, /CREATE TABLE IF NOT EXISTS "task_split_tasks"/);
   assert.match(sql, /task_split_bundles_project_id_projects_id_fk/);
   assert.match(sql, /task_split_tasks_bundle_id_task_split_bundles_id_fk/);
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS "user_story_line_id"/);
 });

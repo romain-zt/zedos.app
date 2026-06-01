@@ -9,7 +9,7 @@ import { GeneratePrdAiResponseSchema } from '../ai/generate-prd-stream';
 import { ShareLinkSummarySchema } from '../share/mint';
 
 /** Intake-era PRD body: section slug → text (pre–AI-generated shape). */
-export const IntakePrdContentSchema = z.record(z.string());
+export const IntakePrdContentSchema = z.record(z.string(), z.string());
 
 /** Legacy v1 draft placeholder (source/summary + empty sections array) persisted before intake default. */
 export const LegacyDraftPlaceholderPrdContentSchema = z.object({

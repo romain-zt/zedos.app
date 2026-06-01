@@ -174,10 +174,13 @@ export class DrizzlePrdRepository implements IPrdRepository {
       const defaultContent =
         content ??
         ({
-          source: 'in_app',
-          summary: 'Initial PRD version (placeholder — edit via clarify and generate when ready)',
+          title: 'Draft PRD',
+          version_summary:
+            'Initial in-app placeholder — run Generate PRD after clarification when ready.',
+          sections: [],
         } satisfies Record<string, unknown>);
 
+      const now = new Date();
       const [inserted] = await db
         .insert(prdVersions)
         .values({
@@ -185,6 +188,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
           versionNumber: 1,
           content: defaultContent,
           status: 'draft',
+          updatedAt: now,
         } as NewPrdVersion)
         .returning();
 

@@ -5,11 +5,36 @@ on:
     branches: [main]
 
 jobs:
-  cursor-review-and-merge:
+  required-checks:
+    name: gate-required-checks
     runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for CI quality and E2E playwright
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          REQUIRED_CHECKS: quality,playwright
+        run: bash .github/scripts/wait-for-required-pr-checks.sh
+
+  cursor-review-and-merge:
+    needs: required-checks
+    runs-on: ubuntu-latest
+    if: >-
+      needs.required-checks.result == 'success'
+      && github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: write
       pull-requests: write
+      checks: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,6 +54,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_DRAFT: ${{ github.event.pull_request.draft }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
           REPO: ${{ github.repository }}
           BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}

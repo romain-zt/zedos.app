@@ -17,18 +17,30 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: write
-      contents: write
+      contents: read
       pull-requests: write
+      checks: read
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       PR_TITLE: ${{ github.event.pull_request.title }}
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for CI quality and E2E playwright
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          REQUIRED_CHECKS: quality,playwright
+        run: bash .github/scripts/wait-for-required-pr-checks.sh
+
       - name: Merge tracking PR
         run: |
           echo "✅ Tracking PR #$PR_NUMBER is ready: $PR_TITLE"
-          echo "Merging…"
+          echo "Required checks passed — merging…"
 
           gh pr merge "$PR_NUMBER" \
             --repo "$REPO" \
