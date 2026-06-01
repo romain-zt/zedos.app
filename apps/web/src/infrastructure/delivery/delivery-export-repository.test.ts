@@ -28,18 +28,20 @@ describe('DrizzleDeliveryExportRepository', () => {
   });
 
   it('uses actual task_split column names in SQL', () => {
-    expect(repositorySource).toContain('story_title_snapshot');
-    expect(repositorySource).not.toMatch(/\bstory_title\b(?!_snapshot)/);
-    expect(repositorySource).not.toContain('story_body');
-    expect(repositorySource).not.toContain('deleted_at');
+    expect(repositorySource).toContain('story_title');
+    expect(repositorySource).toContain('story_body');
+    expect(repositorySource).toContain('deleted_at');
+    expect(repositorySource).toContain('task_split_bundles');
+    expect(repositorySource).toContain('task_split_tasks');
   });
 
-  it('maps story_title_snapshot rows when listing eligible bundles', async () => {
+  it('maps story_title and story_body rows when listing eligible bundles', async () => {
     mocks.execute.mockResolvedValue([
       {
         id: 'bundle-1',
         project_id: 'proj-1',
-        story_title_snapshot: 'Checkout flow',
+        story_title: 'Checkout flow',
+        story_body: 'User completes purchase',
         locked_at: new Date('2026-05-01'),
         task_count: 2,
       },
@@ -52,7 +54,7 @@ describe('DrizzleDeliveryExportRepository', () => {
     const bundles = result.unwrap();
     expect(bundles).toHaveLength(1);
     expect(bundles[0]?.storyTitle).toBe('Checkout flow');
-    expect(bundles[0]?.storyBody).toBe('');
+    expect(bundles[0]?.storyBody).toBe('User completes purchase');
     expect(bundles[0]?.taskCount).toBe(2);
   });
 
@@ -62,7 +64,8 @@ describe('DrizzleDeliveryExportRepository', () => {
         {
           id: 'bundle-1',
           project_id: 'proj-1',
-          story_title_snapshot: 'Checkout flow',
+          story_title: 'Checkout flow',
+          story_body: 'User completes purchase',
           locked_at: new Date('2026-05-01'),
           task_count: 1,
         },
