@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Lock, ArrowRight, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AdrDTO } from '@repo/contracts/adr/adr-contracts'
-import type { QuestionCoverageReadinessScoreResponse } from '@repo/contracts/questions/history'
+import { WorkspaceScoreResponseSchema } from '@repo/contracts/project/workspace-score'
 
 interface ArchitecturePanelProps {
   projectId: string
@@ -43,7 +43,7 @@ export function ArchitecturePanel({
   const [isLocked, setIsLocked] = useState(phase === 'intake')
   const [unlocking, setUnlocking] = useState(false)
   const [checking, setChecking] = useState(false)
-  const [score, setScore] = useState<QuestionCoverageReadinessScoreResponse | null>(null)
+  const [architectureScore, setArchitectureScore] = useState<number | null>(null)
 
   useEffect(() => {
     setIsLocked(phase === 'intake')
@@ -58,8 +58,13 @@ export function ArchitecturePanel({
     }
     const fetchScore = async () => {
       try {
-        const res = await fetch(`/api/projects/${projectId}/readiness-score`)
-        if (res.ok) setScore(await res.json())
+        const res = await fetch(`/api/projects/${projectId}/workspace-score`)
+        if (!res.ok) return
+        const raw: unknown = await res.json()
+        const parsed = WorkspaceScoreResponseSchema.safeParse(raw)
+        if (parsed.success) {
+          setArchitectureScore(parsed.data.architecture.total.percentage)
+        }
       } catch {}
     }
     fetchAdrs()
@@ -140,28 +145,17 @@ export function ArchitecturePanel({
 
   return (
     <div className="space-y-6">
-      {score && (
+      {architectureScore != null && (
         <Card>
           <CardHeader>
-            <CardTitle>Readiness Score (Preview)</CardTitle>
-            <CardDescription>Progress towards production-grade architecture</CardDescription>
+            <CardTitle>Score architecture</CardTitle>
+            <CardDescription>PRD stable + ADR cœur complétés (formule workspace)</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-lg bg-blue-50 p-4">
-                <div className="text-sm font-medium text-blue-900">Clarification Coverage</div>
-                <div className="text-2xl font-bold text-blue-600">{score.score}%</div>
-                <div className="text-xs text-blue-700">{score.answered} question{score.answered !== 1 ? 's' : ''} answered</div>
-              </div>
-              <div className="rounded-lg bg-purple-50 p-4">
-                <div className="text-sm font-medium text-purple-900">PRD Sections</div>
-                <div className="text-2xl font-bold text-purple-600">{score.coveredSections?.length ?? 0}/8</div>
-                <div className="text-xs text-purple-700">{score.remaining} section{score.remaining !== 1 ? 's' : ''} remaining</div>
-              </div>
+          <CardContent>
+            <div className="rounded-lg bg-purple-50 p-4">
+              <div className="text-sm font-medium text-purple-900">Préparation architecture</div>
+              <div className="text-2xl font-bold text-purple-600">{architectureScore}%</div>
             </div>
-            <p className="text-xs text-gray-600">
-              Full readiness score (100 points) coming soon with more categories.
-            </p>
           </CardContent>
         </Card>
       )}

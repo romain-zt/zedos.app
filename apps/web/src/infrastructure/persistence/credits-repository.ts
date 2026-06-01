@@ -36,6 +36,7 @@ import {
   type UserUpdate,
   type CreditTransactionInsert,
 } from '@repo/db';
+import type { CreditTransactionMetadata } from '@repo/contracts/credits';
 import { createLogger } from '@shared/observability/logger';
 import { clampPersistedCreditBalanceNonNegative } from './credits-persisted-balance';
 
@@ -57,9 +58,11 @@ function persistedCreditBalanceForDomain(raw: number, userId: string): number {
   return coerced;
 }
 
-function stripCorrelationFromMetadata(metadata: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+function stripCorrelationFromMetadata(
+  metadata: CreditTransactionMetadata | undefined,
+): CreditTransactionMetadata | undefined {
   if (!metadata) return metadata;
-  const { correlationId: _omit, ...rest } = metadata as Record<string, unknown>;
+  const { correlationId: _omit, ...rest } = metadata;
   return Object.keys(rest).length > 0 ? rest : {};
 }
 
@@ -103,9 +106,7 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
     options?: CreditsLedgerMutationOptions
   ): Promise<Result<CreditBalance, ApplicationError>> {
     const correlationId = options?.correlationId ?? undefined;
-    const mergedMetadata =
-      stripCorrelationFromMetadata(options?.metadata) ??
-      (options?.metadata as Record<string, unknown> | undefined);
+    const mergedMetadata = stripCorrelationFromMetadata(options?.metadata);
 
     try {
       const ceiling = graceCeilingPersisted();
@@ -177,7 +178,7 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
         };
         await tx.update(users).set(updateData).where(eq(users.id, userId));
 
-        const txMeta: Record<string, unknown> = {
+        const txMeta: CreditTransactionMetadata = {
           ...(mergedMetadata ?? {}),
           graceApplied: decision.kind === 'proceed-with-grace',
         };
@@ -307,9 +308,7 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
       options?.correlationId && options.correlationId.length > 0
         ? options.correlationId
         : `reverse:${originalConsumptionCorrelationId}`;
-    const mergedMetadata =
-      stripCorrelationFromMetadata(options?.metadata) ??
-      (options?.metadata as Record<string, unknown> | undefined);
+    const mergedMetadata = stripCorrelationFromMetadata(options?.metadata);
 
     try {
       const result = await db.transaction(async (tx) => {

@@ -11,6 +11,8 @@ describe('MintReadOnlyShareLinkUseCase', () => {
       prdVersionId: 'pv-1',
       token: 'tok',
       enabled: true,
+      hasPassword: false,
+      expiresAt: null,
       createdAt: new Date(),
       disabledAt: null,
     };
@@ -21,13 +23,15 @@ describe('MintReadOnlyShareLinkUseCase', () => {
       mintReadOnlyShareLink: vi.fn().mockResolvedValue(ok(link)),
       revokeReadOnlyShareLink: vi.fn(),
       getAnonymousPrdVersionByShareToken: vi.fn(),
+      getShareLinkGateByToken: vi.fn(),
+      verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
     };
     const useCase = new MintReadOnlyShareLinkUseCase(repo);
     const result = await useCase.execute('pv-1', 'user-1');
     expect(result.isOk()).toBe(true);
     if (result.isOk()) expect(result.unwrap().token).toBe('tok');
-    expect(repo.mintReadOnlyShareLink).toHaveBeenCalledWith('pv-1', 'user-1');
+    expect(repo.mintReadOnlyShareLink).toHaveBeenCalledWith('pv-1', 'user-1', undefined);
   });
 
   it('forwards repository not-found', async () => {
@@ -38,6 +42,8 @@ describe('MintReadOnlyShareLinkUseCase', () => {
       mintReadOnlyShareLink: vi.fn().mockResolvedValue(err(new NotFoundError('PRD version not found'))),
       revokeReadOnlyShareLink: vi.fn(),
       getAnonymousPrdVersionByShareToken: vi.fn(),
+      getShareLinkGateByToken: vi.fn(),
+      verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
     };
     const useCase = new MintReadOnlyShareLinkUseCase(repo);

@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { VerifySessionRequestSchema } from '@repo/contracts/payments'
+import { VerifySessionRequestSchema, VerifyCheckoutResultSchema } from '@repo/contracts/payments'
 import { verifyCheckoutSessionForUser } from '@infrastructure/payments/stripe-checkout-flows'
 import { createLogger } from '@shared/observability/logger'
 import { redactOpaqueId } from '@shared/observability/log-safe'
@@ -37,7 +37,11 @@ export async function POST(request: NextRequest) {
     if (result.ok === false) {
       return NextResponse.json({ error: result.error }, { status: result.status })
     }
-    return NextResponse.json(result.value)
+    const outbound = VerifyCheckoutResultSchema.safeParse(result.value)
+    if (!outbound.success) {
+      return NextResponse.json({ error: 'Invalid verify payload' }, { status: 500 })
+    }
+    return NextResponse.json(outbound.data)
   } catch (error: unknown) {
     logger.withContext({ userId, sessionId: sessionIdHint }).error('Stripe verify failed', error)
     return NextResponse.json({ error: errorMessage(error, 'Verification failed') }, { status: 500 })

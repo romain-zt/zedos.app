@@ -19,6 +19,8 @@ describe('GetAnonymousSharedPrdUseCase', () => {
       mintReadOnlyShareLink: vi.fn(),
       revokeReadOnlyShareLink: vi.fn(),
       getAnonymousPrdVersionByShareToken: vi.fn().mockResolvedValue(ok(snapshot)),
+      getShareLinkGateByToken: vi.fn(),
+      verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
     };
     const uc = new GetAnonymousSharedPrdUseCase(repo);
@@ -36,6 +38,8 @@ describe('GetAnonymousSharedPrdUseCase', () => {
       mintReadOnlyShareLink: vi.fn(),
       revokeReadOnlyShareLink: vi.fn(),
       getAnonymousPrdVersionByShareToken: vi.fn().mockResolvedValue(err(new NotFoundError('gone'))),
+      getShareLinkGateByToken: vi.fn(),
+      verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
     };
     const uc = new GetAnonymousSharedPrdUseCase(repo);

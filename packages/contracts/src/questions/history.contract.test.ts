@@ -25,6 +25,13 @@ describe('ClarifyPostBodySchema', () => {
     });
     expect(r.success).toBe(true);
   });
+
+  it('rejects malformed decisionResponse', () => {
+    const r = ClarifyPostBodySchema.safeParse({
+      decisionResponse: { type: 'single_choice' },
+    });
+    expect(r.success).toBe(false);
+  });
 });
 
 describe('ClarifyAiResponseSchema', () => {

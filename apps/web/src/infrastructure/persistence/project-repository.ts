@@ -6,21 +6,11 @@ import { IProjectRepository, ProjectWithCounts } from '@domain/project/project-r
 import { Project, ProjectPhase } from '@domain/project/project';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError, DatabaseError } from '@shared/errors/application-error';
-import { db, projects, prdVersions, questionHistory, eq, and, desc, sql, type NewProjectRow, type ProjectUpdate } from '@repo/db';
+import { db, projects, prdVersions, questionHistory, projectMembers, eq, and, desc, sql, type NewProjectRow, type ProjectUpdate } from '@repo/db';
+import { parsePrdVersionContent } from '@infrastructure/persistence/prd-content-parse';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'ProjectRepository' });
-
-function toPrdContentRecord(value: unknown): Record<string, unknown> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return {};
-  }
-  const record: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(value)) {
-    record[key] = entry;
-  }
-  return record;
-}
 
 export class DrizzleProjectRepository implements IProjectRepository {
   // Constructor kept for API compatibility - argument is ignored since we use the singleton db
@@ -47,10 +37,36 @@ export class DrizzleProjectRepository implements IProjectRepository {
 
   async findByIdAndUserId(projectId: string, userId: string): Promise<Result<Project, ApplicationError>> {
     try {
-      const [row] = await db
+      const [owned] = await db
         .select()
         .from(projects)
         .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
+        .limit(1);
+
+      if (owned) {
+        return ok(this.mapToDomain(owned)) as Result<Project, ApplicationError>;
+      }
+
+      const [member] = await db
+        .select({ projectId: projectMembers.projectId })
+        .from(projectMembers)
+        .where(
+          and(
+            eq(projectMembers.projectId, projectId),
+            eq(projectMembers.userId, userId),
+            eq(projectMembers.status, 'active')
+          )
+        )
+        .limit(1);
+
+      if (!member) {
+        return err(new NotFoundError('Project not found'));
+      }
+
+      const [row] = await db
+        .select()
+        .from(projects)
+        .where(eq(projects.id, projectId))
         .limit(1);
 
       if (!row) {
@@ -115,7 +131,7 @@ export class DrizzleProjectRepository implements IProjectRepository {
             latestPrdVersion: latestPrd
               ? {
                   versionNumber: latestPrd.versionNumber,
-                  content: toPrdContentRecord(latestPrd.content),
+                  content: parsePrdVersionContent(latestPrd.content) ?? { source: 'legacy', summary: '' },
                 }
               : null,
             prdVersionCount,

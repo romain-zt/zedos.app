@@ -5,13 +5,15 @@
  * Pure domain model.
  */
 
+import type { PrdVersionContent } from '@repo/contracts/prd';
+
 export type PrdStatus = 'draft' | 'final' | 'generated';
 
 export interface PrdVersion {
   id: string;
   projectId: string;
   versionNumber: number;
-  content: Record<string, unknown> | null;
+  content: PrdVersionContent | null;
   status: PrdStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -23,13 +25,25 @@ export interface PrdVersionWithRelations extends PrdVersion {
 }
 
 /** Persisted read-only share artifact for a PRD version (owner-minted) */
+export interface MintShareLinkOptions {
+  password?: string;
+  expiresInDays?: number;
+}
+
 export interface MintedShareLink {
   id: string;
   prdVersionId: string;
   token: string;
   enabled: boolean;
+  hasPassword: boolean;
+  expiresAt: Date | null;
   createdAt: Date;
   disabledAt: Date | null;
+}
+
+export interface ShareLinkGate {
+  requiresPassword: boolean;
+  expired: boolean;
 }
 
 /**
@@ -37,7 +51,7 @@ export interface MintedShareLink {
  */
 export interface AnonymousSharedPrdSnapshot {
   versionNumber: number;
-  content: Record<string, unknown> | null;
+  content: PrdVersionContent | null;
   status: PrdStatus;
   createdAt: Date;
 }

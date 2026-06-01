@@ -3,7 +3,10 @@ import { CreditsDomainService } from '@domain/credits/credits-service';
 import { OperationType } from '@domain/credits/credits';
 import { Result, ok } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
-import { CreditBalanceDTO } from '@repo/contracts/credits/credits-contracts';
+import {
+  CreditBalanceDTO,
+  type CreditTransactionMetadata,
+} from '@repo/contracts/credits/credits-contracts';
 import { createLogger } from '@shared/observability/logger';
 import { forwardErr } from '@shared/result/propagate';
 
@@ -14,7 +17,7 @@ export interface DeductCreditsInput {
   amount: number;
   operationType: OperationType;
   correlationId?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: CreditTransactionMetadata;
 }
 
 export class DeductCreditsUseCase {

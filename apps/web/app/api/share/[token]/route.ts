@@ -5,6 +5,9 @@ import {
   AnonymousSharedPrdResponseSchema,
   ShareReadTokenParamSchema,
 } from '@repo/contracts/share/anonymous-read';
+import { SharePasswordRequiredResponseSchema } from '@repo/contracts/share/access';
+
+const SHARE_UNLOCK_COOKIE = 'zedos_share_unlock';
 import { GetAnonymousSharedPrdUseCase } from '@application/prd/get-anonymous-shared-prd-usecase';
 import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository';
 import {
@@ -35,7 +38,30 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
     return NextResponse.json({ error: 'Invalid link' }, { status: 400 });
   }
 
-  const useCase = new GetAnonymousSharedPrdUseCase(new PrismaPrdRepository());
+  const repo = new PrismaPrdRepository();
+  const gateResult = await repo.getShareLinkGateByToken(tokenParsed.data);
+  if (gateResult.isErr()) {
+    return NextResponse.json({ error: 'Not available' }, { status: 404 });
+  }
+  const gate = gateResult.unwrap();
+  if (gate.expired) {
+    return NextResponse.json({ error: 'Not available' }, { status: 404 });
+  }
+  if (gate.requiresPassword) {
+    const unlock = _request.cookies.get(SHARE_UNLOCK_COOKIE)?.value;
+    if (unlock !== tokenParsed.data) {
+      const body = SharePasswordRequiredResponseSchema.safeParse({
+        error: 'Password required',
+        code: 'SHARE_PASSWORD_REQUIRED',
+        requiresPassword: true,
+      });
+      return NextResponse.json(body.success ? body.data : { error: 'Password required' }, {
+        status: 403,
+      });
+    }
+  }
+
+  const useCase = new GetAnonymousSharedPrdUseCase(repo);
   const result = await useCase.execute(tokenParsed.data);
   if (result.isErr()) {
     const e = result.error;

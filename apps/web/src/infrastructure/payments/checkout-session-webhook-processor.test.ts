@@ -11,9 +11,21 @@ vi.mock('@infrastructure/persistence/stripe-checkout-webhook-persistence', () =>
   getUserCreditBalance: vi.fn(),
 }));
 
+vi.mock('@infrastructure/payments/stripe-off-session-auto-reload', () => ({
+  resolvePaymentMethodFromCheckoutSession: vi.fn(),
+}));
+
+vi.mock('@infrastructure/persistence/auto-reload-repository', () => ({
+  DrizzleAutoReloadRepository: vi.fn().mockImplementation(() => ({
+    saveStripePaymentMethod: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 import {
   processCheckoutWebhookAtomically,
 } from '@infrastructure/persistence/stripe-checkout-webhook-persistence';
+import { resolvePaymentMethodFromCheckoutSession } from '@infrastructure/payments/stripe-off-session-auto-reload';
+import { DrizzleAutoReloadRepository } from '@infrastructure/persistence/auto-reload-repository';
 
 const sessionPaid = {
   id: 'cs_test_session',
@@ -47,6 +59,7 @@ describe('processCheckoutSessionCompletedWebhook', () => {
       kind: 'processed',
       balance: 250,
     });
+    vi.mocked(resolvePaymentMethodFromCheckoutSession).mockResolvedValue(null);
   });
 
   it('returns duplicateStripeEvent when Stripe event id was already processed', async () => {
@@ -136,6 +149,25 @@ describe('processCheckoutSessionCompletedWebhook', () => {
       stripeSessionId: 'cs_test_session',
       paymentIntent: 'pi_test',
     });
+    expect(resolvePaymentMethodFromCheckoutSession).toHaveBeenCalledWith('cs_test_session');
+  });
+
+  it('persists payment method for auto-reload when checkout exposes one', async () => {
+    vi.mocked(resolvePaymentMethodFromCheckoutSession).mockResolvedValue({
+      customerId: 'cus_1',
+      paymentMethodId: 'pm_1',
+    });
+    const savePm = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(DrizzleAutoReloadRepository).mockImplementation(
+      class MockAutoReloadRepository {
+        saveStripePaymentMethod = savePm;
+      } as unknown as typeof DrizzleAutoReloadRepository
+    );
+
+    const result = await processCheckoutSessionCompletedWebhook(baseEvent());
+
+    expect(result.isOk()).toBe(true);
+    expect(savePm).toHaveBeenCalledWith('user-1', 'cus_1', 'pm_1');
   });
 
   it('wraps unexpected persistence errors as database failure', async () => {

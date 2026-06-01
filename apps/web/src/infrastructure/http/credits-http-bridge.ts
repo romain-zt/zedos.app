@@ -7,7 +7,11 @@ import type { OperationType as DomainOperationType } from '@domain/credits/credi
 import type { CreditCheckResult as DomainCreditCheckResult } from '@domain/credits/credits';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError } from '@shared/errors/application-error';
+import type { CreditTransactionMetadata } from '@repo/contracts/credits';
+import type { AutoReloadAttemptOutcome } from '@repo/contracts/payments';
 import { getCreditsComposition } from '@/lib/composition';
+import { AttemptAutoReloadUseCase } from '@application/auto-reload/attempt-auto-reload-usecase';
+import { DrizzleAutoReloadRepository } from '@infrastructure/persistence/auto-reload-repository';
 
 export type ApiCreditOperationType =
   | 'clarification'
@@ -42,6 +46,7 @@ export interface CreditCheckHttpResult {
   cost: number;
   wouldUseGrace: boolean;
   graceAlreadyUsed: boolean;
+  autoReloadOutcome?: AutoReloadAttemptOutcome;
 }
 
 function domainCheckToHttp(
@@ -112,13 +117,42 @@ export async function checkCreditsForApi(
     };
   }
 
-  return domainCheckToHttp(result.unwrap(), graceUsedFromBalance);
+  const domainCheck = result.unwrap();
+  if (domainCheck.canProceed) {
+    return domainCheckToHttp(domainCheck, graceUsedFromBalance);
+  }
+
+  if (!domainCheck.graceApplicable) {
+    const attemptUc = new AttemptAutoReloadUseCase(new DrizzleAutoReloadRepository());
+    const reload = await attemptUc.execute(userId, cost);
+    if (reload.outcome === 'succeeded') {
+      const retry = await checkCreditsUc.execute({
+        userId,
+        operationType: toDomainOperation(operationType),
+        operationCost: cost,
+      });
+      if (retry.isOk() && retry.unwrap().canProceed) {
+        const afterReload = domainCheckToHttp(retry.unwrap(), graceUsedFromBalance);
+        return { ...afterReload, autoReloadOutcome: 'succeeded' };
+      }
+    }
+    if (
+      reload.outcome === 'declined' ||
+      reload.outcome === 'authentication_required' ||
+      reload.outcome === 'not_configured'
+    ) {
+      const blocked = domainCheckToHttp(domainCheck, graceUsedFromBalance);
+      return { ...blocked, autoReloadOutcome: reload.outcome };
+    }
+  }
+
+  return domainCheckToHttp(domainCheck, graceUsedFromBalance);
 }
 
 function consumptionCorrelationId(
   userId: string,
   operationType: ApiCreditOperationType,
-  metadata?: Record<string, unknown>
+  metadata?: CreditTransactionMetadata
 ): string | undefined {
   const m = metadata ?? {};
   const explicit = m.correlationId;
@@ -140,7 +174,7 @@ function consumptionCorrelationId(
 export async function deductCreditsForApi(
   userId: string,
   operationType: ApiCreditOperationType,
-  metadata?: Record<string, unknown>
+  metadata?: CreditTransactionMetadata
 ): Promise<{ success: boolean; newBalance: number; graceActivated: boolean }> {
   const { repo, deductCredits: deductUc } = getCreditsComposition();
   const cost = getCreditCost(operationType);
@@ -171,7 +205,7 @@ export async function deductCreditsForApi(
   };
 }
 
-export function purchaseCorrelationId(metadata?: Record<string, unknown>): string | undefined {
+export function purchaseCorrelationId(metadata?: CreditTransactionMetadata): string | undefined {
   const m = metadata ?? {};
   const purchaseId = m.purchaseId ?? m.purchase_id;
   if (typeof purchaseId === 'string' && purchaseId.length > 0) return `purchase:${purchaseId}`;
@@ -183,7 +217,8 @@ export function purchaseCorrelationId(metadata?: Record<string, unknown>): strin
 export async function addPurchaseCreditsForApi(
   userId: string,
   amount: number,
-  metadata?: Record<string, unknown>
+  metadata?: CreditTransactionMetadata,
+  creditType: 'purchase' | 'auto_reload' = 'purchase'
 ): Promise<Result<number, ApplicationError>> {
   const { addCredits: addUc } = getCreditsComposition();
   const correlationId = purchaseCorrelationId(metadata);
@@ -191,7 +226,7 @@ export async function addPurchaseCreditsForApi(
   const result = await addUc.execute({
     userId,
     amount,
-    type: 'purchase',
+    type: creditType,
     correlationId,
     metadata: metadata ?? {},
   });

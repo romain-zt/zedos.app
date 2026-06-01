@@ -12,6 +12,7 @@ import { eq, inArray } from 'drizzle-orm';
 import {
   createTestDb,
   closeDatabaseConnections,
+  autoReloadPreferences,
   projects,
   questionHistory,
   users,
@@ -96,6 +97,22 @@ const E2E_CLARIFICATION_ROWS: readonly E2eClarificationSeedRow[] = [
   },
 ];
 
+/** Lets E2E enable auto-reload before any real Stripe checkout (matches E2E stub PM ids). */
+async function seedAutoReloadPreference(
+  db: ReturnType<typeof createTestDb>['db'],
+  userId: string,
+): Promise<void> {
+  await db.delete(autoReloadPreferences).where(eq(autoReloadPreferences.userId, userId));
+  await db.insert(autoReloadPreferences).values({
+    userId,
+    enabled: false,
+    packSize: 100,
+    thresholdCredits: 5,
+    stripeCustomerId: 'cus_e2e',
+    stripePaymentMethodId: 'pm_e2e',
+  } as typeof autoReloadPreferences.$inferInsert);
+}
+
 async function seedClarificationHistory(
   db: ReturnType<typeof createTestDb>['db'],
   projectId: string,
@@ -159,6 +176,8 @@ async function main(): Promise<void> {
   };
   await db.update(users).set(mainCredits).where(eq(users.id, mainUserId));
   await db.update(users).set(noCreditsBalance).where(eq(users.id, noCreditsUserId));
+
+  await seedAutoReloadPreference(db, mainUserId);
 
   await upsertProject(db, {
     id: E2E_PROJECT_ID,

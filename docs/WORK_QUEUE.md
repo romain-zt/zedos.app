@@ -28,4 +28,7 @@ Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc`
 | US-user-stories--corpus-reliability-batch-quality | User Story | SS-user-stories--story-generation-from-feature-split | complete | P1 | false | false | — | Aucun (terminé, vérifié) |
 | FA-test-first-workflows | Feature Area | — | complete | P2 | false | false | — | Aucun (terminé) |
 | SS-test-first-workflows--task-splitting-with-prompts | Scope Slice | FA-test-first-workflows | complete | P2 | false | false | — | Aucun (terminé) |
-| FA-delivery | Feature Area | — | queued | P2 | false | false | — | Décision actée: garder `FA-delivery` actif et lancer le prochain scope via `scaffold-slices`, puis `/plan` et `/implement` |
+| FA-delivery | Feature Area | — | complete | P2 | false | false | — | Aucun (cursor package export livré — 2026-06-01) |
+| SS-delivery--cursor-package-export | Scope Slice | FA-delivery | complete | P2 | false | false | — | Aucun (terminé) |
+| SS-payments--auto-reload-opt-in-and-outcomes | Scope Slice | FA-payments | complete | P4 | false | false | — | Aucun (implémenté 2026-06-01) |
+| SS-payments--tax-and-vat-legibility | Scope Slice | FA-payments | complete | P4 | false | false | — | Aucun (implémenté 2026-06-01) |

@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { PrdVersionContentSchema } from '../prd/prd-contracts';
 
 export const CreateProjectRequestSchema = z.object({
   name: z.string().min(1, 'Project name is required').transform((v) => v.trim()),
@@ -37,7 +38,7 @@ export type ProjectDTO = z.infer<typeof ProjectDTOSchema>;
 export const ProjectListItemDTOSchema = ProjectDTOSchema.extend({
   latestPrdVersion: z.object({
     versionNumber: z.number(),
-    content: z.any(),
+    content: PrdVersionContentSchema,
   }).nullable().optional(),
   prdVersionCount: z.number(),
   questionHistoryCount: z.number(),

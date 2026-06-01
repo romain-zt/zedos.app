@@ -7,11 +7,14 @@ import type { PgUpdateSetSource } from 'drizzle-orm/pg-core/query-builders/updat
 import { IPrdRepository } from '@domain/prd/prd-repository';
 import {
   AnonymousSharedPrdSnapshot,
+  MintShareLinkOptions,
   MintedShareLink,
   PrdVersion,
   PrdVersionWithRelations,
   PrdStatus,
+  ShareLinkGate,
 } from '@domain/prd/prd';
+import { hashSharePassword, verifySharePassword } from '@shared/crypto/share-password';
 import { Result, ok, err } from '@repo/result';
 import {
   ApplicationError,
@@ -31,7 +34,9 @@ import {
   sql,
   type NewPrdVersion,
 } from '@repo/db';
+import type { PrdVersionContent } from '@repo/contracts/prd';
 import { AnonymousSharedPrdResponseSchema } from '@repo/contracts/share/anonymous-read';
+import { parsePrdVersionContent } from '@infrastructure/persistence/prd-content-parse';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'PrdRepository' });
@@ -70,7 +75,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
             id: v.id,
             projectId: v.projectId,
             versionNumber: v.versionNumber,
-            content: v.content as Record<string, unknown> | null,
+            content: parsePrdVersionContent(v.content),
             status: v.status as PrdStatus,
             createdAt: v.createdAt,
             updatedAt: v.updatedAt,
@@ -108,7 +113,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
         id: prd.id,
         projectId: prd.projectId,
         versionNumber: prd.versionNumber,
-        content: prd.content as Record<string, unknown> | null,
+        content: parsePrdVersionContent(prd.content),
         status: prd.status as PrdStatus,
         createdAt: prd.createdAt,
         updatedAt: prd.updatedAt,
@@ -148,7 +153,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
         id: row.id,
         projectId: row.projectId,
         versionNumber: row.versionNumber,
-        content: row.content as Record<string, unknown> | null,
+        content: parsePrdVersionContent(row.content),
         status: row.status as PrdStatus,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
@@ -161,7 +166,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
 
   async ensureFirstVersion(
     projectId: string,
-    content: Record<string, unknown> | null
+    content: PrdVersionContent | null
   ): Promise<Result<{ created: boolean; version: PrdVersion }, ApplicationError>> {
     try {
       const latestResult = await this.findLatestByProjectId(projectId);
@@ -171,14 +176,14 @@ export class DrizzlePrdRepository implements IPrdRepository {
         return ok({ created: false, version: existing }) as Result<{ created: boolean; version: PrdVersion }, ApplicationError>;
       }
 
-      const defaultContent =
+      const defaultContent: PrdVersionContent =
         content ??
         ({
           title: 'Draft PRD',
           version_summary:
             'Initial in-app placeholder — run Generate PRD after clarification when ready.',
           sections: [],
-        } satisfies Record<string, unknown>);
+        } satisfies PrdVersionContent);
 
       const now = new Date();
       const [inserted] = await db
@@ -202,7 +207,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
           id: inserted.id,
           projectId: inserted.projectId,
           versionNumber: inserted.versionNumber,
-          content: inserted.content as Record<string, unknown> | null,
+          content: parsePrdVersionContent(inserted.content),
           status: inserted.status as PrdStatus,
           createdAt: inserted.createdAt,
           updatedAt: inserted.updatedAt,
@@ -214,9 +219,23 @@ export class DrizzlePrdRepository implements IPrdRepository {
     }
   }
 
+  private mapMintedShareLink(row: typeof shareLinks.$inferSelect): MintedShareLink {
+    return {
+      id: row.id,
+      prdVersionId: row.prdVersionId,
+      token: row.token,
+      enabled: row.enabled,
+      hasPassword: Boolean(row.passwordHash),
+      expiresAt: row.expiresAt ?? null,
+      createdAt: row.createdAt,
+      disabledAt: row.disabledAt ?? null,
+    };
+  }
+
   async mintReadOnlyShareLink(
     prdVersionId: string,
-    ownerUserId: string
+    ownerUserId: string,
+    options?: MintShareLinkOptions
   ): Promise<Result<MintedShareLink, ApplicationError>> {
     try {
       const [prdVersion] = await db
@@ -230,6 +249,13 @@ export class DrizzlePrdRepository implements IPrdRepository {
         return err(new NotFoundError('PRD version not found'));
       }
 
+      const passwordHash =
+        options?.password != null ? await hashSharePassword(options.password) : undefined;
+      const expiresAt =
+        options?.expiresInDays != null
+          ? new Date(Date.now() + options.expiresInDays * 24 * 60 * 60 * 1000)
+          : undefined;
+
       const [existing] = await db
         .select()
         .from(shareLinks)
@@ -237,37 +263,91 @@ export class DrizzlePrdRepository implements IPrdRepository {
         .limit(1);
 
       if (existing) {
-        return ok({
-          id: existing.id,
-          prdVersionId: existing.prdVersionId,
-          token: existing.token,
-          enabled: existing.enabled,
-          createdAt: existing.createdAt,
-          disabledAt: existing.disabledAt ?? null,
-        }) as Result<MintedShareLink, ApplicationError>;
+        if (passwordHash != null || expiresAt != null) {
+          const patch = {
+            ...(passwordHash != null ? { passwordHash } : {}),
+            ...(expiresAt != null ? { expiresAt } : {}),
+          } as PgUpdateSetSource<typeof shareLinks>;
+          const [updated] = await db
+            .update(shareLinks)
+            .set(patch)
+            .where(eq(shareLinks.id, existing.id))
+            .returning();
+          if (updated) {
+            return ok(this.mapMintedShareLink(updated));
+          }
+        }
+        return ok(this.mapMintedShareLink(existing));
       }
 
       const token = crypto.randomBytes(16).toString('hex');
-      const [inserted] = await db
-        .insert(shareLinks)
-        .values({ prdVersionId, token, enabled: true })
-        .returning();
+      const insertValues = {
+        prdVersionId,
+        token,
+        enabled: true as const,
+        passwordHash: passwordHash ?? null,
+        expiresAt: expiresAt ?? null,
+      } as typeof shareLinks.$inferInsert;
+      const [inserted] = await db.insert(shareLinks).values(insertValues).returning();
 
       if (!inserted) {
         return err(new DatabaseError('Failed to create share link'));
       }
 
-      return ok({
-        id: inserted.id,
-        prdVersionId: inserted.prdVersionId,
-        token: inserted.token,
-        enabled: inserted.enabled,
-        createdAt: inserted.createdAt,
-        disabledAt: inserted.disabledAt ?? null,
-      }) as Result<MintedShareLink, ApplicationError>;
+      return ok(this.mapMintedShareLink(inserted));
     } catch (error) {
       logger.error('mintReadOnlyShareLink failed', error);
       return err(new DatabaseError('Failed to create share link'));
+    }
+  }
+
+  async getShareLinkGateByToken(token: string): Promise<Result<ShareLinkGate, ApplicationError>> {
+    try {
+      const [row] = await db
+        .select({
+          enabled: shareLinks.enabled,
+          passwordHash: shareLinks.passwordHash,
+          expiresAt: shareLinks.expiresAt,
+        })
+        .from(shareLinks)
+        .where(eq(shareLinks.token, token))
+        .limit(1);
+
+      if (!row || !row.enabled) {
+        return err(new NotFoundError('Share link not found or disabled'));
+      }
+
+      const expired = row.expiresAt != null && row.expiresAt.getTime() < Date.now();
+      return ok({
+        requiresPassword: Boolean(row.passwordHash),
+        expired,
+      });
+    } catch (error) {
+      logger.error('getShareLinkGateByToken failed', error);
+      return err(new DatabaseError('Failed to load share link'));
+    }
+  }
+
+  async verifyShareLinkPassword(
+    token: string,
+    password: string
+  ): Promise<Result<boolean, ApplicationError>> {
+    try {
+      const [row] = await db
+        .select({ passwordHash: shareLinks.passwordHash, enabled: shareLinks.enabled })
+        .from(shareLinks)
+        .where(eq(shareLinks.token, token))
+        .limit(1);
+
+      if (!row?.enabled || !row.passwordHash) {
+        return err(new NotFoundError('Share link not found'));
+      }
+
+      const valid = await verifySharePassword(password, row.passwordHash);
+      return ok(valid);
+    } catch (error) {
+      logger.error('verifyShareLinkPassword failed', error);
+      return err(new DatabaseError('Failed to verify share password'));
     }
   }
 
@@ -278,12 +358,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
     try {
       const [row] = await db
         .select({
-          id: shareLinks.id,
-          prdVersionId: shareLinks.prdVersionId,
-          token: shareLinks.token,
-          enabled: shareLinks.enabled,
-          createdAt: shareLinks.createdAt,
-          disabledAt: shareLinks.disabledAt,
+          link: shareLinks,
           projectUserId: projects.userId,
         })
         .from(shareLinks)
@@ -296,16 +371,9 @@ export class DrizzlePrdRepository implements IPrdRepository {
         return err(new NotFoundError('Share link not found'));
       }
 
-      const toMinted = (): MintedShareLink => ({
-        id: row.id,
-        prdVersionId: row.prdVersionId,
-        token: row.token,
-        enabled: row.enabled,
-        createdAt: row.createdAt,
-        disabledAt: row.disabledAt ?? null,
-      });
+      const toMinted = (): MintedShareLink => this.mapMintedShareLink(row.link);
 
-      if (!row.enabled) {
+      if (!row.link.enabled) {
         return ok(toMinted());
       }
 
@@ -326,14 +394,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
         return err(new DatabaseError('Failed to disable share link'));
       }
 
-      return ok({
-        id: updated.id,
-        prdVersionId: updated.prdVersionId,
-        token: updated.token,
-        enabled: updated.enabled,
-        createdAt: updated.createdAt,
-        disabledAt: updated.disabledAt ?? null,
-      });
+      return ok(this.mapMintedShareLink(updated));
     } catch (error) {
       logger.error('revokeReadOnlyShareLink failed', error);
       return err(new DatabaseError('Failed to disable share link'));
@@ -347,6 +408,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
       const [row] = await db
         .select({
           enabled: shareLinks.enabled,
+          expiresAt: shareLinks.expiresAt,
           versionNumber: prdVersions.versionNumber,
           content: prdVersions.content,
           status: prdVersions.status,
@@ -361,14 +423,11 @@ export class DrizzlePrdRepository implements IPrdRepository {
         return err(new NotFoundError('Share link not found or disabled'));
       }
 
-      const rawContent = row.content;
-      const content =
-        rawContent !== null &&
-        typeof rawContent === 'object' &&
-        rawContent !== null &&
-        !Array.isArray(rawContent)
-          ? (rawContent as Record<string, unknown>)
-          : null;
+      if (row.expiresAt != null && row.expiresAt.getTime() < Date.now()) {
+        return err(new NotFoundError('Share link expired'));
+      }
+
+      const content = parsePrdVersionContent(row.content);
 
       const candidate = {
         versionNumber: row.versionNumber ?? 1,

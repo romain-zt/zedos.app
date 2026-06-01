@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ClarifyDecisionUiSchema } from '../ai/decision-ui';
+import { ClarifyDecisionResponseSchema, ClarifyDecisionUiSchema } from '../ai/decision-ui';
 
 export const PRD_SECTIONS = [
   'Product Vision',
@@ -91,7 +91,7 @@ export type ClarifyClientThreadMessage = z.infer<typeof ClarifyClientThreadMessa
 export const ClarifyPostBodySchema = z
   .object({
     message: z.string().nullish(),
-    decisionResponse: z.unknown().nullish(),
+    decisionResponse: ClarifyDecisionResponseSchema.nullish(),
     prdVersionId: z.union([z.string().min(1), z.null()]).optional(),
     clientThread: z.array(ClarifyClientThreadMessageSchema).optional(),
     refinementContextLabel: z.string().optional(),
@@ -101,7 +101,7 @@ export const ClarifyPostBodySchema = z
 export type ClarifyPostBody = z.infer<typeof ClarifyPostBodySchema>;
 
 /** Coerce legacy / invalid JSON in `available_options` to null for outbound DTOs */
-const AvailableOptionsFromDbSchema = z.preprocess((val) => {
+export const AvailableOptionsFromDbSchema = z.preprocess((val) => {
   if (val == null) return null;
   const r = ClarifyDecisionUiSchema.safeParse(val);
   return r.success ? r.data : null;

@@ -16,6 +16,8 @@ import {
   processCheckoutWebhookAtomically,
   getUserCreditBalance as loadUserCreditBalance,
 } from '@infrastructure/persistence/stripe-checkout-webhook-persistence';
+import { resolvePaymentMethodFromCheckoutSession } from '@infrastructure/payments/stripe-off-session-auto-reload';
+import { DrizzleAutoReloadRepository } from '@infrastructure/persistence/auto-reload-repository';
 
 const logger = createLogger({ service: 'CheckoutSessionWebhookProcessor' });
 
@@ -59,6 +61,16 @@ export async function processCheckoutSessionCompletedWebhook(
     if (processResult.kind === 'invalid_purchase') {
       return err(new ValidationError('Purchase not found or user mismatch'));
     }
+
+    const paymentMethod = await resolvePaymentMethodFromCheckoutSession(session.id);
+    if (paymentMethod) {
+      await new DrizzleAutoReloadRepository().saveStripePaymentMethod(
+        userId,
+        paymentMethod.customerId,
+        paymentMethod.paymentMethodId
+      );
+    }
+
     return ok({ balance: processResult.balance, duplicateStripeEvent: false });
   } catch (error) {
     logger.error('Checkout webhook processing failed', error);

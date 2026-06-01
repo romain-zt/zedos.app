@@ -73,7 +73,7 @@ As a signed-in founder, I want to opt in to automatic prepaid credit refills usi
 
 | ID | Question | Blocks | Next action |
 |----|----------|--------|-------------|
-| OQ-1 | Which credit-balance threshold or event fires auto-reload? | Trigger wiring in persistence/API layers | Operator/product decision before trigger implementation; Iteration 1 (db-migration) does not require answer |
+| OQ-1 | Which credit-balance threshold or event fires auto-reload? | — | **Resolved 2026-06-01:** trigger on insufficient-credits path (before returning block to client) when opt-in + saved payment method exist; no automatic retry after failure. |
 
 ---
 

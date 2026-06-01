@@ -1,5 +1,5 @@
 import { IPrdRepository } from '@domain/prd/prd-repository';
-import { MintedShareLink } from '@domain/prd/prd';
+import { MintShareLinkOptions, MintedShareLink } from '@domain/prd/prd';
 import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 
@@ -8,8 +8,9 @@ export class MintReadOnlyShareLinkUseCase {
 
   execute(
     prdVersionId: string,
-    ownerUserId: string
+    ownerUserId: string,
+    options?: MintShareLinkOptions
   ): Promise<Result<MintedShareLink, ApplicationError>> {
-    return this.prdRepository.mintReadOnlyShareLink(prdVersionId, ownerUserId);
+    return this.prdRepository.mintReadOnlyShareLink(prdVersionId, ownerUserId, options);
   }
 }

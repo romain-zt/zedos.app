@@ -24,6 +24,8 @@ describe('ShareLinkMintResponseSchema', () => {
       prdVersionId: 'pv-1',
       token: 'abc',
       enabled: true,
+      hasPassword: false,
+      expiresAt: null,
       createdAt: '2026-05-11T12:00:00.000Z',
       disabledAt: null,
     });

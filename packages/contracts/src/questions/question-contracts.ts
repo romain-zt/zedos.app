@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ClarifyDecisionResponseSchema } from '../ai/decision-ui';
+import { AvailableOptionsFromDbSchema } from './history';
 import { IdSchema } from '../shared/common';
 
 /** POST /api/projects/:id/clarify body */
@@ -18,7 +19,7 @@ export const QuestionHistoryEntryDTOSchema = z.object({
   projectId: IdSchema,
   prdVersionId: IdSchema.nullable(),
   structuredQuestion: z.string(),
-  availableOptions: z.unknown().nullable(),
+  availableOptions: AvailableOptionsFromDbSchema,
   founderAnswer: z.string().nullable(),
   optionalComment: z.string().nullable(),
   aiInterpretation: z.string().nullable(),

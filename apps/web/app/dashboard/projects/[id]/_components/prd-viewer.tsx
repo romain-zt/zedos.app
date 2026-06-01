@@ -21,6 +21,9 @@ import {
 } from '@repo/contracts/ai/generate-prd-stream'
 import { ShareLinkMintResponseSchema, ShareLinkSummarySchema } from '@repo/contracts/share/mint'
 import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
+import { useI18n } from '@/src/i18n'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 interface PrdViewerProps {
   projectId: string
@@ -39,7 +42,10 @@ export function PrdViewer({
   onRefresh,
   onOpenRefinement,
 }: PrdViewerProps) {
+  const { t } = useI18n()
   const { notifyMilestone } = useOwnerMilestonePrompt()
+  const [sharePassword, setSharePassword] = useState('')
+  const [shareExpiresDays, setShareExpiresDays] = useState('30')
   const [shareLink, setShareLink] = useState<string | null>(null)
   const [shareLinkObj, setShareLinkObj] = useState<
     { id: string; token: string; enabled: boolean } | null
@@ -83,7 +89,11 @@ export function PrdViewer({
       const res = await fetch('/api/share/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prdVersionId: selectedVersion.id }),
+        body: JSON.stringify({
+          prdVersionId: selectedVersion.id,
+          ...(sharePassword.trim().length >= 8 ? { password: sharePassword.trim() } : {}),
+          ...(shareExpiresDays ? { expiresInDays: Number.parseInt(shareExpiresDays, 10) } : {}),
+        }),
       })
       if (res?.ok) {
         const raw = await res.json()
@@ -146,6 +156,16 @@ export function PrdViewer({
       setTimeout(() => setCopied(false), 2000)
       toast.success('Copied to clipboard')
     }
+  }
+
+  const handleDownloadPdf = () => {
+    if (!selectedVersion?.id) {
+      toast.error('No PRD version selected')
+      return
+    }
+    const url = `/api/projects/${projectId}/prd-print?versionId=${encodeURIComponent(selectedVersion.id)}`
+    window.open(url, '_blank', 'noopener,noreferrer')
+    toast.success('PDF print dialog opened')
   }
 
   const handleDownloadMarkdown = () => {
@@ -238,7 +258,17 @@ export function PrdViewer({
             title="Download this PRD version as Markdown"
           >
             <Download className="mr-2 h-3.5 w-3.5" />
-            Export MD
+            {t('prd.exportMd')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPdf}
+            disabled={!selectedVersion?.content}
+            title="Open print-friendly PDF export"
+          >
+            <Download className="mr-2 h-3.5 w-3.5" />
+            {t('prd.exportPdf')}
           </Button>
           {onOpenRefinement && selectedVersion && (
             <Button
@@ -263,10 +293,39 @@ export function PrdViewer({
               </Button>
             </div>
           ) : (
-            <Button variant="outline" size="sm" onClick={handleShare} loading={sharing}>
-              <Share2 className="mr-2 h-3.5 w-3.5" />
-              Share
-            </Button>
+            <>
+              <div className="flex flex-col gap-1 w-full sm:w-auto">
+                <Label htmlFor="share-password" className="text-xs text-muted-foreground">
+                  Mot de passe partage (optionnel, 8+ car.)
+                </Label>
+                <Input
+                  id="share-password"
+                  type="password"
+                  value={sharePassword}
+                  onChange={(e) => setSharePassword(e.target.value)}
+                  className="h-9 text-sm"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="flex flex-col gap-1 w-full sm:w-28">
+                <Label htmlFor="share-expiry" className="text-xs text-muted-foreground">
+                  Expiration (jours)
+                </Label>
+                <Input
+                  id="share-expiry"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={shareExpiresDays}
+                  onChange={(e) => setShareExpiresDays(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <Button variant="outline" size="sm" onClick={handleShare} loading={sharing}>
+                <Share2 className="mr-2 h-3.5 w-3.5" />
+                Share
+              </Button>
+            </>
           )}
         </div>
       </div>

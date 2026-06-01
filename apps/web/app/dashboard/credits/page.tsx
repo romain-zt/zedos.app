@@ -9,7 +9,10 @@ import { Coins, Zap, CreditCard, ArrowUpRight, ArrowDownRight, Gift, AlertTriang
 import { toast } from 'sonner'
 import { FadeIn } from '@/components/ui/animate'
 import type { CreditTransactionDTO } from '@repo/contracts/credits/credits-contracts'
+import type { AutoReloadPreferenceDTO } from '@repo/contracts/payments'
 import { CREDITS_UPDATED_EVENT } from '@/lib/credits-events'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 interface CreditPack {
   id: string
@@ -34,6 +37,10 @@ export default function CreditsPage() {
   const [costs, setCosts] = useState<Record<string, number>>({})
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [autoReload, setAutoReload] = useState<AutoReloadPreferenceDTO | null>(null)
+  const [autoReloadSaving, setAutoReloadSaving] = useState(false)
+  const [autoReloadMessage, setAutoReloadMessage] = useState<string | null>(null)
+  const [taxDisclaimer, setTaxDisclaimer] = useState<string | null>(null)
 
   const refreshCredits = useCallback(async (): Promise<void> => {
     const credRes = await fetch('/api/credits', { cache: 'no-store' })
@@ -72,7 +79,14 @@ export default function CreditsPage() {
           if (verifyRes.ok) {
             const verifyData = await verifyRes.json()
             if (!verifyData?.alreadyProcessed) {
-              toast.success(`${verifyData?.creditsAdded ?? 0} crédits ajoutés à votre compte !`)
+              const tax = verifyData?.taxLegibility
+              const taxLine =
+                tax?.taxCents != null && tax.taxCents > 0
+                  ? ` TVA/taxe : €${(tax.taxCents / 100).toFixed(2)} (total €${((tax.totalCents ?? 0) / 100).toFixed(2)}).`
+                  : ''
+              toast.success(
+                `${verifyData?.creditsAdded ?? 0} crédits ajoutés.${taxLine} Reçu Stripe pour le détail fiscal.`
+              )
             }
           } else {
             const errBody = await verifyRes.json().catch(() => ({}))
@@ -90,9 +104,18 @@ export default function CreditsPage() {
             const packData = await packRes.json()
             setPacks(packData?.packs ?? [])
             setCosts(packData?.costs ?? {})
+            setTaxDisclaimer(
+              typeof packData?.taxDisclaimer === 'string' ? packData.taxDisclaimer : null
+            )
           } else {
             toast.error('Impossible de charger les packs de crédits')
           }
+        }
+
+        const autoReloadRes = await fetch('/api/credits/auto-reload', { cache: 'no-store' })
+        if (!cancelled && autoReloadRes.ok) {
+          const autoReloadData = await autoReloadRes.json()
+          setAutoReload(autoReloadData as AutoReloadPreferenceDTO)
         }
 
         if (!cancelled) {
@@ -111,6 +134,37 @@ export default function CreditsPage() {
       cancelled = true
     }
   }, [searchParams, router, refreshCredits])
+
+  const handleAutoReloadToggle = async (enabled: boolean) => {
+    setAutoReloadSaving(true)
+    setAutoReloadMessage(null)
+    try {
+      const res = await fetch('/api/credits/auto-reload', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled, packSize: autoReload?.packSize ?? 100 }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setAutoReloadMessage(
+          typeof data?.error === 'string'
+            ? data.error
+            : 'Complete a manual credit purchase first to save a payment method.'
+        )
+        return
+      }
+      setAutoReload(data as AutoReloadPreferenceDTO)
+      setAutoReloadMessage(
+        enabled
+          ? 'Auto-reload enabled — prepaid convenience only, not a subscription.'
+          : 'Auto-reload disabled.'
+      )
+    } catch {
+      setAutoReloadMessage('Could not update auto-reload settings.')
+    } finally {
+      setAutoReloadSaving(false)
+    }
+  }
 
   const handlePurchase = async (packId: string) => {
     setPurchasing(packId)
@@ -189,10 +243,50 @@ export default function CreditsPage() {
         </Card>
       </FadeIn>
 
+      {/* Auto-reload */}
+      <FadeIn delay={0.12}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display text-base flex items-center gap-2">
+              <Zap className="h-4 w-4 text-purple-500" />
+              Auto-reload (optional)
+            </CardTitle>
+            <CardDescription>
+              Prepaid convenience — buys one credit pack with your saved card when balance is too low.
+              Not a subscription. You can opt out anytime.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="auto-reload-toggle" className="text-sm">
+                Enable auto-reload
+              </Label>
+              <Switch
+                id="auto-reload-toggle"
+                checked={autoReload?.enabled ?? false}
+                disabled={autoReloadSaving || loading}
+                onCheckedChange={(checked) => void handleAutoReloadToggle(checked)}
+              />
+            </div>
+            {!autoReload?.hasSavedPaymentMethod && (
+              <p className="text-sm text-muted-foreground">
+                Complete at least one successful manual checkout to save a payment method before opting in.
+              </p>
+            )}
+            {autoReloadMessage && (
+              <p className="text-sm text-amber-700">{autoReloadMessage}</p>
+            )}
+          </CardContent>
+        </Card>
+      </FadeIn>
+
       {/* Credit Packs */}
       <FadeIn delay={0.15}>
         <div className="space-y-4">
           <h2 className="font-display text-lg font-semibold">Add Credits</h2>
+          {taxDisclaimer && (
+            <p className="text-sm text-muted-foreground">{taxDisclaimer}</p>
+          )}
           {loading ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
@@ -220,6 +314,9 @@ export default function CreditsPage() {
                     <div>
                       <span className="text-3xl font-bold">€{pack.priceEur}</span>
                       <span className="text-muted-foreground ml-1">for {pack.size} credits</span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Digital AI credits — tax/VAT at checkout when applicable
+                      </p>
                     </div>
                     <Button
                       className="w-full"
