@@ -7,8 +7,8 @@ import test from 'node:test';
 const packageRoot = resolve(import.meta.dirname, '..');
 const migrationsFolder = join(packageRoot, 'src/migrations');
 
-test('0010_task_split_tables hash is not satisfied by stale journal rows alone', () => {
-  const query = readFileSync(join(migrationsFolder, '0010_task_split_tables.sql'), 'utf8');
+test('0010_confused_darkhawk hash is not satisfied by stale journal rows alone', () => {
+  const query = readFileSync(join(migrationsFolder, '0010_confused_darkhawk.sql'), 'utf8');
   const hash = createHash('sha256').update(query).digest('hex');
 
   const staleHashes = [
@@ -24,7 +24,7 @@ test('0010 journal when is after 0009 so timestamp-based migrators can apply it'
     readFileSync(join(migrationsFolder, 'meta/_journal.json'), 'utf8'),
   );
   const entry0009 = journal.entries.find((entry) => entry.tag === '0009_account_settings_consents');
-  const entry0010 = journal.entries.find((entry) => entry.tag === '0010_task_split_tables');
+  const entry0010 = journal.entries.find((entry) => entry.tag === '0010_confused_darkhawk');
 
   assert.ok(entry0009);
   assert.ok(entry0010);

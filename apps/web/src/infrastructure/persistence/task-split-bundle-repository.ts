@@ -216,7 +216,7 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
             .returning({ id: taskSplitBundles.id });
 
           if (!inserted) {
-            throw new Error('Insert task_split_bundles returned no row');
+            throw new DatabaseError('Insert task_split_bundles returned no row');
           }
           bundleId = inserted.id;
         }
@@ -238,7 +238,7 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
           .where(eq(taskSplitBundles.id, bundleId));
 
         if (!bundleRow) {
-          throw new Error('Bundle row missing after save');
+          throw new DatabaseError('Bundle row missing after save');
         }
 
         const loadedTasks = await tx
@@ -297,7 +297,7 @@ export class DrizzleTaskSplitBundleRepository implements ITaskSplitBundleReposit
 
         const loaded = await loadBundleWithTasks(bundleId);
         if (!loaded) {
-          throw new Error('Bundle missing after lock');
+          throw new DatabaseError('Bundle missing after lock');
         }
         return loaded;
       });

@@ -28,8 +28,9 @@ describe('DrizzleDeliveryExportRepository', () => {
   });
 
   it('uses actual task_split column names in SQL', () => {
-    expect(repositorySource).toContain('story_title');
-    expect(repositorySource).toContain('story_body');
+    expect(repositorySource).toContain('b.story_title');
+    expect(repositorySource).toContain('b.story_body');
+    expect(repositorySource).not.toMatch(/\bstory_title_snapshot\b/);
     expect(repositorySource).toContain('deleted_at');
     expect(repositorySource).toContain('task_split_bundles');
     expect(repositorySource).toContain('task_split_tasks');
