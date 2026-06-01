@@ -17,6 +17,7 @@ export type OperationType =
   | 'scope_slice'
   | 'test_plan'
   | 'feature_split'
+  | 'task_split'
   | 'mini_form'
   | 'prd_challenge';
 

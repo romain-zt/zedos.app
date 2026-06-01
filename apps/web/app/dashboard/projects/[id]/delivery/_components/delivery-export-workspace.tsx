@@ -3,304 +3,386 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FadeIn } from '@/components/ui/animate';
-import { Download, Eye, Loader2, Lock, Package } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   ExportEligibleListResponseSchema,
   DeliveryPreviewResponseSchema,
   type ExportEligibleBundleDTO,
-  type DeliveryPreviewStoryDTO,
+  type DeliveryPreviewResponse,
 } from '@repo/contracts/delivery';
+import {
+  ArrowLeft,
+  Download,
+  Eye,
+  FileArchive,
+  Info,
+  Loader2,
+  Package,
+  AlertTriangle,
+} from 'lucide-react';
 
-interface Props {
+interface DeliveryExportWorkspaceProps {
   projectId: string;
   projectName: string;
 }
 
-export function DeliveryExportWorkspace({ projectId, projectName }: Props) {
-  const apiBase = `/api/projects/${projectId}/delivery`;
+type LoadState = 'idle' | 'loading' | 'error';
 
+export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExportWorkspaceProps) {
   const [bundles, setBundles] = useState<ExportEligibleBundleDTO[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const [preview, setPreview] = useState<DeliveryPreviewStoryDTO[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [previewing, setPreviewing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [listState, setListState] = useState<LoadState>('loading');
+  const [listError, setListError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<DeliveryPreviewResponse | null>(null);
+  const [previewState, setPreviewState] = useState<LoadState>('idle');
   const [exporting, setExporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const loadEligible = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setListState('loading');
+    setListError(null);
     try {
-      const res = await fetch(`${apiBase}/eligible`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Could not load export-ready bundles');
-      const parsed = ExportEligibleListResponseSchema.safeParse(await res.json());
-      if (!parsed.success) throw new Error('Unexpected response');
-      const loaded = parsed.data.bundles;
-      setBundles(loaded);
-      setSelected(new Set(loaded.map((b) => b.id)));
+      const res = await fetch(`/api/projects/${projectId}/delivery/eligible`);
+      if (res.status === 401) {
+        setListError('Please sign in again.');
+        setBundles([]);
+        return;
+      }
+      if (!res.ok) {
+        setListError(`Could not load export-ready stories (HTTP ${res.status}).`);
+        setBundles([]);
+        return;
+      }
+      const raw: unknown = await res.json();
+      const parsed = ExportEligibleListResponseSchema.safeParse(raw);
+      if (!parsed.success) {
+        setListError('Unexpected response from server.');
+        setBundles([]);
+        return;
+      }
+      const items = parsed.data.bundles;
+      setBundles(items);
+      setSelectedIds(new Set(items.map((b) => b.id)));
+      setPreview(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load bundles');
+      const detail = e instanceof Error ? e.message : 'Network error';
+      setListError(detail);
+      setBundles([]);
     } finally {
-      setLoading(false);
+      setListState('idle');
     }
-  }, [apiBase]);
+  }, [projectId]);
 
   useEffect(() => {
     void loadEligible();
   }, [loadEligible]);
 
-  const selectedIds = useMemo(() => Array.from(selected), [selected]);
+  const selectedArray = useMemo(() => Array.from(selectedIds), [selectedIds]);
+  const allSelected = bundles.length > 0 && selectedArray.length === bundles.length;
 
-  const toggle = (id: string) => {
+  const toggleBundle = (id: string, checked: boolean) => {
+    setValidationError(null);
     setPreview(null);
-    setSelected((prev) => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (checked) next.add(id);
+      else next.delete(id);
       return next;
     });
   };
 
-  const selectAll = () => {
+  const toggleAll = (checked: boolean) => {
+    setValidationError(null);
     setPreview(null);
-    setSelected(new Set(bundles.map((b) => b.id)));
+    if (checked) setSelectedIds(new Set(bundles.map((b) => b.id)));
+    else setSelectedIds(new Set());
   };
 
-  const clearSelection = () => {
+  const runPreview = async () => {
+    if (selectedArray.length < 1) {
+      setValidationError('Select at least one story bundle to preview.');
+      return;
+    }
+    setValidationError(null);
+    setPreviewState('loading');
     setPreview(null);
-    setSelected(new Set());
-  };
-
-  const handlePreview = async () => {
-    if (selectedIds.length === 0) return;
-    setPreviewing(true);
-    setError(null);
     try {
-      const res = await fetch(`${apiBase}/preview`, {
+      const res = await fetch(`/api/projects/${projectId}/delivery/preview`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bundleIds: selectedIds }),
+        body: JSON.stringify({ bundleIds: selectedArray }),
       });
-      const raw = await res.json();
-      if (!res.ok) throw new Error(raw?.error ?? 'Preview failed');
+      if (!res.ok) {
+        const body: unknown = await res.json().catch(() => ({}));
+        const message =
+          typeof body === 'object' &&
+          body !== null &&
+          'error' in body &&
+          typeof (body as { error: unknown }).error === 'string'
+            ? (body as { error: string }).error
+            : `Preview failed (HTTP ${res.status})`;
+        toast.error(message);
+        setPreviewState('error');
+        return;
+      }
+      const raw: unknown = await res.json();
       const parsed = DeliveryPreviewResponseSchema.safeParse(raw);
-      if (!parsed.success) throw new Error('Unexpected preview response');
-      setPreview(parsed.data.stories);
+      if (!parsed.success) {
+        toast.error('Unexpected preview response');
+        setPreviewState('error');
+        return;
+      }
+      setPreview(parsed.data);
+      setPreviewState('idle');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Preview failed');
-    } finally {
-      setPreviewing(false);
+      toast.error(e instanceof Error ? e.message : 'Preview failed');
+      setPreviewState('error');
     }
   };
 
-  const handleExport = async () => {
-    if (selectedIds.length === 0) return;
+  const runExport = async () => {
+    if (selectedArray.length < 1) {
+      setValidationError('Select at least one story bundle to export.');
+      return;
+    }
+    if (exporting) return;
+    setValidationError(null);
     setExporting(true);
-    setError(null);
     try {
-      const res = await fetch(`${apiBase}/export`, {
+      const res = await fetch(`/api/projects/${projectId}/delivery/export`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bundleIds: selectedIds }),
+        body: JSON.stringify({ bundleIds: selectedArray }),
       });
       if (!res.ok) {
-        const raw = await res.json().catch(() => ({}));
-        throw new Error(raw?.error ?? 'Export failed');
+        const body: unknown = await res.json().catch(() => ({}));
+        const message =
+          typeof body === 'object' &&
+          body !== null &&
+          'error' in body &&
+          typeof (body as { error: unknown }).error === 'string'
+            ? (body as { error: string }).error
+            : `Export failed (HTTP ${res.status})`;
+        toast.error(message);
+        return;
       }
       const blob = await res.blob();
-      const filename = parseFilename(res.headers.get('Content-Disposition')) ?? 'cursor-package.zip';
-      triggerDownload(blob, filename);
+      const disposition = res.headers.get('Content-Disposition');
+      const filenameMatch = disposition?.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] ?? `zedos-delivery-${projectId.slice(0, 8)}.zip`;
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast.success('Package downloaded — unzip into your repo root and open in Cursor.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Export failed');
+      toast.error(e instanceof Error ? e.message : 'Export failed');
     } finally {
       setExporting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-2xl space-y-4 px-1 sm:px-0">
-        <Header projectName={projectName} />
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading export-ready task bundles…
-        </p>
-      </div>
-    );
-  }
+  const isEmpty = listState !== 'loading' && bundles.length === 0;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-1 sm:px-0">
+    <div className="max-w-4xl mx-auto space-y-6">
       <FadeIn>
-        <Header projectName={projectName} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <Button variant="ghost" size="sm" className="mb-2 -ml-2 min-h-11" asChild>
+              <Link href={`/dashboard/projects/${projectId}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to workspace
+              </Link>
+            </Button>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+              <Package className="h-7 w-7 text-primary shrink-0" />
+              Cursor delivery
+            </h1>
+            <p className="mt-1 text-muted-foreground text-sm sm:text-base">
+              Export locked story bundles for <span className="font-medium text-foreground">{projectName}</span> as a
+              ZIP with <code className="text-xs">WORK_QUEUE.md</code> and per-story prompt files (PD-001).
+            </p>
+          </div>
+        </div>
       </FadeIn>
 
-      {error && (
-        <p className="rounded border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </p>
+      {listError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Could not load bundles</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>{listError}</p>
+            <Button type="button" variant="outline" size="sm" onClick={() => void loadEligible()}>
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
-      {bundles.length === 0 ? (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Nothing to export yet</CardTitle>
+      {listState === 'loading' && (
+        <div className="flex items-center justify-center py-16 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          Loading export-ready stories…
+        </div>
+      )}
+
+      {isEmpty && !listError && (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-lg">No export-ready bundles yet</CardTitle>
+            <CardDescription>
+              Delivery needs <strong>locked</strong> task-split bundles from test-first workflows. Complete user stories,
+              generate tasks with prompts, then lock each bundle upstream.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Delivery packages are built from <strong>locked</strong> task bundles. Split a story into
-              tasks and lock the bundle, then come back here to download a Cursor-ready package.
-            </p>
+          <CardContent className="flex flex-wrap gap-3">
+            <Button asChild variant="default" className="min-h-11">
+              <Link href={`/dashboard/projects/${projectId}/task-split`}>Go to task split</Link>
+            </Button>
             <Button asChild variant="outline" className="min-h-11">
-              <Link href={`/dashboard/projects/${projectId}/task-split`}>Go to task splitting</Link>
+              <Link href={`/dashboard/projects/${projectId}/user-stories`}>User stories</Link>
+            </Button>
+            <Button asChild variant="outline" className="min-h-11">
+              <Link href={`/dashboard/projects/${projectId}/feature-split`}>Feature split</Link>
             </Button>
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {!isEmpty && listState !== 'loading' && bundles.length > 0 && (
         <>
-          <div className="space-y-2">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm font-medium">Locked task bundles</span>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={selectAll}>
-                  Select all
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Select bundles</CardTitle>
+              <CardDescription>
+                Only locked, export-ready story bundles appear here. Default selection includes all eligible bundles.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3 border-b pb-3">
+                <Checkbox
+                  id="select-all-bundles"
+                  checked={allSelected}
+                  onCheckedChange={(v) => toggleAll(v === true)}
+                  aria-label="Select all bundles"
+                />
+                <label htmlFor="select-all-bundles" className="text-sm font-medium cursor-pointer">
+                  Select all ({bundles.length})
+                </label>
+              </div>
+              <ul className="space-y-2">
+                {bundles.map((bundle) => (
+                  <li
+                    key={bundle.id}
+                    className="flex items-start gap-3 rounded-lg border px-4 py-3 hover:bg-muted/30 transition-colors"
+                  >
+                    <Checkbox
+                      id={`bundle-${bundle.id}`}
+                      checked={selectedIds.has(bundle.id)}
+                      onCheckedChange={(v) => toggleBundle(bundle.id, v === true)}
+                      aria-label={`Select ${bundle.storyTitle}`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <label htmlFor={`bundle-${bundle.id}`} className="font-medium cursor-pointer block truncate">
+                        {bundle.storyTitle}
+                      </label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {bundle.taskCount} task{bundle.taskCount !== 1 ? 's' : ''} · locked{' '}
+                        {new Date(bundle.lockedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {validationError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {validationError}
+                </p>
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={previewState === 'loading'}
+                  onClick={() => void runPreview()}
+                >
+                  {previewState === 'loading' ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Eye className="mr-2 h-4 w-4" />
+                  )}
+                  Preview package
                 </Button>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
                   className="min-h-11"
-                  onClick={clearSelection}
-                  disabled={selected.size === 0}
+                  disabled={exporting}
+                  onClick={() => void runExport()}
                 >
-                  Clear
+                  {exporting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  Download ZIP
                 </Button>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              {bundles.map((b) => {
-                const checked = selected.has(b.id);
-                return (
-                  <label
-                    key={b.id}
-                    htmlFor={`bundle-${b.id}`}
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
-                      checked ? 'border-primary bg-primary/5' : 'border-border'
-                    }`}
-                  >
-                    <Checkbox
-                      id={`bundle-${b.id}`}
-                      checked={checked}
-                      onCheckedChange={() => toggle(b.id)}
-                      className="mt-0.5 h-5 w-5"
-                      aria-label={`Include ${b.storyTitle} in the export`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium leading-snug">{b.storyTitle}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="secondary" className="gap-1">
-                          <Lock className="h-3 w-3" />
-                          Locked
-                        </Badge>
-                        <span>
-                          {b.taskCount} {b.taskCount === 1 ? 'task' : 'tasks'}
-                        </span>
-                      </div>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11"
-              disabled={selected.size === 0 || previewing || exporting}
-              onClick={handlePreview}
-            >
-              {previewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
-              <span className="ml-2">Preview</span>
-            </Button>
-            <Button
-              type="button"
-              className="min-h-11"
-              disabled={selected.size === 0 || exporting || previewing}
-              onClick={handleExport}
-            >
-              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              <span className="ml-2">
-                {exporting ? 'Building…' : `Download Cursor package${selected.size > 0 ? ` (${selected.size})` : ''}`}
-              </span>
-            </Button>
-          </div>
+            </CardContent>
+          </Card>
 
           {preview && (
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Package preview</p>
-              {preview.map((story) => (
-                <Card key={story.bundleId}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{story.storyTitle}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {story.tasks.map((task) => (
-                      <div key={task.id} className="rounded-md border bg-muted/30 p-2">
-                        <p className="text-sm font-medium">
-                          {task.sortOrder + 1}. {task.title}
-                        </p>
-                        {task.promptExcerpt && (
-                          <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">{task.promptExcerpt}</p>
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileArchive className="h-5 w-5" />
+                  Preview (read-only)
+                </CardTitle>
+                <CardDescription>
+                  Ordered stories and task prompt excerpts — upstream content cannot be edited here.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {preview.stories.map((story) => (
+                  <div key={story.bundleId} className="border rounded-lg p-4 space-y-3">
+                    <h3 className="font-semibold">{story.storyTitle}</h3>
+                    <ol className="space-y-3 list-none pl-0">
+                      {story.tasks.map((task) => (
+                        <li key={task.id} className="text-sm border-l-2 border-primary/30 pl-3">
+                          <p className="font-medium">
+                            {task.sortOrder + 1}. {task.title}
+                          </p>
+                          <p className="text-muted-foreground mt-1 font-mono text-xs whitespace-pre-wrap">
+                            {task.promptExcerpt}
+                            {task.promptExcerpt.length >= 500 ? '…' : ''}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           )}
+
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>After download</AlertTitle>
+            <AlertDescription>
+              Unzip the archive at your repository root. Open the folder in Cursor and start from{' '}
+              <code className="text-xs">WORK_QUEUE.md</code> — story details live under{' '}
+              <code className="text-xs">docs/execution/user-stories/</code>.
+            </AlertDescription>
+          </Alert>
         </>
       )}
     </div>
   );
-}
-
-function Header({ projectName }: { projectName: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Package className="h-5 w-5" />
-      </div>
-      <div>
-        <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">Delivery</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {projectName} — package locked tasks into a Cursor-ready export.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function parseFilename(disposition: string | null): string | null {
-  if (!disposition) return null;
-  const match = /filename="?([^"]+)"?/.exec(disposition);
-  return match?.[1] ?? null;
-}
-
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
 }

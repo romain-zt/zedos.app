@@ -1,4 +1,6 @@
-/** Task split bundle — domain types (aligned with Drizzle tables, not HTTP DTOs). */
+/**
+ * Task-split bundle — domain types (aligned with Drizzle tables, not HTTP DTOs).
+ */
 
 export interface TaskSplitTaskDomain {
   id: string;
@@ -14,19 +16,25 @@ export interface TaskSplitTaskDomain {
 export interface TaskSplitBundleDomain {
   id: string;
   projectId: string;
-  sourceUserStoryKey: string | null;
-  storyTitleSnapshot: string | null;
+  userStoryLineId: string | null;
+  storyTitle: string | null;
+  storyBody: string | null;
   lockedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   tasks: TaskSplitTaskDomain[];
 }
 
-/** Persist payload from application layer (id optional for new rows). */
-export interface SaveTaskInput {
+export interface SaveTaskSplitTaskInput {
   id?: string;
   sortOrder: number;
   title: string;
   promptBody: string;
-  manual?: boolean;
+  manual: boolean;
+}
+
+export interface EligibleUserStoryLineSnapshot {
+  lineId: string;
+  title: string;
+  body: string;
 }

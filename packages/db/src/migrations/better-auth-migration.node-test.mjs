@@ -33,7 +33,7 @@ test('migration 0003 allows null password_hash for better-auth users', () => {
 });
 
 test('migration 0010 defines task split bundle and task tables', () => {
-  const sqlPath = path.join(__dirname, '0010_task_split_tables.sql');
+  const sqlPath = path.join(__dirname, '0010_confused_darkhawk.sql');
   assert.ok(fs.existsSync(sqlPath), `missing migration file: ${sqlPath}`);
   const sql = fs.readFileSync(sqlPath, 'utf8');
   assert.match(sql, /CREATE TABLE IF NOT EXISTS "task_split_bundles"/);

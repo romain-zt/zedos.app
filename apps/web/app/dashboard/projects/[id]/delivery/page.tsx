@@ -5,7 +5,7 @@ import { GetProjectUseCase } from '@application/project/get-project-usecase';
 import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository';
 import { DeliveryExportWorkspace } from './_components/delivery-export-workspace';
 
-export default async function DeliveryPage({ params }: { params: { id: string } }) {
+export default async function DeliveryExportPage({ params }: { params: { id: string } }) {
   const userResult = await requireUser(headers());
   if (userResult.isErr()) redirect('/sign-in');
   const userId = userResult.unwrap().id;
@@ -16,5 +16,7 @@ export default async function DeliveryPage({ params }: { params: { id: string } 
 
   const project = result.unwrap();
 
-  return <DeliveryExportWorkspace projectId={project.id} projectName={project.name} />;
+  return (
+    <DeliveryExportWorkspace projectId={project.id} projectName={project.name} />
+  );
 }

@@ -1,26 +1,35 @@
-import { z } from 'zod';
+/**
+ * Task-split draft generation — template or assisted (AI) task lists.
+ */
 
-/** Request to AI-generate task split draft from user stories corpus. */
+import { z } from 'zod';
+import { IdSchema } from '../shared/common';
+import { TaskSplitTaskSaveInputSchema } from './bundle';
+
 export const GenerateTaskSplitRequestSchema = z.object({
-  /** Optional stable key of the user story to generate tasks from. */
-  sourceUserStoryKey: z.string().max(500).optional(),
-  /** Optional snapshot of the story title to include in prompt context. */
-  storyTitleSnapshot: z.string().max(500).optional(),
+  userStoryLineId: IdSchema,
+  mode: z.enum(['template', 'ai']),
 });
 
 export type GenerateTaskSplitRequest = z.infer<typeof GenerateTaskSplitRequestSchema>;
 
-/** AI response shape for a single generated task. */
-export const GeneratedTaskItemSchema = z.object({
-  title: z.string().min(1).max(500),
-  promptBody: z.string().min(1).max(10_000),
+export const TaskSplitAiDraftTaskSchema = z.object({
+  title: z.string().min(1).max(2000),
+  promptBody: z.string().min(1).max(20_000),
+  sortOrder: z.number().int().nonnegative().optional(),
 });
 
-export type GeneratedTaskItem = z.infer<typeof GeneratedTaskItemSchema>;
-
-/** AI response shape — array of tasks. Validated before any DB write. */
-export const GenerateTaskSplitAiResponseSchema = z.object({
-  tasks: z.array(GeneratedTaskItemSchema).min(1).max(20),
+export const TaskSplitAiDraftListSchema = z.object({
+  tasks: z.array(TaskSplitAiDraftTaskSchema).min(1).max(32),
 });
 
-export type GenerateTaskSplitAiResponse = z.infer<typeof GenerateTaskSplitAiResponseSchema>;
+export type TaskSplitAiDraftList = z.infer<typeof TaskSplitAiDraftListSchema>;
+
+export const GenerateTaskSplitDraftResponseSchema = z.object({
+  userStoryLineId: IdSchema,
+  storyTitle: z.string().min(1),
+  storyBody: z.string().min(1),
+  tasks: z.array(TaskSplitTaskSaveInputSchema).min(1).max(64),
+});
+
+export type GenerateTaskSplitDraftResponse = z.infer<typeof GenerateTaskSplitDraftResponseSchema>;

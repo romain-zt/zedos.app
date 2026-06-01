@@ -57,7 +57,7 @@ const makeDeliveryRepo = (bundles: ExportEligibleBundle[]): IDeliveryExportRepos
 });
 
 const makeAssembler = (): ICursorPackageAssembler => ({
-  assembleZip: vi.fn().mockResolvedValue(ok(Buffer.from('PK\x03\x04mock-zip'))),
+  assembleZip: vi.fn().mockResolvedValue(Buffer.from('PK\x03\x04mock-zip')),
 });
 
 describe('BuildDeliveryPackageUseCase', () => {
@@ -87,16 +87,13 @@ describe('BuildDeliveryPackageUseCase', () => {
 });
 
 describe('PD-001 package files (assembler)', () => {
-  it('includes WORK_QUEUE rows and per-task prompt files', () => {
-    const bundle = sampleBundle();
-    const files = buildPackageFiles([bundle]);
+  it('includes WORK_QUEUE rows and per-story markdown', () => {
+    const files = buildPackageFiles([sampleBundle()]);
     const workQueue = files.find((f) => f.path === 'WORK_QUEUE.md');
-    // Task prompt files live at {story-slug}/{n}-{task-slug}.md
-    const taskFile = files.find((f) => f.path.endsWith('.md') && !f.path.startsWith('WORK_QUEUE') && !f.path.startsWith('.cursor'));
+    const storyFile = files.find((f) => f.path.includes('docs/execution/user-stories/'));
     expect(workQueue?.content).toContain('DEL-');
     expect(workQueue?.content).toContain('Add checkout route');
-    expect(taskFile).toBeDefined();
-    expect(taskFile?.content).toContain('Implement POST /api/checkout');
-    expect(files.find((f) => f.path.includes('wire-stripe-session'))?.content).toContain('Wire Stripe session');
+    expect(storyFile?.content).toContain('Implement POST /api/checkout');
+    expect(storyFile?.content).toContain('Wire Stripe session');
   });
 });

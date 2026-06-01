@@ -28,18 +28,19 @@ describe('DrizzleDeliveryExportRepository', () => {
   });
 
   it('uses actual task_split column names in SQL', () => {
-    expect(repositorySource).toContain('story_title_snapshot');
-    expect(repositorySource).not.toMatch(/\bstory_title\b(?!_snapshot)/);
-    expect(repositorySource).not.toContain('story_body');
-    expect(repositorySource).not.toContain('deleted_at');
+    expect(repositorySource).toContain('b.story_title');
+    expect(repositorySource).toContain('b.story_body');
+    expect(repositorySource).not.toMatch(/\bstory_title_snapshot\b/);
+    expect(repositorySource).toContain('deleted_at');
   });
 
-  it('maps story_title_snapshot rows when listing eligible bundles', async () => {
+  it('maps story_title rows when listing eligible bundles', async () => {
     mocks.execute.mockResolvedValue([
       {
         id: 'bundle-1',
         project_id: 'proj-1',
-        story_title_snapshot: 'Checkout flow',
+        story_title: 'Checkout flow',
+        story_body: '',
         locked_at: new Date('2026-05-01'),
         task_count: 2,
       },
@@ -62,7 +63,8 @@ describe('DrizzleDeliveryExportRepository', () => {
         {
           id: 'bundle-1',
           project_id: 'proj-1',
-          story_title_snapshot: 'Checkout flow',
+          story_title: 'Checkout flow',
+          story_body: '',
           locked_at: new Date('2026-05-01'),
           task_count: 1,
         },

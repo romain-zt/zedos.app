@@ -121,15 +121,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   </p>
                 </div>
                 {([
-                  { href: `/dashboard/projects/${workspaceProjectId}`, label: 'Workspace', icon: FileText, exact: true },
-                  { href: `/dashboard/projects/${workspaceProjectId}/feature-split`, label: 'Feature split', icon: Layers, exact: false },
-                  { href: `/dashboard/projects/${workspaceProjectId}/user-stories`, label: 'User stories', icon: GitBranch, exact: false },
-                  { href: `/dashboard/projects/${workspaceProjectId}/task-split`, label: 'Task splitting', icon: BarChart3, exact: false },
-                  { href: `/dashboard/projects/${workspaceProjectId}/delivery`, label: 'Delivery', icon: Package, exact: false },
+                  { href: `/dashboard/projects/${workspaceProjectId}`, label: 'Workspace', icon: FileText },
+                  { href: `/dashboard/projects/${workspaceProjectId}/feature-split`, label: 'Feature split', icon: Layers },
+                  { href: `/dashboard/projects/${workspaceProjectId}/user-stories`, label: 'User stories', icon: GitBranch },
+                  { href: `/dashboard/projects/${workspaceProjectId}/task-split`, label: 'Task split', icon: BarChart3 },
+                  { href: `/dashboard/projects/${workspaceProjectId}/delivery`, label: 'Delivery', icon: Package },
                 ] as const).map((sub) => {
-                  const isSubActive = sub.exact
-                    ? pathname === sub.href
-                    : pathname === sub.href || pathname?.startsWith(`${sub.href}/`)
+                  const isSubActive =
+                    pathname === sub.href || pathname?.startsWith(`${sub.href}/`)
                   return (
                     <div key={sub.href}>
                       <button

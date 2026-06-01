@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node ./scripts/build.cjs",
+    "build": "pnpm lint && next build",
     "start": "next start",
     "lint": "node ./scripts/lint.cjs",
     "typecheck": "tsc --noEmit",

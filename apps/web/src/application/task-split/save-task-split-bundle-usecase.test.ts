@@ -1,59 +1,83 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ok, err } from '@repo/result';
 import { SaveTaskSplitBundleUseCase } from './save-task-split-bundle-usecase';
-import { NotFoundError, ValidationError } from '@shared/errors/application-error';
+import { ForbiddenError, NotFoundError } from '@shared/errors/application-error';
+import type { IProjectRepository } from '@domain/project/project-repository';
+import type { ITaskSplitBundleRepository } from '@domain/task-split/task-split-bundle-repository';
 
-const mockProject = { id: 'proj-1', userId: 'user-1', name: 'Test' };
-
-const mockProjectRepo = {
-  findByIdAndUserId: vi.fn().mockResolvedValue(ok(mockProject)),
-  findById: vi.fn(),
-  findByUserId: vi.fn(),
-  save: vi.fn(),
-  delete: vi.fn(),
-};
-
-const mockBundle = {
-  id: 'bundle-1',
-  projectId: 'proj-1',
-  sourceUserStoryKey: null,
-  storyTitleSnapshot: null,
-  lockedAt: null,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  tasks: [],
-};
-
-const mockBundleRepo = {
-  findByProject: vi.fn().mockResolvedValue(ok(null)),
-  save: vi.fn().mockResolvedValue(ok(mockBundle)),
-  lock: vi.fn(),
-};
+function makeProjectRepo(): IProjectRepository {
+  return {
+    findByIdAndUserId: vi.fn().mockResolvedValue(ok({ id: 'p1', name: 'P', userId: 'u1' })),
+  } as unknown as IProjectRepository;
+}
 
 describe('SaveTaskSplitBundleUseCase', () => {
-  it('returns error when project not found', async () => {
-    mockProjectRepo.findByIdAndUserId.mockResolvedValueOnce(
-      err(new NotFoundError('Not found'))
-    );
-    const uc = new SaveTaskSplitBundleUseCase(mockProjectRepo as never, mockBundleRepo as never);
-    const result = await uc.execute('proj-1', 'user-1', { tasks: [{ sortOrder: 0, title: 'T', promptBody: 'P', manual: false }] });
+  it('rejects when story line is not eligible', async () => {
+    const bundleRepo: ITaskSplitBundleRepository = {
+      findEligibleStoryLine: vi.fn().mockResolvedValue(ok(null)),
+      findByProjectAndStoryLine: vi.fn(),
+      save: vi.fn(),
+      lock: vi.fn(),
+    };
+
+    const uc = new SaveTaskSplitBundleUseCase(makeProjectRepo(), bundleRepo);
+    const result = await uc.execute('p1', 'u1', 'line-1', [
+      { sortOrder: 0, title: 'T', promptBody: 'P', manual: false },
+    ]);
+
     expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error).toBeInstanceOf(NotFoundError);
   });
 
-  it('returns error when tasks array is empty', async () => {
-    const uc = new SaveTaskSplitBundleUseCase(mockProjectRepo as never, mockBundleRepo as never);
-    const result = await uc.execute('proj-1', 'user-1', { tasks: [] });
-    expect(result.isErr()).toBe(true);
-    if (result.isErr()) {
-      expect(result.error).toBeInstanceOf(ValidationError);
-    }
-  });
+  it('persists tasks when story line is eligible', async () => {
+    const bundle = {
+      id: 'b1',
+      projectId: 'p1',
+      userStoryLineId: 'line-1',
+      storyTitle: 'Story',
+      storyBody: 'Body',
+      lockedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      tasks: [],
+    };
 
-  it('saves and returns bundle on valid input', async () => {
-    const uc = new SaveTaskSplitBundleUseCase(mockProjectRepo as never, mockBundleRepo as never);
-    const result = await uc.execute('proj-1', 'user-1', {
-      tasks: [{ sortOrder: 0, title: 'Implement auth', promptBody: 'Use better-auth...', manual: false }],
-    });
+    const bundleRepo: ITaskSplitBundleRepository = {
+      findEligibleStoryLine: vi.fn().mockResolvedValue(
+        ok({ lineId: 'line-1', title: 'Story', body: 'Body' })
+      ),
+      findByProjectAndStoryLine: vi.fn(),
+      save: vi.fn().mockResolvedValue(ok(bundle)),
+      lock: vi.fn(),
+    };
+
+    const uc = new SaveTaskSplitBundleUseCase(makeProjectRepo(), bundleRepo);
+    const result = await uc.execute('p1', 'u1', 'line-1', [
+      { sortOrder: 0, title: 'T', promptBody: 'P', manual: true },
+    ]);
+
     expect(result.isOk()).toBe(true);
+    expect(bundleRepo.save).toHaveBeenCalledWith('p1', 'line-1', 'Story', 'Body', [
+      { sortOrder: 0, title: 'T', promptBody: 'P', manual: true },
+    ]);
+  });
+
+  it('surfaces forbidden when repository rejects locked bundle', async () => {
+    const bundleRepo: ITaskSplitBundleRepository = {
+      findEligibleStoryLine: vi.fn().mockResolvedValue(
+        ok({ lineId: 'line-1', title: 'Story', body: 'Body' })
+      ),
+      findByProjectAndStoryLine: vi.fn(),
+      save: vi.fn().mockResolvedValue(err(new ForbiddenError('Bundle is locked'))),
+      lock: vi.fn(),
+    };
+
+    const uc = new SaveTaskSplitBundleUseCase(makeProjectRepo(), bundleRepo);
+    const result = await uc.execute('p1', 'u1', 'line-1', [
+      { sortOrder: 0, title: 'T', promptBody: 'P', manual: false },
+    ]);
+
+    expect(result.isErr()).toBe(true);
+    if (result.isErr()) expect(result.error).toBeInstanceOf(ForbiddenError);
   });
 });

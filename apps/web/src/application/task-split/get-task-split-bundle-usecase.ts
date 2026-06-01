@@ -15,7 +15,8 @@ export class GetTaskSplitBundleUseCase {
 
   async execute(
     projectId: string,
-    userId: string
+    userId: string,
+    userStoryLineId: string
   ): Promise<Result<TaskSplitBundleDomain | null, ApplicationError>> {
     const projectResult = await this.projectRepository.findByIdAndUserId(projectId, userId);
     if (projectResult.isErr()) {
@@ -23,6 +24,6 @@ export class GetTaskSplitBundleUseCase {
       return err(projectResult.error);
     }
 
-    return this.bundleRepository.findByProject(projectId);
+    return this.bundleRepository.findByProjectAndStoryLine(projectId, userStoryLineId);
   }
 }

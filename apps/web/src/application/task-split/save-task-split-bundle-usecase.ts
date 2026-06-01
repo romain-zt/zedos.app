@@ -1,15 +1,12 @@
 import { IProjectRepository } from '@domain/project/project-repository';
-import type { ITaskSplitBundleRepository } from '@domain/task-split/task-split-bundle-repository';
-import type { SaveTaskInput, TaskSplitBundleDomain } from '@domain/task-split/task-split-bundle';
-import { SaveTaskSplitBundleRequestSchema } from '@repo/contracts';
-import type { z } from 'zod';
+import { ITaskSplitBundleRepository } from '@domain/task-split/task-split-bundle-repository';
+import type { SaveTaskSplitTaskInput, TaskSplitBundleDomain } from '@domain/task-split/task-split-bundle';
 import { Result, err } from '@repo/result';
-import { ApplicationError, ValidationError } from '@shared/errors/application-error';
+import { ApplicationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
+import { requireEligibleStoryLine } from './require-eligible-story-line';
 
 const logger = createLogger({ operation: 'SaveTaskSplitBundleUseCase' });
-
-type SaveRequest = z.infer<typeof SaveTaskSplitBundleRequestSchema>;
 
 export class SaveTaskSplitBundleUseCase {
   constructor(
@@ -20,7 +17,8 @@ export class SaveTaskSplitBundleUseCase {
   async execute(
     projectId: string,
     userId: string,
-    input: SaveRequest
+    userStoryLineId: string,
+    tasks: SaveTaskSplitTaskInput[]
   ): Promise<Result<TaskSplitBundleDomain, ApplicationError>> {
     const projectResult = await this.projectRepository.findByIdAndUserId(projectId, userId);
     if (projectResult.isErr()) {
@@ -28,21 +26,20 @@ export class SaveTaskSplitBundleUseCase {
       return err(projectResult.error);
     }
 
-    if (input.tasks.length < 1) {
-      return err(new ValidationError('At least one task is required'));
-    }
+    const lineResult = await requireEligibleStoryLine(
+      this.bundleRepository,
+      projectId,
+      userStoryLineId
+    );
+    if (lineResult.isErr()) return err(lineResult.error);
+    const line = lineResult.unwrap();
 
-    const tasks: SaveTaskInput[] = input.tasks.map((task) => ({
-      id: task.id,
-      sortOrder: task.sortOrder,
-      title: task.title,
-      promptBody: task.promptBody,
-      manual: task.manual ?? false,
-    }));
-
-    return this.bundleRepository.save(projectId, tasks, {
-      sourceUserStoryKey: input.sourceUserStoryKey,
-      storyTitleSnapshot: input.storyTitleSnapshot,
-    });
+    return this.bundleRepository.save(
+      projectId,
+      userStoryLineId,
+      line.title,
+      line.body,
+      tasks
+    );
   }
 }

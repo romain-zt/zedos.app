@@ -2,9 +2,8 @@
  * Single source of truth for deferred (post-PRD) roadmap placeholders —
  * dashboard home + sidebar stay visually aligned.
  *
- * Product decision (2026-05-29):
- * - `test-first-workflows` (Task splitting) is in v0 — project nav, not deferred.
- * - `delivery` (Cursor package export) is in v0 — project nav, not deferred.
+ * Live per-project surfaces (feature split, user stories, delivery) are linked
+ * from the project sidebar — only items still without a shipped UI stay here.
  */
 
 /** Contact shown in the "need it fast?" CTA inside roadmap modals. */
@@ -23,4 +22,5 @@ export type DeferredRoadmapPlaceholder = {
   why: string
 }
 
+/** Post-PRD surfaces without a shipped UI — empty when all pipeline steps are live. */
 export const DEFERRED_ROADMAP_PLACEHOLDERS: readonly DeferredRoadmapPlaceholder[] = [] as const
