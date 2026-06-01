@@ -127,9 +127,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   { href: `/dashboard/projects/${workspaceProjectId}/task-split`, label: 'Task split', icon: BarChart3 },
                   { href: `/dashboard/projects/${workspaceProjectId}/delivery`, label: 'Delivery', icon: Package },
                 ] as const).map((sub) => {
-                  const isSubActive = sub.exact
-                    ? pathname === sub.href
-                    : pathname === sub.href || pathname?.startsWith(`${sub.href}/`)
+                  const isSubActive =
+                    pathname === sub.href || pathname?.startsWith(`${sub.href}/`)
                   return (
                     <div key={sub.href}>
                       <button
