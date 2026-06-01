@@ -11,10 +11,18 @@ import { ShareLinkSummarySchema } from '../share/mint';
 /** Intake-era PRD body: section slug → text (pre–AI-generated shape). */
 export const IntakePrdContentSchema = z.record(z.string());
 
-/** Stored PRD JSON: AI-generated structure or legacy intake map. */
+/** Legacy v1 draft placeholder (source/summary + empty sections array) persisted before intake default. */
+export const LegacyDraftPlaceholderPrdContentSchema = z.object({
+  source: z.string(),
+  summary: z.string(),
+  sections: z.array(z.unknown()).optional(),
+});
+
+/** Stored PRD JSON: AI-generated structure, intake map, or legacy draft placeholder. */
 export const PrdVersionContentSchema = z.union([
   GeneratePrdAiResponseSchema,
   IntakePrdContentSchema,
+  LegacyDraftPlaceholderPrdContentSchema,
 ]);
 
 export type PrdVersionContent = z.infer<typeof PrdVersionContentSchema>;
@@ -50,7 +58,7 @@ export const PrdVersionDTOSchema = z.object({
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   shareLinks: z.array(ShareLinkSummarySchema).optional(),
-  questionHistoryCount: z.number().optional(),
+  questionHistoryCount: z.coerce.number().optional(),
 });
 
 export type PrdVersionDTO = z.infer<typeof PrdVersionDTOSchema>;

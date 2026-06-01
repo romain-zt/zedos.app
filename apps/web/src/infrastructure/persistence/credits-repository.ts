@@ -170,9 +170,9 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
           };
         }
 
-        const newBalance = decision.newBalance;
+        const persistedBalance = clampPersistedCreditBalanceNonNegative(decision.newBalance);
         const updateData: UserUpdate = {
-          creditBalance: newBalance,
+          creditBalance: persistedBalance,
           ...(decision.kind === 'proceed-with-grace' ? { graceUsed: true } : {}),
         };
         await tx.update(users).set(updateData).where(eq(users.id, userId));
@@ -186,7 +186,7 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
           userId,
           type: 'consumption',
           amount,
-          balanceAfter: newBalance,
+          balanceAfter: persistedBalance,
           operationType,
           metadata: txMeta,
           correlationId: correlationId ?? undefined,
@@ -194,7 +194,11 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
         await tx.insert(creditTransactions).values(txData);
 
         return {
-          balance: new CreditBalance(new UserId(userId), newBalance, user.grace_used || decision.willActivateGrace),
+          balance: new CreditBalance(
+            new UserId(userId),
+            persistedBalance,
+            user.grace_used || decision.willActivateGrace
+          ),
         };
       });
 

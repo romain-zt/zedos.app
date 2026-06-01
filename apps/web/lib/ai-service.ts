@@ -250,10 +250,12 @@ export function createBufferedStreamingResponse(
         } else {
           try {
             await Promise.resolve(onComplete(buffer))
+            send({ status: 'completed', result: buffer })
           } catch (e: unknown) {
             console.error('onComplete error:', e)
+            const message = e instanceof Error ? e.message : 'Persistence failed'
+            send({ status: 'error', message })
           }
-          send({ status: 'completed', result: buffer })
         }
       } catch (error: unknown) {
         console.error('Buffered stream error:', error)
