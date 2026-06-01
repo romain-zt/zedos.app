@@ -146,8 +146,17 @@ async function main(): Promise<void> {
     'E2E No Credits User',
   );
 
-  const mainCredits: UserUpdate = { creditBalance: 100 };
-  const noCreditsBalance: UserUpdate = { creditBalance: 0 };
+  const e2eMainCredits = parseInt(process.env.E2E_MAIN_USER_CREDITS ?? '500', 10);
+  const mainCredits: UserUpdate = {
+    creditBalance: Number.isFinite(e2eMainCredits) && e2eMainCredits > 0 ? e2eMainCredits : 500,
+    starterCreditsGranted: true,
+    graceUsed: false,
+  };
+  const noCreditsBalance: UserUpdate = {
+    creditBalance: 0,
+    starterCreditsGranted: true,
+    graceUsed: false,
+  };
   await db.update(users).set(mainCredits).where(eq(users.id, mainUserId));
   await db.update(users).set(noCreditsBalance).where(eq(users.id, noCreditsUserId));
 

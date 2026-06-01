@@ -6,15 +6,15 @@ import {
 } from './constants';
 
 test.describe('PRD generation', () => {
-  test('happy path: runs real generate-prd flow and persists a version', async ({ page, request }) => {
+  test('happy path: runs real generate-prd flow and persists a version', async ({ page }) => {
     await page.goto(`/dashboard/projects/${E2E_PROJECT_ID}`);
     await expect(page.getByRole('button', { name: 'Generate PRD' })).toBeEnabled();
 
     await page.getByRole('button', { name: 'Generate PRD' }).click();
     await expect(page.getByText('PRD generated!')).toBeVisible({ timeout: 30_000 });
 
-    const prdList = await request.get(`/api/projects/${E2E_PROJECT_ID}/prd`);
-    expect(prdList.ok()).toBeTruthy();
+    const prdList = await page.request.get(`/api/projects/${E2E_PROJECT_ID}/prd`);
+    expect(prdList.ok(), `GET /prd failed: ${prdList.status()} ${await prdList.text()}`).toBeTruthy();
     const versions = (await prdList.json()) as Array<{ versionNumber: number; status: string }>;
     expect(versions.length).toBeGreaterThan(0);
     expect(versions.some((v) => v.status === 'generated')).toBe(true);
