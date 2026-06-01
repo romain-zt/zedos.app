@@ -13,6 +13,10 @@ import { SignUpUseCase } from '@application/auth/sign-up-usecase';
 import { DrizzleUserRepository } from '@infrastructure/persistence/user-repository';
 import { DrizzleCreditsRepository } from '@infrastructure/persistence/credits-repository';
 import { applicationErrorJson, catchUnknownError } from '@shared/http';
+import { createLogger } from '@shared/observability/logger';
+import { validationFailureData } from '@shared/observability/log-safe';
+
+const logger = createLogger({ operation: 'signup' });
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +24,7 @@ export async function POST(request: NextRequest) {
     const parseResult = SignUpRequestSchema.safeParse(body);
 
     if (!parseResult.success) {
+      logger.warn('Signup validation failed', validationFailureData(parseResult.error.flatten()));
       const errors = parseResult.error.flatten().fieldErrors;
       return NextResponse.json(
         { error: 'Validation failed', details: errors },
@@ -34,12 +39,14 @@ export async function POST(request: NextRequest) {
     const result = await useCase.execute({ email, password, name });
 
     if (result.isErr()) {
+      logger.warn('Signup failed', { statusCode: result.error.statusCode });
       return NextResponse.json(applicationErrorJson(result.error), {
         status: result.error.statusCode,
       });
     }
 
     const userDTO = result.unwrap();
+    logger.info('Signup succeeded', { userId: userDTO.id });
     return NextResponse.json(
       { user: userDTO, message: 'Sign up successful' },
       { status: 201 }

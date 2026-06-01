@@ -15,13 +15,22 @@ import {
   deductCreditsForApi as deductCredits,
 } from '@infrastructure/http/credits-http-bridge';
 import { ApplicationError } from '@shared/errors/application-error';
+import { createLogger } from '@shared/observability/logger';
+import { validationFailureData } from '@shared/observability/log-safe';
+
+const logger = createLogger({ operation: 'feature-split/propose' });
 
 const FEATURE_SPLIT_CREDIT_COST = parseInt(
   process.env.CREDIT_COST_FEATURE_SPLIT ?? '5',
   10
 );
 
-function toErrorResponse(e: ApplicationError) {
+function toErrorResponse(
+  e: ApplicationError,
+  context: { projectId: string; userId: string },
+  message: string
+) {
+  logger.warn(message, { ...context, statusCode: e.statusCode });
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
 }
 
@@ -42,9 +51,11 @@ export async function POST(
 
   const parsed = ProposeFeatureSplitRequestSchema.safeParse(raw);
   if (!parsed.success) {
+    logger.warn('Feature-split propose validation failed', validationFailureData(parsed.error.flatten()));
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
 
+  const routeContext = { projectId: params.id, userId };
   const creditCheck = await checkCredits(userId, 'feature_split');
   if (!creditCheck.allowed) {
     return NextResponse.json(
@@ -58,7 +69,7 @@ export async function POST(
     new DrizzlePrdRepository()
   );
   const result = await useCase.execute(params.id, userId, parsed.data.sourcePrdVersionId);
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) return toErrorResponse(result.error, routeContext, 'Feature-split propose failed');
 
   const deductResult = await deductCredits(userId, 'feature_split', {
     projectId: params.id,
@@ -71,7 +82,17 @@ export async function POST(
     creditsDeducted: deductResult.success ? FEATURE_SPLIT_CREDIT_COST : undefined,
   };
 
+  if (!deductResult.success) {
+    logger.error('Feature-split proposal succeeded but credit deduction failed', routeContext);
+  }
+
   const out = ProposeFeatureSplitResponseSchema.safeParse(responsePayload);
-  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (!out.success) {
+    logger
+      .withContext(routeContext)
+      .error('Feature-split propose outbound validation failed', validationFailureData(out.error.flatten()));
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+  logger.info('Feature-split proposal generated', routeContext);
   return NextResponse.json(out.data);
 }

@@ -12,6 +12,10 @@ import {
   ProjectDTOSchema,
   ProjectListItemDTOSchema,
 } from '@contracts/project/project-contracts'
+import { createLogger } from '@shared/observability/logger'
+import { validationFailureData } from '@shared/observability/log-safe'
+
+const logger = createLogger({ operation: 'projects' })
 
 function jsonFromAppError(e: { message: string; statusCode?: number }) {
   return NextResponse.json({ error: e.message }, { status: e.statusCode ?? 500 })
@@ -28,11 +32,15 @@ export async function GET() {
 
   if (result.isErr()) {
     const e = result.error as { message: string; statusCode?: number }
+    logger.warn('List projects failed', { userId, statusCode: e.statusCode ?? 500 })
     return jsonFromAppError(e)
   }
 
   const listValidation = z.array(ProjectListItemDTOSchema).safeParse(result.unwrap())
   if (!listValidation.success) {
+    logger
+      .withContext({ userId })
+      .error('List projects outbound validation failed', validationFailureData(listValidation.error.flatten()))
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 
@@ -47,6 +55,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const parsed = CreateProjectRequestSchema.safeParse(body)
   if (!parsed.success) {
+    logger.warn('Create project validation failed', validationFailureData(parsed.error.flatten()))
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? 'Validation error' },
       { status: 400 },
@@ -63,13 +72,18 @@ export async function POST(request: NextRequest) {
 
   if (result.isErr()) {
     const e = result.error as { message: string; statusCode?: number }
+    logger.warn('Create project failed', { userId, statusCode: e.statusCode ?? 500 })
     return jsonFromAppError(e)
   }
 
   const dtoValidation = ProjectDTOSchema.safeParse(result.unwrap())
   if (!dtoValidation.success) {
+    logger
+      .withContext({ userId })
+      .error('Create project outbound validation failed', validationFailureData(dtoValidation.error.flatten()))
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 
+  logger.info('Project created', { userId, projectId: dtoValidation.data.id })
   return NextResponse.json(dtoValidation.data, { status: 201 })
 }

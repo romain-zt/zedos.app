@@ -11,8 +11,17 @@ import {
   FeatureSplitDTOSchema,
 } from '@repo/contracts/feature-split/feature-split';
 import { ApplicationError } from '@shared/errors/application-error';
+import { createLogger } from '@shared/observability/logger';
+import { validationFailureData } from '@shared/observability/log-safe';
 
-function toErrorResponse(e: ApplicationError) {
+const logger = createLogger({ operation: 'feature-split/confirm' });
+
+function toErrorResponse(
+  e: ApplicationError,
+  context: { projectId: string; userId: string },
+  message: string
+) {
+  logger.warn(message, { ...context, statusCode: e.statusCode });
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
 }
 
@@ -33,15 +42,17 @@ export async function POST(
 
   const parsed = ConfirmFeatureSplitRequestSchema.safeParse(raw);
   if (!parsed.success) {
+    logger.warn('Feature-split confirm validation failed', validationFailureData(parsed.error.flatten()));
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
 
+  const routeContext = { projectId: params.id, userId };
   const useCase = new ConfirmFeatureSplitUseCase(
     new DrizzleProjectRepository(),
     new DrizzleFeatureSplitRepository()
   );
   const result = await useCase.execute(parsed.data.featureSplitId, params.id, userId);
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) return toErrorResponse(result.error, routeContext, 'Feature-split confirm failed');
 
   const split = result.unwrap();
   const dto = {
@@ -61,6 +72,12 @@ export async function POST(
   };
 
   const out = FeatureSplitDTOSchema.safeParse(dto);
-  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (!out.success) {
+    logger
+      .withContext(routeContext)
+      .error('Feature-split confirm outbound validation failed', validationFailureData(out.error.flatten()));
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+  logger.info('Feature-split confirmed', { ...routeContext, featureSplitId: parsed.data.featureSplitId });
   return NextResponse.json(out.data);
 }

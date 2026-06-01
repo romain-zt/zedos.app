@@ -15,8 +15,17 @@ import {
   SaveFeatureSplitDraftRequestSchema,
 } from '@repo/contracts/feature-split/feature-split';
 import { ApplicationError } from '@shared/errors/application-error';
+import { createLogger } from '@shared/observability/logger';
+import { validationFailureData } from '@shared/observability/log-safe';
 
-function toErrorResponse(e: ApplicationError) {
+const logger = createLogger({ operation: 'feature-split' });
+
+function toErrorResponse(
+  e: ApplicationError,
+  context: { projectId: string; userId: string },
+  message: string
+) {
+  logger.warn(message, { ...context, statusCode: e.statusCode });
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
 }
 
@@ -67,19 +76,26 @@ export async function GET(
     Object.fromEntries(request.nextUrl.searchParams)
   );
   if (!query.success) {
+    logger.warn('Feature-split GET validation failed', validationFailureData(query.error.flatten()));
     return NextResponse.json({ error: 'Invalid query', details: query.error.flatten() }, { status: 400 });
   }
 
+  const routeContext = { projectId: params.id, userId };
   const useCase = new GetFeatureSplitUseCase(
     new DrizzleProjectRepository(),
     new DrizzleFeatureSplitRepository()
   );
   const result = await useCase.execute(params.id, userId, query.data.sourcePrdVersionId);
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) return toErrorResponse(result.error, routeContext, 'Feature-split GET failed');
 
   const splits = result.unwrap().map(mapDomainToDTO);
   const out = FeatureSplitListResponseSchema.safeParse(splits);
-  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (!out.success) {
+    logger
+      .withContext(routeContext)
+      .error('Feature-split GET outbound validation failed', validationFailureData(out.error.flatten()));
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
   return NextResponse.json(out.data);
 }
 
@@ -100,9 +116,11 @@ export async function PUT(
 
   const parsed = SaveFeatureSplitDraftRequestSchema.safeParse(raw);
   if (!parsed.success) {
+    logger.warn('Feature-split PUT validation failed', validationFailureData(parsed.error.flatten()));
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
 
+  const routeContext = { projectId: params.id, userId };
   const useCase = new SaveFeatureSplitDraftUseCase(
     new DrizzleProjectRepository(),
     new DrizzleFeatureSplitRepository()
@@ -113,9 +131,15 @@ export async function PUT(
     sourcePrdVersionId: parsed.data.sourcePrdVersionId,
     clusters: parsed.data.clusters as NewFeatureClusterInput[],
   });
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) return toErrorResponse(result.error, routeContext, 'Feature-split PUT failed');
 
   const out = FeatureSplitDTOSchema.safeParse(mapDomainToDTO(result.unwrap()));
-  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (!out.success) {
+    logger
+      .withContext(routeContext)
+      .error('Feature-split PUT outbound validation failed', validationFailureData(out.error.flatten()));
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+  logger.info('Feature-split draft saved', routeContext);
   return NextResponse.json(out.data);
 }

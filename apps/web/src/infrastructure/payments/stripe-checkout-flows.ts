@@ -5,7 +5,7 @@ import {
   buildE2eCheckoutSessionId,
   isE2eMode,
   parseE2eCheckoutSessionId,
-} from '@/lib/e2e-mode'
+} from '@shared/testing/e2e-mode'
 
 type FlowResult<T> =
   | { ok: true; value: T }

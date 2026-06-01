@@ -6,6 +6,10 @@ import { requireUser } from '@repo/auth/guards';
 import { auth } from '@repo/auth/server';
 import { UpdatePasswordRequestSchema } from '@repo/contracts';
 import { sendPasswordChangeNotice } from '@repo/mail';
+import { createLogger } from '@shared/observability/logger';
+import { validationFailureData } from '@shared/observability/log-safe';
+
+const logger = createLogger({ operation: 'account/password' });
 
 export async function POST(request: Request) {
   const requestHeaders = await headers();
@@ -16,12 +20,14 @@ export async function POST(request: Request) {
 
   const parseResult = UpdatePasswordRequestSchema.safeParse(await request.json());
   if (!parseResult.success) {
+    logger.warn('Account password POST validation failed', validationFailureData(parseResult.error.flatten()));
     return NextResponse.json(
       { error: 'Validation failed', details: parseResult.error.flatten().fieldErrors },
       { status: 400 },
     );
   }
 
+  const userId = userResult.unwrap().id;
   const { currentPassword, newPassword, revokeOtherSessions } = parseResult.data;
   try {
     await auth.api.changePassword({
@@ -33,18 +39,25 @@ export async function POST(request: Request) {
       },
     });
   } catch {
+    logger.warn('Account password change rejected', { userId });
     return NextResponse.json(
       { error: 'Current password is invalid or operation failed' },
       { status: 400 },
     );
   }
 
-  await sendPasswordChangeNotice({
-    to: userResult.unwrap().email,
-  });
+  try {
+    await sendPasswordChangeNotice({
+      to: userResult.unwrap().email,
+    });
 
-  return NextResponse.json({
-    ok: true,
-    message: 'Password updated',
-  });
+    logger.info('Account password updated', { userId });
+    return NextResponse.json({
+      ok: true,
+      message: 'Password updated',
+    });
+  } catch (error: unknown) {
+    logger.withContext({ userId }).error('Account password POST failed', error);
+    return NextResponse.json({ error: 'Failed to update password' }, { status: 500 });
+  }
 }

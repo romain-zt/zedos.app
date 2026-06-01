@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  FileText, Share2, Copy, Check, XCircle,
+  FileText, Share2, Copy, Check, XCircle, Download,
   AlertCircle, CheckCircle2, CircleDot, MessageSquare,
 } from 'lucide-react'
+import { formatPrdContentForAi } from '@/lib/prd-content-for-ai'
 import { toast } from 'sonner'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
@@ -147,6 +148,26 @@ export function PrdViewer({
     }
   }
 
+  const handleDownloadMarkdown = () => {
+    if (!selectedVersion?.content) {
+      toast.error('No PRD content to export')
+      return
+    }
+    const markdown = formatPrdContentForAi(selectedVersion.content)
+    const versionLabel = selectedVersion.versionNumber ?? 'draft'
+    const safeTitle =
+      content?.title?.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-') || 'prd'
+    const filename = `${safeTitle}-v${versionLabel}.md`
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = filename
+    anchor.click()
+    URL.revokeObjectURL(url)
+    toast.success('PRD downloaded as Markdown')
+  }
+
   const getConfidenceColor = (confidence: string) => {
     switch (confidence) {
       case 'high': return 'text-green-600 bg-green-50'
@@ -208,7 +229,17 @@ export function PrdViewer({
           )}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadMarkdown}
+            disabled={!selectedVersion?.content}
+            title="Download this PRD version as Markdown"
+          >
+            <Download className="mr-2 h-3.5 w-3.5" />
+            Export MD
+          </Button>
           {onOpenRefinement && selectedVersion && (
             <Button
               variant="ghost"
