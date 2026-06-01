@@ -11,11 +11,13 @@ import {
   BookOpen,
   CheckCircle,
   ExternalLink,
+  ListChecks,
   Loader2,
   Plus,
   Sparkles,
   Trash2,
   Wand2,
+  Zap,
 } from 'lucide-react';
 import {
   FeatureSplitListResponseSchema,
@@ -76,9 +78,9 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   const [generatingTemplate, setGeneratingTemplate] = useState(false);
   const [generatingAi, setGeneratingAi] = useState(false);
   const [markingReady, setMarkingReady] = useState(false);
-  const [lastGeneratedClusterId, setLastGeneratedClusterId] = useState<string | null>(null);
   /** When non-empty, template / AI actions run for these clusters (sequential). When empty, actions use `selectedClusterId` only. */
   const [batchClusterIds, setBatchClusterIds] = useState<string[]>([]);
+  const [clustersWithCorpus, setClustersWithCorpus] = useState<Set<string>>(() => new Set());
 
   const fetchVersions = useCallback(async () => {
     try {
@@ -123,6 +125,42 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
     [projectId]
   );
 
+  const markClusterHasCorpus = useCallback((clusterId: string, hasCorpus: boolean) => {
+    setClustersWithCorpus((prev) => {
+      const next = new Set(prev);
+      if (hasCorpus) next.add(clusterId);
+      else next.delete(clusterId);
+      return next;
+    });
+  }, []);
+
+  const refreshCorpusFlags = useCallback(
+    async (clusterIds: string[]) => {
+      if (clusterIds.length === 0) return;
+      const flags = await Promise.all(
+        clusterIds.map(async (clusterId) => {
+          try {
+            const res = await fetch(
+              `/api/projects/${projectId}/user-stories?featureSplitClusterId=${encodeURIComponent(clusterId)}`
+            );
+            return { clusterId, hasCorpus: res.ok };
+          } catch {
+            return { clusterId, hasCorpus: false };
+          }
+        })
+      );
+      setClustersWithCorpus((prev) => {
+        const next = new Set(prev);
+        for (const { clusterId, hasCorpus } of flags) {
+          if (hasCorpus) next.add(clusterId);
+          else next.delete(clusterId);
+        }
+        return next;
+      });
+    },
+    [projectId]
+  );
+
   const fetchCorpus = useCallback(
     async (clusterId: string) => {
       setLoadingCorpus(true);
@@ -134,6 +172,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
           setLines([emptyLine(0)]);
           setReviewReadyAt(null);
           setHasPersistedCorpus(false);
+          markClusterHasCorpus(clusterId, false);
           return;
         }
         if (!res.ok) {
@@ -149,6 +188,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
         const corpus = parsed.data;
         setReviewReadyAt(corpus.reviewReadyAt);
         setHasPersistedCorpus(true);
+        markClusterHasCorpus(clusterId, true);
         setLines(corpusToDrafts(corpus).length > 0 ? corpusToDrafts(corpus) : [emptyLine(0)]);
       } catch {
         toast.error('Network error loading stories');
@@ -156,7 +196,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
         setLoadingCorpus(false);
       }
     },
-    [projectId]
+    [projectId, markClusterHasCorpus]
   );
 
   useEffect(() => {
@@ -179,9 +219,24 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   }, [selectedClusterId, fetchCorpus]);
 
   const confirmed = selectedVersionId ? confirmedSplitForVersion(splits, selectedVersionId) : null;
-  const clusters: FeatureCluster[] = confirmed?.clusters ?? [];
+  const clusters = useMemo<FeatureCluster[]>(
+    () => confirmed?.clusters ?? [],
+    [confirmed?.clusters]
+  );
 
   const batchSet = useMemo(() => new Set(batchClusterIds), [batchClusterIds]);
+
+  const generationTargetCount = useMemo(() => {
+    if (batchClusterIds.length > 0) return batchClusterIds.length;
+    if (selectedClusterId) return 1;
+    return 0;
+  }, [batchClusterIds, selectedClusterId]);
+
+  useEffect(() => {
+    if (clusters.length > 0) {
+      void refreshCorpusFlags(clusters.map((c) => c.id));
+    }
+  }, [clusters, refreshCorpusFlags]);
 
   const toggleBatchCluster = (clusterId: string) => {
     setBatchClusterIds((prev) =>
@@ -244,6 +299,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
     setReviewReadyAt(corpus.reviewReadyAt);
     setHasPersistedCorpus(true);
     setLines(corpusToDrafts(corpus));
+    markClusterHasCorpus(corpus.featureSplitClusterId, true);
   };
 
   const handleSave = async () => {
@@ -415,10 +471,10 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
         await fetchCorpus(selectedClusterId);
       }
 
-      const primaryClusterId = selectedClusterId ?? targets[0];
-      if (primaryClusterId) {
-        setLastGeneratedClusterId(primaryClusterId);
+      for (const clusterId of targets) {
+        markClusterHasCorpus(clusterId, true);
       }
+      const primaryClusterId = selectedClusterId ?? targets[0];
 
       const batchLabel = targets.length > 1 ? ` (${targets.length} clusters)` : '';
       const successMessage =
@@ -489,6 +545,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
               <Button variant="outline" asChild className="min-h-[44px]">
                 <Link href={`/dashboard/projects/${projectId}/feature-split`}>Feature split</Link>
               </Button>
+              <Button asChild className="min-h-[44px]">
+                <Link href={`/dashboard/projects/${projectId}/task-split`}>
+                  <ListChecks className="h-4 w-4" />
+                  <span className="ml-2">Split into tasks</span>
+                </Link>
+              </Button>
             </div>
           </div>
 
@@ -554,15 +616,15 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Tick clusters to generate templates or AI drafts for several at once. With none ticked, generation
-                  uses the cluster you open below.
-                  {batchClusterIds.length > 0 ? ` (${batchClusterIds.length} in batch)` : null}
+                  Tick one or more clusters, then generate stories below. Click a cluster title to edit inline, or open
+                  its saved page from the sidebar or the link on each card.
+                  {batchClusterIds.length > 0 ? ` (${batchClusterIds.length} selected)` : null}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {clusters.map((c) => {
                     const active = selectedClusterId === c.id;
                     const inBatch = batchSet.has(c.id);
-                    const wasGenerated = lastGeneratedClusterId === c.id || (batchClusterIds.length > 1 && batchSet.has(c.id) && lastGeneratedClusterId !== null);
+                    const hasSavedStories = clustersWithCorpus.has(c.id);
                     return (
                       <div
                         key={c.id}
@@ -588,15 +650,15 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                             <p className="font-medium text-sm">{c.label}</p>
                             <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{c.valueLine}</p>
                           </button>
-                          {wasGenerated && (
+                          {hasSavedStories ? (
                             <Link
                               href={`/dashboard/projects/${projectId}/user-stories/${c.id}`}
-                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline px-1 pb-1"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline px-1 pb-1 min-h-[44px]"
                             >
                               <ExternalLink className="h-3 w-3" />
-                              View stories
+                              Open saved stories
                             </Link>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     );
@@ -605,13 +667,22 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
               </div>
             )}
 
-            {selectedClusterId && (
-              <>
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center border-t pt-4">
+            {confirmed && generationTargetCount > 0 && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                <p className="text-sm font-medium">
+                  Generate user stories
+                  {generationTargetCount > 1 ? ` (${generationTargetCount} clusters)` : ''}
+                </p>
+                {!selectedClusterId && batchClusterIds.length > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Stories will be generated for the ticked clusters. Open a cluster above to preview and edit here.
+                  </p>
+                ) : null}
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Button
                     type="button"
                     variant="secondary"
-                    disabled={generatingTemplate || loadingCorpus || generationTargets().length === 0}
+                    disabled={generatingTemplate || generatingAi}
                     onClick={() => handleGenerate('template')}
                     className="min-h-[44px] w-full sm:w-auto"
                   >
@@ -624,13 +695,51 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                   </Button>
                   <Button
                     type="button"
-                    disabled={generatingAi || loadingCorpus || generationTargets().length === 0}
+                    disabled={generatingAi || generatingTemplate}
                     onClick={() => handleGenerate('ai')}
                     className="min-h-[44px] w-full sm:w-auto"
                   >
                     {generatingAi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                     <span className="ml-2">Draft with AI</span>
                   </Button>
+                </div>
+                {batchClusterIds.length > 0 && (
+                  <div className="border-t border-primary/10 pt-3">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Ready to split into tasks? Open task-split with all selected stories pre-loaded.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      asChild
+                      className="min-h-[44px] w-full sm:w-auto"
+                    >
+                      <Link
+                        href={`/dashboard/projects/${projectId}/task-split?storyTitles=${encodeURIComponent(
+                          JSON.stringify(
+                            batchClusterIds
+                              .map((id) => {
+                                const c = clusters.find((cl) => cl.id === id);
+                                return c ? c.label : null;
+                              })
+                              .filter(Boolean)
+                          )
+                        )}`}
+                      >
+                        <Zap className="h-4 w-4" />
+                        <span className="ml-2">
+                          Split all into tasks ({batchClusterIds.length})
+                        </span>
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedClusterId && (
+              <>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center border-t pt-4">
                   <Button
                     type="button"
                     variant="outline"
@@ -654,6 +763,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                       <CheckCircle className="h-4 w-4" />
                     )}
                     <span className="ml-2">Mark review-ready</span>
+                  </Button>
+                  <Button type="button" variant="ghost" asChild className="min-h-[44px] w-full sm:w-auto">
+                    <Link href={`/dashboard/projects/${projectId}/user-stories/${selectedClusterId}`}>
+                      <ExternalLink className="h-4 w-4" />
+                      <span className="ml-2">Open full page</span>
+                    </Link>
                   </Button>
                 </div>
 

@@ -554,10 +554,13 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
             )}
 
             {isConfirmed && (
-              <div className="mt-6 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <div className="mt-6 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 space-y-3">
                 <p className="text-sm text-green-800 dark:text-green-300 font-medium">
-                  Feature split confirmed. The next step is generating user stories from these clusters.
+                  Feature split confirmed. Generate user stories from your clusters next.
                 </p>
+                <Button asChild className="min-h-[44px] w-full sm:w-auto">
+                  <Link href={`/dashboard/projects/${projectId}/user-stories`}>Generate user stories</Link>
+                </Button>
               </div>
             )}
           </FadeIn>

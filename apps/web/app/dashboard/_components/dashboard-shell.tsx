@@ -10,6 +10,7 @@ import { DEFERRED_ROADMAP_PLACEHOLDERS } from '../_lib/deferred-roadmap-placehol
 import type { DeferredRoadmapPlaceholder } from '../_lib/deferred-roadmap-placeholders'
 import { RoadmapItemModal } from './roadmap-item-modal'
 import { ProjectSwitcher } from './project-switcher'
+import { ProjectStoryClusterNav } from './project-story-cluster-nav'
 import {
   LayoutDashboard,
   FolderOpen,
@@ -35,8 +36,7 @@ const NAV_ITEMS = [
 
 const PLACEHOLDER_ICONS: Record<string, LucideIcon> = {
   'services-feature-split': GitBranch,
-  'test-first-workflows': BarChart3,
-  'delivery': Zap,
+  delivery: Zap,
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -127,22 +127,28 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   { href: `/dashboard/projects/${workspaceProjectId}/task-split`, label: 'Task split', icon: BarChart3 },
                   { href: `/dashboard/projects/${workspaceProjectId}/delivery`, label: 'Delivery', icon: Package },
                 ] as const).map((sub) => {
-                  const isSubActive = pathname === sub.href 
+                  const isSubActive = sub.exact
+                    ? pathname === sub.href
+                    : pathname === sub.href || pathname?.startsWith(`${sub.href}/`)
                   return (
-                    <button
-                      key={sub.href}
-                      type="button"
-                      onClick={() => { router.push(sub.href); setSidebarOpen(false) }}
-                      className={cn(
-                        'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                        isSubActive
-                          ? 'bg-primary/10 text-primary'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                      )}
-                    >
-                      <sub.icon className="h-4 w-4 shrink-0" />
-                      {sub.label}
-                    </button>
+                    <div key={sub.href}>
+                      <button
+                        type="button"
+                        onClick={() => { router.push(sub.href); setSidebarOpen(false) }}
+                        className={cn(
+                          'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]',
+                          isSubActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        )}
+                      >
+                        <sub.icon className="h-4 w-4 shrink-0" />
+                        {sub.label}
+                      </button>
+                      {sub.href.endsWith('/user-stories') && isSubActive ? (
+                        <ProjectStoryClusterNav projectId={workspaceProjectId} />
+                      ) : null}
+                    </div>
                   )
                 })}
               </>

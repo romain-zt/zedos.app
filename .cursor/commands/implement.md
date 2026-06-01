@@ -10,7 +10,7 @@ Lead agent: `implementer` (`.cursor/agents/execution/implementer.md`)
 Verification: `verifier` (`.cursor/agents/execution/verifier.md`) — hard-stop on FAIL
 Review: `reviewer` (`.cursor/agents/execution/reviewer.md`) + `domain-guardian` + `security-pii`
 Operational rule: `.cursor/rules/70-execution-bridge.mdc`, `80-change-policy.mdc`
-Templates: `.cursor/templates/execution/patch-intent-summary.template.md`, `verification-report.template.md`, `review-report.template.md`
+Templates: `.cursor/templates/execution/patch-intent-summary.template.md`, `verification-report.template.md`, `review-report.template.md`, `iteration-synthesis.template.md`
 Checker: `.cursor/checkers/implementation-readiness-checker.md`
 
 ---
@@ -64,7 +64,7 @@ Checker: `.cursor/checkers/implementation-readiness-checker.md`
 
 This is the same ladder as `/prd update` — same discipline.
 
-### After every iteration
+### After every iteration (in-loop)
 
 Output:
 
@@ -78,9 +78,23 @@ Verifier verdict: PASS | FAIL — <first failing line if FAIL>
 Reviewer verdict: PASS | REVISE | BLOCK — <count of findings>
 
 Next step:
-- PASS / PASS → /commit, then /pr
+- PASS / PASS → produce Iteration Synthesis (see below), then /commit, then /pr
 - FAIL or BLOCK → fresh Patch Intent Summary targeting <issue>
 ```
+
+### After loop completion (verifier PASS + reviewer PASS or REVISE-without-criticals)
+
+Before recommending `/commit`, produce an **Iteration Synthesis** using `.cursor/templates/execution/iteration-synthesis.template.md`. This is cumulative across all iterations in the loop — not a repeat of the last iteration summary.
+
+Required sections:
+
+| Section | Content |
+|---|---|
+| **What shipped** | User-visible behavior mapped to acceptance criteria; cumulative files changed; tests added; items deliberately deferred (Plan Out of Scope) |
+| **How to QA** | Automated commands + manual steps a human can run locally; edge cases worth spot-checking — sourced from User Story Test Plan and Plan Tests |
+| **Next steps** | Immediate PR actions; follow-up User Stories / Scope Slices / bugs with priority; recommended story/slice status update; suggested next command |
+
+The synthesis closes the loop. Do not skip it in favor of jumping straight to `/commit`.
 
 ---
 

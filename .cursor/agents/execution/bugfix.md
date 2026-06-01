@@ -89,9 +89,21 @@ Use `.cursor/templates/execution/patch-intent-summary.template.md`. Same approva
 3. Produce Patch Intent Summary. Wait for user `approved`.
 4. Apply edits.
 5. Route to verifier → reviewer.
-6. On PASS → /commit + /pr.
+6. On PASS → produce Iteration Synthesis (`.cursor/templates/execution/iteration-synthesis.template.md`), then /commit + /pr.
 7. On FAIL/BLOCK → fresh PIS targeting the failure; loop.
 ```
+
+---
+
+# Output 3 — Iteration Synthesis
+
+After verifier PASS and reviewer PASS or REVISE-without-criticals, produce an **Iteration Synthesis** using `.cursor/templates/execution/iteration-synthesis.template.md` before recommending `/commit`.
+
+Adapt the template for Plan-Lite scope:
+
+- **What shipped** — fix statement; reproducer now passing; files changed; tests added.
+- **How to QA** — reproducer steps (expected to pass) + regression spot-checks.
+- **Next steps** — `/commit` + `/pr`; items left in Plan-Lite Out of Scope.
 
 ---
 

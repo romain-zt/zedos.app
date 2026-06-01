@@ -38,6 +38,7 @@ Product
 → Code change               (zedos/nextjs_space/** or apps/** + packages/**)
 → Verification Report       (chat artifact)                         — typecheck/lint/test/build evidence
 → Review Report             (chat artifact)                         — adversarial review of the diff
+→ Iteration Synthesis       (chat artifact)                         — shipped summary, QA steps, next work
 → Pull Request              (GitHub)                                — merged after CLEAR pr-readiness check
 ```
 
@@ -107,6 +108,18 @@ PIS is the execution-side analogue of the PRD `/prd update` Patch Intent Summary
 | Template | `.cursor/templates/execution/review-report.template.md` |
 | Authored by | `reviewer` agent (adversarial to `implementer`) |
 | Gate before next step | `pr-readiness-checker.md` CLEAR |
+
+### 3.6 Iteration Synthesis
+
+| Field | Source |
+|---|---|
+| Location | Chat-only — never persisted as a file |
+| Template | `.cursor/templates/execution/iteration-synthesis.template.md` |
+| Authored by | `implementer` or `bugfix` agent — after the final successful iteration, before `/commit` |
+| Required sections | What shipped (mapped to AC), How to QA (automated + manual), Next steps (follow-up US/Slice, status updates, suggested command) |
+| Gate before next step | Emitted when verifier PASS + reviewer PASS or REVISE-without-criticals; required before recommending `/commit` |
+
+The synthesis closes the `/implement` or `/fix` loop. It is cumulative across all iterations — not a repeat of the per-iteration summary. Source the QA section from the User Story Test Plan and Plan Tests; source follow-up work from Scope Slice Dependencies, Plan Out of Scope, and sibling User Stories.
 
 ---
 
@@ -206,7 +219,7 @@ UNKNOWN is a valid answer. UNKNOWN on a load-bearing field downgrades the Plan f
 | `.cursor/checkers/implementation-readiness-checker.md` | §3.1, §3.2 gates; §5 input completeness |
 | `.cursor/checkers/pr-readiness-checker.md` | §6 approval ladder; §9 PR rules |
 | `.cursor/agents/execution/architect.md` | §3.2 Plan authoring; §8 Surface Gate |
-| `.cursor/agents/execution/implementer.md` | §3.3 Patch Intent Summary discipline |
+| `.cursor/agents/execution/implementer.md` | §3.3 Patch Intent Summary discipline; §3.6 Iteration Synthesis |
 | `.cursor/agents/execution/verifier.md` | §3.4 mechanical verification |
 | `.cursor/agents/execution/reviewer.md` | §3.5 adversarial review |
 | `.cursor/agents/execution/domain-guardian.md` | §7 architecture-surface enforcement |
