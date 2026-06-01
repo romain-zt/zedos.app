@@ -28,7 +28,7 @@ export class ReadinessScoreUseCase {
     const latestPrd = prdResult.unwrap();
 
     const { filledCount, totalRequired } = ProjectDomainService.checkPrdStability(
-      latestPrd?.content as Record<string, unknown> | null
+      latestPrd?.content ?? null
     );
 
     const adrResult = await this.adrRepository.countCompleteCore(projectId);

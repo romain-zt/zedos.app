@@ -25,7 +25,7 @@ export class CheckPhaseUseCase {
     const latestPrd = prdResult.unwrap();
 
     const { isStable } = ProjectDomainService.checkPrdStability(
-      latestPrd?.content as Record<string, unknown> | null
+      latestPrd?.content ?? null
     );
 
     const { reason } = ProjectDomainService.canUnlockArchitecture(project, isStable);

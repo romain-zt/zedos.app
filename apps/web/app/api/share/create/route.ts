@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
   }
 
   const useCase = new MintReadOnlyShareLinkUseCase(new PrismaPrdRepository())
-  const result = await useCase.execute(parsed.data.prdVersionId, userId)
+  const result = await useCase.execute(parsed.data.prdVersionId, userId, {
+    password: parsed.data.password,
+    expiresInDays: parsed.data.expiresInDays,
+  })
   if (result.isErr()) {
     const e = result.error
     return NextResponse.json({ error: e.message }, { status: e.statusCode })
@@ -49,6 +52,8 @@ export async function POST(request: NextRequest) {
     prdVersionId: link.prdVersionId,
     token: link.token,
     enabled: link.enabled,
+    hasPassword: link.hasPassword,
+    expiresAt: link.expiresAt,
     createdAt: link.createdAt,
     disabledAt: link.disabledAt,
   })

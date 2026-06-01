@@ -6,7 +6,7 @@
 
 ## Status
 
-`proposed`
+`approved`
 
 > **Layout in effect:** post-migration (`apps/web/` + `packages/`)
 > **Architecture Surface:** resolved

@@ -6,6 +6,14 @@ import {
   isE2eMode,
   parseE2eCheckoutSessionId,
 } from '@shared/testing/e2e-mode'
+import { resolvePaymentMethodFromCheckoutSession } from '@infrastructure/payments/stripe-off-session-auto-reload'
+import { DrizzleAutoReloadRepository } from '@infrastructure/persistence/auto-reload-repository'
+import {
+  e2eStubTaxLegibility,
+  extractTaxLegibilityFromCheckoutSession,
+  isStripeAutomaticTaxEnabled,
+} from '@infrastructure/payments/checkout-tax-legibility'
+import type { CheckoutTaxLegibility } from '@repo/contracts/payments'
 
 type FlowResult<T> =
   | { ok: true; value: T }
@@ -37,6 +45,7 @@ type VerifyCheckoutOutput = {
   balance: number
   creditsAdded?: number
   alreadyProcessed?: boolean
+  taxLegibility?: CheckoutTaxLegibility
 }
 
 function stripeClient(): Stripe | null {
@@ -81,9 +90,12 @@ export async function createCheckoutSessionForUser(
     return { ok: false, status: 503, error: 'Stripe is not configured' }
   }
 
+  const automaticTax = isStripeAutomaticTaxEnabled()
+
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
+    ...(automaticTax ? { automatic_tax: { enabled: true } } : {}),
     line_items: [
       {
         price_data: {
@@ -151,9 +163,19 @@ export async function verifyCheckoutSessionForUser(
       sql`UPDATE purchases SET status = 'completed', stripe_payment_intent_id = ${'pi_e2e_stub'} WHERE id = ${purchase.id}`
     )
 
+    await new DrizzleAutoReloadRepository().saveStripePaymentMethod(
+      input.userId,
+      'cus_e2e',
+      'pm_e2e'
+    )
+
     return {
       ok: true,
-      value: { balance: grantResult.unwrap(), creditsAdded: purchase.packSize },
+      value: {
+        balance: grantResult.unwrap(),
+        creditsAdded: purchase.packSize,
+        taxLegibility: e2eStubTaxLegibility(purchase.amountEur),
+      },
     }
   }
 
@@ -186,7 +208,14 @@ export async function verifyCheckoutSessionForUser(
       .from(users)
       .where(eq(users.id, input.userId))
       .limit(1)
-    return { ok: true, value: { balance: user?.creditBalance ?? 0, alreadyProcessed: true } }
+    return {
+      ok: true,
+      value: {
+        balance: user?.creditBalance ?? 0,
+        alreadyProcessed: true,
+        taxLegibility: extractTaxLegibilityFromCheckoutSession(checkoutSession),
+      },
+    }
   }
 
   const grantResult = await addPurchaseCreditsForApi(input.userId, packSize, {
@@ -206,5 +235,21 @@ export async function verifyCheckoutSessionForUser(
     sql`UPDATE purchases SET status = 'completed', stripe_payment_intent_id = ${getPaymentIntentId(checkoutSession.payment_intent)} WHERE id = ${purchaseId}`
   )
 
-  return { ok: true, value: { balance: grantResult.unwrap(), creditsAdded: packSize } }
+  const paymentMethod = await resolvePaymentMethodFromCheckoutSession(input.sessionId)
+  if (paymentMethod) {
+    await new DrizzleAutoReloadRepository().saveStripePaymentMethod(
+      input.userId,
+      paymentMethod.customerId,
+      paymentMethod.paymentMethodId
+    )
+  }
+
+  return {
+    ok: true,
+    value: {
+      balance: grantResult.unwrap(),
+      creditsAdded: packSize,
+      taxLegibility: extractTaxLegibilityFromCheckoutSession(checkoutSession),
+    },
+  }
 }

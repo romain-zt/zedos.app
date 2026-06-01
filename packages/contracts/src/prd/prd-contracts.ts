@@ -5,7 +5,7 @@
  */
 
 import { z } from 'zod';
-import { GeneratePrdAiResponseSchema } from '../ai/generate-prd-stream';
+import { GeneratePrdAiResponseSchema, GeneratePrdSectionSchema } from '../ai/generate-prd-stream';
 import { ShareLinkSummarySchema } from '../share/mint';
 
 /** Intake-era PRD body: section slug → text (pre–AI-generated shape). */
@@ -15,7 +15,7 @@ export const IntakePrdContentSchema = z.record(z.string(), z.string());
 export const LegacyDraftPlaceholderPrdContentSchema = z.object({
   source: z.string(),
   summary: z.string(),
-  sections: z.array(z.unknown()).optional(),
+  sections: z.array(GeneratePrdSectionSchema).optional(),
 });
 
 /** Stored PRD JSON: AI-generated structure, intake map, or legacy draft placeholder. */

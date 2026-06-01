@@ -6,6 +6,7 @@ export * from './credits';
 export * from './purchases';
 export * from './feedback';
 export * from './share';
+export * from './project-members';
 export * from './adrs';
 export * from './auth';
 export * from './feature-split';

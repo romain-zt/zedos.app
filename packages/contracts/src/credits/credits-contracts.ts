@@ -6,6 +6,20 @@
 
 import { z } from 'zod';
 
+/** JSON-safe values stored on credit ledger rows (no nested objects in v0). */
+export const CreditTransactionMetadataValueSchema = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+]);
+
+export const CreditTransactionMetadataSchema = z.record(
+  z.string(),
+  CreditTransactionMetadataValueSchema,
+);
+
+export type CreditTransactionMetadata = z.infer<typeof CreditTransactionMetadataSchema>;
+
 /**
  * Credit Balance DTO
  */
@@ -27,7 +41,7 @@ export const CreditTransactionDTOSchema = z.object({
   type: z.enum(['grant', 'purchase', 'auto_reload', 'consumption']),
   amount: z.number(),
   operationType: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: CreditTransactionMetadataSchema.optional(),
   createdAt: z.date(),
 });
 

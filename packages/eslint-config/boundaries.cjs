@@ -133,15 +133,40 @@ module.exports = {
       },
     },
     {
-      files: [
-        "lib/**/*.ts",
-        "lib/**/*.tsx",
-        "components/**/*.ts",
-        "components/**/*.tsx",
-        "scripts/**/*.ts",
-      ],
+      files: ["lib/**/*.ts", "lib/**/*.tsx", "components/**/*.ts", "components/**/*.tsx"],
       rules: {
-        "boundaries/dependencies": "off",
+        "boundaries/dependencies": [
+          "error",
+          {
+            default: "disallow",
+            rules: [
+              {
+                from: { type: "legacy-lib" },
+                allow: allowTypes([
+                  "legacy-lib",
+                  "legacy-comp",
+                  "shared",
+                  "contracts",
+                  "packages-result",
+                  "domain",
+                  "application",
+                  "infrastructure",
+                ]),
+              },
+              {
+                from: { type: "legacy-comp" },
+                allow: allowTypes([
+                  "legacy-comp",
+                  "legacy-lib",
+                  "ui",
+                  "shared",
+                  "contracts",
+                  "packages-result",
+                ]),
+              },
+            ],
+          },
+        ],
       },
     },
   ],

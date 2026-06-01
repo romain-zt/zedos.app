@@ -5,6 +5,7 @@
  * Domain depends on this interface; infrastructure implements it.
  */
 
+import type { CreditTransactionMetadata } from '@repo/contracts/credits';
 import { CreditBalance, CreditTransaction, OperationType } from './credits';
 import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
@@ -12,7 +13,7 @@ import { ApplicationError } from '@shared/errors/application-error';
 /** Optional idempotency + audit metadata on ledger mutations */
 export interface CreditsLedgerMutationOptions {
   correlationId?: string | null;
-  metadata?: Record<string, unknown>;
+  metadata?: CreditTransactionMetadata;
 }
 
 export interface ICreditsRepository {

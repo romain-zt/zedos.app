@@ -5,25 +5,39 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Zap, FileText, AlertCircle, CheckCircle2, CircleDot, Loader2 } from 'lucide-react'
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
+import type { GeneratePrdSection } from '@repo/contracts/ai/generate-prd-stream'
+import type { PrdVersionContent } from '@repo/contracts/prd'
 import {
   AnonymousSharedPrdResponseSchema,
   type AnonymousSharedPrdResponse,
 } from '@repo/contracts/share/anonymous-read'
+import { SharePasswordRequiredResponseSchema } from '@repo/contracts/share/access'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
-function isRecord(x: unknown): x is Record<string, unknown> {
-  return typeof x === 'object' && x !== null && !Array.isArray(x)
+function isGeneratedPrdContent(
+  content: PrdVersionContent,
+): content is PrdVersionContent & { title: string; version_summary: string; sections: GeneratePrdSection[] } {
+  return 'title' in content && 'sections' in content && Array.isArray(content.sections)
 }
 
-function readSections(content: Record<string, unknown> | null): Record<string, unknown>[] {
-  if (!content) return []
-  const raw = content.sections
-  if (!Array.isArray(raw)) return []
-  return raw.filter((x): x is Record<string, unknown> => isRecord(x))
+function readSections(content: PrdVersionContent | null): GeneratePrdSection[] {
+  if (!content || !isGeneratedPrdContent(content)) return []
+  return content.sections
 }
 
-function readString(rec: Record<string, unknown>, key: string): string | undefined {
-  const v = rec[key]
-  return typeof v === 'string' ? v : undefined
+function docTitleFromContent(content: PrdVersionContent | null): string {
+  if (!content) return 'Shared product brief'
+  if (isGeneratedPrdContent(content)) return content.title
+  if ('summary' in content && content.summary.trim()) return content.summary
+  if ('source' in content && content.source.trim()) return content.source
+  return 'Shared product brief'
+}
+
+function versionSummaryFromContent(content: PrdVersionContent | null): string | undefined {
+  if (!content || !isGeneratedPrdContent(content)) return undefined
+  const summary = content.version_summary.trim()
+  return summary.length > 0 ? summary : undefined
 }
 
 function shareFetchErrorMessage(status: number, bodyError: unknown): string {
@@ -39,28 +53,38 @@ export function SharedPrdView({ token }: { token: string }) {
   const [data, setData] = useState<AnonymousSharedPrdResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [needsPassword, setNeedsPassword] = useState(false)
+  const [password, setPassword] = useState('')
+  const [unlocking, setUnlocking] = useState(false)
 
-  useEffect(() => {
-    const fetchSharedPrd = async () => {
-      try {
+  const fetchSharedPrd = async () => {
+    setLoading(true)
+    setError(null)
+    try {
         const res = await fetch(`/api/share/${encodeURIComponent(token)}`)
+        if (res.status === 403) {
+          const errJson = await res.json().catch(() => ({}))
+          const gate = SharePasswordRequiredResponseSchema.safeParse(errJson)
+          if (gate.success) {
+            setNeedsPassword(true)
+            return
+          }
+        }
         if (!res.ok) {
           let bodyError: unknown
           try {
             const errJson = await res.json()
-            bodyError = errJson && typeof errJson === 'object' && errJson !== null && 'error' in errJson
-              ? (errJson as { error?: unknown }).error
-              : undefined
+            bodyError = errJson.error
           } catch {
             bodyError = undefined
           }
           setError(shareFetchErrorMessage(res.status, bodyError))
           return
         }
-        const raw = await res.json()
+        const raw: unknown = await res.json()
         const parsed = AnonymousSharedPrdResponseSchema.safeParse(raw)
         if (!parsed.success) {
-          setError('Something went wrong. Try again in a moment.')
+          setError('This shared document could not be displayed.')
           return
         }
         setData(parsed.data)
@@ -69,18 +93,43 @@ export function SharedPrdView({ token }: { token: string }) {
       } finally {
         setLoading(false)
       }
-    }
-    fetchSharedPrd()
+  }
+
+  useEffect(() => {
+    void fetchSharedPrd()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when token changes
   }, [token])
+
+  const handleUnlock = async () => {
+    setUnlocking(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/share/${encodeURIComponent(token)}/access`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (!res.ok) {
+        setError(res.status === 401 ? 'Mot de passe incorrect.' : 'Accès refusé.')
+        return
+      }
+      setNeedsPassword(false)
+      await fetchSharedPrd()
+    } catch {
+      setError('Something went wrong. Try again in a moment.')
+    } finally {
+      setUnlocking(false)
+    }
+  }
 
   const getConfidenceColor = (confidence: string) => {
     switch (confidence) {
       case 'high':
         return 'text-green-600 bg-green-50'
       case 'medium':
-        return 'text-amber-600 bg-amber-50'
+        return 'text-yellow-600 bg-yellow-50'
       case 'low':
-        return 'text-red-500 bg-red-50'
+        return 'text-red-600 bg-red-50'
       default:
         return 'text-muted-foreground bg-muted'
     }
@@ -89,11 +138,11 @@ export function SharedPrdView({ token }: { token: string }) {
   const getConfidenceIcon = (confidence: string) => {
     switch (confidence) {
       case 'high':
-        return <CheckCircle2 className="h-3.5 w-3.5" />
+        return <CheckCircle2 className="h-3 w-3" />
       case 'medium':
-        return <CircleDot className="h-3.5 w-3.5" />
+        return <CircleDot className="h-3 w-3" />
       case 'low':
-        return <AlertCircle className="h-3.5 w-3.5" />
+        return <AlertCircle className="h-3 w-3" />
       default:
         return null
     }
@@ -105,6 +154,30 @@ export function SharedPrdView({ token }: { token: string }) {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
         <p className="text-sm text-muted-foreground text-center">Loading shared document…</p>
         <span className="sr-only">Loading</span>
+      </div>
+    )
+  }
+
+  if (needsPassword && !data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+        <Card className="max-w-md w-full">
+          <CardContent className="py-8 space-y-4">
+            <h2 className="font-display text-lg font-semibold">Document protégé</h2>
+            <p className="text-sm text-muted-foreground">Entrez le mot de passe fourni par le propriétaire.</p>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mot de passe"
+              autoComplete="current-password"
+            />
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button onClick={() => void handleUnlock()} disabled={unlocking || !password}>
+              {unlocking ? 'Vérification…' : 'Accéder'}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -125,13 +198,8 @@ export function SharedPrdView({ token }: { token: string }) {
 
   const content = data.content
   const sections = readSections(content)
-
-  const titleFallback = 'Shared product brief'
-  const docTitle =
-    (content && readString(content, 'title')) ||
-    titleFallback
-
-  const versionSummary = content ? readString(content, 'version_summary') : undefined
+  const docTitle = docTitleFromContent(content)
+  const versionSummary = versionSummaryFromContent(content)
   const statusLabel = data.status.slice(0, 1).toUpperCase() + data.status.slice(1)
 
   return (
@@ -168,15 +236,13 @@ export function SharedPrdView({ token }: { token: string }) {
         <Stagger staggerDelay={0.05}>
           <div className="space-y-3">
             {sections.map((section, i) => {
-              const conf = readString(section, 'confidence') ?? ''
+              const conf = section.confidence
               return (
-                <StaggerItem key={readString(section, 'id') ?? i}>
+                <StaggerItem key={section.id ?? i}>
                   <Card>
                     <CardHeader className="pb-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <CardTitle className="text-base font-display">
-                          {readString(section, 'title') ?? 'Section'}
-                        </CardTitle>
+                        <CardTitle className="text-base font-display">{section.title}</CardTitle>
                         {conf ? (
                           <Badge
                             variant="secondary"
@@ -190,7 +256,7 @@ export function SharedPrdView({ token }: { token: string }) {
                     </CardHeader>
                     <CardContent>
                       <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                        {readString(section, 'content') ?? 'No content'}
+                        {section.content.trim() ? section.content : 'No content'}
                       </div>
                     </CardContent>
                   </Card>

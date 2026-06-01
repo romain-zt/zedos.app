@@ -1,6 +1,6 @@
 {
   "handoff_date": "2026-05-12",
-  "current_phase": "fa-delivery--queued-next-scope",
+  "current_phase": "v0-payments-complete--ops-hygiene-next",
   "credit_system_tracking_phase": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
@@ -37,8 +37,9 @@
       "fa-payments--manual-credit-pack-checkout": "complete",
       "fa-owner-milestone-feedback--feedback-capture-and-attribution": "complete",
       "fa-user-stories--corpus-reliability-batch-quality--impl": "complete",
-      "fa-payments--auto-reload-opt-in-and-outcomes": "blocked",
-      "fa-payments--tax-and-vat-legibility": "blocked"
+      "fa-payments--auto-reload-opt-in-and-outcomes": "complete",
+      "fa-delivery--cursor-package-export": "complete",
+      "fa-payments--tax-and-vat-legibility": "complete"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,
@@ -129,28 +130,30 @@
   },
   "fa_payments": {
     "auto_reload_opt_in_and_outcomes": {
-      "status": "blocked",
+      "status": "complete",
       "tracking_pr": 123,
       "tracking_branch": "orchestrator/tracking-fa-payments--auto-reload-opt-in-and-outcomes-1779962218974",
       "scope_slice": "docs/product/scope-slices/payments--auto-reload-opt-in-and-outcomes.md",
       "scope_slice_status": "ready-for-user-stories",
       "user_story": "docs/execution/user-stories/payments--auto-reload-opt-in-and-outcomes--v0.md",
       "implementation_plan": "docs/execution/plans/payments--auto-reload-opt-in-and-outcomes--v0.plan.md",
-      "implementation_plan_status": "proposed",
-      "next_layer": "db-migration (Iteration 1 — after plan approved)",
-      "blocker": "NEED_HUMAN: Approve proposed Implementation Plan with chat approved (not ok) before db-migration. OQ-1 trigger event blocks Iteration 4 only."
+      "implementation_plan_status": "approved",
+      "next_layer": null,
+      "blocker": null,
+      "verified_at": "2026-06-01"
     },
     "tax_and_vat_legibility": {
-      "status": "blocked",
+      "status": "complete",
       "tracking_pr": 125,
       "tracking_branch": "orchestrator/tracking-fa-payments--tax-and-vat-legibility-1779962307892",
       "scope_slice": "docs/product/scope-slices/payments--tax-and-vat-legibility.md",
-      "user_story": null,
-      "implementation_plan": null,
-      "layer_complete": null,
-      "next_layer": "governance — refine-slice + promote-slice + approved plan",
-      "blocker": "NEED_HUMAN: Scope slice is exploratory with Readiness for User Stories NOT READY (empty UX States / Data Touched; checklist unchecked). Per execution-bridge §5/§9, User Story and Implementation Plan cannot gate code until slice is ready-for-user-stories and plan is chat-approved.",
-      "prerequisite_manual_checkout": "complete"
+      "user_story": "docs/execution/user-stories/payments--tax-and-vat-legibility--v0.md",
+      "implementation_plan": "docs/execution/plans/payments--tax-and-vat-legibility--v0.plan.md",
+      "layer_complete": "ui",
+      "next_layer": null,
+      "blocker": null,
+      "prerequisite_manual_checkout": "complete",
+      "verified_at": "2026-06-01"
     },
     "manual_credit_pack_checkout": {
       "status": "complete",
@@ -264,10 +267,10 @@
     "framework": "Next.js App Router",
     "phase2_stack": "Prisma + NextAuth (no migration in Phase 2)",
     "eslint_cleanup": "separate slice",
-    "as_any_cleanup": "separate technical-debt slice (117 casts)",
+    "as_any_cleanup": "resolved on migrated monorepo (0 as any; ESLint no-explicit-any error — 2026-06-01)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Keep deployment secret parity (`STRIPE_WEBHOOK_SECRET`) and start FA-delivery next scope (`scaffold-slices` -> `/plan` -> `/implement`).",
+  "next_action": "Ops: rotate leaked secrets (operator); confirm `STRIPE_WEBHOOK_SECRET` + Stripe Tax enabled in Dashboard for automatic_tax.",
   "orchestration_blocker": null,
   "orchestration_note_pr98_merge": "Parallel orch bookkeeping: tracking PR #98 branch (`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778623987568`) rebased onto main; milestone detection shipped via PR #99 (prior parallel narrative referenced PR #93 / #97).",
   "phases": {

@@ -8,6 +8,8 @@ export const shareLinks = pgTable('share_links', {
   token: text('token').notNull().unique(),
   /** Explicit on insert — DB still has DEFAULT true (see migration); omitting Drizzle `.default` keeps `$inferInsert` keys usable for `.update().set()`. */
   enabled: boolean('enabled').notNull(),
+  passwordHash: text('password_hash'),
+  expiresAt: timestamp('expires_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   disabledAt: timestamp('disabled_at'),
 }, (t) => [index('share_links_token_idx').on(t.token)]);

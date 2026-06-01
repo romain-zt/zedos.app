@@ -1,3 +1,5 @@
+import type { CreditTransactionMetadata } from '@repo/contracts/credits';
+
 /**
  * Credits Domain Model
  * 
@@ -87,7 +89,7 @@ export interface CreditTransaction {
   amount: number;
   balanceAfter?: number;
   operationType?: OperationType;
-  metadata?: Record<string, unknown>;
+  metadata?: CreditTransactionMetadata;
   createdAt: Date;
 }
 

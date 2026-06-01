@@ -22,7 +22,7 @@ describe('AnonymousSharedPrdResponseSchema', () => {
   it('parses API-shaped payload', () => {
     const p = AnonymousSharedPrdResponseSchema.safeParse({
       versionNumber: 2,
-      content: { title: 'T', sections: [] },
+      content: { title: 'T', version_summary: 'Summary', sections: [] },
       status: 'final',
       createdAt: '2026-05-11T12:00:00.000Z',
     });

@@ -5,12 +5,13 @@
  * Domain depends on this interface; infrastructure implements it.
  */
 
+import type { PrdVersionContent } from '@repo/contracts/prd';
 import { Project } from './project';
 import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 
 export interface ProjectWithCounts extends Project {
-  latestPrdVersion?: { versionNumber: number; content: Record<string, unknown> } | null;
+  latestPrdVersion?: { versionNumber: number; content: PrdVersionContent } | null;
   prdVersionCount: number;
   questionHistoryCount: number;
 }

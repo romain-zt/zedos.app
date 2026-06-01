@@ -2,11 +2,14 @@
  * PRD Repository Port
  */
 
+import type { PrdVersionContent } from '@repo/contracts/prd';
 import {
   AnonymousSharedPrdSnapshot,
+  MintShareLinkOptions,
   MintedShareLink,
   PrdVersion,
   PrdVersionWithRelations,
+  ShareLinkGate,
 } from './prd';
 import { Result } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
@@ -20,7 +23,7 @@ export interface IPrdRepository {
    */
   ensureFirstVersion(
     projectId: string,
-    content: Record<string, unknown> | null
+    content: PrdVersionContent | null
   ): Promise<Result<{ created: boolean; version: PrdVersion }, ApplicationError>>;
 
   /**
@@ -30,8 +33,13 @@ export interface IPrdRepository {
    */
   mintReadOnlyShareLink(
     prdVersionId: string,
-    ownerUserId: string
+    ownerUserId: string,
+    options?: MintShareLinkOptions
   ): Promise<Result<MintedShareLink, ApplicationError>>;
+
+  getShareLinkGateByToken(token: string): Promise<Result<ShareLinkGate, ApplicationError>>;
+
+  verifyShareLinkPassword(token: string, password: string): Promise<Result<boolean, ApplicationError>>;
 
   /**
    * Disables a share link when it exists and belongs to the owner's project.

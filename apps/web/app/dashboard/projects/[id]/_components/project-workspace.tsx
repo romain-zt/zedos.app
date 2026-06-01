@@ -6,7 +6,8 @@ import { ClarificationChat } from './clarification-chat'
 import { PrdViewer } from './prd-viewer'
 import { QuestionHistoryPanel } from './question-history'
 import { ArchitecturePanel } from './architecture-panel'
-import { ReadinessScoreBadge } from './readiness-score-badge'
+import { WorkspaceScorePanel } from './workspace-score-panel'
+import { ProjectMembersPanel } from './project-members-panel'
 import { ContextualRefinementPanel } from './contextual-refinement-panel'
 import { MessageSquare, FileText, History, Settings, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -169,7 +170,7 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
               History
             </TabsTrigger>
           </TabsList>
-          {!loadingPhase && <ReadinessScoreBadge projectId={projectId} />}
+          {!loadingPhase && <WorkspaceScorePanel projectId={projectId} />}
         </div>
 
         <TabsContent value="clarify" className="mt-4">
@@ -221,28 +222,31 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
 
       {/* Settings Dialog */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display">Project Settings</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Name</label>
-              <Input value={editName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)} />
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name</label>
+                <Input value={editName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                <Textarea
+                  value={editDesc}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditDesc(e.target.value)}
+                  rows={3}
+                  className="resize-none"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setShowSettings(false)}>Cancel</Button>
+                <Button onClick={handleSaveSettings} loading={saving}>Save</Button>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Description</label>
-              <Textarea
-                value={editDesc}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditDesc(e.target.value)}
-                rows={3}
-                className="resize-none"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setShowSettings(false)}>Cancel</Button>
-              <Button onClick={handleSaveSettings} loading={saving}>Save</Button>
-            </div>
+            <ProjectMembersPanel projectId={projectId} />
           </div>
         </DialogContent>
       </Dialog>

@@ -56,6 +56,8 @@ const makePrdRepo = (prd: PrdVersion | null): IPrdRepository => ({
   mintReadOnlyShareLink: vi.fn(),
   revokeReadOnlyShareLink: vi.fn(),
   getAnonymousPrdVersionByShareToken: vi.fn(),
+  getShareLinkGateByToken: vi.fn(),
+  verifyShareLinkPassword: vi.fn(),
   findVersionByIdForOwner: vi.fn(),
 });
 

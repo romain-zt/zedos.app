@@ -11,6 +11,8 @@ describe('RevokeReadOnlyShareLinkUseCase', () => {
       prdVersionId: 'pv-1',
       token: 'tok',
       enabled: false,
+      hasPassword: false,
+      expiresAt: null,
       createdAt: new Date(),
       disabledAt: new Date(),
     };
@@ -21,6 +23,8 @@ describe('RevokeReadOnlyShareLinkUseCase', () => {
       mintReadOnlyShareLink: vi.fn(),
       revokeReadOnlyShareLink: vi.fn().mockResolvedValue(ok(link)),
       getAnonymousPrdVersionByShareToken: vi.fn(),
+      getShareLinkGateByToken: vi.fn(),
+      verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
     };
     const useCase = new RevokeReadOnlyShareLinkUseCase(repo);
@@ -38,6 +42,8 @@ describe('RevokeReadOnlyShareLinkUseCase', () => {
       mintReadOnlyShareLink: vi.fn(),
       revokeReadOnlyShareLink: vi.fn().mockResolvedValue(err(new NotFoundError('Share link not found'))),
       getAnonymousPrdVersionByShareToken: vi.fn(),
+      getShareLinkGateByToken: vi.fn(),
+      verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
     };
     const useCase = new RevokeReadOnlyShareLinkUseCase(repo);

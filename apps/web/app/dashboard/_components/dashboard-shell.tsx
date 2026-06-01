@@ -27,11 +27,14 @@ import {
   Package,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useI18n } from '@/src/i18n'
+import { LocaleSwitcher } from '@/components/locale-switcher'
+import type { MessageKey } from '@/src/i18n/messages/en'
 
-const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/projects', label: 'Projects', icon: FolderOpen },
-  { href: '/dashboard/credits', label: 'Credits', icon: Coins },
+const NAV_ITEMS: { href: string; labelKey: MessageKey; icon: LucideIcon }[] = [
+  { href: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/projects', labelKey: 'nav.projects', icon: FolderOpen },
+  { href: '/dashboard/credits', labelKey: 'nav.credits', icon: Coins },
 ]
 
 const PLACEHOLDER_ICONS: Record<string, LucideIcon> = {
@@ -40,6 +43,7 @@ const PLACEHOLDER_ICONS: Record<string, LucideIcon> = {
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n()
   const { data: session } = useSession() || {}
   const router = useRouter()
   const pathname = usePathname()
@@ -108,7 +112,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <item.icon className="h-4 w-4" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </button>
               )
             })}
@@ -208,7 +212,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <button
                 onClick={() => void handleSignOut()}
                 className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                title="Sign out"
+                title={t('nav.signOut')}
               >
                 <LogOut className="h-4 w-4" />
               </button>
@@ -236,6 +240,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           ) : (
             <div className="flex-1" />
           )}
+          <LocaleSwitcher />
           <CreditBadge />
         </header>
 

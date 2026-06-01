@@ -7,6 +7,7 @@ import type { OperationType as DomainOperationType } from '@domain/credits/credi
 import type { CreditCheckResult as DomainCreditCheckResult } from '@domain/credits/credits';
 import { getCreditsComposition } from '@/lib/composition';
 import { db, users, eq } from '@repo/db';
+import type { CreditTransactionMetadata } from '@repo/contracts/credits';
 import { NotFoundError } from '@shared/errors/application-error';
 
 export type OperationType =
@@ -116,7 +117,7 @@ export async function checkCredits(
 function consumptionCorrelationId(
   userId: string,
   operationType: OperationType,
-  metadata?: Record<string, unknown>
+  metadata?: CreditTransactionMetadata
 ): string | undefined {
   const m = metadata ?? {};
   const explicit = m.correlationId;
@@ -132,7 +133,7 @@ function consumptionCorrelationId(
   return parts.join(':');
 }
 
-function purchaseCorrelationId(metadata?: Record<string, unknown>): string | undefined {
+function purchaseCorrelationId(metadata?: CreditTransactionMetadata): string | undefined {
   const m = metadata ?? {};
   const purchaseId = m.purchaseId ?? m.purchase_id;
   if (typeof purchaseId === 'string' && purchaseId.length > 0) return `purchase:${purchaseId}`;
@@ -144,7 +145,7 @@ function purchaseCorrelationId(metadata?: Record<string, unknown>): string | und
 export async function deductCredits(
   userId: string,
   operationType: OperationType,
-  metadata?: Record<string, unknown>
+  metadata?: CreditTransactionMetadata
 ): Promise<{ success: boolean; newBalance: number; graceActivated: boolean }> {
   const { repo, deductCredits: deductUc } = getCreditsComposition();
   const cost = getCreditCost(operationType);
@@ -179,7 +180,7 @@ export async function addCredits(
   userId: string,
   amount: number,
   type: 'grant' | 'purchase' | 'auto_reload',
-  metadata?: Record<string, unknown>
+  metadata?: CreditTransactionMetadata
 ): Promise<number> {
   const { addCredits: addUc } = getCreditsComposition();
   const correlationId =

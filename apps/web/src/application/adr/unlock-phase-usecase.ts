@@ -32,7 +32,7 @@ export class UnlockPhaseUseCase {
     }
 
     const { isStable } = ProjectDomainService.checkPrdStability(
-      latestPrd.content as Record<string, unknown> | null
+      latestPrd.content
     );
     const { canUnlock, reason } = ProjectDomainService.canUnlockArchitecture(project, isStable);
 

@@ -6,7 +6,7 @@
 
 ## Status
 
-`ready-for-implementation`
+`executed`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -38,10 +38,10 @@ As a signed-in founder, I want to select export-ready story bundles, preview wha
 
 ## Test Plan
 
-- [ ] Contract: eligible list, preview request/response, export request schemas (unit)
-- [ ] Unit: `buildDeliveryPackageUseCase` with mocked `IDeliveryExportRepository` — PD-001 shape (`WORK_QUEUE` rows + per-story files)
-- [ ] Unit: `cursor-package-assembler` — ZIP contains expected paths (integration-light)
-- [ ] `pnpm typecheck` and `pnpm build` on the implementation branch
+- [x] Contract: eligible list, preview request/response, export request schemas (unit)
+- [x] Unit: `buildDeliveryPackageUseCase` with mocked `IDeliveryExportRepository` — PD-001 shape (`WORK_QUEUE` rows + per-story files)
+- [x] Unit: `cursor-package-assembler` — ZIP contains expected paths (integration-light)
+- [x] `pnpm typecheck` and `pnpm build` on the implementation branch
 
 ---
 
