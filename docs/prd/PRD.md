@@ -29,7 +29,7 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 - Confirmation channel: **In-app first** — obvious controls (buttons, inputs, or equivalent) to advance and approve steps; not email or external channels as the default for v0.
 - **Learning / feedback (v0):** **Signed-in owner only** receives **lightweight, skippable** feedback prompts after **owner milestones** (see **Success Metrics**). **Anonymous share viewers** are **not** prompted for feedback in v0 (**deferred post-v0**).
 - Payment model (**v0**):
-  - **Free to start** with a **configurable starter credit grant (X)** (**numeric X** stays **operator-TBD** per discovery).
+  - **Free to start** with **20 starter credits** granted at signup (**X = 20** for v0; operator may tune via config without changing product narrative).
   - Credits are **prepaid quantities** (packs are **100 / 200 / 1000 credits**), **never** sold as “N PRDs.” **Zedos** maintains an **internal credit ledger**; credits deduct **per AI operation**.
   - **First PRD circuit (one-time grace):** **pre-check gate** — if the projected cost of the next AI operation exceeds the owner's remaining balance by more than **20 credits**, the operation does **not** start; present the recharge path immediately. If the operation was already in flight and the owner's balance runs out mid-response with an overage of **at most 20 credits**, the **current AI response still completes** (no mid-stream cut). Afterward, show clear copy that they **exceeded included starter credits** and that Zedos **covered that completion once** so the first flow was not interrupted; then present a **recharge** path. This grace applies **once, during the first PRD circuit only**. **After** that circuit, **paid AI generation** is **blocked at zero credits** unless **auto-reload** succeeds. **No hidden debt, no silent retry loop, no negative balance except this first-circuit grace.**
   - **Purchases:** **Stripe** **one-time payments** for manual top-ups (**primary v0 payment path**); **launch payments** support **France/EU + US** (product scope for v0).
@@ -44,8 +44,7 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 
 ## Surface Blockers
 
-- **Starter credit grant (X)** — **numeric value** remains **operator-config / TBD** in the PRD (discovery Q-008).
-- **AI inference** — **model/provider** is **not** specified here beyond **managed** usage and **no BYOK** in v0.
+- _(none for v0 baseline — resolved 2026-05-28 per B-001 / B-003 in `docs/BLOCKERS.md`)_
 
 # Global Product Picture
 
@@ -108,7 +107,7 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 |-----------|-----------|
 | UI + AI language | EN |
 | Future locale | FR (after EN); i18n-ready |
-| Starter credits **X** | **TBD / operator-config** (not fixed in this PRD) |
+| Starter credits **X** | **20** at signup (env-tunable; product baseline **X = 20**) |
 | Launch payment markets | **France/EU + US** |
 | Payments provider | **Stripe** |
 | Credit pack denominations | **100 / 200 / 1000 credits** (fixed; **not** “N PRDs”) |
@@ -121,7 +120,7 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 
 - **Payments:** **Stripe** for **one-time** credit pack purchases and **opt-in auto-reload** pack purchases; **FR/EU + US** flows required for v0; **clear tax/VAT treatment** for **digital AI credits** is a **product requirement** (details not implementation-specified here).
 - **Credits:** **Zedos** holds the **authoritative internal ledger**; **deduction is progressive per AI operation**; packs are **prepaid credit quantities** only.
-- **AI inference:** **managed** usage; **model/provider** **not** named in this PRD (**no BYOK** in v0 per scope).
+- **AI inference:** **managed** usage via **Abacus-managed OpenAI `gpt-4o-mini`** for v0 mini-forms and clarification flows (**no BYOK** in v0 per scope).
 - **Identity:** public signup and signed-in owner; **anonymous** read-only **share** viewers (no account).
 - **Search engines:** shared URLs treated as **non-indexable** by product intent (policy/robots level — not implementation).
 - **Export:** optional **Markdown** later for alignment outside the app; **PDF** deferred from v0 critical path.

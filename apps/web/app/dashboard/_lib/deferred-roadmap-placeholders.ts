@@ -2,9 +2,8 @@
  * Single source of truth for deferred (post-PRD) roadmap placeholders —
  * dashboard home + sidebar stay visually aligned.
  *
- * Product decision (2026-05-28):
- * - `test-first-workflows` remains out of v0 (coming in v1).
- * - `delivery` remains out of v0 (coming in v1).
+ * Live per-project surfaces (feature split, user stories, delivery) are linked
+ * from the project sidebar — only items still without a shipped UI stay here.
  */
 
 /** Contact shown in the "need it fast?" CTA inside roadmap modals. */
@@ -23,25 +22,5 @@ export type DeferredRoadmapPlaceholder = {
   why: string
 }
 
-export const DEFERRED_ROADMAP_PLACEHOLDERS: readonly DeferredRoadmapPlaceholder[] = [
-  {
-    id: 'test-first-workflows',
-    title: 'Test-first workflows',
-    summary: 'Stories with tasks and prompts per task',
-    tooltip: 'Coming in v1 — tap to learn more.',
-    description:
-      'For each user story, generate a task list with one focused implementation prompt per task. Everything your AI coding agent needs to start building — in the right order, with the right context.',
-    why:
-      'AI coding agents work best with small, precise prompts. This step pre-chews your stories into bite-sized tasks so Cursor or any AI tool can ship them reliably, without you hand-holding every instruction.',
-  },
-  {
-    id: 'delivery',
-    title: 'Delivery',
-    summary: 'Cursor packaging for v0',
-    tooltip: 'Coming in v1 — tap to learn more.',
-    description:
-      'Package your user stories, tasks, and prompts into a Cursor-ready export — a `.cursor/` folder structure and WORK_QUEUE you can drop directly into your repo and open in your editor.',
-    why:
-      'The last mile from planning to coding is usually manual and error-prone. This closes that gap: one export and everything lands in Cursor, formatted exactly how an AI coding agent expects it.',
-  },
-] as const
+/** Post-PRD surfaces without a shipped UI — empty when all pipeline steps are live. */
+export const DEFERRED_ROADMAP_PLACEHOLDERS: readonly DeferredRoadmapPlaceholder[] = [] as const

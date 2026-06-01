@@ -15,6 +15,7 @@ export const DeductCreditsRequestSchema = z.object({
     'prd_generation',
     'prd_challenge',
     'feature_split',
+    'task_split',
   ]),
   correlationId: z.string().min(1),
 });

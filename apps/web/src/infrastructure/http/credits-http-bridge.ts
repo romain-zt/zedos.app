@@ -15,7 +15,8 @@ export type ApiCreditOperationType =
   | 'mini_form'
   | 'prd_generation'
   | 'prd_challenge'
-  | 'feature_split';
+  | 'feature_split'
+  | 'task_split';
 
 function toDomainOperation(operationType: ApiCreditOperationType): DomainOperationType {
   return operationType as DomainOperationType;
@@ -29,6 +30,7 @@ export function getCreditCost(operationType: ApiCreditOperationType): number {
     prd_generation: parseInt(process.env.CREDIT_COST_PRD_GENERATION ?? '10', 10),
     prd_challenge: parseInt(process.env.CREDIT_COST_PRD_CHALLENGE ?? '15', 10),
     feature_split: parseInt(process.env.CREDIT_COST_FEATURE_SPLIT ?? '5', 10),
+    task_split: parseInt(process.env.CREDIT_COST_TASK_SPLIT ?? '5', 10),
   };
   return costs[operationType] ?? 1;
 }

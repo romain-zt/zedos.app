@@ -30,7 +30,8 @@
     "./feedback/milestone-prompt": "./src/feedback/milestone-prompt.ts",
     "./feature-split": "./src/feature-split/index.ts",
     "./user-stories": "./src/user-stories/index.ts",
-    "./delivery": "./src/delivery/delivery-contracts.ts"
+    "./delivery": "./src/delivery/delivery-contracts.ts",
+    "./task-split": "./src/task-split/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

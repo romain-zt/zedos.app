@@ -10,3 +10,4 @@ export * from './adrs';
 export * from './auth';
 export * from './feature-split';
 export * from './user-stories';
+export * from './task-split';

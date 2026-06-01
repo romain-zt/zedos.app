@@ -8,6 +8,9 @@ import { ListExportEligibleBundlesUseCase } from '@application/delivery/list-exp
 import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository';
 import { DrizzleDeliveryExportRepository } from '@infrastructure/delivery/delivery-export-repository';
 import { ApplicationError } from '@shared/errors/application-error';
+import { createLogger } from '@shared/observability/logger';
+
+const logger = createLogger({ operation: 'delivery-eligible' });
 
 function toErrorResponse(e: ApplicationError) {
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -42,7 +45,14 @@ export async function GET(
     new DrizzleDeliveryExportRepository()
   );
   const result = await useCase.execute(params.id, userId);
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) {
+    logger.warn('List export-eligible bundles failed', {
+      projectId: params.id,
+      userId,
+      statusCode: result.error.statusCode,
+    });
+    return toErrorResponse(result.error);
+  }
 
   const dto = mapEligibleToDto(result.unwrap());
   const parsed = ExportEligibleListResponseSchema.safeParse(dto);

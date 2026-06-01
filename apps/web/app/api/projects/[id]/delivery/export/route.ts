@@ -9,6 +9,10 @@ import { DrizzleProjectRepository } from '@infrastructure/persistence/project-re
 import { DrizzleDeliveryExportRepository } from '@infrastructure/delivery/delivery-export-repository';
 import { CursorPackageAssembler } from '@infrastructure/delivery/cursor-package-assembler';
 import { ApplicationError } from '@shared/errors/application-error';
+import { createLogger } from '@shared/observability/logger';
+import { validationFailureData } from '@shared/observability/log-safe';
+
+const logger = createLogger({ operation: 'delivery-export' });
 
 function toErrorResponse(e: ApplicationError) {
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -31,6 +35,7 @@ export async function POST(
 
   const parsed = DeliveryExportRequestSchema.safeParse(raw);
   if (!parsed.success) {
+    logger.warn('Delivery export validation failed', validationFailureData(parsed.error.flatten()));
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
 
@@ -40,9 +45,22 @@ export async function POST(
     new CursorPackageAssembler()
   );
   const result = await useCase.execute(params.id, userId, parsed.data.bundleIds);
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) {
+    logger.warn('Delivery export failed', {
+      projectId: params.id,
+      userId,
+      statusCode: result.error.statusCode,
+    });
+    return toErrorResponse(result.error);
+  }
 
   const build = result.unwrap();
+  logger.info('Delivery export succeeded', {
+    projectId: params.id,
+    userId,
+    bundleCount: parsed.data.bundleIds.length,
+    zipBytes: build.zipBuffer.length,
+  });
   return new NextResponse(build.zipBuffer, {
     status: 200,
     headers: {

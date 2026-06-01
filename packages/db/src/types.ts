@@ -207,3 +207,43 @@ export interface UserStoryLineUpdate {
   draftMarker?: string | null;
   updatedAt?: Date;
 }
+
+export interface NewTaskSplitBundleRow {
+  id?: string;
+  projectId: string;
+  userStoryLineId?: string | null;
+  storyTitle?: string | null;
+  storyBody?: string | null;
+  lockedAt?: Date | null;
+  createdAt?: Date;
+  updatedAt: Date;
+}
+
+export interface TaskSplitBundleUpdate {
+  userStoryLineId?: string | null;
+  storyTitle?: string | null;
+  storyBody?: string | null;
+  lockedAt?: Date | null;
+  updatedAt?: Date;
+}
+
+export interface NewTaskSplitTaskRow {
+  id?: string;
+  bundleId: string;
+  sortOrder: number;
+  title: string;
+  promptBody: string;
+  manual?: boolean;
+  deletedAt?: Date | null;
+  createdAt?: Date;
+  updatedAt: Date;
+}
+
+export interface TaskSplitTaskUpdate {
+  sortOrder?: number;
+  title?: string;
+  promptBody?: string;
+  manual?: boolean;
+  deletedAt?: Date | null;
+  updatedAt?: Date;
+}

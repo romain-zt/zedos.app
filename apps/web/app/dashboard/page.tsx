@@ -59,7 +59,7 @@ export default function DashboardPage() {
             Hey {userName}
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Your home base for turning ideas into a structured PRD. Everything else on the roadmap is labeled honestly below.
+            Your home base for turning ideas into a structured PRD. Open a project for feature split, user stories, task splitting, and Cursor delivery.
           </p>
         </div>
       </FadeIn>
@@ -67,10 +67,10 @@ export default function DashboardPage() {
       <FadeIn>
         <Alert className="border-primary/20 bg-primary/5">
           <Info className="h-4 w-4 text-primary" />
-          <AlertTitle className="text-base">Zedos v0 is the PRD slice</AlertTitle>
+          <AlertTitle className="text-base">PRD path + post-PRD tools</AlertTitle>
           <AlertDescription className="text-muted-foreground">
-            Projects, clarification, and PRD versions are in scope today. The long-term founder pipeline is visible, but only
-            as &quot;under construction&quot; until those slices ship.
+            Projects, clarification, and versioned PRDs are always available. Per project you can run feature split, user
+            stories, task split (prompts per task), and Cursor package export.
           </AlertDescription>
         </Alert>
       </FadeIn>
@@ -117,49 +117,51 @@ export default function DashboardPage() {
         </div>
       </Stagger>
 
-      <SlideIn from="bottom">
-        <Card className="border-dashed border-muted-foreground/30">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Construction className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-lg font-display">Beyond the PRD — under construction</CardTitle>
-            </div>
-            <CardDescription>
-              These directions are on the roadmap, not in v0. They are shown so you know what we are not shipping yet.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              <TooltipProvider>
-              {DEFERRED_ROADMAP_PLACEHOLDERS.map((item) => (
-                <li key={item.id} className="list-none">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        tabIndex={0}
-                        role="note"
-                        className="rounded-lg border border-dashed border-muted-foreground/25 bg-muted/20 px-4 py-3 text-sm min-h-[44px] cursor-help outline-none touch-manipulation hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring"
-                        aria-label={`${item.title} — under construction, not available in v0`}
-                      >
-                        <p className="font-medium text-foreground">{item.title}</p>
-                        <p className="text-muted-foreground mt-0.5">{item.summary}</p>
-                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
-                          <Construction className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          Under construction
-                        </p>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[min(280px,calc(100vw-2rem))] text-xs sm:text-sm">
-                      {item.tooltip}
-                    </TooltipContent>
-                  </Tooltip>
-                </li>
-              ))}
-              </TooltipProvider>
-            </ul>
-          </CardContent>
-        </Card>
-      </SlideIn>
+      {DEFERRED_ROADMAP_PLACEHOLDERS.length > 0 && (
+        <SlideIn from="bottom">
+          <Card className="border-dashed border-muted-foreground/30">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Construction className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-lg font-display">Still on the roadmap</CardTitle>
+              </div>
+              <CardDescription>
+                Upcoming capabilities we have not wired in the product UI yet — not broken links, just honest scope.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="grid gap-3 sm:grid-cols-2">
+                <TooltipProvider>
+                  {DEFERRED_ROADMAP_PLACEHOLDERS.map((item) => (
+                    <li key={item.id} className="list-none">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            tabIndex={0}
+                            role="note"
+                            className="rounded-lg border border-dashed border-muted-foreground/25 bg-muted/20 px-4 py-3 text-sm min-h-[44px] cursor-help outline-none touch-manipulation hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-label={`${item.title} — coming soon`}
+                          >
+                            <p className="font-medium text-foreground">{item.title}</p>
+                            <p className="text-muted-foreground mt-0.5">{item.summary}</p>
+                            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+                              <Construction className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                              Coming soon
+                            </p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[min(280px,calc(100vw-2rem))] text-xs sm:text-sm">
+                          {item.tooltip}
+                        </TooltipContent>
+                      </Tooltip>
+                    </li>
+                  ))}
+                </TooltipProvider>
+              </ul>
+            </CardContent>
+          </Card>
+        </SlideIn>
+      )}
 
       {/* Recent projects or CTA */}
       <SlideIn from="bottom">

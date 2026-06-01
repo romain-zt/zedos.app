@@ -11,6 +11,10 @@ import { PreviewDeliveryPackageUseCase } from '@application/delivery/preview-del
 import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository';
 import { DrizzleDeliveryExportRepository } from '@infrastructure/delivery/delivery-export-repository';
 import { ApplicationError } from '@shared/errors/application-error';
+import { createLogger } from '@shared/observability/logger';
+import { validationFailureData } from '@shared/observability/log-safe';
+
+const logger = createLogger({ operation: 'delivery-preview' });
 
 function toErrorResponse(e: ApplicationError) {
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -33,6 +37,7 @@ export async function POST(
 
   const parsed = DeliveryPreviewRequestSchema.safeParse(raw);
   if (!parsed.success) {
+    logger.warn('Delivery preview validation failed', validationFailureData(parsed.error.flatten()));
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
 
@@ -41,7 +46,14 @@ export async function POST(
     new DrizzleDeliveryExportRepository()
   );
   const result = await useCase.execute(params.id, userId, parsed.data.bundleIds);
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) {
+    logger.warn('Delivery preview failed', {
+      projectId: params.id,
+      userId,
+      statusCode: result.error.statusCode,
+    });
+    return toErrorResponse(result.error);
+  }
 
   const out = DeliveryPreviewResponseSchema.safeParse(result.unwrap());
   if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
