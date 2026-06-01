@@ -13,9 +13,18 @@ import { DrizzleProjectRepository } from '@infrastructure/persistence/project-re
 import { DrizzleTaskSplitBundleRepository } from '@infrastructure/persistence/task-split-bundle-repository';
 import { ApplicationError } from '@shared/errors/application-error';
 import type { SaveTaskSplitTaskInput } from '@domain/task-split/task-split-bundle';
+import { createLogger } from '@shared/observability/logger';
+import { validationFailureData } from '@shared/observability/log-safe';
 import { mapTaskSplitBundleDomainToDto } from './_lib/map-bundle-to-contract';
 
-function toErrorResponse(e: ApplicationError) {
+const logger = createLogger({ operation: 'task-split' });
+
+function toErrorResponse(
+  e: ApplicationError,
+  context: { projectId: string; userId: string },
+  message: string
+) {
+  logger.warn(message, { ...context, statusCode: e.statusCode });
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
 }
 
@@ -31,18 +40,20 @@ export async function GET(
     Object.fromEntries(request.nextUrl.searchParams)
   );
   if (!query.success) {
+    logger.warn('Task-split GET validation failed', validationFailureData(query.error.flatten()));
     return NextResponse.json(
       { error: 'Invalid query', details: query.error.flatten() },
       { status: 400 }
     );
   }
 
+  const routeContext = { projectId: params.id, userId };
   const useCase = new GetTaskSplitBundleUseCase(
     new DrizzleProjectRepository(),
     new DrizzleTaskSplitBundleRepository()
   );
   const result = await useCase.execute(params.id, userId, query.data.userStoryLineId);
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) return toErrorResponse(result.error, routeContext, 'Task-split GET failed');
 
   const bundle = result.unwrap();
   if (bundle === null) {
@@ -51,7 +62,12 @@ export async function GET(
 
   const dto = mapTaskSplitBundleDomainToDto(bundle);
   const out = TaskSplitBundleSchema.safeParse(dto);
-  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (!out.success) {
+    logger
+      .withContext(routeContext)
+      .error('Task-split GET outbound validation failed', validationFailureData(out.error.flatten()));
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
   return NextResponse.json(out.data);
 }
 
@@ -72,12 +88,14 @@ export async function PUT(
 
   const parsed = SaveTaskSplitBundleRequestSchema.safeParse(raw);
   if (!parsed.success) {
+    logger.warn('Task-split PUT validation failed', validationFailureData(parsed.error.flatten()));
     return NextResponse.json(
       { error: 'Invalid input', details: parsed.error.flatten() },
       { status: 400 }
     );
   }
 
+  const routeContext = { projectId: params.id, userId };
   const tasks: SaveTaskSplitTaskInput[] = parsed.data.tasks.map((task) => ({
     id: task.id,
     sortOrder: task.sortOrder,
@@ -96,10 +114,16 @@ export async function PUT(
     parsed.data.userStoryLineId,
     tasks
   );
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) return toErrorResponse(result.error, routeContext, 'Task-split PUT failed');
 
   const dto = mapTaskSplitBundleDomainToDto(result.unwrap());
   const out = TaskSplitBundleSchema.safeParse(dto);
-  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (!out.success) {
+    logger
+      .withContext(routeContext)
+      .error('Task-split PUT outbound validation failed', validationFailureData(out.error.flatten()));
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+  logger.info('Task-split bundle saved', routeContext);
   return NextResponse.json(out.data);
 }

@@ -17,9 +17,18 @@ import { DrizzleFeatureSplitRepository } from '@infrastructure/persistence/featu
 import { DrizzleUserStoryCorpusRepository } from '@infrastructure/persistence/user-story-corpus-repository';
 import { ApplicationError } from '@shared/errors/application-error';
 import type { SaveUserStoryLineInput } from '@domain/user-stories/user-story-corpus';
+import { createLogger } from '@shared/observability/logger';
+import { validationFailureData } from '@shared/observability/log-safe';
 import { mapUserStoryCorpusDomainToDto } from './_lib/map-corpus-to-contract';
 
-function toErrorResponse(e: ApplicationError) {
+const logger = createLogger({ operation: 'user-stories' });
+
+function toErrorResponse(
+  e: ApplicationError,
+  context: { projectId: string; userId: string },
+  message: string
+) {
+  logger.warn(message, { ...context, statusCode: e.statusCode });
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
 }
 
@@ -35,15 +44,17 @@ export async function GET(
     Object.fromEntries(request.nextUrl.searchParams)
   );
   if (!query.success) {
+    logger.warn('User stories GET validation failed', validationFailureData(query.error.flatten()));
     return NextResponse.json({ error: 'Invalid query', details: query.error.flatten() }, { status: 400 });
   }
 
+  const routeContext = { projectId: params.id, userId };
   const useCase = new GetUserStoryCorpusUseCase(
     new DrizzleProjectRepository(),
     new DrizzleUserStoryCorpusRepository()
   );
   const result = await useCase.execute(params.id, userId, query.data.featureSplitClusterId);
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) return toErrorResponse(result.error, routeContext, 'User stories GET failed');
 
   const corpus = result.unwrap();
   if (corpus === null) {
@@ -52,7 +63,12 @@ export async function GET(
 
   const dto = mapUserStoryCorpusDomainToDto(corpus);
   const out = UserStoryCorpusSchema.safeParse(dto);
-  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (!out.success) {
+    logger
+      .withContext(routeContext)
+      .error('User stories GET outbound validation failed', validationFailureData(out.error.flatten()));
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
   return NextResponse.json(out.data);
 }
 
@@ -73,9 +89,11 @@ export async function PUT(
 
   const parsed = SaveUserStoryCorpusRequestSchema.safeParse(raw);
   if (!parsed.success) {
+    logger.warn('User stories PUT validation failed', validationFailureData(parsed.error.flatten()));
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
 
+  const routeContext = { projectId: params.id, userId };
   const useCase = new SaveUserStoryCorpusUseCase(
     new DrizzleProjectRepository(),
     new DrizzleFeatureSplitRepository(),
@@ -87,10 +105,16 @@ export async function PUT(
     parsed.data.featureSplitClusterId,
     parsed.data.lines as SaveUserStoryLineInput[]
   );
-  if (result.isErr()) return toErrorResponse(result.error);
+  if (result.isErr()) return toErrorResponse(result.error, routeContext, 'User stories PUT failed');
 
   const dto = mapUserStoryCorpusDomainToDto(result.unwrap());
   const out = UserStoryCorpusSchema.safeParse(dto);
-  if (!out.success) return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  if (!out.success) {
+    logger
+      .withContext(routeContext)
+      .error('User stories PUT outbound validation failed', validationFailureData(out.error.flatten()));
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+  logger.info('User story corpus saved', routeContext);
   return NextResponse.json(out.data);
 }
