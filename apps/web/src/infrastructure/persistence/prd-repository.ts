@@ -176,7 +176,6 @@ export class DrizzlePrdRepository implements IPrdRepository {
         ({
           source: 'in_app',
           summary: 'Initial PRD version (placeholder — edit via clarify and generate when ready)',
-          sections: [],
         } satisfies Record<string, unknown>);
 
       const [inserted] = await db

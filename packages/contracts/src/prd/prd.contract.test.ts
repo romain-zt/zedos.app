@@ -116,4 +116,38 @@ describe('PrdVersionListResponseSchema', () => {
         .success,
     ).toBe(false);
   });
+
+  it('parses list with legacy draft placeholder and generated AI content', () => {
+    const r = PrdVersionListResponseSchema.safeParse([
+      {
+        ...row,
+        versionNumber: 1,
+        content: {
+          source: 'in_app',
+          summary: 'Initial PRD version (placeholder — edit via clarify and generate when ready)',
+          sections: [],
+        },
+      },
+      {
+        ...row,
+        versionNumber: 2,
+        status: 'generated',
+        content: {
+          title: 'E2E PRD',
+          version_summary: 'Generated in test',
+          sections: [
+            {
+              id: 'vision',
+              title: 'Vision',
+              content: 'Test',
+              confidence: 'high',
+              open_questions: [],
+            },
+          ],
+        },
+        questionHistoryCount: '0',
+      },
+    ]);
+    expect(r.success).toBe(true);
+  });
 });
