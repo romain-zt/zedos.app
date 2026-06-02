@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { localePath, normalizePathWithoutLocale } from '@/lib/locale-path';
+import { useI18n } from '@/src/i18n';
 import { FeatureSplitListResponseSchema } from '@repo/contracts/feature-split/feature-split';
 
 type ClusterNavItem = {
@@ -12,7 +14,9 @@ type ClusterNavItem = {
 };
 
 export function ProjectStoryClusterNav({ projectId }: { projectId: string }) {
+  const { locale } = useI18n();
   const pathname = usePathname();
+  const pathWithoutLocale = normalizePathWithoutLocale(pathname);
   const router = useRouter();
   const [clusters, setClusters] = useState<ClusterNavItem[]>([]);
 
@@ -75,12 +79,12 @@ export function ProjectStoryClusterNav({ projectId }: { projectId: string }) {
     <div className="space-y-0.5 pl-3 border-l border-border/60 ml-3">
       {clusters.map((cluster) => {
         const href = `/dashboard/projects/${projectId}/user-stories/${cluster.id}`;
-        const isActive = pathname === href;
+        const isActive = pathWithoutLocale === href;
         return (
           <button
             key={cluster.id}
             type="button"
-            onClick={() => router.push(href)}
+            onClick={() => router.push(localePath(href, locale))}
             className={cn(
               'w-full text-left rounded-md px-2 py-2 text-xs font-medium transition-colors min-h-[44px] flex items-center gap-2',
               isActive

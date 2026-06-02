@@ -27,9 +27,20 @@ export const UpdateAdrRequestSchema = z.object({
 
 export type UpdateAdrRequest = z.infer<typeof UpdateAdrRequestSchema>;
 
+export const ArchitectureUnlockReasonCodeSchema = z.enum([
+  'prd_stable_unlocked',
+  'prd_not_stable',
+  'not_intake_phase',
+  'no_prd_version',
+]);
+
+export type ArchitectureUnlockReasonCode = z.infer<
+  typeof ArchitectureUnlockReasonCodeSchema
+>;
+
 export const PhaseCheckResponseSchema = z.object({
   isStable: z.boolean(),
-  message: z.string(),
+  reasonCode: ArchitectureUnlockReasonCodeSchema,
   currentPhase: z.string(),
 });
 

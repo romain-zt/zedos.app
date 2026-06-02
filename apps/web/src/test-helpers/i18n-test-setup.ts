@@ -14,6 +14,7 @@ const TRANSLATIONS: Record<string, string> = {
   'refine.send': 'Send refinement',
   'common.close': 'Close',
   'refine.updatePrdWithThread': 'Update PRD',
+  'refine.openLatestPrd': 'View latest generated PRD',
 };
 
 vi.mock('@/src/i18n', () => ({

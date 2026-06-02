@@ -31,7 +31,11 @@ interface PrdViewerProps {
   selectedVersion: PrdVersionDTO | null
   onSelectVersion: (v: PrdVersionDTO) => void
   onRefresh: () => void
-  onOpenRefinement?: (payload: { label: string; prdVersionId: string | null }) => void
+  onOpenRefinement?: (payload: {
+    label: string
+    prdVersionId: string | null
+    initialPrompt?: string
+  }) => void
 }
 
 export function PrdViewer({
@@ -81,6 +85,33 @@ export function PrdViewer({
   const parsedContent = GeneratePrdAiResponseSchema.safeParse(selectedVersion?.content)
   const content = parsedContent.success ? parsedContent.data : null
   const sections: GeneratePrdSection[] = content?.sections ?? []
+
+  const refinementSeedPromptForSection = (section: GeneratePrdSection): string => {
+    const fromOpenQuestion = (section?.open_questions?.[0] ?? '').trim()
+    if (fromOpenQuestion.length > 0) return fromOpenQuestion
+
+    const sectionTitle = (section?.title ?? t('prd.section')).trim()
+    const sectionContent = (section?.content ?? '').trim()
+    const seedFromSectionTemplate = t('refine.seedFromSection')
+    const seedFromSectionWithContentTemplate = t('refine.seedFromSectionWithContent')
+    const resolvedSeedFromSectionTemplate =
+      seedFromSectionTemplate === 'refine.seedFromSection'
+        ? 'Quelle décision clé souhaitez-vous prendre maintenant pour la section "{section}" ?'
+        : seedFromSectionTemplate
+    const resolvedSeedFromSectionWithContentTemplate =
+      seedFromSectionWithContentTemplate === 'refine.seedFromSectionWithContent'
+        ? 'Pour la section "{section}", quelle décision prioritaire voulez-vous trancher maintenant ? Contexte actuel : {content}'
+        : seedFromSectionWithContentTemplate
+
+    if (sectionContent.length > 0) {
+      const snippet = sectionContent.length > 280 ? `${sectionContent.slice(0, 279)}…` : sectionContent
+      return resolvedSeedFromSectionWithContentTemplate
+        .replace('{section}', sectionTitle)
+        .replace('{content}', snippet)
+    }
+
+    return resolvedSeedFromSectionTemplate.replace('{section}', sectionTitle)
+  }
 
   const handleShare = async () => {
     if (!selectedVersion?.id) return
@@ -377,6 +408,7 @@ export function PrdViewer({
                             onOpenRefinement({
                               label: `${section?.title ?? t('prd.section')} (PRD)`,
                               prdVersionId: selectedVersion?.id ?? null,
+                              initialPrompt: refinementSeedPromptForSection(section),
                             })
                           }
                         >
@@ -406,7 +438,23 @@ export function PrdViewer({
                         {(section.open_questions ?? []).map((q: string, qi: number) => (
                           <li key={qi} className="flex items-start gap-1.5">
                             <span className="mt-0.5">•</span>
-                            <span>{q}</span>
+                            {onOpenRefinement ? (
+                              <button
+                                type="button"
+                                className="text-left underline-offset-2 hover:underline"
+                                onClick={() =>
+                                  onOpenRefinement({
+                                    label: `${section?.title ?? t('prd.section')} (PRD)`,
+                                    prdVersionId: selectedVersion?.id ?? null,
+                                    initialPrompt: q,
+                                  })
+                                }
+                              >
+                                {q}
+                              </button>
+                            ) : (
+                              <span>{q}</span>
+                            )}
                           </li>
                         ))}
                       </ul>

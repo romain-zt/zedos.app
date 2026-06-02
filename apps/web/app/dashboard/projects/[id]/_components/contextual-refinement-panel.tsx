@@ -11,9 +11,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Send, HelpCircle, Loader2, RefreshCw, Check, X } from 'lucide-react'
+import { Send, HelpCircle, Loader2, Check, X, FileText } from 'lucide-react'
 import { toast } from 'sonner'
-import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 import {
   ChatMessageToolbar,
   copyTextToClipboard,
@@ -102,21 +101,23 @@ export interface ContextualRefinementPanelProps {
   projectId: string
   prdVersionId: string | null
   contextLabel: string
+  initialPrompt?: string
   isOpen: boolean
   onClose: () => void
   onPrdUpdated?: () => void
+  onViewLatestPrd?: () => void
 }
 
 export function ContextualRefinementPanel({
   projectId,
   prdVersionId,
   contextLabel,
+  initialPrompt,
   isOpen,
   onClose,
-  onPrdUpdated,
+  onViewLatestPrd,
 }: ContextualRefinementPanelProps) {
   const { t } = useI18n()
-  const { notifyMilestone } = useOwnerMilestonePrompt()
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<StreamMessage[]>([])
   const [streaming, setStreaming] = useState(false)
@@ -131,7 +132,12 @@ export function ContextualRefinementPanel({
   useEffect(() => {
     if (isOpen) {
       setInput('')
-      setMessages([])
+      const seededPrompt = (initialPrompt ?? '').trim()
+      setMessages(
+        seededPrompt.length > 0
+          ? [{ id: newMessageId(), role: 'assistant', content: seededPrompt }]
+          : []
+      )
       setStreaming(false)
       setCreditsBlocked(false)
       setHasAiResponse(false)
@@ -139,7 +145,7 @@ export function ContextualRefinementPanel({
       setEditingId(null)
       setEditDraft('')
     }
-  }, [isOpen, contextLabel, prdVersionId])
+  }, [isOpen, contextLabel, prdVersionId, initialPrompt])
 
   const handleClose = useCallback(() => {
     onClose()
@@ -320,67 +326,6 @@ export function ContextualRefinementPanel({
     }
   }
 
-  const handleUpdatePrd = async () => {
-    setUpdatingPrd(true)
-    try {
-      const res = await fetch(`/api/projects/${projectId}/generate-prd`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      })
-
-      if (res.status === 402) {
-        const data = (await res.json().catch(() => ({}))) as { message?: string }
-        toast.error(data?.message ?? t('refine.insufficientCreditsUpdatePrd'))
-        return
-      }
-
-      if (!res.ok) {
-        toast.error(t('refine.updatePrdFailed'))
-        return
-      }
-
-      const reader = res.body?.getReader()
-      const decoder = new TextDecoder()
-      let partial = ''
-
-      while (reader) {
-        const { done, value } = await reader.read()
-        if (done) break
-        partial += decoder.decode(value, { stream: true })
-        const lines = partial.split('\n')
-        partial = lines.pop() ?? ''
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          try {
-            const parsed = JSON.parse(line.slice(6)) as { status?: string }
-            if (parsed?.status === 'completed') {
-              toast.success(t('refine.prdUpdated'))
-              notifyMilestone({
-                projectId,
-                milestoneType: 'prd_updated',
-                ...(prdVersionId ? { prdVersionId } : {}),
-              })
-              onPrdUpdated?.()
-              onClose()
-              return
-            }
-            if (parsed?.status === 'error') {
-              toast.error(t('refine.prdUpdateFailed'))
-              return
-            }
-          } catch {
-            /* ignore */
-          }
-        }
-      }
-    } catch {
-      toast.error(t('refine.updatePrdFailed'))
-    } finally {
-      setUpdatingPrd(false)
-    }
-  }
-
   return (
     <Sheet
       open={isOpen}
@@ -492,15 +437,14 @@ export function ContextualRefinementPanel({
               type="button"
               variant="secondary"
               className="min-h-11 w-full"
-              onClick={() => void handleUpdatePrd()}
+              onClick={() => {
+                onClose()
+                void onViewLatestPrd?.()
+              }}
               disabled={busy}
             >
-              {updatingPrd ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              {updatingPrd ? t('refine.updatingPrd') : t('refine.updatePrdWithThread')}
+              <FileText className="h-4 w-4 mr-2" />
+              {t('refine.openLatestPrd')}
             </Button>
           ) : null}
           <Textarea

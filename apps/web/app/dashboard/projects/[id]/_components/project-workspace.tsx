@@ -43,9 +43,14 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
     isOpen: boolean
     label: string
     prdVersionId: string | null
-  }>({ isOpen: false, label: '', prdVersionId: null })
+    initialPrompt?: string
+  }>({ isOpen: false, label: '', prdVersionId: null, initialPrompt: '' })
 
-  const openRefinement = useCallback((payload: { label: string; prdVersionId: string | null }) => {
+  const openRefinement = useCallback((payload: {
+    label: string
+    prdVersionId: string | null
+    initialPrompt?: string
+  }) => {
     setRefinement({ isOpen: true, ...payload })
   }, [])
 
@@ -53,19 +58,15 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
     setRefinement((r) => ({ ...r, isOpen: false }))
   }, [])
 
-  const fetchVersions = useCallback(async () => {
-    try {
-      const ensure = await fetch(`/api/projects/${projectId}/prd`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      })
-      if (!ensure.ok) {
-        if (ensure.status !== 401) toast.error(t('workspace.initPrdVersionFailed'))
-        return
-      }
-      const res = await fetch(`/api/projects/${projectId}/prd`)
-      if (res?.ok) {
+  const fetchVersions = useCallback(
+    async (opts?: { selectLatest?: boolean }) => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/prd`)
+        if (!res.ok) {
+          if (res.status !== 401) toast.error(t('workspace.loadPrdVersionsFailed'))
+          return
+        }
+
         const raw = await res.json()
         const parsed = PrdVersionListResponseSchema.safeParse(raw)
         if (!parsed.success) {
@@ -74,15 +75,23 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         }
         const data = parsed.data
         setPrdVersions(data)
-        setSelectedVersion((prev) => {
-          if (prev && data.some((v) => v.id === prev.id)) return prev
-          return data[0] ?? null
-        })
+        if (opts?.selectLatest && data.length > 0) {
+          const latest = data.reduce((best, v) =>
+            v.versionNumber > best.versionNumber ? v : best
+          )
+          setSelectedVersion(latest)
+        } else {
+          setSelectedVersion((prev) => {
+            if (prev && data.some((v) => v.id === prev.id)) return prev
+            return data[0] ?? null
+          })
+        }
+      } catch {
+        toast.error(t('workspace.loadPrdVersionsFailed'))
       }
-    } catch {
-      toast.error(t('workspace.loadPrdVersionsFailed'))
-    }
-  }, [projectId, t])
+    },
+    [projectId, t]
+  )
 
   useEffect(() => {
     fetchVersions()
@@ -108,6 +117,12 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
     fetchVersions()
     setActiveTab('prd')
   }, [fetchVersions])
+
+  const openLatestPrd = useCallback(async () => {
+    closeRefinement()
+    await fetchVersions({ selectLatest: true })
+    setActiveTab('prd')
+  }, [fetchVersions, closeRefinement])
 
   const handleSaveSettings = async () => {
     setSaving(true)
@@ -217,9 +232,11 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         projectId={projectId}
         prdVersionId={refinement.prdVersionId}
         contextLabel={refinement.label}
+        initialPrompt={refinement.initialPrompt ?? ''}
         isOpen={refinement.isOpen}
         onClose={closeRefinement}
         onPrdUpdated={fetchVersions}
+        onViewLatestPrd={openLatestPrd}
       />
 
       {/* Settings Dialog */}

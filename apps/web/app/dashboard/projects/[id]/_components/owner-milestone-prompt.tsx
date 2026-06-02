@@ -16,6 +16,7 @@ import type { OwnerMilestoneType } from '@repo/contracts/feedback/submit'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
+import { useI18n } from '@/src/i18n'
 
 const STORAGE_PREFIX = 'zedos:owner-milestone-banner:'
 
@@ -24,59 +25,65 @@ function dedupeStorageKey(payload: OwnerMilestoneDetectedPayload): string {
   return `${STORAGE_PREFIX}${payload.projectId}:${payload.milestoneType}:${v}`
 }
 
-function bannerCopy(milestoneType: OwnerMilestoneType): { title: string; description: string } {
+function bannerCopy(
+  milestoneType: OwnerMilestoneType,
+  t: (key: string) => string
+): { title: string; description: string } {
   switch (milestoneType) {
     case 'prd_created':
       return {
-        title: 'PRD created',
-        description: 'If you have a moment, tell us how the generation flow worked for you.',
+        title: t('feedback.banner.prdCreatedTitle'),
+        description: t('feedback.banner.prdCreatedDescription'),
       }
     case 'prd_updated':
       return {
-        title: 'PRD updated',
-        description: 'Quick feedback on the update experience helps us improve.',
+        title: t('feedback.banner.prdUpdatedTitle'),
+        description: t('feedback.banner.prdUpdatedDescription'),
       }
     case 'prd_shared':
       return {
-        title: 'Share link ready',
-        description: 'How was sharing your PRD with stakeholders?',
+        title: t('feedback.banner.prdSharedTitle'),
+        description: t('feedback.banner.prdSharedDescription'),
       }
     case 'prd_viewed':
       return {
-        title: 'Reviewing your PRD',
-        description: 'We would love a quick rating of the reading experience.',
+        title: t('feedback.banner.prdViewedTitle'),
+        description: t('feedback.banner.prdViewedDescription'),
       }
     default:
-      return { title: 'Milestone', description: 'Share quick feedback if you would like.' }
+      return { title: t('feedback.banner.defaultTitle'), description: t('feedback.banner.defaultDescription') }
   }
 }
 
-function modalCopy(milestoneType: OwnerMilestoneType): { title: string; description: string } {
+function modalCopy(
+  milestoneType: OwnerMilestoneType,
+  t: (key: string) => string
+): { title: string; description: string } {
   switch (milestoneType) {
     case 'prd_created':
       return {
-        title: 'PRD generated',
-        description: 'Your feedback helps improve the product clarification experience.',
+        title: t('feedback.modal.prdCreatedTitle'),
+        description: t('feedback.modal.prdCreatedDescription'),
       }
     case 'prd_shared':
       return {
-        title: 'PRD shared',
-        description: 'Your feedback helps improve sharing and collaboration.',
+        title: t('feedback.modal.prdSharedTitle'),
+        description: t('feedback.modal.prdSharedDescription'),
       }
     case 'prd_updated':
       return {
-        title: 'PRD updated',
-        description: 'Your feedback helps improve refinement and update flows.',
+        title: t('feedback.modal.prdUpdatedTitle'),
+        description: t('feedback.modal.prdUpdatedDescription'),
       }
     case 'prd_viewed':
       return {
-        title: 'PRD reading experience',
-        description: 'Your feedback helps improve how PRDs are presented in the workspace.',
+        title: t('feedback.modal.prdViewedTitle'),
+        description: t('feedback.modal.prdViewedDescription'),
       }
     default:
       return {
-        title: 'How was that?',
-        description: 'Your feedback helps us improve the product.',
+        title: t('common.feedbackPromptTitle'),
+        description: t('common.feedbackPromptDescription'),
       }
   }
 }
@@ -104,6 +111,7 @@ export function OwnerMilestonePromptProvider({
   projectId: string
   enabled: boolean
 }) {
+  const { t } = useI18n()
   const router = useRouter()
   const pathname = usePathname()
   const [bannerPayload, setBannerPayload] = useState<OwnerMilestoneDetectedPayload | null>(null)
@@ -182,8 +190,8 @@ export function OwnerMilestonePromptProvider({
 
   const ctx = useMemo(() => ({ notifyMilestone }), [notifyMilestone])
 
-  const bannerText = bannerPayload ? bannerCopy(bannerPayload.milestoneType) : null
-  const modalText = modalPayload ? modalCopy(modalPayload.milestoneType) : null
+  const bannerText = bannerPayload ? bannerCopy(bannerPayload.milestoneType, t) : null
+  const modalText = modalPayload ? modalCopy(modalPayload.milestoneType, t) : null
 
   return (
     <MilestonePromptContext.Provider value={ctx}>
@@ -197,10 +205,10 @@ export function OwnerMilestonePromptProvider({
             </AlertDescription>
             <div className="flex flex-wrap gap-2 mt-3 justify-end">
               <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" onClick={skipBanner}>
-                Skip
+                {t('feedback.banner.skip')}
               </Button>
               <Button type="button" size="sm" className="min-h-[44px]" onClick={openModalFromBanner}>
-                Share feedback
+                {t('feedback.banner.shareFeedback')}
               </Button>
             </div>
           </Alert>

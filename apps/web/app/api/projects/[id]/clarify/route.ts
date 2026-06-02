@@ -11,7 +11,12 @@ import {
   deductCreditsForApi as deductCredits,
   type ApiCreditOperationType as OperationType,
 } from '@infrastructure/http/credits-http-bridge'
-import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
+import {
+  AiServiceError,
+  aiServiceErrorToHttpPayload,
+  callAI,
+  createBufferedStreamingResponse,
+} from '@/lib/ai-service'
 import {
   buildClarifyMessages,
   buildClarifyMessagesFromClientThread,
@@ -23,14 +28,27 @@ import { validationFailureData } from '@shared/observability/log-safe'
 
 const logger = createLogger({ operation: 'clarify' })
 
+function resolveResponseLanguage(requestHeaders: Headers): 'fr' | 'en' {
+  const cookie = requestHeaders.get('cookie') ?? ''
+  const localeCookie = cookie.match(/(?:^|;\s*)zedos_locale=(fr|en)(?:;|$)/)?.[1]
+  if (localeCookie === 'fr' || localeCookie === 'en') {
+    return localeCookie
+  }
+
+  const acceptLanguage = (requestHeaders.get('accept-language') ?? '').toLowerCase()
+  return acceptLanguage.includes('fr') ? 'fr' : 'en'
+}
+
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const projectId = params.id
   let userId: string | undefined
 
   try {
-    const userResult = await requireUser(await headers())
+    const requestHeaders = await headers()
+    const userResult = await requireUser(requestHeaders)
     if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     userId = userResult.unwrap().id
+    const responseLanguage = resolveResponseLanguage(requestHeaders)
 
     const [project] = await db
       .select()
@@ -101,7 +119,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
             { name: project.name, description: project.description },
             threadOverride,
             userMessage,
-            refinementContextLabel
+            refinementContextLabel,
+            responseLanguage
           )
         : buildClarifyMessages(
             { name: project.name, description: project.description },
@@ -110,7 +129,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
               founderAnswer: q.founderAnswer,
               prdImpact: q.prdImpact,
             })),
-            userMessage
+            userMessage,
+            responseLanguage
           )
 
     const aiResponse = await callAI({
@@ -129,14 +149,21 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       try {
         const raw = JSON.parse(result)
         const validated = ClarifyAiResponseSchema.safeParse(raw)
+        const withDefaultQuestionType = ClarifyAiResponseSchema.safeParse({
+          ...raw,
+          suggested_credit_type: opType,
+        })
         if (!validated.success) {
-          routeLogger.error(
-            'Clarify stream schema validation failed',
-            validationFailureData(validated.error.flatten())
-          )
-          return
+          if (!withDefaultQuestionType.success) {
+            routeLogger.error(
+              'Clarify stream schema validation failed',
+              validationFailureData(validated.error.flatten())
+            )
+            return
+          }
+          routeLogger.warn('Clarify stream missing suggested_credit_type; defaulted from operation')
         }
-        const ai = validated.data
+        const ai = validated.success ? validated.data : withDefaultQuestionType.data
         try {
           await deductCredits(userId, opType, {
             projectId,
@@ -173,6 +200,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     })
   } catch (error: unknown) {
     logger.withContext({ projectId, userId }).error('Clarify request failed', error)
+    if (error instanceof AiServiceError) {
+      const mapped = aiServiceErrorToHttpPayload(error)
+      return NextResponse.json(mapped.body, { status: mapped.status })
+    }
     const msg = error instanceof Error ? error.message : 'Clarification failed'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
