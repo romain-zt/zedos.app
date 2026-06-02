@@ -252,7 +252,7 @@ describe('ContextualRefinementPanel', () => {
     expect(refinementTextarea()).not.toBeNull()
     expect(refinementTextarea()?.disabled).toBe(false)
     expect(refinementTextarea()?.placeholder).toMatch(/répondre|reply/i)
-    expect(document.body.textContent).toContain('Update PRD')
+    expect(document.body.textContent).toContain('View latest generated PRD')
   })
 
   it('calls onClose when Close is clicked after response', async () => {

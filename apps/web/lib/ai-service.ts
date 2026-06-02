@@ -48,6 +48,42 @@ export class AiServiceError extends Error {
   }
 }
 
+/** Maps provider failures to stable API payloads for route handlers. */
+export function aiServiceErrorToHttpPayload(error: AiServiceError): {
+  status: number
+  body: { error: string; code: string }
+} {
+  if (error.status === 503) {
+    return {
+      status: 503,
+      body: {
+        error: 'AI provider is not configured (OPENAI_API_KEY)',
+        code: 'ai_not_configured',
+      },
+    }
+  }
+  if (error.status === 504) {
+    return {
+      status: 504,
+      body: { error: 'AI request timed out', code: 'ai_timeout' },
+    }
+  }
+  if (error.status === 429 || error.message.includes('insufficient_quota')) {
+    return {
+      status: 503,
+      body: {
+        error:
+          'OpenAI quota exceeded. Add credits or billing on your OpenAI account, then retry.',
+        code: 'ai_quota_exceeded',
+      },
+    }
+  }
+  return {
+    status: 502,
+    body: { error: 'AI provider request failed', code: 'ai_provider_error' },
+  }
+}
+
 function resolveApiKey(): string {
   const key = API_KEY?.trim()
   if (!key) {

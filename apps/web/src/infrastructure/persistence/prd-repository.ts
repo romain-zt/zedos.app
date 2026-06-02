@@ -195,10 +195,22 @@ export class DrizzlePrdRepository implements IPrdRepository {
           status: 'draft',
           updatedAt: now,
         } as NewPrdVersion)
+        .onConflictDoNothing({
+          target: [prdVersions.projectId, prdVersions.versionNumber],
+        })
         .returning();
 
       if (!inserted) {
-        return err(new DatabaseError('Failed to create PRD version'));
+        const racedResult = await this.findLatestByProjectId(projectId);
+        if (racedResult.isErr()) return err(racedResult.error);
+        const raced = racedResult.unwrap();
+        if (!raced) {
+          return err(new DatabaseError('Failed to create PRD version'));
+        }
+        return ok({ created: false, version: raced }) as Result<
+          { created: boolean; version: PrdVersion },
+          ApplicationError
+        >;
       }
 
       return ok({

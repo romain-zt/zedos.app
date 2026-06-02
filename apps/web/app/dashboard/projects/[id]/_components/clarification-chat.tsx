@@ -96,6 +96,9 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
 
   const showReadyToGenerateHint =
     comingUpSections.length === 0 && (messages ?? []).some((m) => m.role === 'assistant')
+  const idlePromptLabel = t('clarify.idlePrompt')
+  const idlePrompt =
+    idlePromptLabel === 'clarify.idlePrompt' ? t('clarify.starting') : idlePromptLabel
 
   useEffect(() => { scrollToBottom() }, [messages, scrollToBottom])
 
@@ -233,7 +236,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
     [projectId, prdVersionId, t]
   )
 
-  // Load existing history on mount; auto-start only when there are no prior messages.
+  // Load existing history on mount; auto-start only once per project when truly empty.
   useEffect(() => {
     if (hasStarted.current) return
     hasStarted.current = true
@@ -264,10 +267,16 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
             return
           }
         }
+        if (typeof sessionStorage !== 'undefined') {
+          const autoStartKey = `zedos:clarify:auto-start:${projectId}`
+          if (!sessionStorage.getItem(autoStartKey)) {
+            sessionStorage.setItem(autoStartKey, '1')
+            await sendMessage(null, null)
+          }
+        }
       } catch {
-        // Fall through to auto-start on error
+        // Keep empty state on error: avoid implicit paid AI calls on fetch failure.
       }
-      await sendMessage(null, null)
     }
 
     void loadHistory()
@@ -419,7 +428,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         {(messages ?? []).length === 0 && !streaming && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Sparkles className="h-10 w-10 text-primary/30 mb-3" />
-            <p className="text-muted-foreground">{t('clarify.starting')}</p>
+            <p className="text-muted-foreground">{idlePrompt}</p>
           </div>
         )}
 

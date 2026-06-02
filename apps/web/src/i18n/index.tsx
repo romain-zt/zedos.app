@@ -38,13 +38,7 @@ function readPathLocale(pathname: string | null): Locale | null {
   return null;
 }
 
-function normalizePathWithoutLocale(pathname: string | null): string {
-  if (!pathname || pathname === '/') return '/';
-  if (pathname === '/fr' || pathname === '/en') return '/';
-  if (pathname.startsWith('/fr/')) return pathname.slice(3) || '/';
-  if (pathname.startsWith('/en/')) return pathname.slice(3) || '/';
-  return pathname;
-}
+import { normalizePathWithoutLocale } from '@/lib/locale-path';
 
 function pathMatchesRoute(pathname: string, route: string): boolean {
   const pathnameSegments = pathname.split('/').filter(Boolean);

@@ -28,16 +28,21 @@ export class UnlockPhaseUseCase {
     const latestPrd = prdResult.unwrap();
 
     if (!latestPrd) {
-      return err(new ValidationError('No PRD version found. Generate a PRD first.'));
+      return err(
+        new ValidationError('phase_unlock_blocked', { reasonCode: 'no_prd_version' })
+      );
     }
 
     const { isStable } = ProjectDomainService.checkPrdStability(
       latestPrd.content
     );
-    const { canUnlock, reason } = ProjectDomainService.canUnlockArchitecture(project, isStable);
+    const { canUnlock, reasonCode } = ProjectDomainService.canUnlockArchitecture(
+      project,
+      isStable
+    );
 
     if (!canUnlock) {
-      return err(new ValidationError(reason));
+      return err(new ValidationError('phase_unlock_blocked', { reasonCode }));
     }
 
     const transitioned = ProjectDomainService.transitionToArchitecture(project);

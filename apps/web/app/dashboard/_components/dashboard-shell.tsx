@@ -30,6 +30,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { useI18n } from '@/src/i18n'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { localePath, normalizePathWithoutLocale, projectIdFromDashboardPath } from '@/lib/locale-path'
 
 const NAV_ITEMS: { href: string; labelKey: string; icon: LucideIcon }[] = [
   { href: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
@@ -44,16 +45,22 @@ const PLACEHOLDER_ICONS: Record<string, LucideIcon> = {
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { data: session } = useSession() || {}
   const router = useRouter()
   const pathname = usePathname()
+  const pathWithoutLocale = normalizePathWithoutLocale(pathname)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [roadmapModal, setRoadmapModal] = useState<DeferredRoadmapPlaceholder | null>(null)
 
   const userName = session?.user?.name ?? t('dashboard.userFallback')
   const userInitial = userName?.charAt(0)?.toUpperCase() ?? 'F'
-  const workspaceProjectId = pathname?.match(/^\/dashboard\/projects\/([^/]+)/)?.[1] ?? null
+  const workspaceProjectId = projectIdFromDashboardPath(pathname)
+
+  const navigate = (href: string) => {
+    router.push(localePath(href, locale))
+    setSidebarOpen(false)
+  }
 
   const handleSignOut = async (): Promise<void> => {
     await signOut({
@@ -100,11 +107,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {/* Nav */}
           <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
             {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href))
+              const isActive =
+                pathWithoutLocale === item.href ||
+                (item.href !== '/dashboard' && pathWithoutLocale.startsWith(item.href))
               return (
                 <button
                   key={item.href}
-                  onClick={() => { router.push(item.href); setSidebarOpen(false) }}
+                  onClick={() => navigate(item.href)}
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                     isActive
@@ -133,12 +142,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   { href: `/dashboard/projects/${workspaceProjectId}/delivery`, labelKey: 'projectNav.delivery', icon: Package },
                 ] as const).map((sub) => {
                   const isSubActive =
-                    pathname === sub.href || pathname?.startsWith(`${sub.href}/`)
+                    pathWithoutLocale === sub.href 
                   return (
                     <div key={sub.href}>
                       <button
                         type="button"
-                        onClick={() => { router.push(sub.href); setSidebarOpen(false) }}
+                        onClick={() => navigate(sub.href)}
                         className={cn(
                           'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]',
                           isSubActive

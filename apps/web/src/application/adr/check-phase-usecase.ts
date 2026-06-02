@@ -28,11 +28,11 @@ export class CheckPhaseUseCase {
       latestPrd?.content ?? null
     );
 
-    const { reason } = ProjectDomainService.canUnlockArchitecture(project, isStable);
+    const { reasonCode } = ProjectDomainService.canUnlockArchitecture(project, isStable);
 
     const response: PhaseCheckResponse = {
       isStable,
-      message: reason,
+      reasonCode,
       currentPhase: project.phase,
     };
     return ok(response);

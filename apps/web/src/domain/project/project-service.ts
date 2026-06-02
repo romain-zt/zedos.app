@@ -7,6 +7,7 @@
 
 import type { PrdVersionContent } from '@repo/contracts/prd';
 import type { GeneratePrdSection } from '@repo/contracts/ai/generate-prd-stream';
+import type { ArchitectureUnlockReasonCode } from '@repo/contracts/adr/adr-contracts';
 import { Project, ProjectPhase } from './project';
 
 // These IDs match the section `id` values produced by the AI PRD generation prompt.
@@ -94,15 +95,15 @@ export class ProjectDomainService {
    */
   static canUnlockArchitecture(project: Project, prdIsStable: boolean): {
     canUnlock: boolean;
-    reason: string;
+    reasonCode: ArchitectureUnlockReasonCode;
   } {
     if (project.phase !== 'intake') {
-      return { canUnlock: false, reason: 'Project is not in INTAKE phase' };
+      return { canUnlock: false, reasonCode: 'not_intake_phase' };
     }
     if (!prdIsStable) {
-      return { canUnlock: false, reason: 'PRD is not stable. Complete all sections first.' };
+      return { canUnlock: false, reasonCode: 'prd_not_stable' };
     }
-    return { canUnlock: true, reason: 'PRD is stable, architecture phase is unlocked' };
+    return { canUnlock: true, reasonCode: 'prd_stable_unlocked' };
   }
 
   /**

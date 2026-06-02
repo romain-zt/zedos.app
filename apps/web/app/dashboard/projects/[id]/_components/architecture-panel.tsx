@@ -6,9 +6,37 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Lock, ArrowRight, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
-import type { AdrDTO } from '@repo/contracts/adr/adr-contracts'
+import {
+  ArchitectureUnlockReasonCodeSchema,
+  PhaseCheckResponseSchema,
+  type AdrDTO,
+  type ArchitectureUnlockReasonCode,
+} from '@repo/contracts/adr/adr-contracts'
 import { WorkspaceScoreResponseSchema } from '@repo/contracts/project/workspace-score'
 import { useI18n } from '@/src/i18n'
+
+function architecturePhaseMessageKey(code: ArchitectureUnlockReasonCode): string {
+  switch (code) {
+    case 'prd_stable_unlocked':
+      return 'architecture.phaseCheck.stable'
+    case 'prd_not_stable':
+      return 'architecture.phaseCheck.prdNotStable'
+    case 'not_intake_phase':
+      return 'architecture.phaseCheck.notIntake'
+    case 'no_prd_version':
+      return 'architecture.phaseUnlock.noPrd'
+  }
+}
+
+function reasonCodeFromErrorDetails(details: unknown): ArchitectureUnlockReasonCode | null {
+  if (typeof details !== 'object' || details === null || !('reasonCode' in details)) {
+    return null
+  }
+  const parsed = ArchitectureUnlockReasonCodeSchema.safeParse(
+    (details as { reasonCode: unknown }).reasonCode
+  )
+  return parsed.success ? parsed.data : null
+}
 
 interface ArchitecturePanelProps {
   projectId: string
@@ -77,11 +105,22 @@ export function ArchitecturePanel({
     setChecking(true)
     try {
       const res = await fetch(`/api/projects/${projectId}/phase/check`, { method: 'POST' })
-      const data = await res.json()
+      const data: unknown = await res.json()
       if (res.ok) {
-        toast.success(data.message)
+        const parsed = PhaseCheckResponseSchema.safeParse(data)
+        if (parsed.success) {
+          toast.success(t(architecturePhaseMessageKey(parsed.data.reasonCode)))
+        } else {
+          toast.error(t('architecture.checkStabilityFailed'))
+        }
       } else {
-        toast.error(data.message || t('architecture.prdNotStable'))
+        const body = data as { details?: unknown; error?: string }
+        const reasonCode = reasonCodeFromErrorDetails(body.details)
+        toast.error(
+          reasonCode
+            ? t(architecturePhaseMessageKey(reasonCode))
+            : body.error || t('architecture.prdNotStable')
+        )
       }
     } catch (err) {
       toast.error(t('architecture.checkStabilityFailed'))
@@ -99,8 +138,13 @@ export function ArchitecturePanel({
         toast.success(t('architecture.unlocked'))
         setIsLocked(false)
       } else {
-        const data = await res.json()
-        toast.error(data.error || t('architecture.unlockFailed'))
+        const data = (await res.json()) as { error?: string; details?: unknown }
+        const reasonCode = reasonCodeFromErrorDetails(data.details)
+        toast.error(
+          reasonCode
+            ? t(architecturePhaseMessageKey(reasonCode))
+            : data.error || t('architecture.unlockFailed')
+        )
       }
     } catch (err) {
       toast.error(t('architecture.unlockPhaseFailed'))

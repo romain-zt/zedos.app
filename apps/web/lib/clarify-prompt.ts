@@ -30,7 +30,13 @@ export type ClarifyHistoryRow = {
   prdImpact: string | null
 }
 
-export const CLARIFY_SYSTEM_PROMPT = `You are Zedos, a product strategist helping founders build a PRD.
+function clarifySystemPrompt(responseLanguage: 'fr' | 'en'): string {
+  const languageRule =
+    responseLanguage === 'fr'
+      ? '- Respond in French for reasoning, message, progress_hint, and decision_ui labels.'
+      : '- Respond in English for reasoning, message, progress_hint, and decision_ui labels.'
+
+  return `You are Zedos, a product strategist helping founders build a PRD.
 
 Rules (strict):
 - Ask ONE focused question per turn.
@@ -40,9 +46,11 @@ Rules (strict):
 - Prefer decision_ui only when 3–6 clear mutually exclusive options help; otherwise decision_ui: null.
 - reasoning: max 1 short sentence. message: concise.
 - Do not rephrase the same question on Product Vision / problem statement if already answered.
+${languageRule}
 
 JSON only (no markdown):
 {"reasoning":"...","message":"...","decision_ui":null|{...},"prd_section_affected":"...","progress_hint":"...","suggested_credit_type":"clarification"|"decision"|"mini_form"}`
+}
 
 const MAX_DETAILED_TURNS = 8
 const MAX_ANSWER_CHARS = 400
@@ -163,12 +171,13 @@ export function buildClarifyMessagesFromClientThread(
   project: { name: string; description: string | null },
   thread: readonly ClientThreadMessage[],
   userMessage: string,
-  contextLabel?: string
+  contextLabel?: string,
+  responseLanguage: 'fr' | 'en' = 'en'
 ): AIMessage[] {
   const threadBlock = buildClientThreadBlock(thread, contextLabel)
 
   return [
-    { role: 'system', content: CLARIFY_SYSTEM_PROMPT },
+    { role: 'system', content: clarifySystemPrompt(responseLanguage) },
     {
       role: 'user',
       content: [
@@ -186,13 +195,14 @@ export function buildClarifyMessagesFromClientThread(
 export function buildClarifyMessages(
   project: { name: string; description: string | null },
   history: readonly ClarifyHistoryRow[],
-  userMessage: string
+  userMessage: string,
+  responseLanguage: 'fr' | 'en' = 'en'
 ): AIMessage[] {
   const sessionState = buildSessionStateBlock(history)
   const historyBlock = buildCompactHistoryBlock(history)
 
   return [
-    { role: 'system', content: CLARIFY_SYSTEM_PROMPT },
+    { role: 'system', content: clarifySystemPrompt(responseLanguage) },
     {
       role: 'user',
       content: [
