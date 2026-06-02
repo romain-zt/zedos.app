@@ -27,6 +27,7 @@ import {
 import { PrdVersionListResponseSchema, type PrdVersionDTO } from '@repo/contracts/prd/prd-contracts';
 import { GenerateUserStoriesResponseSchema } from '@repo/contracts/user-stories';
 import { UserStoryCorpusSchema, type UserStoryCorpusDTO } from '@repo/contracts/user-stories';
+import { useI18n } from '@/src/i18n';
 
 interface UserStoriesWorkspaceProps {
   projectId: string;
@@ -64,6 +65,7 @@ function corpusToDrafts(corpus: UserStoryCorpusDTO): LineDraft[] {
 }
 
 export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWorkspaceProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const [prdVersions, setPrdVersions] = useState<PrdVersionDTO[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
@@ -176,13 +178,13 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
           return;
         }
         if (!res.ok) {
-          toast.error('Could not load user stories');
+          toast.error(t('userStories.loadFailed'));
           return;
         }
         const raw = await res.json();
         const parsed = UserStoryCorpusSchema.safeParse(raw);
         if (!parsed.success) {
-          toast.error('Unexpected corpus response');
+          toast.error(t('userStories.unexpectedCorpusResponse'));
           return;
         }
         const corpus = parsed.data;
@@ -191,12 +193,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
         markClusterHasCorpus(clusterId, true);
         setLines(corpusToDrafts(corpus).length > 0 ? corpusToDrafts(corpus) : [emptyLine(0)]);
       } catch {
-        toast.error('Network error loading stories');
+        toast.error(t('userStories.networkLoadError'));
       } finally {
         setLoadingCorpus(false);
       }
     },
-    [projectId, markClusterHasCorpus]
+    [projectId, markClusterHasCorpus, t]
   );
 
   useEffect(() => {
@@ -292,7 +294,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   const applyCorpusResponse = (raw: unknown) => {
     const parsed = UserStoryCorpusSchema.safeParse(raw);
     if (!parsed.success) {
-      toast.error('Unexpected response');
+      toast.error(t('userStories.unexpectedResponse'));
       return;
     }
     const corpus = parsed.data;
@@ -306,7 +308,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
     if (!selectedClusterId) return;
     const payload = buildSavePayload(selectedClusterId);
     if (payload.lines.length === 0) {
-      toast.error('Add at least one story with title and description');
+      toast.error(t('userStories.addOneStoryRequired'));
       return;
     }
     setSaving(true);
@@ -318,13 +320,13 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
       });
       const raw = await res.json();
       if (!res.ok) {
-        toast.error(raw?.error ?? 'Save failed');
+        toast.error(raw?.error ?? t('userStories.saveFailed'));
         return;
       }
       applyCorpusResponse(raw);
-      toast.success('Stories saved');
+      toast.success(t('userStories.saved'));
     } catch {
-      toast.error('Network error while saving');
+      toast.error(t('userStories.networkSaveError'));
     } finally {
       setSaving(false);
     }
@@ -347,15 +349,15 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
     const outlineRaw = await outlineRes.json();
     if (!outlineRes.ok) {
       if (outlineRes.status === 402) {
-        toast.error('Insufficient credits for AI generation');
+        toast.error(t('userStories.insufficientCreditsAi'));
       } else {
-        toast.error(outlineRaw?.error ?? 'Outline generation failed');
+        toast.error(outlineRaw?.error ?? t('userStories.outlineGenerationFailed'));
       }
       return null;
     }
     const outlineParsed = GenerateUserStoriesResponseSchema.safeParse(outlineRaw);
     if (!outlineParsed.success || outlineParsed.data.kind !== 'outline') {
-      toast.error('Unexpected outline response');
+      toast.error(t('userStories.unexpectedOutlineResponse'));
       return null;
     }
 
@@ -364,7 +366,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
     let lastCorpus: UserStoryCorpusDTO | null = null;
 
     for (let storyIndex = 0; storyIndex < outlines.length; storyIndex++) {
-      toast.loading(`Story ${storyIndex + 1}/${total} — ${clusterLabel}`, { id: 'ai-story-gen' });
+      toast.loading(t('userStories.generatingStoryProgress').replace('{index}', String(storyIndex + 1)).replace('{total}', String(total)).replace('{cluster}', clusterLabel), { id: 'ai-story-gen' });
       const storyRes = await fetch(`/api/projects/${projectId}/user-stories/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -381,20 +383,20 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
       if (!storyRes.ok) {
         toast.dismiss('ai-story-gen');
         if (storyRes.status === 402) {
-          toast.error('Insufficient credits for AI generation');
+          toast.error(t('userStories.insufficientCreditsAi'));
         } else {
           const partial =
             existingLines.length > 0
               ? ` (${existingLines.length}/${total} stories saved before failure)`
               : '';
-          toast.error((storyRaw?.error ?? 'Story generation failed') + partial);
+          toast.error((storyRaw?.error ?? t('userStories.storyGenerationFailed')) + partial);
         }
         return lastCorpus;
       }
       const storyParsed = GenerateUserStoriesResponseSchema.safeParse(storyRaw);
       if (!storyParsed.success || storyParsed.data.kind !== 'story') {
         toast.dismiss('ai-story-gen');
-        toast.error(`Unexpected story response (${storyIndex + 1}/${total})`);
+        toast.error(t('userStories.unexpectedStoryResponse').replace('{index}', String(storyIndex + 1)).replace('{total}', String(total)));
         return lastCorpus;
       }
       lastCorpus = storyParsed.data.corpus;
@@ -415,7 +417,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   const handleGenerate = async (mode: 'template' | 'ai') => {
     const targets = generationTargets();
     if (targets.length === 0) {
-      toast.error('Select a cluster to generate, or tick clusters for batch');
+      toast.error(t('userStories.selectClusterForGeneration'));
       return;
     }
     const setBusy = mode === 'template' ? setGeneratingTemplate : setGeneratingAi;
@@ -431,7 +433,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
 
       for (let i = 0; i < targets.length; i++) {
         const clusterId = targets[i];
-        const clusterLabel = clusterById.get(clusterId)?.label ?? 'cluster';
+        const clusterLabel = clusterById.get(clusterId)?.label ?? t('userStories.cluster');
 
         if (mode === 'ai') {
           const corpus = await generateAiStoriesForCluster(
@@ -453,12 +455,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
         });
         const raw = await res.json();
         if (!res.ok) {
-          toast.error(raw?.error ?? `Generation failed (cluster ${i + 1}/${targets.length})`);
+          toast.error(raw?.error ?? t('userStories.generationFailedCluster').replace('{index}', String(i + 1)).replace('{total}', String(targets.length)));
           return;
         }
         const parsed = GenerateUserStoriesResponseSchema.safeParse(raw);
         if (!parsed.success || parsed.data.kind !== 'corpus') {
-          toast.error(`Unexpected generate response (cluster ${i + 1}/${targets.length})`);
+          toast.error(t('userStories.unexpectedGenerateResponseCluster').replace('{index}', String(i + 1)).replace('{total}', String(targets.length)));
           return;
         }
         if (selectedClusterId && clusterId === selectedClusterId) {
@@ -479,12 +481,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
       const batchLabel = targets.length > 1 ? ` (${targets.length} clusters)` : '';
       const successMessage =
         mode === 'template'
-          ? `Template stories generated${batchLabel}`
-          : `AI drafts generated${batchLabel} — review and save`;
+          ? `${t('userStories.templateGenerated')}${batchLabel}`
+          : `${t('userStories.aiDraftsGenerated')}${batchLabel} — ${t('userStories.reviewAndSave')}`;
       toast.success(successMessage, {
         action: primaryClusterId
           ? {
-              label: 'View stories',
+              label: t('userStories.viewStories'),
               onClick: () =>
                 router.push(
                   `/dashboard/projects/${projectId}/user-stories/${primaryClusterId}`
@@ -493,7 +495,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
           : undefined,
       });
     } catch {
-      toast.error('Network error during generation');
+      toast.error(t('userStories.networkGenerationError'));
     } finally {
       setBusy(false);
     }
@@ -510,13 +512,13 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
       });
       const raw = await res.json();
       if (!res.ok) {
-        toast.error(raw?.error ?? 'Could not mark review-ready');
+        toast.error(raw?.error ?? t('userStories.markReviewReadyFailed'));
         return;
       }
       applyCorpusResponse(raw);
-      toast.success('Marked ready for review');
+      toast.success(t('userStories.markedReviewReady'));
     } catch {
-      toast.error('Network error');
+      toast.error(t('userStories.networkError'));
     } finally {
       setMarkingReady(false);
     }
@@ -533,22 +535,22 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-2 min-h-[44px] sm:min-h-0"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to workspace
+                {t('workspace.backToWorkspace')}
               </Link>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
                 <BookOpen className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 text-primary" />
-                User stories
+                {t('userStories.title')}
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base mt-1">{projectName}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" asChild className="min-h-[44px]">
-                <Link href={`/dashboard/projects/${projectId}/feature-split`}>Feature split</Link>
+                <Link href={`/dashboard/projects/${projectId}/feature-split`}>{t('projectNav.featureSplit')}</Link>
               </Button>
               <Button asChild className="min-h-[44px]">
                 <Link href={`/dashboard/projects/${projectId}/task-split`}>
                   <ListChecks className="h-4 w-4" />
-                  <span className="ml-2">Split into tasks</span>
+                  <span className="ml-2">{t('userStories.splitIntoTasks')}</span>
                 </Link>
               </Button>
             </div>
@@ -557,7 +559,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
           <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-6">
             <div className="space-y-2">
               <label htmlFor="prd-version" className="text-sm font-medium">
-                PRD version
+                {t('prd.version')}
               </label>
               <select
                 id="prd-version"
@@ -566,7 +568,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                 onChange={(e) => setSelectedVersionId(e.target.value || null)}
               >
                 <option value="" disabled>
-                  Select version
+                  {t('prd.selectVersion')}
                 </option>
                 {prdVersions.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -578,13 +580,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
 
             {!loading && selectedVersionId && !confirmed && (
               <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
-                <p className="font-medium text-foreground">Confirm your feature split first</p>
+                <p className="font-medium text-foreground">{t('userStories.confirmSplitFirstTitle')}</p>
                 <p className="text-muted-foreground mt-1">
-                  User stories are anchored to clusters from a confirmed split. Finish and confirm the split for this
-                  PRD version, then return here.
+                  {t('userStories.confirmSplitFirstDescription')}
                 </p>
                 <Button asChild className="mt-3 min-h-[44px]">
-                  <Link href={`/dashboard/projects/${projectId}/feature-split`}>Open feature split</Link>
+                  <Link href={`/dashboard/projects/${projectId}/feature-split`}>{t('userStories.openFeatureSplit')}</Link>
                 </Button>
               </div>
             )}
@@ -592,7 +593,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
             {confirmed && clusters.length > 0 && (
               <div className="space-y-2">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-sm font-medium">Cluster</span>
+                  <span className="text-sm font-medium">{t('userStories.cluster')}</span>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
@@ -601,7 +602,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                       className="min-h-[44px]"
                       onClick={selectAllClustersForBatch}
                     >
-                      Select all for batch
+                      {t('userStories.selectAllForBatch')}
                     </Button>
                     <Button
                       type="button"
@@ -611,13 +612,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                       onClick={clearBatchClusters}
                       disabled={batchClusterIds.length === 0}
                     >
-                      Clear batch
+                      {t('userStories.clearBatch')}
                     </Button>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Tick one or more clusters, then generate stories below. Click a cluster title to edit inline, or open
-                  its saved page from the sidebar or the link on each card.
+                  {t('userStories.batchHelpText')}
                   {batchClusterIds.length > 0 ? ` (${batchClusterIds.length} selected)` : null}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -656,7 +656,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                               className="inline-flex items-center gap-1 text-xs text-primary hover:underline px-1 pb-1 min-h-[44px]"
                             >
                               <ExternalLink className="h-3 w-3" />
-                              Open saved stories
+                              {t('userStories.openSavedStories')}
                             </Link>
                           ) : null}
                         </div>
@@ -670,12 +670,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
             {confirmed && generationTargetCount > 0 && (
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
                 <p className="text-sm font-medium">
-                  Generate user stories
+                  {t('userStories.generateUserStories')}
                   {generationTargetCount > 1 ? ` (${generationTargetCount} clusters)` : ''}
                 </p>
                 {!selectedClusterId && batchClusterIds.length > 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Stories will be generated for the ticked clusters. Open a cluster above to preview and edit here.
+                    {t('userStories.batchGenerateHelp')}
                   </p>
                 ) : null}
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -691,7 +691,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                     ) : (
                       <Sparkles className="h-4 w-4" />
                     )}
-                    <span className="ml-2">From cluster (template)</span>
+                    <span className="ml-2">{t('userStories.fromClusterTemplate')}</span>
                   </Button>
                   <Button
                     type="button"
@@ -700,13 +700,13 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                     className="min-h-[44px] w-full sm:w-auto"
                   >
                     {generatingAi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                    <span className="ml-2">Draft with AI</span>
+                    <span className="ml-2">{t('userStories.draftWithAi')}</span>
                   </Button>
                 </div>
                 {batchClusterIds.length > 0 && (
                   <div className="border-t border-primary/10 pt-3">
                     <p className="text-xs text-muted-foreground mb-2">
-                      Ready to split into tasks? Open task-split with all selected stories pre-loaded.
+                      {t('userStories.readyToSplitHelp')}
                     </p>
                     <Button
                       type="button"
@@ -728,7 +728,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                       >
                         <Zap className="h-4 w-4" />
                         <span className="ml-2">
-                          Split all into tasks ({batchClusterIds.length})
+                          {t('userStories.splitAllIntoTasks')} ({batchClusterIds.length})
                         </span>
                       </Link>
                     </Button>
@@ -748,7 +748,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                     className="min-h-[44px] w-full sm:w-auto"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    <span className={saving ? 'ml-2' : ''}>Save</span>
+                    <span className={saving ? 'ml-2' : ''}>{t('common.save')}</span>
                   </Button>
                   <Button
                     type="button"
@@ -762,12 +762,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                     ) : (
                       <CheckCircle className="h-4 w-4" />
                     )}
-                    <span className="ml-2">Mark review-ready</span>
+                    <span className="ml-2">{t('userStories.markReviewReady')}</span>
                   </Button>
                   <Button type="button" variant="ghost" asChild className="min-h-[44px] w-full sm:w-auto">
                     <Link href={`/dashboard/projects/${projectId}/user-stories/${selectedClusterId}`}>
                       <ExternalLink className="h-4 w-4" />
-                      <span className="ml-2">Open full page</span>
+                      <span className="ml-2">{t('userStories.openFullPage')}</span>
                     </Link>
                   </Button>
                 </div>
@@ -775,7 +775,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                 {reviewReadyAt && (
                   <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 shrink-0" />
-                    Review-ready since {new Date(reviewReadyAt).toLocaleString()}
+                    {t('userStories.reviewReadySince')} {new Date(reviewReadyAt).toLocaleString()}
                   </p>
                 )}
 
@@ -788,27 +788,27 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                     {lines.map((line, index) => (
                       <div key={line.id ?? `new-${index}`} className="rounded-lg border p-3 sm:p-4 space-y-3">
                         <div className="flex items-start justify-between gap-2">
-                          <span className="text-xs font-medium text-muted-foreground">Story {index + 1}</span>
+                          <span className="text-xs font-medium text-muted-foreground">{t('userStories.story')} {index + 1}</span>
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             className="shrink-0 min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
                             onClick={() => handleRemoveLine(index)}
-                            aria-label="Remove story"
+                            aria-label={t('userStories.removeStory')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                         <input
                           className="w-full min-h-[44px] rounded-md border bg-background px-3 py-2 text-base font-medium"
-                          placeholder="Title"
+                          placeholder={t('common.title')}
                           value={line.title}
                           onChange={(e) => handleLineChange(index, 'title', e.target.value)}
                         />
                         <textarea
                           className="w-full min-h-[120px] rounded-md border bg-background px-3 py-2 text-base"
-                          placeholder="As a … I want … so that …"
+                          placeholder={t('userStories.storyTemplatePlaceholder')}
                           value={line.body}
                           onChange={(e) => handleLineChange(index, 'body', e.target.value)}
                         />
@@ -816,7 +816,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                     ))}
                     <Button type="button" variant="outline" onClick={handleAddLine} className="min-h-[44px] w-full sm:w-auto">
                       <Plus className="h-4 w-4" />
-                      <span className="ml-2">Add story</span>
+                      <span className="ml-2">{t('userStories.addStory')}</span>
                     </Button>
                   </div>
                 )}

@@ -8,6 +8,7 @@ import { Lock, ArrowRight, CheckCircle, AlertCircle, MessageSquare } from 'lucid
 import { toast } from 'sonner'
 import type { AdrDTO } from '@repo/contracts/adr/adr-contracts'
 import { WorkspaceScoreResponseSchema } from '@repo/contracts/project/workspace-score'
+import { useI18n } from '@/src/i18n'
 
 interface ArchitecturePanelProps {
   projectId: string
@@ -39,6 +40,7 @@ export function ArchitecturePanel({
   activePrdVersionId,
   onOpenRefinement,
 }: ArchitecturePanelProps) {
+  const { t } = useI18n()
   const [adrs, setAdrs] = useState<AdrDTO[]>([])
   const [isLocked, setIsLocked] = useState(phase === 'intake')
   const [unlocking, setUnlocking] = useState(false)
@@ -79,10 +81,10 @@ export function ArchitecturePanel({
       if (res.ok) {
         toast.success(data.message)
       } else {
-        toast.error(data.message || 'PRD is not yet stable')
+        toast.error(data.message || t('architecture.prdNotStable'))
       }
     } catch (err) {
-      toast.error('Failed to check stability')
+      toast.error(t('architecture.checkStabilityFailed'))
     } finally {
       setChecking(false)
     }
@@ -94,14 +96,14 @@ export function ArchitecturePanel({
       const res = await fetch(`/api/projects/${projectId}/phase/unlock`, { method: 'POST' })
       if (res.ok) {
         await res.json()
-        toast.success('Architecture phase unlocked!')
+        toast.success(t('architecture.unlocked'))
         setIsLocked(false)
       } else {
         const data = await res.json()
-        toast.error(data.error || 'Failed to unlock')
+        toast.error(data.error || t('architecture.unlockFailed'))
       }
     } catch (err) {
-      toast.error('Failed to unlock architecture phase')
+      toast.error(t('architecture.unlockPhaseFailed'))
     } finally {
       setUnlocking(false)
     }
@@ -115,22 +117,22 @@ export function ArchitecturePanel({
             <div className="flex items-center gap-3">
               <Lock className="h-5 w-5 text-yellow-600" />
               <div>
-                <CardTitle>Architecture Phase Locked</CardTitle>
-                <CardDescription>Complete your PRD clarification first</CardDescription>
+                <CardTitle>{t('architecture.lockedTitle')}</CardTitle>
+                <CardDescription>{t('architecture.lockedDescription')}</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-gray-700">
-              The Architecture phase becomes available after you&apos;ve clarified and stabilized your product definition. This ensures all decisions are made with full context.
+              {t('architecture.lockedBody')}
             </p>
             <div className="flex gap-2">
               <Button onClick={handleCheckStability} disabled={checking} variant="outline" size="sm">
-                Check PRD Stability
+                {t('architecture.checkPrdStability')}
               </Button>
               {!checking && (
                 <Button onClick={handleUnlock} disabled={unlocking} size="sm">
-                  Unlock Architecture <ArrowRight className="ml-2 h-4 w-4" />
+                  {t('architecture.unlock')} <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               )}
             </div>
@@ -148,12 +150,12 @@ export function ArchitecturePanel({
       {architectureScore != null && (
         <Card>
           <CardHeader>
-            <CardTitle>Score architecture</CardTitle>
-            <CardDescription>PRD stable + ADR cœur complétés (formule workspace)</CardDescription>
+            <CardTitle>{t('architecture.scoreTitle')}</CardTitle>
+            <CardDescription>{t('architecture.scoreDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="rounded-lg bg-purple-50 p-4">
-              <div className="text-sm font-medium text-purple-900">Préparation architecture</div>
+              <div className="text-sm font-medium text-purple-900">{t('architecture.preparation')}</div>
               <div className="text-2xl font-bold text-purple-600">{architectureScore}%</div>
             </div>
           </CardContent>
@@ -164,9 +166,11 @@ export function ArchitecturePanel({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Architectural Decisions</CardTitle>
+              <CardTitle>{t('architecture.decisionsTitle')}</CardTitle>
               <CardDescription>
-                {completeAdrs} of {totalAdrs} ADRs complete
+                {t('architecture.adrsComplete')
+                  .replace('{complete}', String(completeAdrs))
+                  .replace('{total}', String(totalAdrs))}
               </CardDescription>
             </div>
             <Badge variant="default">
@@ -217,7 +221,7 @@ export function ArchitecturePanel({
                       </Button>
                     ) : null}
                     <Badge variant={isComplete ? 'default' : 'outline'}>
-                      {isComplete ? 'Complete' : 'Draft'}
+                      {isComplete ? t('architecture.complete') : t('architecture.draft')}
                     </Badge>
                   </div>
                 </div>
@@ -228,7 +232,7 @@ export function ArchitecturePanel({
       </Card>
 
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <div className="text-sm font-medium text-blue-900">Coming Soon</div>
+        <div className="text-sm font-medium text-blue-900">{t('architecture.comingSoon')}</div>
         <div className="text-xs text-blue-800">
           ADR authoring UI, AI-guided generation, feature areas, scope slicing, contracts, and repo export are coming in L3+
         </div>

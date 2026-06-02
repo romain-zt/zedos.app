@@ -21,6 +21,7 @@ import {
   toastCopyFailed,
 } from './chat-message-toolbar'
 import { messagesToClientThread } from './clarify-thread-utils'
+import { useI18n } from '@/src/i18n'
 
 /** Exported for unit tests — matches POST /clarify body shape (no decisionResponse). */
 export function buildContextualClarifyBody(
@@ -114,6 +115,7 @@ export function ContextualRefinementPanel({
   onClose,
   onPrdUpdated,
 }: ContextualRefinementPanelProps) {
+  const { t } = useI18n()
   const { notifyMilestone } = useOwnerMilestonePrompt()
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<StreamMessage[]>([])
@@ -164,18 +166,18 @@ export function ContextualRefinementPanel({
 
         if (res.status === 402) {
           const data = (await res.json().catch(() => ({}))) as { message?: string }
-          toast.error(data?.message ?? 'Insufficient credits')
+          toast.error(data?.message ?? t('credits.insufficient'))
           setCreditsBlocked(true)
           return
         }
 
         if (res.status === 401) {
-          toast.error('You need to be signed in to refine')
+          toast.error(t('refine.signInRequired'))
           return
         }
 
         if (!res.ok) {
-          toast.error('Failed to get AI response')
+          toast.error(t('refine.aiResponseFailed'))
           return
         }
 
@@ -233,12 +235,12 @@ export function ContextualRefinementPanel({
           appendAssistant(parsed.message ?? assistantContent, parsed.reasoning)
         }
       } catch {
-        toast.error('Failed to get AI response')
+        toast.error(t('refine.aiResponseFailed'))
       } finally {
         setStreaming(false)
       }
     },
-    [contextLabel, prdVersionId, projectId]
+    [contextLabel, prdVersionId, projectId, t]
   )
 
   const sendNewMessage = async () => {
@@ -307,8 +309,8 @@ export function ContextualRefinementPanel({
 
   const handleCopy = async (text: string) => {
     const ok = await copyTextToClipboard(text)
-    if (ok) toastCopied()
-    else toastCopyFailed()
+    if (ok) toastCopied(t('common.copiedToClipboard'))
+    else toastCopyFailed(t('common.copyFailed'))
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -329,12 +331,12 @@ export function ContextualRefinementPanel({
 
       if (res.status === 402) {
         const data = (await res.json().catch(() => ({}))) as { message?: string }
-        toast.error(data?.message ?? 'Insufficient credits to update PRD')
+        toast.error(data?.message ?? t('refine.insufficientCreditsUpdatePrd'))
         return
       }
 
       if (!res.ok) {
-        toast.error('Failed to update PRD')
+        toast.error(t('refine.updatePrdFailed'))
         return
       }
 
@@ -353,7 +355,7 @@ export function ContextualRefinementPanel({
           try {
             const parsed = JSON.parse(line.slice(6)) as { status?: string }
             if (parsed?.status === 'completed') {
-              toast.success('PRD updated')
+              toast.success(t('refine.prdUpdated'))
               notifyMilestone({
                 projectId,
                 milestoneType: 'prd_updated',
@@ -364,7 +366,7 @@ export function ContextualRefinementPanel({
               return
             }
             if (parsed?.status === 'error') {
-              toast.error('PRD update failed')
+              toast.error(t('refine.prdUpdateFailed'))
               return
             }
           } catch {
@@ -373,7 +375,7 @@ export function ContextualRefinementPanel({
         }
       }
     } catch {
-      toast.error('Failed to update PRD')
+      toast.error(t('refine.updatePrdFailed'))
     } finally {
       setUpdatingPrd(false)
     }
@@ -389,10 +391,10 @@ export function ContextualRefinementPanel({
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <SheetHeader className="px-4 pt-4 pb-2 pr-12 text-left border-b space-y-1">
           <SheetTitle className="font-display text-base leading-tight line-clamp-2">
-            Refine: {contextLabel}
+            {t('refine.title')}: {contextLabel}
           </SheetTitle>
           <SheetDescription className="text-xs">
-            Copier, modifier ou régénérer comme dans ChatGPT. Puis mettez à jour le PRD.
+            {t('refine.description')}
           </SheetDescription>
         </SheetHeader>
 
@@ -417,7 +419,7 @@ export function ContextualRefinementPanel({
                             rows={3}
                             className="resize-none text-sm min-h-[72px]"
                             disabled={busy}
-                            aria-label="Modifier le message"
+                            aria-label={t('clarify.editMessage')}
                           />
                           <div className="flex justify-end gap-1">
                             <Button
@@ -428,7 +430,7 @@ export function ContextualRefinementPanel({
                               disabled={busy}
                             >
                               <X className="h-3.5 w-3.5 mr-1" />
-                              Annuler
+                              {t('common.cancel')}
                             </Button>
                             <Button
                               type="button"
@@ -437,7 +439,7 @@ export function ContextualRefinementPanel({
                               disabled={!editDraft.trim() || busy}
                             >
                               <Check className="h-3.5 w-3.5 mr-1" />
-                              Renvoyer
+                              {t('common.resend')}
                             </Button>
                           </div>
                         </div>
@@ -478,7 +480,7 @@ export function ContextualRefinementPanel({
             {streaming && (
               <div className="flex items-center gap-2 text-muted-foreground text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Thinking…
+                {t('common.thinking')}
               </div>
             )}
           </div>
@@ -498,12 +500,12 @@ export function ContextualRefinementPanel({
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              {updatingPrd ? 'Updating PRD…' : 'Update PRD with this thread'}
+              {updatingPrd ? t('refine.updatingPrd') : t('refine.updatePrdWithThread')}
             </Button>
           ) : null}
           <Textarea
             placeholder={
-              hasAiResponse ? 'Répondre à l’assistant…' : 'Que souhaitez-vous clarifier ?'
+              hasAiResponse ? t('refine.replyPlaceholder') : t('refine.initialPlaceholder')
             }
             value={input}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
@@ -511,21 +513,21 @@ export function ContextualRefinementPanel({
             rows={3}
             className="resize-none text-base min-h-[88px]"
             disabled={busy}
-            aria-label="Refinement message"
+            aria-label={t('refine.messageAriaLabel')}
           />
           <div className="flex justify-between gap-2">
             <Button type="button" variant="ghost" className="min-h-11" onClick={handleClose} disabled={updatingPrd}>
-              Close
+              {t('common.close')}
             </Button>
             <Button
               type="button"
               className="min-h-11 min-w-[44px]"
               onClick={() => void sendNewMessage()}
               disabled={!input.trim() || busy}
-              aria-label="Send refinement"
+              aria-label={t('refine.send')}
             >
               <Send className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Send</span>
+              <span className="hidden sm:inline">{t('refine.send')}</span>
             </Button>
           </div>
         </div>

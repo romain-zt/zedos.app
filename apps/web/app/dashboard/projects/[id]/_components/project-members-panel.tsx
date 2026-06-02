@@ -59,14 +59,14 @@ export function ProjectMembersPanel({ projectId }: ProjectMembersPanelProps) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        toast.error(body.error ?? 'Invite failed');
+        toast.error(body.error ?? t('members.inviteFailed'));
         return;
       }
       setEmail('');
-      toast.success('Invitation enregistrée');
+      toast.success(t('members.invitationSaved'));
       await loadMembers();
     } catch {
-      toast.error('Invite failed');
+      toast.error(t('members.inviteFailed'));
     } finally {
       setInviting(false);
     }
@@ -77,15 +77,14 @@ export function ProjectMembersPanel({ projectId }: ProjectMembersPanelProps) {
       <CardHeader>
         <CardTitle>{t('members.title')}</CardTitle>
         <CardDescription>
-          Invitez des collaborateurs (éditeur ou lecteur). Les comptes existants sont activés
-          immédiatement.
+          {t('members.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
             type="email"
-            placeholder="collaborateur@exemple.com"
+            placeholder={t('members.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             aria-label={t('members.invite')}
@@ -95,8 +94,8 @@ export function ProjectMembersPanel({ projectId }: ProjectMembersPanelProps) {
               <SelectValue placeholder={t('members.role')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="viewer">viewer</SelectItem>
-              <SelectItem value="editor">editor</SelectItem>
+              <SelectItem value="viewer">{t('members.viewer')}</SelectItem>
+              <SelectItem value="editor">{t('members.editor')}</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => void handleInvite()} disabled={inviting || !email.trim()}>
@@ -104,9 +103,9 @@ export function ProjectMembersPanel({ projectId }: ProjectMembersPanelProps) {
           </Button>
         </div>
         {loading ? (
-          <p className="text-sm text-muted-foreground">Chargement…</p>
+          <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : members.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun collaborateur invité.</p>
+          <p className="text-sm text-muted-foreground">{t('members.none')}</p>
         ) : (
           <ul className="space-y-2">
             {members.map((m) => (

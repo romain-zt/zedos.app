@@ -26,6 +26,7 @@ import {
 } from '@repo/contracts/ai/decision-ui'
 import { comingUpPrdSectionsFromAssistantParsed } from '@repo/contracts/questions/history'
 import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
+import { useI18n } from '@/src/i18n'
 
 interface Message {
   id: string
@@ -61,6 +62,7 @@ interface ClarificationChatProps {
 }
 
 export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: ClarificationChatProps) {
+  const { t } = useI18n()
   const { notifyMilestone } = useOwnerMilestonePrompt()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -141,13 +143,13 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
 
       if (res?.status === 402) {
         const data = await res.json()
-        toast.error(data?.message ?? 'Insufficient credits')
+        toast.error(data?.message ?? t('credits.insufficient'))
         setStreaming(false)
         return
       }
 
       if (!res?.ok) {
-        throw new Error('Failed to get AI response')
+        throw new Error(t('clarify.aiResponseFailed'))
       }
 
       // Stream response
@@ -195,7 +197,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
             assistantContent = parsed?.result ?? assistantContent
             appendAssistantFromBuffer(assistantContent)
           } else if (parsed?.status === 'error') {
-            toast.error(parsed?.message ?? 'AI error')
+            toast.error(parsed?.message ?? t('clarify.aiError'))
           }
         } catch {
           /* ignore malformed chunk */
@@ -223,12 +225,12 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         appendAssistantFromBuffer(assistantContent)
       }
     } catch {
-      toast.error('Failed to get AI response')
+      toast.error(t('clarify.aiResponseFailed'))
     } finally {
       setStreaming(false)
     }
     },
-    [projectId, prdVersionId]
+    [projectId, prdVersionId, t]
   )
 
   // Load existing history on mount; auto-start only when there are no prior messages.
@@ -283,8 +285,8 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
 
   const handleCopy = async (text: string) => {
     const ok = await copyTextToClipboard(text)
-    if (ok) toastCopied()
-    else toastCopyFailed()
+    if (ok) toastCopied(t('common.copiedToClipboard'))
+    else toastCopyFailed(t('common.copyFailed'))
   }
 
   const startEdit = (msg: Message) => {
@@ -356,12 +358,12 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
 
       if (res?.status === 402) {
         const data = await res.json()
-        toast.error(data?.message ?? 'Insufficient credits')
+        toast.error(data?.message ?? t('credits.insufficient'))
         setGeneratingPrd(false)
         return
       }
 
-      if (!res?.ok) throw new Error('Failed to generate PRD')
+      if (!res?.ok) throw new Error(t('clarify.generatePrdFailed'))
 
       // Stream through but we mainly care about completion
       const reader = res.body?.getReader()
@@ -380,7 +382,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
             try {
               const parsed = JSON.parse(line.slice(6))
               if (parsed?.status === 'completed') {
-                toast.success('PRD generated!')
+                toast.success(t('clarify.prdGenerated'))
                 onPrdGenerated()
                 // Trigger milestone feedback
                 setFeedbackMilestone('prd_created')
@@ -397,7 +399,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
       }
     } catch (error) {
       console.error('PRD generation error:', error)
-      toast.error('Failed to generate PRD')
+      toast.error(t('clarify.generatePrdFailed'))
     } finally {
       setGeneratingPrd(false)
     }
@@ -417,7 +419,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         {(messages ?? []).length === 0 && !streaming && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Sparkles className="h-10 w-10 text-primary/30 mb-3" />
-            <p className="text-muted-foreground">Starting clarification...</p>
+            <p className="text-muted-foreground">{t('clarify.starting')}</p>
           </div>
         )}
 
@@ -436,12 +438,12 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
                           rows={3}
                           className="resize-none text-sm w-full h-[200px]"
                           disabled={streaming}
-                          aria-label="Modifier le message"
+                          aria-label={t('clarify.editMessage')}
                         />
                         <div className="flex flex-wrap justify-end gap-1">
                           <Button type="button" size="sm" variant="ghost" onClick={() => setEditingId(null)}>
                             <X className="h-3.5 w-3.5 mr-1" />
-                            Annuler
+                            {t('common.cancel')}
                           </Button>
                           <Button
                             type="button"
@@ -450,7 +452,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
                             disabled={!editDraft.trim() || streaming}
                           >
                             <Check className="h-3.5 w-3.5 mr-1" />
-                            Renvoyer
+                            {t('common.resend')}
                           </Button>
                         </div>
                       </div>
@@ -550,7 +552,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
           <div className="flex justify-start">
             <div className="flex items-center gap-2 text-muted-foreground bg-muted rounded-lg px-4 py-3">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Thinking...</span>
+              <span className="text-sm">{t('common.thinking')}</span>
             </div>
           </div>
         )}
@@ -561,9 +563,9 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         {comingUpSections.length > 0 && (
           <div
             className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
-            aria-label="Upcoming PRD sections"
+            aria-label={t('clarify.upcomingPrdSections')}
           >
-            <span className="text-xs font-medium text-muted-foreground shrink-0">Coming up</span>
+            <span className="text-xs font-medium text-muted-foreground shrink-0">{t('clarify.comingUp')}</span>
             <div className="flex flex-wrap gap-2">
               {comingUpSections.map((label) => (
                 <Badge key={label} variant="secondary" className="text-xs font-normal max-w-full truncate">
@@ -575,12 +577,12 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         )}
         {showReadyToGenerateHint && (
           <p className="text-xs text-muted-foreground">
-            Ready to generate PRD — every canonical section has had a question in this workspace.
+            {t('clarify.readyToGeneratePrd')}
           </p>
         )}
         <div className="flex gap-2">
           <Textarea
-            placeholder="Type your response or add context..."
+            placeholder={t('clarify.inputPlaceholder')}
             value={input}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -608,10 +610,10 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
             disabled={streaming || (messages?.length ?? 0) < 2}
           >
             <FileText className="mr-2 h-4 w-4" />
-            Generate PRD
+            {t('clarify.generatePrd')}
           </Button>
           <span className="text-xs text-muted-foreground">
-            10 credits · Generates a versioned PRD from your clarifications
+            {t('clarify.generatePrdCost')}
           </span>
         </div>
       </div>
@@ -623,8 +625,8 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         projectId={projectId}
         prdVersionId={prdVersionId}
         milestoneType={feedbackMilestone}
-        title={feedbackMilestone === 'prd_created' ? 'PRD Generated!' : 'How was that?'}
-        description="Your feedback helps improve the product clarification experience."
+        title={feedbackMilestone === 'prd_created' ? t('clarify.prdGeneratedTitle') : t('common.feedbackPromptTitle')}
+        description={t('clarify.feedbackDescription')}
       />
     </div>
   )

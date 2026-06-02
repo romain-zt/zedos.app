@@ -1,0 +1,18 @@
+{
+  "title": "Create your account",
+  "description": "Start turning ideas into PRDs with 20 free credits",
+  "nameLabel": "Name",
+  "namePlaceholder": "Your name",
+  "emailLabel": "Email",
+  "emailPlaceholder": "you@example.com",
+  "passwordLabel": "Password",
+  "passwordPlaceholder": "At least 8 characters",
+  "submit": "Create Account",
+  "alreadyAccount": "Already have an account?",
+  "signinCta": "Sign in",
+  "fillAllFields": "Please fill in all fields",
+  "passwordMin": "Password must be at least 8 characters",
+  "signupFailed": "Signup failed",
+  "loginAfterSignupFailed": "Account created but login failed. Please sign in.",
+  "somethingWentWrong": "Something went wrong"
+}

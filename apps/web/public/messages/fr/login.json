@@ -1,0 +1,15 @@
+{
+  "title": "Connexion",
+  "description": "Connectez-vous pour continuer à construire vos PRDs",
+  "emailLabel": "Email",
+  "emailPlaceholder": "vous@exemple.com",
+  "passwordLabel": "Mot de passe",
+  "passwordPlaceholder": "Entrez votre mot de passe",
+  "forgotPassword": "Mot de passe oublié ?",
+  "submit": "Se connecter",
+  "noAccount": "Pas encore de compte ?",
+  "signupCta": "Inscription",
+  "fillAllFields": "Veuillez remplir tous les champs",
+  "invalidCredentials": "Email ou mot de passe invalide",
+  "somethingWentWrong": "Un problème est survenu"
+}

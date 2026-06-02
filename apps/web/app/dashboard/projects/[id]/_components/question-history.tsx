@@ -11,6 +11,7 @@ import {
   type QuestionHistoryRow,
 } from '@repo/contracts/questions/history'
 import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
+import { useI18n } from '@/src/i18n'
 
 interface QuestionHistoryPanelProps {
   projectId: string
@@ -30,32 +31,32 @@ function formatDecisionWhen(createdAt: Date) {
   }
 }
 
-function PrdVersionLabel({ prdVersionId, versions }: { prdVersionId: string | null; versions: PrdVersionDTO[] }) {
+function PrdVersionLabel({ prdVersionId, versions, t }: { prdVersionId: string | null; versions: PrdVersionDTO[]; t: (key: string) => string }) {
   if (!prdVersionId) {
-    return <span className="text-xs text-muted-foreground">PRD: not linked to a version</span>
+    return <span className="text-xs text-muted-foreground">{t('questionHistory.prdNotLinked')}</span>
   }
   const match = versions.find((v) => v.id === prdVersionId)
   if (match) {
     return (
       <span className="text-xs text-muted-foreground">
-        PRD version{' '}
+        {t('questionHistory.prdVersion')}{' '}
         <span className="font-mono font-medium text-foreground">v{match.versionNumber}</span>
       </span>
     )
   }
   return (
     <span className="text-xs text-muted-foreground font-mono" title={prdVersionId}>
-      PRD version (pending list)
+      {t('questionHistory.prdVersionPending')}
     </span>
   )
 }
 
-function AvailableOptionsBlock({ row }: { row: QuestionHistoryRow }) {
+function AvailableOptionsBlock({ row, t }: { row: QuestionHistoryRow; t: (key: string) => string }) {
   const ui = row.availableOptions
   if (!ui) {
     return (
       <div className="pl-6 text-xs text-muted-foreground italic">
-        No structured options on file for this entry.
+        {t('questionHistory.noStructuredOptions')}
       </div>
     )
   }
@@ -63,7 +64,7 @@ function AvailableOptionsBlock({ row }: { row: QuestionHistoryRow }) {
     <div className="pl-6 space-y-2 rounded-md border border-border/60 bg-muted/30 p-3">
       <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
         <ListOrdered className="h-3.5 w-3.5" />
-        Options presented
+        {t('questionHistory.optionsPresented')}
       </div>
       <p className="text-xs font-medium">{ui.title}</p>
       {ui.description ? <p className="text-xs text-muted-foreground">{ui.description}</p> : null}
@@ -78,9 +79,9 @@ function AvailableOptionsBlock({ row }: { row: QuestionHistoryRow }) {
         ))}
       </ul>
       <p className="text-[11px] text-muted-foreground">
-        {ui.allow_custom ? 'Custom answers allowed' : 'Fixed options'}
+        {ui.allow_custom ? t('questionHistory.customAnswersAllowed') : t('questionHistory.fixedOptions')}
         {' · '}
-        {ui.allow_not_sure ? '"Not sure" allowed' : 'No "not sure"'}
+        {ui.allow_not_sure ? t('questionHistory.notSureAllowed') : t('questionHistory.notSureNotAllowed')}
       </p>
     </div>
   )
@@ -92,6 +93,7 @@ export function QuestionHistoryPanel({
   isTabActive,
   onOpenRefinement,
 }: QuestionHistoryPanelProps) {
+  const { t } = useI18n()
   const [rows, setRows] = useState<QuestionHistoryRow[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -102,35 +104,35 @@ export function QuestionHistoryPanel({
     try {
       const res = await fetch(`/api/projects/${projectId}/questions`)
       if (res.status === 401) {
-        setLoadError('You need to be signed in to view history.')
+        setLoadError(t('questionHistory.signInRequired'))
         setRows([])
         return
       }
       if (res.status === 404) {
-        setLoadError('Project not found.')
+        setLoadError(t('questionHistory.projectNotFound'))
         setRows([])
         return
       }
       if (!res.ok) {
-        setLoadError('Could not load decision history.')
+        setLoadError(t('questionHistory.loadFailed'))
         setRows([])
         return
       }
       const raw: unknown = await res.json()
       const parsed = QuestionHistoryListResponseSchema.safeParse(raw)
       if (!parsed.success) {
-        setLoadError('Received invalid data from the server. Try again or contact support.')
+        setLoadError(t('questionHistory.invalidData'))
         setRows([])
         return
       }
       setRows(parsed.data)
     } catch {
-      setLoadError('Network error. Check your connection and try again.')
+      setLoadError(t('questionHistory.networkError'))
       setRows([])
     } finally {
       setLoading(false)
     }
-  }, [projectId])
+  }, [projectId, t])
 
   useEffect(() => {
     if (!isTabActive) return
@@ -158,7 +160,7 @@ export function QuestionHistoryPanel({
           <p className="text-sm text-foreground">{loadError}</p>
           <Button type="button" variant="outline" className="min-h-11 min-w-[44px]" onClick={() => void load()}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
+            {t('common.retry')}
           </Button>
         </CardContent>
       </Card>
@@ -170,10 +172,9 @@ export function QuestionHistoryPanel({
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-16 px-4">
           <MessageSquare className="h-12 w-12 text-muted-foreground/30 mb-4" aria-hidden />
-          <h3 className="font-display text-lg font-semibold mb-1">No decisions yet</h3>
+          <h3 className="font-display text-lg font-semibold mb-1">{t('questionHistory.emptyTitle')}</h3>
           <p className="text-sm text-muted-foreground text-center max-w-sm">
-            Structured decisions from clarification will appear here. Only you can see this log; it is not shown on
-            shared links.
+            {t('questionHistory.emptyDescription')}
           </p>
         </CardContent>
       </Card>
@@ -184,7 +185,7 @@ export function QuestionHistoryPanel({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          {rows.length} decision{rows.length !== 1 ? 's' : ''} recorded
+          {rows.length} {t(rows.length !== 1 ? 'questionHistory.decisionsRecorded' : 'questionHistory.decisionRecorded')}
         </p>
         <Button
           type="button"
@@ -194,7 +195,7 @@ export function QuestionHistoryPanel({
           onClick={() => void load()}
         >
           <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
+          {t('common.refresh')}
         </Button>
       </div>
 
@@ -232,7 +233,7 @@ export function QuestionHistoryPanel({
                             })
                           }
                         >
-                          Revise
+                          {t('questionHistory.revise')}
                         </Button>
                       ) : null}
                       <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
@@ -251,21 +252,21 @@ export function QuestionHistoryPanel({
                           }
                         >
                           <MessageSquare className="h-3 w-3" />
-                          Revise
+                          {t('questionHistory.revise')}
                         </Button>
                       ) : null}
                     </div>
                   </div>
 
-                  <PrdVersionLabel prdVersionId={q.prdVersionId} versions={prdVersions} />
+                  <PrdVersionLabel prdVersionId={q.prdVersionId} versions={prdVersions} t={t} />
 
-                  <AvailableOptionsBlock row={q} />
+                  <AvailableOptionsBlock row={q} t={t} />
 
                   {q.founderAnswer ? (
                     <div className="flex items-start gap-2 pl-6 sm:pl-8">
                       <ArrowRight className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" aria-hidden />
                       <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">Your answer</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">{t('questionHistory.yourAnswer')}</p>
                         <p className="text-sm text-foreground break-words">{q.founderAnswer}</p>
                       </div>
                     </div>
@@ -273,7 +274,7 @@ export function QuestionHistoryPanel({
 
                   {q.optionalComment ? (
                     <div className="pl-6 sm:pl-8">
-                      <p className="text-xs font-medium text-muted-foreground mb-0.5">Your comment</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-0.5">{t('questionHistory.yourComment')}</p>
                       <p className="text-sm text-foreground break-words">{q.optionalComment}</p>
                     </div>
                   ) : null}
@@ -281,7 +282,7 @@ export function QuestionHistoryPanel({
                   {q.aiInterpretation ? (
                     <div className="bg-muted/50 rounded-lg p-2.5 ml-6 sm:ml-8">
                       <p className="text-xs text-muted-foreground break-words">
-                        <span className="font-medium text-foreground/80">AI interpretation:</span> {q.aiInterpretation}
+                        <span className="font-medium text-foreground/80">{t('questionHistory.aiInterpretation')}:</span> {q.aiInterpretation}
                       </p>
                     </div>
                   ) : null}
@@ -290,7 +291,7 @@ export function QuestionHistoryPanel({
                     <div className="flex items-start gap-1.5 pl-6 sm:pl-8">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" aria-hidden />
                       <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">PRD impact</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">{t('questionHistory.prdImpact')}</p>
                         <p className="text-xs text-foreground break-words">{q.prdImpact}</p>
                       </div>
                     </div>

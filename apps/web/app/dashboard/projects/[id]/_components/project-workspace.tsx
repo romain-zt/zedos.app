@@ -20,6 +20,7 @@ import {
   PrdVersionListResponseSchema,
   type PrdVersionDTO,
 } from '@repo/contracts/prd/prd-contracts'
+import { useI18n } from '@/src/i18n'
 
 interface ProjectWorkspaceProps {
   projectId: string
@@ -28,6 +29,7 @@ interface ProjectWorkspaceProps {
 }
 
 export function ProjectWorkspace({ projectId, projectName, projectDescription }: ProjectWorkspaceProps) {
+  const { t } = useI18n()
   const [activeTab, setActiveTab] = useState('clarify')
   const [prdVersions, setPrdVersions] = useState<PrdVersionDTO[]>([])
   const [selectedVersion, setSelectedVersion] = useState<PrdVersionDTO | null>(null)
@@ -59,7 +61,7 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         body: JSON.stringify({}),
       })
       if (!ensure.ok) {
-        if (ensure.status !== 401) toast.error('Could not initialize PRD version')
+        if (ensure.status !== 401) toast.error(t('workspace.initPrdVersionFailed'))
         return
       }
       const res = await fetch(`/api/projects/${projectId}/prd`)
@@ -67,7 +69,7 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         const raw = await res.json()
         const parsed = PrdVersionListResponseSchema.safeParse(raw)
         if (!parsed.success) {
-          toast.error('Could not load PRD versions')
+          toast.error(t('workspace.loadPrdVersionsFailed'))
           return
         }
         const data = parsed.data
@@ -78,9 +80,9 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         })
       }
     } catch {
-      toast.error('Could not load PRD versions')
+      toast.error(t('workspace.loadPrdVersionsFailed'))
     }
-  }, [projectId])
+  }, [projectId, t])
 
   useEffect(() => {
     fetchVersions()
@@ -116,11 +118,11 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         body: JSON.stringify({ name: editName, description: editDesc }),
       })
       if (res?.ok) {
-        toast.success('Project updated')
+        toast.success(t('workspace.projectUpdated'))
         setShowSettings(false)
       }
     } catch {
-      toast.error('Failed to update project')
+      toast.error(t('workspace.updateProjectFailed'))
     } finally {
       setSaving(false)
     }
@@ -147,15 +149,15 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
           <TabsList>
             <TabsTrigger value="clarify" className="gap-2">
               <MessageSquare className="h-4 w-4" />
-              Clarify
+              {t('workspace.tabClarify')}
             </TabsTrigger>
             <TabsTrigger value="prd" className="gap-2 min-h-11 sm:min-h-0">
               <FileText className="h-4 w-4" />
-              PRD
+              {t('workspace.tabPrd')}
               {selectedVersion && (
                 <span
                   className="ml-1 text-xs bg-muted rounded-full px-1.5 py-0.5 font-mono"
-                  title="Active PRD version in this workspace"
+                  title={t('workspace.activePrdVersionTitle')}
                 >
                   v{selectedVersion.versionNumber}
                 </span>
@@ -163,11 +165,11 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
             </TabsTrigger>
             <TabsTrigger value="architecture" className="gap-2">
               <Layers className="h-4 w-4" />
-              Architecture
+              {t('workspace.tabArchitecture')}
             </TabsTrigger>
             <TabsTrigger value="history" className="gap-2">
               <History className="h-4 w-4" />
-              History
+              {t('workspace.tabHistory')}
             </TabsTrigger>
           </TabsList>
           {!loadingPhase && <WorkspaceScorePanel projectId={projectId} />}
@@ -224,16 +226,16 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">Project Settings</DialogTitle>
+            <DialogTitle className="font-display">{t('workspace.projectSettings')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Name</label>
+                <label className="text-sm font-medium">{t('common.name')}</label>
                 <Input value={editName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditName(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
+                <label className="text-sm font-medium">{t('common.description')}</label>
                 <Textarea
                   value={editDesc}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditDesc(e.target.value)}
@@ -242,8 +244,8 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="ghost" onClick={() => setShowSettings(false)}>Cancel</Button>
-                <Button onClick={handleSaveSettings} loading={saving}>Save</Button>
+                <Button variant="ghost" onClick={() => setShowSettings(false)}>{t('common.cancel')}</Button>
+                <Button onClick={handleSaveSettings} loading={saving}>{t('common.save')}</Button>
               </div>
             </div>
             <ProjectMembersPanel projectId={projectId} />

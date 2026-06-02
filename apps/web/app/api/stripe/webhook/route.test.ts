@@ -22,12 +22,12 @@ function makeCheckoutEnvelope(overrides: {
   return {
     object: 'event' as const,
     type: 'checkout.session.completed' as const,
-    id: 'evt_placeholder_1',
+    id: 'evt_1QzXy2ABCD1234efg567hijk',
     livemode: false,
     created: 1_717_000_000,
     data: {
       object: {
-        id: 'cs_placeholder',
+        id: 'cs_test_a1B2c3D4e5F6g7H8i9J0kLmN',
         object: 'checkout.session' as const,
         payment_status: 'paid' as const,
         status: 'complete' as const,

@@ -14,6 +14,7 @@ import {
 import { SharePasswordRequiredResponseSchema } from '@repo/contracts/share/access'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/src/i18n'
 
 function isGeneratedPrdContent(
   content: PrdVersionContent,
@@ -40,16 +41,8 @@ function versionSummaryFromContent(content: PrdVersionContent | null): string | 
   return summary.length > 0 ? summary : undefined
 }
 
-function shareFetchErrorMessage(status: number, bodyError: unknown): string {
-  if (status === 400) return 'That link is not valid.'
-  if (status === 404) return 'This shared document is not available.'
-  if (typeof bodyError === 'string' && bodyError.length > 0 && bodyError.length < 200) {
-    return bodyError
-  }
-  return 'Something went wrong. Try again in a moment.'
-}
-
 export function SharedPrdView({ token }: { token: string }) {
+  const { tp } = useI18n()
   const [data, setData] = useState<AnonymousSharedPrdResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -78,18 +71,26 @@ export function SharedPrdView({ token }: { token: string }) {
           } catch {
             bodyError = undefined
           }
-          setError(shareFetchErrorMessage(res.status, bodyError))
+          if (res.status === 400) {
+            setError(tp('invalidLink', 'That link is not valid.'))
+          } else if (res.status === 404) {
+            setError(tp('notAvailableDescription', 'This shared document is not available.'))
+          } else if (typeof bodyError === 'string' && bodyError.length > 0 && bodyError.length < 200) {
+            setError(bodyError)
+          } else {
+            setError(tp('somethingWentWrongTryAgain', 'Something went wrong. Try again in a moment.'))
+          }
           return
         }
         const raw: unknown = await res.json()
         const parsed = AnonymousSharedPrdResponseSchema.safeParse(raw)
         if (!parsed.success) {
-          setError('This shared document could not be displayed.')
+          setError(tp('displayError', 'This shared document could not be displayed.'))
           return
         }
         setData(parsed.data)
       } catch {
-        setError('Something went wrong. Try again in a moment.')
+        setError(tp('somethingWentWrongTryAgain', 'Something went wrong. Try again in a moment.'))
       } finally {
         setLoading(false)
       }
@@ -110,13 +111,13 @@ export function SharedPrdView({ token }: { token: string }) {
         body: JSON.stringify({ password }),
       })
       if (!res.ok) {
-        setError(res.status === 401 ? 'Mot de passe incorrect.' : 'Accès refusé.')
+        setError(res.status === 401 ? tp('wrongPassword', 'Incorrect password.') : tp('accessDenied', 'Access denied.'))
         return
       }
       setNeedsPassword(false)
       await fetchSharedPrd()
     } catch {
-      setError('Something went wrong. Try again in a moment.')
+      setError(tp('somethingWentWrongTryAgain', 'Something went wrong. Try again in a moment.'))
     } finally {
       setUnlocking(false)
     }
@@ -152,8 +153,8 @@ export function SharedPrdView({ token }: { token: string }) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-4">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
-        <p className="text-sm text-muted-foreground text-center">Loading shared document…</p>
-        <span className="sr-only">Loading</span>
+        <p className="text-sm text-muted-foreground text-center">{tp('loadingSharedDocument', 'Loading shared document…')}</p>
+        <span className="sr-only">{tp('loading', 'Loading')}</span>
       </div>
     )
   }
@@ -163,18 +164,18 @@ export function SharedPrdView({ token }: { token: string }) {
       <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
         <Card className="max-w-md w-full">
           <CardContent className="py-8 space-y-4">
-            <h2 className="font-display text-lg font-semibold">Document protégé</h2>
-            <p className="text-sm text-muted-foreground">Entrez le mot de passe fourni par le propriétaire.</p>
+            <h2 className="font-display text-lg font-semibold">{tp('protectedTitle', 'Protected document')}</h2>
+            <p className="text-sm text-muted-foreground">{tp('protectedDescription', 'Enter the password provided by the owner.')}</p>
             <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mot de passe"
+              placeholder={tp('passwordPlaceholder', 'Password')}
               autoComplete="current-password"
             />
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button onClick={() => void handleUnlock()} disabled={unlocking || !password}>
-              {unlocking ? 'Vérification…' : 'Accéder'}
+              {unlocking ? tp('verifying', 'Verifying…') : tp('access', 'Access')}
             </Button>
           </CardContent>
         </Card>
@@ -188,8 +189,8 @@ export function SharedPrdView({ token }: { token: string }) {
         <Card className="max-w-md w-full">
           <CardContent className="py-12 text-center">
             <FileText className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" aria-hidden />
-            <h2 className="font-display text-lg font-semibold mb-1">Not available</h2>
-            <p className="text-sm text-muted-foreground">{error ?? 'This shared document is not available.'}</p>
+            <h2 className="font-display text-lg font-semibold mb-1">{tp('notAvailable', 'Not available')}</h2>
+            <p className="text-sm text-muted-foreground">{error ?? tp('notAvailableDescription', 'This shared document is not available.')}</p>
           </CardContent>
         </Card>
       </div>
@@ -213,7 +214,7 @@ export function SharedPrdView({ token }: { token: string }) {
             <span className="font-display text-sm font-bold">Zedos</span>
           </div>
           <Badge variant="secondary" className="text-xs">
-            Read-only
+            {tp('readOnly', 'Read-only')}
           </Badge>
         </div>
       </header>
@@ -223,10 +224,10 @@ export function SharedPrdView({ token }: { token: string }) {
           <div>
             <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight">{docTitle}</h1>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
-              <Badge variant="outline">Version {data.versionNumber}</Badge>
+              <Badge variant="outline">{tp('version', 'Version')} {data.versionNumber}</Badge>
               <Badge variant="outline">{statusLabel}</Badge>
               <span className="text-xs text-muted-foreground">
-                Saved {data.createdAt.toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                {tp('saved', 'Saved')} {data.createdAt.toLocaleDateString(undefined, { dateStyle: 'medium' })}
               </span>
             </div>
             {versionSummary ? <p className="mt-3 text-sm text-muted-foreground">{versionSummary}</p> : null}
@@ -256,7 +257,7 @@ export function SharedPrdView({ token }: { token: string }) {
                     </CardHeader>
                     <CardContent>
                       <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                        {section.content.trim() ? section.content : 'No content'}
+                        {section.content.trim() ? section.content : tp('noContent', 'No content')}
                       </div>
                     </CardContent>
                   </Card>
@@ -277,7 +278,7 @@ export function SharedPrdView({ token }: { token: string }) {
         ) : null}
 
         <div className="text-center pt-6 sm:pt-8 pb-4">
-          <p className="text-xs text-muted-foreground">Generated with Zedos · AI-guided product clarification</p>
+          <p className="text-xs text-muted-foreground">{tp('footer', 'Generated with Zedos · AI-guided product clarification')}</p>
         </div>
       </div>
     </div>

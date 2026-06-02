@@ -9,8 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useI18n } from '@/src/i18n';
 
 export default function ResetPasswordPage() {
+  const { tp } = useI18n();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [password, setPassword] = useState('');
@@ -22,11 +24,11 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
-      toast.error('Missing or invalid token');
+      toast.error(tp('invalidToken', 'Missing or invalid token'));
       return;
     }
     if (password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+      toast.error(tp('passwordMin', 'Password must be at least 8 characters'));
       return;
     }
 
@@ -41,14 +43,14 @@ export default function ResetPasswordPage() {
         }),
       });
       if (!response.ok) {
-        toast.error('Invalid or expired reset link');
+        toast.error(tp('invalidResetLink', 'Invalid or expired reset link'));
         return;
       }
 
-      toast.success('Password reset successful. Please sign in.');
+      toast.success(tp('resetSuccess', 'Password reset successful. Please sign in.'));
       router.replace('/login');
     } catch {
-      toast.error('Something went wrong');
+      toast.error(tp('somethingWentWrong', 'Something went wrong'));
     } finally {
       setLoading(false);
     }
@@ -56,24 +58,24 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthLayout
-      title="Reset password"
-      description="Choose a new password for your account."
+      title={tp('title', 'Reset password')}
+      description={tp('description', 'Choose a new password for your account.')}
     >
       {error && (
         <p className="mb-4 text-sm text-destructive">
-          The reset link is invalid or expired.
+          {tp('expiredLink', 'The reset link is invalid or expired.')}
         </p>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="password">New password</Label>
+          <Label htmlFor="password">{tp('newPasswordLabel', 'New password')}</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="password"
               type="password"
-              placeholder="At least 8 characters"
+              placeholder={tp('passwordPlaceholder', 'At least 8 characters')}
               value={password}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               className="pl-10"
@@ -84,14 +86,14 @@ export default function ResetPasswordPage() {
         </div>
 
         <Button type="submit" className="w-full" loading={loading}>
-          Reset password
+          {tp('submit', 'Reset password')}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </form>
 
       <p className="mt-4 text-center text-sm text-muted-foreground">
         <Link href="/login" className="text-primary hover:underline font-medium">
-          Back to login
+          {tp('backToLogin', 'Back to login')}
         </Link>
       </p>
     </AuthLayout>

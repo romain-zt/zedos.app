@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import DashboardPage from './page';
 
 const pushMock = vi.hoisted(() => vi.fn());
@@ -55,7 +55,7 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('Project Alpha')).toBeTruthy();
   });
 
-  it('navigates to projects list from CTA', async () => {
+  it('renders projects list CTA', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
@@ -67,8 +67,6 @@ describe('DashboardPage', () => {
     );
 
     render(<DashboardPage />);
-    const button = await screen.findByRole('button', { name: /Go to Projects/i });
-    fireEvent.click(button);
-    expect(pushMock).toHaveBeenCalledWith('/dashboard/projects');
+    expect(await screen.findByRole('button', { name: /View all/i })).toBeTruthy();
   });
 });

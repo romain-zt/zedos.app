@@ -1,0 +1,15 @@
+{
+  "title": "Welcome back",
+  "description": "Sign in to continue building your PRDs",
+  "emailLabel": "Email",
+  "emailPlaceholder": "you@example.com",
+  "passwordLabel": "Password",
+  "passwordPlaceholder": "Enter your password",
+  "forgotPassword": "Forgot password?",
+  "submit": "Sign In",
+  "noAccount": "Don't have an account?",
+  "signupCta": "Sign up",
+  "fillAllFields": "Please fill in all fields",
+  "invalidCredentials": "Invalid email or password",
+  "somethingWentWrong": "Something went wrong"
+}

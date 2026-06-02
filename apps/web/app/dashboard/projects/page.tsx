@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ProjectWithCounts } from '@domain/project/project-repository'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,8 +19,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
+import { useI18n } from '@/src/i18n'
 
 export default function ProjectsPage() {
+  const { t } = useI18n()
   const router = useRouter()
   const [projects, setProjects] = useState<ProjectWithCounts[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,7 +32,7 @@ export default function ProjectsPage() {
   const [newDesc, setNewDesc] = useState('')
   const [creating, setCreating] = useState(false)
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     setLoading(true)
     setListError(null)
     try {
@@ -38,7 +40,9 @@ export default function ProjectsPage() {
       if (!res?.ok) {
         setProjects([])
         setListError(
-          res ? `Could not load projects (HTTP ${res.status}). Try again.` : 'Could not load projects. Try again.'
+          res
+            ? t('errors.loadProjectsHttp').replace('{status}', String(res.status))
+            : t('errors.loadProjects')
         )
         return
       }
@@ -46,18 +50,18 @@ export default function ProjectsPage() {
       setProjects(Array.isArray(data) ? (data as ProjectWithCounts[]) : [])
     } catch (e) {
       setProjects([])
-      const detail = e instanceof Error ? e.message : 'Network error'
-      setListError(`Could not load projects: ${detail}`)
+      const detail = e instanceof Error ? e.message : t('common.networkError')
+      setListError(t('errors.loadProjectsWithDetail').replace('{detail}', detail))
     } finally {
       setLoading(false)
     }
-  }
+  }, [t])
 
-  useEffect(() => { void fetchProjects() }, [])
+  useEffect(() => { void fetchProjects() }, [fetchProjects])
 
   const handleCreate = async () => {
     if (!newName.trim()) {
-      toast.error('Project name is required')
+      toast.error(t('projects.nameRequired'))
       return
     }
     setCreating(true)
@@ -69,30 +73,30 @@ export default function ProjectsPage() {
       })
       if (res?.ok) {
         const project = await res.json()
-        toast.success('Project created')
+        toast.success(t('projects.created'))
         setShowCreate(false)
         setNewName('')
         setNewDesc('')
         router.push(`/dashboard/projects/${project?.id}`)
       } else {
         const data = await res.json()
-        toast.error(data?.error ?? 'Failed to create project')
+        toast.error(data?.error ?? t('projects.createFailed'))
       }
     } catch {
-      toast.error('Failed to create project')
+      toast.error(t('projects.createFailed'))
     } finally {
       setCreating(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this project and all its PRDs? This cannot be undone.')) return
+    if (!confirm(t('projects.deleteConfirm'))) return
     try {
       await fetch(`/api/projects/${id}`, { method: 'DELETE' })
-      toast.success('Project deleted')
+      toast.success(t('projects.deleted'))
       void fetchProjects()
     } catch {
-      toast.error('Failed to delete project')
+      toast.error(t('projects.deleteFailed'))
     }
   }
 
@@ -101,9 +105,9 @@ export default function ProjectsPage() {
       <FadeIn>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight">Projects</h1>
+            <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight">{t('projects.title')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Each project contains your product idea, clarification history, and PRD versions.
+              {t('projects.subtitle')}
             </p>
           </div>
           <Button
@@ -111,7 +115,7 @@ export default function ProjectsPage() {
             className="w-full min-h-11 shrink-0 sm:w-auto sm:min-h-10"
           >
             <Plus className="mr-2 h-4 w-4" />
-            New Project
+            {t('projects.new')}
           </Button>
         </div>
       </FadeIn>
@@ -125,7 +129,7 @@ export default function ProjectsPage() {
       ) : listError ? (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" aria-hidden />
-          <AlertTitle className="text-base">Projects did not load</AlertTitle>
+          <AlertTitle className="text-base">{t('projects.loadFailedTitle')}</AlertTitle>
           <AlertDescription className="text-destructive-foreground/90 space-y-3">
             <p>{listError}</p>
             <Button
@@ -136,7 +140,7 @@ export default function ProjectsPage() {
               onClick={() => void fetchProjects()}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Retry
+              {t('common.retry')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -144,13 +148,13 @@ export default function ProjectsPage() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FolderOpen className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <h3 className="font-display text-lg font-semibold mb-1">No projects yet</h3>
+            <h3 className="font-display text-lg font-semibold mb-1">{t('projects.emptyTitle')}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Create your first project to start the product clarification flow.
+              {t('projects.emptyDescription')}
             </p>
             <Button onClick={() => setShowCreate(true)} className="min-h-11 w-full max-w-xs sm:min-h-10 sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
-              New Project
+              {t('projects.new')}
             </Button>
           </CardContent>
         </Card>
@@ -189,13 +193,13 @@ export default function ProjectsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => router.push(`/dashboard/projects/${project.id}`)}>
-                          <Pencil className="mr-2 h-4 w-4" /> Open
+                          <Pencil className="mr-2 h-4 w-4" /> {t('common.open')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDelete(project.id)}
                           className="text-destructive"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          <Trash2 className="mr-2 h-4 w-4" /> {t('common.delete')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -211,24 +215,24 @@ export default function ProjectsPage() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-md sm:w-full rounded-lg">
           <DialogHeader>
-            <DialogTitle className="font-display">New Project</DialogTitle>
-            <DialogDescription>Describe the product idea you want to explore.</DialogDescription>
+            <DialogTitle className="font-display">{t('projects.dialogNewTitle')}</DialogTitle>
+            <DialogDescription>{t('projects.dialogNewDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="project-name">Project Name</Label>
+              <Label htmlFor="project-name">{t('projects.projectName')}</Label>
               <Input
                 id="project-name"
-                placeholder="e.g. TaskFlow, FitnessBuddy..."
+                placeholder={t('projects.projectNamePlaceholder')}
                 value={newName}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="project-desc">Description (optional)</Label>
+              <Label htmlFor="project-desc">{t('projects.projectDescriptionOptional')}</Label>
               <Textarea
                 id="project-desc"
-                placeholder="Briefly describe your product idea..."
+                placeholder={t('projects.projectDescriptionPlaceholder')}
                 value={newDesc}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewDesc(e.target.value)}
                 rows={3}
@@ -241,10 +245,10 @@ export default function ProjectsPage() {
                 onClick={() => setShowCreate(false)}
                 className="min-h-11 w-full sm:w-auto"
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button onClick={handleCreate} loading={creating} className="min-h-11 w-full sm:w-auto">
-                Create Project
+                {t('projects.createProject')}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>

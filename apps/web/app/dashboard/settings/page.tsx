@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useI18n } from '@/src/i18n';
 
 interface ConsentState {
   marketingConsent: boolean;
@@ -45,6 +46,7 @@ const getSessionDeviceLabel = (userAgent: string | null): string => {
 };
 
 export default function SettingsPage() {
+  const { t } = useI18n();
   const { data: session } = useSession() || {};
   const [newEmail, setNewEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -90,7 +92,7 @@ export default function SettingsPage() {
 
   const saveEmail = async (): Promise<void> => {
     if (!newEmail.trim()) {
-      toast.error('New email is required');
+      toast.error(t('settings.newEmailRequired'));
       return;
     }
     await withLoading('email', async () => {
@@ -100,17 +102,17 @@ export default function SettingsPage() {
         body: JSON.stringify({ newEmail: newEmail.trim().toLowerCase() }),
       });
       if (!res.ok) {
-        toast.error('Unable to update email');
+        toast.error(t('settings.updateEmailFailed'));
         return;
       }
-      toast.success('Email updated');
+      toast.success(t('settings.emailUpdated'));
       setNewEmail('');
     });
   };
 
   const savePassword = async (): Promise<void> => {
     if (!currentPassword || !newPassword) {
-      toast.error('Please fill in password fields');
+      toast.error(t('settings.fillPasswordFields'));
       return;
     }
     await withLoading('password', async () => {
@@ -124,10 +126,10 @@ export default function SettingsPage() {
         }),
       });
       if (!res.ok) {
-        toast.error('Unable to change password');
+        toast.error(t('settings.changePasswordFailed'));
         return;
       }
-      toast.success('Password updated');
+      toast.success(t('settings.passwordUpdated'));
       setCurrentPassword('');
       setNewPassword('');
     });
@@ -141,10 +143,10 @@ export default function SettingsPage() {
         body: JSON.stringify(consent),
       });
       if (!res.ok) {
-        toast.error('Unable to save consent settings');
+        toast.error(t('settings.saveConsentFailed'));
         return;
       }
-      toast.success('Consent settings saved');
+      toast.success(t('settings.consentSaved'));
     });
   };
 
@@ -156,10 +158,10 @@ export default function SettingsPage() {
         body: JSON.stringify({ token }),
       });
       if (!res.ok) {
-        toast.error('Unable to revoke session');
+        toast.error(t('settings.revokeSessionFailed'));
         return;
       }
-      toast.success('Session revoked');
+      toast.success(t('settings.sessionRevoked'));
       setSessions((prev) => prev.filter((item) => item.token !== token));
     });
   };
@@ -168,7 +170,7 @@ export default function SettingsPage() {
     await withLoading('export', async () => {
       const res = await fetch('/api/account/export');
       if (!res.ok) {
-        toast.error('Export is unavailable');
+        toast.error(t('settings.exportUnavailable'));
         return;
       }
       const content = await res.text();
@@ -181,17 +183,17 @@ export default function SettingsPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      toast.success('Export downloaded');
+      toast.success(t('settings.exportDownloaded'));
     });
   };
 
   const deleteAccount = async (): Promise<void> => {
     if (deleteConfirm !== 'DELETE') {
-      toast.error('Type DELETE to confirm');
+      toast.error(t('settings.typeDeleteToConfirm'));
       return;
     }
     if (!deletePassword) {
-      toast.error('Password is required');
+      toast.error(t('settings.passwordRequired'));
       return;
     }
 
@@ -202,10 +204,10 @@ export default function SettingsPage() {
         body: JSON.stringify({ password: deletePassword }),
       });
       if (!res.ok) {
-        toast.error('Unable to delete account');
+        toast.error(t('settings.deleteAccountFailed'));
         return;
       }
-      toast.success('Account deleted');
+      toast.success(t('settings.accountDeleted'));
       window.location.href = '/sign-in';
     });
   };
@@ -213,42 +215,42 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Account settings</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">{t('settings.title')}</h1>
         <p className="text-muted-foreground mt-1">
-          Manage your profile, security, and privacy rights.
+          {t('settings.subtitle')}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Account</CardTitle>
-          <CardDescription>Current email: {session?.user?.email ?? 'N/A'}</CardDescription>
+          <CardTitle className="text-xl">{t('settings.accountSection')}</CardTitle>
+          <CardDescription>{t('settings.currentEmail')}: {session?.user?.email ?? 'N/A'}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
-            <Label htmlFor="newEmail">New email</Label>
+            <Label htmlFor="newEmail">{t('settings.newEmail')}</Label>
             <Input
               id="newEmail"
               type="email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="new-email@example.com"
+              placeholder={t('settings.newEmailPlaceholder')}
             />
           </div>
           <Button onClick={() => void saveEmail()} loading={Boolean(loading.email)}>
-            Update email
+            {t('settings.updateEmail')}
           </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Security</CardTitle>
-          <CardDescription>Change your password and revoke other sessions.</CardDescription>
+          <CardTitle className="text-xl">{t('settings.securitySection')}</CardTitle>
+          <CardDescription>{t('settings.securityDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">Current password</Label>
+            <Label htmlFor="currentPassword">{t('settings.currentPassword')}</Label>
             <Input
               id="currentPassword"
               type="password"
@@ -257,7 +259,7 @@ export default function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="newPassword">New password</Label>
+            <Label htmlFor="newPassword">{t('settings.newPassword')}</Label>
             <Input
               id="newPassword"
               type="password"
@@ -266,21 +268,21 @@ export default function SettingsPage() {
             />
           </div>
           <Button onClick={() => void savePassword()} loading={Boolean(loading.password)}>
-            Change password
+            {t('settings.changePassword')}
           </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Privacy consent</CardTitle>
-          <CardDescription>Control your communication preferences.</CardDescription>
+          <CardTitle className="text-xl">{t('settings.privacyConsentSection')}</CardTitle>
+          <CardDescription>{t('settings.privacyConsentDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Product emails</p>
-              <p className="text-sm text-muted-foreground">Important information about your account.</p>
+              <p className="font-medium">{t('settings.productEmails')}</p>
+              <p className="text-sm text-muted-foreground">{t('settings.productEmailsDescription')}</p>
             </div>
             <Switch
               checked={consent.productUpdatesConsent}
@@ -291,8 +293,8 @@ export default function SettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Marketing emails</p>
-              <p className="text-sm text-muted-foreground">News and offers from Zedos.</p>
+              <p className="font-medium">{t('settings.marketingEmails')}</p>
+              <p className="text-sm text-muted-foreground">{t('settings.marketingEmailsDescription')}</p>
             </div>
             <Switch
               checked={consent.marketingConsent}
@@ -302,19 +304,19 @@ export default function SettingsPage() {
             />
           </div>
           <Button onClick={() => void saveConsent()} loading={Boolean(loading.consent)}>
-            Save consent settings
+            {t('settings.saveConsent')}
           </Button>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Active sessions</CardTitle>
-          <CardDescription>Revoke sessions you do not recognize.</CardDescription>
+          <CardTitle className="text-xl">{t('settings.activeSessions')}</CardTitle>
+          <CardDescription>{t('settings.activeSessionsDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {sessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No active sessions.</p>
+            <p className="text-sm text-muted-foreground">{t('settings.noActiveSessions')}</p>
           ) : (
             sessions.map((item) => (
               <div
@@ -326,14 +328,14 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold truncate">{getSessionDeviceLabel(item.userAgent)}</p>
                       <Badge variant={item.current ? 'default' : 'secondary'}>
-                        {item.current ? 'Current' : 'Active'}
+                        {item.current ? t('settings.current') : t('settings.active')}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{item.userAgent ?? 'Unknown user agent'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{item.userAgent ?? t('settings.unknownUserAgent')}</p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      <span>Created: {formatSessionDate(item.createdAt)}</span>
-                      <span>Expires: {formatSessionDate(item.expiresAt)}</span>
-                      <span>IP: {item.ipAddress ?? 'Unknown'}</span>
+                      <span>{t('settings.created')}: {formatSessionDate(item.createdAt)}</span>
+                      <span>{t('settings.expires')}: {formatSessionDate(item.expiresAt)}</span>
+                      <span>IP: {item.ipAddress ?? t('settings.unknown')}</span>
                     </div>
                   </div>
                   {!item.current && (
@@ -343,7 +345,7 @@ export default function SettingsPage() {
                       onClick={() => void revokeSession(item.token)}
                       loading={Boolean(loading[`session:${item.token}`])}
                     >
-                      Revoke
+                      {t('settings.revoke')}
                     </Button>
                   )}
                 </div>
@@ -355,17 +357,17 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Privacy</CardTitle>
-          <CardDescription>Export and deletion of your personal data.</CardDescription>
+          <CardTitle className="text-xl">{t('settings.privacySection')}</CardTitle>
+          <CardDescription>{t('settings.privacySectionDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <Button variant="outline" onClick={() => void exportData()} loading={Boolean(loading.export)}>
-            Export my data
+            {t('settings.exportData')}
           </Button>
           <div className="border rounded-lg p-4 space-y-3">
-            <p className="text-sm font-medium text-destructive">Permanent account deletion</p>
+            <p className="text-sm font-medium text-destructive">{t('settings.permanentDeletion')}</p>
             <div className="space-y-2">
-              <Label htmlFor="deletePassword">Current password</Label>
+              <Label htmlFor="deletePassword">{t('settings.currentPassword')}</Label>
               <Input
                 id="deletePassword"
                 type="password"
@@ -374,7 +376,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deleteConfirm">Type DELETE to confirm</Label>
+              <Label htmlFor="deleteConfirm">{t('settings.typeDeleteToConfirmLabel')}</Label>
               <Input
                 id="deleteConfirm"
                 value={deleteConfirm}
@@ -382,16 +384,16 @@ export default function SettingsPage() {
               />
             </div>
             <Button variant="destructive" onClick={() => void deleteAccount()} loading={Boolean(loading.delete)}>
-              Delete my account
+              {t('settings.deleteMyAccount')}
             </Button>
           </div>
 
           <div className="text-sm text-muted-foreground">
             <Link href="/legal/privacy" className="underline mr-4">
-              Privacy policy
+              {t('settings.privacyPolicy')}
             </Link>
             <Link href="/legal/terms" className="underline">
-              Terms of use
+              {t('settings.termsOfUse')}
             </Link>
           </div>
         </CardContent>

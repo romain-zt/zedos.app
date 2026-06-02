@@ -24,6 +24,7 @@ import {
   Package,
   AlertTriangle,
 } from 'lucide-react';
+import { useI18n } from '@/src/i18n';
 
 interface DeliveryExportWorkspaceProps {
   projectId: string;
@@ -33,6 +34,7 @@ interface DeliveryExportWorkspaceProps {
 type LoadState = 'idle' | 'loading' | 'error';
 
 export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExportWorkspaceProps) {
+  const { t } = useI18n();
   const [bundles, setBundles] = useState<ExportEligibleBundleDTO[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [listState, setListState] = useState<LoadState>('loading');
@@ -48,19 +50,19 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
     try {
       const res = await fetch(`/api/projects/${projectId}/delivery/eligible`);
       if (res.status === 401) {
-        setListError('Please sign in again.');
+        setListError(t('delivery.signInAgain'));
         setBundles([]);
         return;
       }
       if (!res.ok) {
-        setListError(`Could not load export-ready stories (HTTP ${res.status}).`);
+        setListError(t('delivery.loadEligibleHttp').replace('{status}', String(res.status)));
         setBundles([]);
         return;
       }
       const raw: unknown = await res.json();
       const parsed = ExportEligibleListResponseSchema.safeParse(raw);
       if (!parsed.success) {
-        setListError('Unexpected response from server.');
+        setListError(t('delivery.unexpectedServerResponse'));
         setBundles([]);
         return;
       }
@@ -69,13 +71,13 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
       setSelectedIds(new Set(items.map((b) => b.id)));
       setPreview(null);
     } catch (e) {
-      const detail = e instanceof Error ? e.message : 'Network error';
+      const detail = e instanceof Error ? e.message : t('common.networkError');
       setListError(detail);
       setBundles([]);
     } finally {
       setListState('idle');
     }
-  }, [projectId]);
+  }, [projectId, t]);
 
   useEffect(() => {
     void loadEligible();
@@ -104,7 +106,7 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
 
   const runPreview = async () => {
     if (selectedArray.length < 1) {
-      setValidationError('Select at least one story bundle to preview.');
+      setValidationError(t('delivery.selectAtLeastOnePreview'));
       return;
     }
     setValidationError(null);
@@ -124,7 +126,7 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
           'error' in body &&
           typeof (body as { error: unknown }).error === 'string'
             ? (body as { error: string }).error
-            : `Preview failed (HTTP ${res.status})`;
+            : t('delivery.previewFailedHttp').replace('{status}', String(res.status));
         toast.error(message);
         setPreviewState('error');
         return;
@@ -132,21 +134,21 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
       const raw: unknown = await res.json();
       const parsed = DeliveryPreviewResponseSchema.safeParse(raw);
       if (!parsed.success) {
-        toast.error('Unexpected preview response');
+        toast.error(t('delivery.unexpectedPreviewResponse'));
         setPreviewState('error');
         return;
       }
       setPreview(parsed.data);
       setPreviewState('idle');
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Preview failed');
+      toast.error(e instanceof Error ? e.message : t('delivery.previewFailed'));
       setPreviewState('error');
     }
   };
 
   const runExport = async () => {
     if (selectedArray.length < 1) {
-      setValidationError('Select at least one story bundle to export.');
+      setValidationError(t('delivery.selectAtLeastOneExport'));
       return;
     }
     if (exporting) return;
@@ -166,7 +168,7 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
           'error' in body &&
           typeof (body as { error: unknown }).error === 'string'
             ? (body as { error: string }).error
-            : `Export failed (HTTP ${res.status})`;
+            : t('delivery.exportFailedHttp').replace('{status}', String(res.status));
         toast.error(message);
         return;
       }
@@ -180,9 +182,9 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
       anchor.download = filename;
       anchor.click();
       URL.revokeObjectURL(url);
-      toast.success('Package downloaded — unzip into your repo root and open in Cursor.');
+      toast.success(t('delivery.packageDownloaded'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Export failed');
+      toast.error(e instanceof Error ? e.message : t('delivery.exportFailed'));
     } finally {
       setExporting(false);
     }
@@ -198,16 +200,15 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
             <Button variant="ghost" size="sm" className="mb-2 -ml-2 min-h-11" asChild>
               <Link href={`/dashboard/projects/${projectId}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to workspace
+                {t('workspace.backToWorkspace')}
               </Link>
             </Button>
             <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
               <Package className="h-7 w-7 text-primary shrink-0" />
-              Cursor delivery
+              {t('delivery.title')}
             </h1>
             <p className="mt-1 text-muted-foreground text-sm sm:text-base">
-              Export locked story bundles for <span className="font-medium text-foreground">{projectName}</span> as a
-              ZIP with <code className="text-xs">WORK_QUEUE.md</code> and per-story prompt files (PD-001).
+              {t('delivery.subtitleStart')} <span className="font-medium text-foreground">{projectName}</span> {t('delivery.subtitleEnd')}
             </p>
           </div>
         </div>
@@ -216,11 +217,11 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
       {listError && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Could not load bundles</AlertTitle>
+          <AlertTitle>{t('delivery.loadBundlesFailedTitle')}</AlertTitle>
           <AlertDescription className="space-y-2">
             <p>{listError}</p>
             <Button type="button" variant="outline" size="sm" onClick={() => void loadEligible()}>
-              Retry
+              {t('common.retry')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -229,28 +230,27 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
       {listState === 'loading' && (
         <div className="flex items-center justify-center py-16 text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          Loading export-ready stories…
+          {t('delivery.loadingEligible')}
         </div>
       )}
 
       {isEmpty && !listError && (
         <Card className="border-dashed">
           <CardHeader>
-            <CardTitle className="text-lg">No export-ready bundles yet</CardTitle>
+            <CardTitle className="text-lg">{t('delivery.noEligibleTitle')}</CardTitle>
             <CardDescription>
-              Delivery needs <strong>locked</strong> task-split bundles from test-first workflows. Complete user stories,
-              generate tasks with prompts, then lock each bundle upstream.
+              {t('delivery.noEligibleDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button asChild variant="default" className="min-h-11">
-              <Link href={`/dashboard/projects/${projectId}/task-split`}>Go to task split</Link>
+              <Link href={`/dashboard/projects/${projectId}/task-split`}>{t('delivery.goToTaskSplit')}</Link>
             </Button>
             <Button asChild variant="outline" className="min-h-11">
-              <Link href={`/dashboard/projects/${projectId}/user-stories`}>User stories</Link>
+              <Link href={`/dashboard/projects/${projectId}/user-stories`}>{t('delivery.userStories')}</Link>
             </Button>
             <Button asChild variant="outline" className="min-h-11">
-              <Link href={`/dashboard/projects/${projectId}/feature-split`}>Feature split</Link>
+              <Link href={`/dashboard/projects/${projectId}/feature-split`}>{t('delivery.featureSplit')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -260,9 +260,9 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
         <>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Select bundles</CardTitle>
+              <CardTitle className="text-lg">{t('delivery.selectBundles')}</CardTitle>
               <CardDescription>
-                Only locked, export-ready story bundles appear here. Default selection includes all eligible bundles.
+                {t('delivery.selectBundlesDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -271,10 +271,10 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
                   id="select-all-bundles"
                   checked={allSelected}
                   onCheckedChange={(v) => toggleAll(v === true)}
-                  aria-label="Select all bundles"
+                  aria-label={t('delivery.selectAllBundles')}
                 />
                 <label htmlFor="select-all-bundles" className="text-sm font-medium cursor-pointer">
-                  Select all ({bundles.length})
+                  {t('delivery.selectAll')} ({bundles.length})
                 </label>
               </div>
               <ul className="space-y-2">
@@ -294,7 +294,7 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
                         {bundle.storyTitle}
                       </label>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {bundle.taskCount} task{bundle.taskCount !== 1 ? 's' : ''} · locked{' '}
+                        {bundle.taskCount} {t(bundle.taskCount !== 1 ? 'delivery.tasks' : 'delivery.task')} · {t('delivery.locked')}{' '}
                         {new Date(bundle.lockedAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -319,7 +319,7 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
                   ) : (
                     <Eye className="mr-2 h-4 w-4" />
                   )}
-                  Preview package
+                  {t('delivery.previewPackage')}
                 </Button>
                 <Button
                   type="button"
@@ -332,7 +332,7 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
                   ) : (
                     <Download className="mr-2 h-4 w-4" />
                   )}
-                  Download ZIP
+                  {t('delivery.downloadZip')}
                 </Button>
               </div>
             </CardContent>
@@ -343,10 +343,10 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileArchive className="h-5 w-5" />
-                  Preview (read-only)
+                  {t('delivery.previewReadonly')}
                 </CardTitle>
                 <CardDescription>
-                  Ordered stories and task prompt excerpts — upstream content cannot be edited here.
+                  {t('delivery.previewReadonlyDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -374,11 +374,9 @@ export function DeliveryExportWorkspace({ projectId, projectName }: DeliveryExpo
 
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertTitle>After download</AlertTitle>
+          <AlertTitle>{t('delivery.afterDownload')}</AlertTitle>
             <AlertDescription>
-              Unzip the archive at your repository root. Open the folder in Cursor and start from{' '}
-              <code className="text-xs">WORK_QUEUE.md</code> — story details live under{' '}
-              <code className="text-xs">docs/execution/user-stories/</code>.
+              {t('delivery.afterDownloadDescription')}
             </AlertDescription>
           </Alert>
         </>
