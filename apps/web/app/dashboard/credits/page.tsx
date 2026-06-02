@@ -28,6 +28,34 @@ type CreditTransactionClient = Omit<CreditTransactionDTO, 'createdAt'> & {
   balanceAfter?: number
 }
 
+function getLocalizedPackCopy(
+  pack: CreditPack,
+  tp: (key: string, fallback: string) => string
+): { label: string; description: string } {
+  switch (pack.id) {
+    case 'pack_100':
+      return {
+        label: tp('pack100Label', 'Starter'),
+        description: tp('pack100Description', 'Enough for your first meaningful PRD'),
+      }
+    case 'pack_200':
+      return {
+        label: tp('pack200Label', 'Builder'),
+        description: tp('pack200Description', 'Deeper iteration and refinement'),
+      }
+    case 'pack_1000':
+      return {
+        label: tp('pack1000Label', 'Power'),
+        description: tp('pack1000Description', 'Multi-project, unlimited iteration'),
+      }
+    default:
+      return {
+        label: pack.label,
+        description: pack.description,
+      }
+  }
+}
+
 export default function CreditsPage() {
   const { tp } = useI18n()
   const router = useRouter()
@@ -359,14 +387,16 @@ export default function CreditsPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {(packs ?? []).map((pack: CreditPack) => (
+              {(packs ?? []).map((pack: CreditPack) => {
+                const localizedPack = getLocalizedPackCopy(pack, tp)
+                return (
                 <Card key={pack.id} className="relative hover:shadow-md transition-shadow">
                   {pack.id === 'pack_200' && (
                     <Badge className="absolute -top-2.5 right-4 bg-primary">{copy.popular}</Badge>
                   )}
                   <CardHeader className="pb-3">
-                    <CardTitle className="font-display text-lg">{pack.label}</CardTitle>
-                    <CardDescription>{pack.description}</CardDescription>
+                    <CardTitle className="font-display text-lg">{localizedPack.label}</CardTitle>
+                    <CardDescription>{localizedPack.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
@@ -388,7 +418,7 @@ export default function CreditsPage() {
                     </Button>
                   </CardContent>
                 </Card>
-              ))}
+              )})}
             </div>
           )}
         </div>
