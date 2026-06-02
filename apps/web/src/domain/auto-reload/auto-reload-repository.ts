@@ -13,4 +13,5 @@ export interface IAutoReloadRepository {
     stripeCustomerId: string,
     stripePaymentMethodId: string
   ): Promise<Result<AutoReloadPreference, ApplicationError>>;
+  clearStripePaymentMethod(userId: string): Promise<Result<AutoReloadPreference, ApplicationError>>;
 }

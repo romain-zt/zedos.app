@@ -95,6 +95,10 @@ export async function createCheckoutSessionForUser(
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
+    customer_creation: 'always',
+    payment_intent_data: {
+      setup_future_usage: 'off_session',
+    },
     ...(automaticTax ? { automatic_tax: { enabled: true } } : {}),
     line_items: [
       {

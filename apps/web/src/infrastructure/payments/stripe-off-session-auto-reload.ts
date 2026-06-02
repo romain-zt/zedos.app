@@ -138,18 +138,33 @@ export async function resolvePaymentMethodFromCheckoutSession(
     return null;
   }
   const session = await stripe.checkout.sessions.retrieve(sessionId, {
-    expand: ['payment_intent'],
+    expand: ['payment_intent', 'payment_intent.payment_method'],
   });
-  const customerId =
-    typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null;
   const paymentIntent =
     typeof session.payment_intent === 'string'
-      ? await stripe.paymentIntents.retrieve(session.payment_intent)
+      ? await stripe.paymentIntents.retrieve(session.payment_intent, {
+          expand: ['payment_method'],
+        })
       : session.payment_intent;
+
   const paymentMethodId =
     typeof paymentIntent?.payment_method === 'string'
       ? paymentIntent.payment_method
       : paymentIntent?.payment_method?.id ?? null;
+
+  const paymentMethodCustomerId =
+    typeof paymentIntent?.payment_method !== 'string'
+      ? (typeof paymentIntent?.payment_method?.customer === 'string'
+          ? paymentIntent.payment_method.customer
+          : paymentIntent?.payment_method?.customer?.id ?? null)
+      : null;
+
+  const customerId =
+    (typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null) ??
+    (typeof paymentIntent?.customer === 'string'
+      ? paymentIntent.customer
+      : paymentIntent?.customer?.id ?? null) ??
+    paymentMethodCustomerId;
 
   if (!customerId || !paymentMethodId) {
     return null;

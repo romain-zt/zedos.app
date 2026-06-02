@@ -1,0 +1,23 @@
+{
+  "title": "Billing",
+  "subtitle": "Download your Stripe invoices and manage your saved payment method.",
+  "savedCardTitle": "Saved card",
+  "savedCardDescription": "This card is used only for prepaid purchases (including auto-reload).",
+  "noCard": "No saved card",
+  "removeCard": "Remove saved card",
+  "removeCardHint": "Removing this card also disables auto-reload until a new manual checkout is completed.",
+  "removeSuccess": "Card removed. Auto-reload disabled.",
+  "removeFailed": "Could not remove the saved card.",
+  "invoicesTitle": "Invoices",
+  "invoicesDescription": "Stripe invoice history for your purchases.",
+  "documentTypeInvoice": "Invoice",
+  "documentTypeReceipt": "Receipt",
+  "noInvoices": "No invoices available yet.",
+  "statusPaid": "paid",
+  "statusOpen": "open",
+  "statusDraft": "draft",
+  "statusVoid": "void",
+  "downloadPdf": "PDF",
+  "openHosted": "Open online",
+  "loadFailed": "Could not load billing data."
+}

@@ -2,6 +2,7 @@
   "nav.dashboard": "Tableau de bord",
   "nav.projects": "Projets",
   "nav.credits": "Crédits",
+  "nav.billing": "Facturation",
   "nav.signOut": "Se déconnecter",
   "locale.label": "Langue",
   "locale.fr": "Français",
