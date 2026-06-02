@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Star } from 'lucide-react'
 import { toast } from 'sonner'
+import { useI18n } from '@/src/i18n'
 
 interface MilestoneFeedbackModalProps {
   open: boolean
@@ -26,6 +27,7 @@ export function MilestoneFeedbackModal({
   title,
   description,
 }: MilestoneFeedbackModalProps) {
+  const { t } = useI18n()
   const [rating, setRating] = useState<number>(0)
   const [hoverRating, setHoverRating] = useState<number>(0)
   const [comment, setComment] = useState('')
@@ -46,10 +48,10 @@ export function MilestoneFeedbackModal({
           comment: comment.trim() || null,
         }),
       })
-      toast.success('Thanks for your feedback!')
+      toast.success(t('feedback.thanks'))
       onClose()
     } catch {
-      toast.error('Failed to submit feedback')
+      toast.error(t('feedback.submitFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -87,7 +89,7 @@ export function MilestoneFeedbackModal({
 
           {/* Optional comment */}
           <Textarea
-            placeholder="Any thoughts? (optional)"
+            placeholder={t('feedback.placeholderOptional')}
             value={comment}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value)}
             rows={3}
@@ -96,7 +98,7 @@ export function MilestoneFeedbackModal({
 
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" onClick={onClose} size="sm">
-              Skip
+              {t('feedback.skip')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -104,7 +106,7 @@ export function MilestoneFeedbackModal({
               size="sm"
               loading={submitting}
             >
-              Submit Feedback
+              {t('feedback.submit')}
             </Button>
           </div>
         </div>

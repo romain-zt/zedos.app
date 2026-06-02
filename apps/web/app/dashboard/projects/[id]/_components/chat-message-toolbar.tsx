@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Copy, Pencil, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
+import { useI18n } from '@/src/i18n'
 
 export interface ChatMessageToolbarProps {
   role: 'user' | 'assistant'
@@ -31,6 +32,7 @@ export function ChatMessageToolbar({
   onEdit,
   onRegenerate,
 }: ChatMessageToolbarProps) {
+  const { t } = useI18n()
   const handleCopy = async () => {
     onCopy()
   }
@@ -43,7 +45,7 @@ export function ChatMessageToolbar({
         size="icon"
         className="h-7 w-7"
         disabled={disabled}
-        aria-label="Copier"
+        aria-label={t('common.copy')}
         onClick={() => void handleCopy()}
       >
         <Copy className="h-3.5 w-3.5" />
@@ -55,7 +57,7 @@ export function ChatMessageToolbar({
           size="icon"
           className="h-7 w-7"
           disabled={disabled}
-          aria-label="Modifier et renvoyer"
+          aria-label={t('chat.editAndResend')}
           onClick={onEdit}
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -68,7 +70,7 @@ export function ChatMessageToolbar({
           size="icon"
           className="h-7 w-7"
           disabled={disabled}
-          aria-label={role === 'user' ? 'Renvoyer le message' : 'Régénérer la réponse'}
+          aria-label={role === 'user' ? t('chat.resendMessage') : t('chat.regenerateResponse')}
           onClick={onRegenerate}
         >
           <RotateCcw className="h-3.5 w-3.5" />
@@ -78,10 +80,10 @@ export function ChatMessageToolbar({
   )
 }
 
-export function toastCopied(): void {
-  toast.success('Copié dans le presse-papiers')
+export function toastCopied(message: string): void {
+  toast.success(message)
 }
 
-export function toastCopyFailed(): void {
-  toast.error('Impossible de copier')
+export function toastCopyFailed(message: string): void {
+  toast.error(message)
 }

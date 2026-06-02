@@ -42,6 +42,7 @@ import {
   Trash2,
   Wand2,
 } from 'lucide-react';
+import { useI18n } from '@/src/i18n';
 
 interface TaskSplitWorkspaceProps {
   projectId: string;
@@ -80,6 +81,7 @@ function bundleToDrafts(bundle: TaskSplitBundleDTO): TaskDraft[] {
 }
 
 export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspaceProps) {
+  const { t } = useI18n();
   const [eligibleStories, setEligibleStories] = useState<EligibleStory[]>([]);
   const [loadingStories, setLoadingStories] = useState(true);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
@@ -168,24 +170,24 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
           return;
         }
         if (!res.ok) {
-          toast.error('Could not load task bundle');
+          toast.error(t('taskSplit.loadBundleFailed'));
           return;
         }
         const raw: unknown = await res.json();
         const parsed = TaskSplitBundleSchema.safeParse(raw);
         if (!parsed.success) {
-          toast.error('Unexpected bundle response');
+          toast.error(t('common.unexpectedResponse'));
           return;
         }
         setBundle(parsed.data);
         setTasks(bundleToDrafts(parsed.data));
       } catch {
-        toast.error('Network error loading bundle');
+        toast.error(t('taskSplit.networkErrorLoadingBundle'));
       } finally {
         setLoadingBundle(false);
       }
     },
-    [projectId]
+    [projectId, t]
   );
 
   useEffect(() => {
@@ -205,7 +207,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
     if (!selectedLineId || isLocked) return;
     const valid = tasks.filter((t) => t.title.trim() && t.promptBody.trim());
     if (valid.length < 1) {
-      toast.error('Add at least one task with title and prompt');
+      toast.error(t('taskSplit.addOneTaskRequired'));
       return;
     }
     setSaving(true);
@@ -225,25 +227,25 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
         }),
       });
       if (res.status === 402) {
-        toast.error('Insufficient credits');
+        toast.error(t('taskSplit.insufficientCredits'));
         return;
       }
       if (!res.ok) {
         const body: { error?: string } = await res.json().catch(() => ({}));
-        toast.error(body.error ?? 'Save failed');
+        toast.error(body.error ?? t('common.saveFailed'));
         return;
       }
       const raw: unknown = await res.json();
       const parsed = TaskSplitBundleSchema.safeParse(raw);
       if (!parsed.success) {
-        toast.error('Unexpected save response');
+        toast.error(t('common.unexpectedResponse'));
         return;
       }
       setBundle(parsed.data);
       setTasks(bundleToDrafts(parsed.data));
-      toast.success('Task bundle saved');
+      toast.success(t('taskSplit.bundleSaved'));
     } catch {
-      toast.error('Network error');
+      toast.error(t('common.networkError'));
     } finally {
       setSaving(false);
     }
@@ -260,18 +262,18 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
         body: JSON.stringify({ userStoryLineId: selectedLineId, mode }),
       });
       if (res.status === 402) {
-        toast.error('Insufficient credits for AI generation');
+        toast.error(t('taskSplit.insufficientCreditsAi'));
         return;
       }
       if (!res.ok) {
         const body: { error?: string } = await res.json().catch(() => ({}));
-        toast.error(body.error ?? 'Generation failed');
+        toast.error(body.error ?? t('taskSplit.generationFailed'));
         return;
       }
       const raw: unknown = await res.json();
       const parsed = GenerateTaskSplitDraftResponseSchema.safeParse(raw);
       if (!parsed.success) {
-        toast.error('Unexpected generate response');
+        toast.error(t('common.unexpectedResponse'));
         return;
       }
       setTasks(
@@ -284,9 +286,9 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
           }))
         )
       );
-      toast.success(mode === 'ai' ? 'AI tasks generated — review and save' : 'Template tasks ready — review and save');
+      toast.success(mode === 'ai' ? t('taskSplit.aiTasksGenerated') : t('taskSplit.templateTasksReady'));
     } catch {
-      toast.error('Network error');
+      toast.error(t('common.networkError'));
     } finally {
       setBusy(false);
     }
@@ -303,20 +305,20 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
       });
       if (!res.ok) {
         const body: { error?: string } = await res.json().catch(() => ({}));
-        toast.error(body.error ?? 'Lock failed');
+        toast.error(body.error ?? t('taskSplit.lockFailed'));
         return;
       }
       const raw: unknown = await res.json();
       const parsed = TaskSplitBundleSchema.safeParse(raw);
       if (!parsed.success) {
-        toast.error('Unexpected lock response');
+        toast.error(t('common.unexpectedResponse'));
         return;
       }
       setBundle(parsed.data);
       setTasks(bundleToDrafts(parsed.data));
-      toast.success('Bundle locked — ready for Delivery export');
+      toast.success(t('taskSplit.bundleLocked'));
     } catch {
-      toast.error('Network error');
+      toast.error(t('common.networkError'));
     } finally {
       setLocking(false);
     }
@@ -348,10 +350,10 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
             </Link>
             <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
               <BarChart3 className="h-6 w-6 text-primary" />
-              Test-first workflows
+              {t('taskSplit.title')}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm max-w-2xl">
-              Split each review-ready user story into ordered tasks with a Cursor-ready prompt per task.
+              {t('taskSplit.subtitle')}
             </p>
           </div>
         </div>
@@ -360,15 +362,15 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
       {loadingStories ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading review-ready stories…
+          {t('taskSplit.loadingReviewReadyStories')}
         </div>
       ) : eligibleStories.length === 0 ? (
         <Alert>
-          <AlertTitle>No review-ready stories yet</AlertTitle>
+          <AlertTitle>{t('taskSplit.noReviewReadyStoriesTitle')}</AlertTitle>
           <AlertDescription className="space-y-2">
-            <p>Finalize user stories and mark a cluster as review-ready before task splitting.</p>
+            <p>{t('taskSplit.noReviewReadyStoriesDescription')}</p>
             <Button asChild variant="outline" size="sm" className="min-h-11">
-              <Link href={`/dashboard/projects/${projectId}/user-stories`}>Go to user stories</Link>
+              <Link href={`/dashboard/projects/${projectId}/user-stories`}>{t('taskSplit.goToUserStories')}</Link>
             </Button>
           </AlertDescription>
         </Alert>
@@ -376,8 +378,8 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
         <>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Select a story</CardTitle>
-              <CardDescription>One story at a time — only review-ready lines appear here.</CardDescription>
+              <CardTitle className="text-lg">{t('taskSplit.selectStory')}</CardTitle>
+              <CardDescription>{t('taskSplit.selectStoryDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {eligibleStories.map((story) => (
@@ -404,17 +406,17 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
               <CardHeader className="pb-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <CardTitle className="text-lg">{selectedStory?.title ?? 'Tasks'}</CardTitle>
+                    <CardTitle className="text-lg">{selectedStory?.title ?? t('taskSplit.tasks')}</CardTitle>
                     <CardDescription>
                       {isLocked
-                        ? 'Locked for delivery — edits are disabled.'
-                        : 'Generate, edit, save, then lock when ready.'}
+                        ? t('taskSplit.lockedDescription')
+                        : t('taskSplit.editFlowDescription')}
                     </CardDescription>
                   </div>
                   {isLocked && (
                     <Badge variant="secondary" className="gap-1">
                       <Lock className="h-3 w-3" />
-                      Locked
+                      {t('taskSplit.locked')}
                     </Badge>
                   )}
                 </div>
@@ -423,7 +425,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                 {loadingBundle ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading bundle…
+                    {t('taskSplit.loadingBundle')}
                   </div>
                 ) : (
                   <>
@@ -442,7 +444,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                           ) : (
                             <Wand2 className="h-4 w-4 mr-2" />
                           )}
-                          Template tasks
+                          {t('taskSplit.templateTasks')}
                         </Button>
                         <Button
                           type="button"
@@ -457,7 +459,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                           ) : (
                             <Sparkles className="h-4 w-4 mr-2" />
                           )}
-                          AI tasks
+                          {t('taskSplit.aiTasks')}
                         </Button>
                         <Button
                           type="button"
@@ -468,7 +470,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                           onClick={() => setTasks((prev) => normalizeSortOrders([...prev, emptyTask(prev.length)]))}
                         >
                           <Plus className="h-4 w-4 mr-2" />
-                          Manual task
+                          {t('taskSplit.manualTask')}
                         </Button>
                       </div>
                     )}
@@ -481,13 +483,13 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                               <CollapsibleTrigger asChild>
                                 <Button type="button" variant="ghost" size="sm" className="h-8 px-2">
                                   <ChevronDown className="h-4 w-4" />
-                                  <span className="sr-only">Toggle prompt</span>
+                                  <span className="sr-only">{t('taskSplit.togglePrompt')}</span>
                                 </Button>
                               </CollapsibleTrigger>
                               <span className="text-xs text-muted-foreground font-mono">#{index + 1}</span>
                               {task.manual && (
                                 <Badge variant="outline" className="text-xs">
-                                  manual
+                                  {t('taskSplit.manual')}
                                 </Badge>
                               )}
                               {!isLocked && (
@@ -499,7 +501,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                                     className="h-8 w-8"
                                     disabled={index === 0}
                                     onClick={() => moveTask(index, -1)}
-                                    aria-label="Move up"
+                                    aria-label={t('taskSplit.moveUp')}
                                   >
                                     <ArrowUp className="h-4 w-4" />
                                   </Button>
@@ -510,7 +512,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                                     className="h-8 w-8"
                                     disabled={index === tasks.length - 1}
                                     onClick={() => moveTask(index, 1)}
-                                    aria-label="Move down"
+                                    aria-label={t('taskSplit.moveDown')}
                                   >
                                     <ArrowDown className="h-4 w-4" />
                                   </Button>
@@ -524,7 +526,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                                         normalizeSortOrders(prev.filter((_, i) => i !== index))
                                       )
                                     }
-                                    aria-label="Delete task"
+                                    aria-label={t('taskSplit.deleteTask')}
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -532,7 +534,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                               )}
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor={`task-title-${index}`}>Title</Label>
+                              <Label htmlFor={`task-title-${index}`}>{t('common.title')}</Label>
                               <Input
                                 id={`task-title-${index}`}
                                 value={task.title}
@@ -548,7 +550,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                             </div>
                             <CollapsibleContent>
                               <div className="space-y-2">
-                                <Label htmlFor={`task-prompt-${index}`}>Cursor prompt</Label>
+                                <Label htmlFor={`task-prompt-${index}`}>{t('taskSplit.cursorPrompt')}</Label>
                                 <Textarea
                                   id={`task-prompt-${index}`}
                                   value={task.promptBody}
@@ -584,7 +586,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                             ) : (
                               <Save className="h-4 w-4 mr-2" />
                             )}
-                            Save bundle
+                            {t('taskSplit.saveBundle')}
                           </Button>
                           <Button
                             type="button"
@@ -598,7 +600,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                             ) : (
                               <Lock className="h-4 w-4 mr-2" />
                             )}
-                            Lock for delivery
+                            {t('taskSplit.lockForDelivery')}
                           </Button>
                         </>
                       )}
@@ -606,7 +608,7 @@ export function TaskSplitWorkspace({ projectId, projectName }: TaskSplitWorkspac
                         <Button asChild className="min-h-11">
                           <Link href={`/dashboard/projects/${projectId}/delivery`}>
                             <Package className="h-4 w-4 mr-2" />
-                            Open delivery export
+                            {t('taskSplit.openDeliveryExport')}
                           </Link>
                         </Button>
                       )}

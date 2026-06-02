@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { Coins } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { CREDITS_UPDATED_EVENT } from '@/lib/credits-events'
+import { useI18n } from '@/src/i18n'
 
 export function CreditBadge() {
+  const { t } = useI18n()
   const [balance, setBalance] = useState<number | null>(null)
   const router = useRouter()
 
@@ -41,7 +43,7 @@ export function CreditBadge() {
     >
       <Coins className="h-4 w-4 text-amber-500" />
       <span className="font-mono">{balance !== null ? balance : '...'}</span>
-      <span className="text-muted-foreground text-xs">credits</span>
+      <span className="text-muted-foreground text-xs">{t('credits.label')}</span>
     </button>
   )
 }

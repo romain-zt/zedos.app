@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { FileText } from 'lucide-react'
+import { useI18n } from '@/src/i18n'
 
 export default function ShareTokenError({
   error,
@@ -11,6 +12,7 @@ export default function ShareTokenError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const { tp } = useI18n()
   useEffect(() => {
     console.error('share/[token] segment error', error)
   }, [error])
@@ -21,15 +23,15 @@ export default function ShareTokenError({
         <CardContent className="py-12 text-center space-y-4">
           <FileText className="h-12 w-12 text-muted-foreground/30 mx-auto" aria-hidden />
           <div>
-            <h2 className="font-display text-lg font-semibold mb-1">Something went wrong</h2>
-            <p className="text-sm text-muted-foreground">Try refreshing the page.</p>
+            <h2 className="font-display text-lg font-semibold mb-1">{tp('somethingWentWrong', 'Something went wrong')}</h2>
+            <p className="text-sm text-muted-foreground">{tp('tryRefresh', 'Try refreshing the page.')}</p>
           </div>
           <button
             type="button"
             onClick={() => reset()}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
-            Try again
+            {tp('tryAgain', 'Try again')}
           </button>
         </CardContent>
       </Card>

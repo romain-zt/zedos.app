@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import type { AutoReloadPreferenceDTO } from '@repo/contracts/payments'
 import { CREDITS_UPDATED_EVENT } from '@/lib/credits-events'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { useI18n } from '@/src/i18n'
 
 interface CreditPack {
   id: string
@@ -27,7 +28,36 @@ type CreditTransactionClient = Omit<CreditTransactionDTO, 'createdAt'> & {
   balanceAfter?: number
 }
 
+function getLocalizedPackCopy(
+  pack: CreditPack,
+  tp: (key: string, fallback: string) => string
+): { label: string; description: string } {
+  switch (pack.id) {
+    case 'pack_100':
+      return {
+        label: tp('pack100Label', 'Starter'),
+        description: tp('pack100Description', 'Enough for your first meaningful PRD'),
+      }
+    case 'pack_200':
+      return {
+        label: tp('pack200Label', 'Builder'),
+        description: tp('pack200Description', 'Deeper iteration and refinement'),
+      }
+    case 'pack_1000':
+      return {
+        label: tp('pack1000Label', 'Power'),
+        description: tp('pack1000Description', 'Multi-project, unlimited iteration'),
+      }
+    default:
+      return {
+        label: pack.label,
+        description: pack.description,
+      }
+  }
+}
+
 export default function CreditsPage() {
+  const { tp } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [balance, setBalance] = useState<number | null>(null)
@@ -41,6 +71,63 @@ export default function CreditsPage() {
   const [autoReloadSaving, setAutoReloadSaving] = useState(false)
   const [autoReloadMessage, setAutoReloadMessage] = useState<string | null>(null)
   const [taxDisclaimer, setTaxDisclaimer] = useState<string | null>(null)
+
+  const copy = useMemo(() => ({
+    pageTitle: tp('pageTitle', 'Credits'),
+    pageIntro: tp('pageIntro', 'Credits power AI operations. Each operation has a defined cost.'),
+    paymentCancelled: tp('paymentCancelled', 'Payment canceled'),
+    creditsAdded: tp('creditsAdded', 'credits added.'),
+    stripeReceipt: tp('stripeReceipt', 'Stripe receipt for tax details.'),
+    verifyFailed: tp('verifyFailed', 'Payment verification failed'),
+    packsLoadFailed: tp('packsLoadFailed', 'Could not load credit packs'),
+    creditsLoadFailed: tp('creditsLoadFailed', 'Could not load credits'),
+    checkoutStartFailed: tp('checkoutStartFailed', 'Failed to start checkout'),
+    checkoutUnavailable: tp(
+      'checkoutUnavailable',
+      'Payment unavailable: Stripe is not configured (STRIPE_SECRET_KEY).'
+    ),
+    autoReloadDefaultError: tp(
+      'autoReloadDefaultError',
+      'Complete a manual credit purchase first to save a payment method.'
+    ),
+    autoReloadEnabled: tp(
+      'autoReloadEnabled',
+      'Auto-reload enabled - prepaid convenience only, not a subscription.'
+    ),
+    autoReloadDisabled: tp('autoReloadDisabled', 'Auto-reload disabled.'),
+    autoReloadUpdateFailed: tp('autoReloadUpdateFailed', 'Could not update auto-reload settings.'),
+    currentBalance: tp('currentBalance', 'Current balance'),
+    negativeBalance: tp('negativeBalance', 'Negative balance - add credits to continue'),
+    graceUsed: tp('graceUsed', 'Grace period used. Credits required for all operations.'),
+    autoReloadTitle: tp('autoReloadTitle', 'Auto-reload (optional)'),
+    autoReloadDescription: tp(
+      'autoReloadDescription',
+      'Prepaid convenience - buys one credit pack with your saved card when balance is too low. Not a subscription. You can opt out anytime.'
+    ),
+    autoReloadToggle: tp('autoReloadToggle', 'Enable auto-reload'),
+    savePaymentHint: tp(
+      'savePaymentHint',
+      'Complete at least one successful manual checkout to save a payment method before opting in.'
+    ),
+    addCreditsTitle: tp('addCreditsTitle', 'Add Credits'),
+    loadingPacks: tp('loadingPacks', 'Loading packs...'),
+    noPack: tp('noPack', 'No packs available. Try again in a moment.'),
+    popular: tp('popular', 'Popular'),
+    forCredits: tp('forCredits', 'for'),
+    credits: tp('credits', 'credits'),
+    digitalCreditsInfo: tp('digitalCreditsInfo', 'Digital AI credits - tax/VAT at checkout when applicable'),
+    buyCredits: tp('buyCredits', 'Buy'),
+    creditCostsTitle: tp('creditCostsTitle', 'Credit Costs per Operation'),
+    costClarification: tp('costClarification', 'Lightweight clarification'),
+    costDecision: tp('costDecision', 'Standard decision'),
+    costMiniForm: tp('costMiniForm', 'Dynamic mini-form decision'),
+    costPrdGen: tp('costPrdGen', 'PRD generation / major update'),
+    costPrdChallenge: tp('costPrdChallenge', 'PRD challenge / convergence'),
+    transactionsTitle: tp('transactionsTitle', 'Transaction History'),
+    noTransactions: tp('noTransactions', 'No transactions yet'),
+    usage: tp('usage', 'usage'),
+    balanceShort: tp('balanceShort', 'bal'),
+  }), [tp])
 
   const refreshCredits = useCallback(async (): Promise<void> => {
     const credRes = await fetch('/api/credits', { cache: 'no-store' })
@@ -64,7 +151,7 @@ export default function CreditsPage() {
 
       try {
         if (canceled) {
-          toast.error('Paiement annulé')
+          toast.error(copy.paymentCancelled)
           router.replace('/dashboard/credits')
         }
 
@@ -85,13 +172,13 @@ export default function CreditsPage() {
                   ? ` TVA/taxe : €${(tax.taxCents / 100).toFixed(2)} (total €${((tax.totalCents ?? 0) / 100).toFixed(2)}).`
                   : ''
               toast.success(
-                `${verifyData?.creditsAdded ?? 0} crédits ajoutés.${taxLine} Reçu Stripe pour le détail fiscal.`
+                `${verifyData?.creditsAdded ?? 0} ${copy.creditsAdded}${taxLine} ${copy.stripeReceipt}`
               )
             }
           } else {
             const errBody = await verifyRes.json().catch(() => ({}))
             toast.error(
-              typeof errBody?.error === 'string' ? errBody.error : 'Échec de la vérification du paiement'
+              typeof errBody?.error === 'string' ? errBody.error : copy.verifyFailed
             )
           }
 
@@ -108,7 +195,7 @@ export default function CreditsPage() {
               typeof packData?.taxDisclaimer === 'string' ? packData.taxDisclaimer : null
             )
           } else {
-            toast.error('Impossible de charger les packs de crédits')
+            toast.error(copy.packsLoadFailed)
           }
         }
 
@@ -122,7 +209,7 @@ export default function CreditsPage() {
           await refreshCredits()
         }
       } catch {
-        if (!cancelled) toast.error('Impossible de charger les crédits')
+        if (!cancelled) toast.error(copy.creditsLoadFailed)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -133,7 +220,7 @@ export default function CreditsPage() {
     return () => {
       cancelled = true
     }
-  }, [searchParams, router, refreshCredits])
+  }, [searchParams, router, refreshCredits, copy])
 
   const handleAutoReloadToggle = async (enabled: boolean) => {
     setAutoReloadSaving(true)
@@ -149,18 +236,18 @@ export default function CreditsPage() {
         setAutoReloadMessage(
           typeof data?.error === 'string'
             ? data.error
-            : 'Complete a manual credit purchase first to save a payment method.'
+            : copy.autoReloadDefaultError
         )
         return
       }
       setAutoReload(data as AutoReloadPreferenceDTO)
       setAutoReloadMessage(
         enabled
-          ? 'Auto-reload enabled — prepaid convenience only, not a subscription.'
-          : 'Auto-reload disabled.'
+          ? copy.autoReloadEnabled
+          : copy.autoReloadDisabled
       )
     } catch {
-      setAutoReloadMessage('Could not update auto-reload settings.')
+      setAutoReloadMessage(copy.autoReloadUpdateFailed)
     } finally {
       setAutoReloadSaving(false)
     }
@@ -178,12 +265,12 @@ export default function CreditsPage() {
       if (res.ok && data?.url) {
         window.location.href = data.url
       } else if (res.status === 503) {
-        toast.error('Paiement indisponible : Stripe n’est pas configuré (STRIPE_SECRET_KEY).')
+        toast.error(copy.checkoutUnavailable)
       } else {
-        toast.error(data?.error ?? 'Échec du démarrage du paiement')
+        toast.error(data?.error ?? copy.checkoutStartFailed)
       }
     } catch {
-      toast.error('Failed to start checkout')
+      toast.error(copy.checkoutStartFailed)
     } finally {
       setPurchasing(null)
     }
@@ -208,9 +295,9 @@ export default function CreditsPage() {
     <div className="max-w-5xl mx-auto space-y-8">
       <FadeIn>
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Credits</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">{copy.pageTitle}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Credits power AI operations. Each operation has a defined cost.
+            {copy.pageIntro}
           </p>
         </div>
       </FadeIn>
@@ -221,17 +308,17 @@ export default function CreditsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Current Balance</p>
+                <p className="text-sm text-muted-foreground">{copy.currentBalance}</p>
                 <p className="text-4xl font-bold font-mono mt-1">{balance !== null ? balance : '...'}</p>
                 {(balance ?? 0) < 0 && (
                   <div className="flex items-center gap-1.5 mt-2 text-amber-600">
                     <AlertTriangle className="h-4 w-4" />
-                    <span className="text-sm">Negative balance — add credits to continue</span>
+                    <span className="text-sm">{copy.negativeBalance}</span>
                   </div>
                 )}
                 {graceUsed && (balance ?? 0) <= 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Grace period used. Credits required for all operations.
+                    {copy.graceUsed}
                   </p>
                 )}
               </div>
@@ -249,17 +336,16 @@ export default function CreditsPage() {
           <CardHeader>
             <CardTitle className="font-display text-base flex items-center gap-2">
               <Zap className="h-4 w-4 text-purple-500" />
-              Auto-reload (optional)
+              {copy.autoReloadTitle}
             </CardTitle>
             <CardDescription>
-              Prepaid convenience — buys one credit pack with your saved card when balance is too low.
-              Not a subscription. You can opt out anytime.
+              {copy.autoReloadDescription}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <Label htmlFor="auto-reload-toggle" className="text-sm">
-                Enable auto-reload
+                {copy.autoReloadToggle}
               </Label>
               <Switch
                 id="auto-reload-toggle"
@@ -270,7 +356,7 @@ export default function CreditsPage() {
             </div>
             {!autoReload?.hasSavedPaymentMethod && (
               <p className="text-sm text-muted-foreground">
-                Complete at least one successful manual checkout to save a payment method before opting in.
+                {copy.savePaymentHint}
               </p>
             )}
             {autoReloadMessage && (
@@ -283,39 +369,41 @@ export default function CreditsPage() {
       {/* Credit Packs */}
       <FadeIn delay={0.15}>
         <div className="space-y-4">
-          <h2 className="font-display text-lg font-semibold">Add Credits</h2>
+          <h2 className="font-display text-lg font-semibold">{copy.addCreditsTitle}</h2>
           {taxDisclaimer && (
             <p className="text-sm text-muted-foreground">{taxDisclaimer}</p>
           )}
           {loading ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                Chargement des packs…
+                {copy.loadingPacks}
               </CardContent>
             </Card>
           ) : (packs?.length ?? 0) === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                Aucun pack disponible. Réessaie dans un instant.
+                {copy.noPack}
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {(packs ?? []).map((pack: CreditPack) => (
+              {(packs ?? []).map((pack: CreditPack) => {
+                const localizedPack = getLocalizedPackCopy(pack, tp)
+                return (
                 <Card key={pack.id} className="relative hover:shadow-md transition-shadow">
                   {pack.id === 'pack_200' && (
-                    <Badge className="absolute -top-2.5 right-4 bg-primary">Popular</Badge>
+                    <Badge className="absolute -top-2.5 right-4 bg-primary">{copy.popular}</Badge>
                   )}
                   <CardHeader className="pb-3">
-                    <CardTitle className="font-display text-lg">{pack.label}</CardTitle>
-                    <CardDescription>{pack.description}</CardDescription>
+                    <CardTitle className="font-display text-lg">{localizedPack.label}</CardTitle>
+                    <CardDescription>{localizedPack.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
                       <span className="text-3xl font-bold">€{pack.priceEur}</span>
-                      <span className="text-muted-foreground ml-1">for {pack.size} credits</span>
+                      <span className="text-muted-foreground ml-1">{copy.forCredits} {pack.size} {copy.credits}</span>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Digital AI credits — tax/VAT at checkout when applicable
+                        {copy.digitalCreditsInfo}
                       </p>
                     </div>
                     <Button
@@ -326,11 +414,11 @@ export default function CreditsPage() {
                       disabled={!!purchasing}
                     >
                       <CreditCard className="mr-2 h-4 w-4" />
-                      Buy {pack.size} Credits
+                      {copy.buyCredits} {pack.size} {copy.credits}
                     </Button>
                   </CardContent>
                 </Card>
-              ))}
+              )})}
             </div>
           )}
         </div>
@@ -340,16 +428,16 @@ export default function CreditsPage() {
       <FadeIn delay={0.2}>
         <Card>
           <CardHeader>
-            <CardTitle className="font-display text-base">Credit Costs per Operation</CardTitle>
+            <CardTitle className="font-display text-base">{copy.creditCostsTitle}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
-                { label: 'Lightweight clarification', cost: costs?.clarification ?? 1 },
-                { label: 'Standard decision', cost: costs?.decision ?? 3 },
-                { label: 'Dynamic mini-form decision', cost: costs?.mini_form ?? 5 },
-                { label: 'PRD generation / major update', cost: costs?.prd_generation ?? 10 },
-                { label: 'PRD challenge / convergence', cost: costs?.prd_challenge ?? 15 },
+                { label: copy.costClarification, cost: costs?.clarification ?? 1 },
+                { label: copy.costDecision, cost: costs?.decision ?? 3 },
+                { label: copy.costMiniForm, cost: costs?.mini_form ?? 5 },
+                { label: copy.costPrdGen, cost: costs?.prd_generation ?? 10 },
+                { label: copy.costPrdChallenge, cost: costs?.prd_challenge ?? 15 },
               ].map((item: { label: string; cost: number }) => (
                 <div key={item.label} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50">
                   <span className="text-sm">{item.label}</span>
@@ -363,11 +451,11 @@ export default function CreditsPage() {
 
       {/* Transaction History */}
       <div className="space-y-4">
-        <h2 className="font-display text-lg font-semibold">Transaction History</h2>
+        <h2 className="font-display text-lg font-semibold">{copy.transactionsTitle}</h2>
         {(transactions?.length ?? 0) === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
-              No transactions yet
+              {copy.noTransactions}
             </CardContent>
           </Card>
         ) : (
@@ -383,7 +471,7 @@ export default function CreditsPage() {
                       {getTransactionIcon(tx?.type)}
                       <div>
                         <p className="text-sm font-medium capitalize">
-                          {tx?.type === 'consumption' ? (tx?.operationType ?? 'usage') : tx?.type}
+                          {tx?.type === 'consumption' ? (tx?.operationType ?? copy.usage) : tx?.type}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {tx?.createdAt ? new Date(tx.createdAt).toLocaleDateString() : ''}
@@ -397,7 +485,7 @@ export default function CreditsPage() {
                         {isPositive ? '+' : ''}{amt}
                       </p>
                       <p className="text-xs text-muted-foreground font-mono">
-                        bal: {tx?.balanceAfter ?? 0}
+                        {copy.balanceShort}: {tx?.balanceAfter ?? 0}
                       </p>
                     </div>
                   </div>

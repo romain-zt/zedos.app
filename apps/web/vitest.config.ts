@@ -9,6 +9,7 @@ export default mergeConfig(
     plugins: [react()],
     test: {
       include: ["src/**/*.test.ts", "app/**/*.test.ts", "app/**/*.test.tsx"],
+      setupFiles: ["./src/test-helpers/i18n-test-setup.ts"],
     },
     resolve: {
       alias: {

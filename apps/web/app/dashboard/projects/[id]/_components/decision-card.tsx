@@ -13,6 +13,7 @@ import type {
   ClarifyDecisionOption,
   ClarifyDecisionResponse,
 } from '@repo/contracts/ai/decision-ui'
+import { useI18n } from '@/src/i18n'
 
 interface DecisionCardProps {
   decision: ClarifyDecisionUi
@@ -47,6 +48,7 @@ function withOptionalComment(
 }
 
 export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionCardProps) {
+  const { t } = useI18n()
   const [singleChoice, setSingleChoice] = useState('')
   const [multiChoices, setMultiChoices] = useState<string[]>([])
   const [ranked, setRanked] = useState<string[]>(
@@ -131,7 +133,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
   const handleNotSure = () => {
     onSubmit({
       type: 'not_sure',
-      message: "I'm not sure about this. Can you ask differently?",
+      message: t('decision.notSureMessage'),
     })
   }
 
@@ -177,7 +179,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
             disabled={disabled}
             className="h-8 text-xs rounded-full px-3 text-muted-foreground"
           >
-            Not sure
+            {t('decision.notSure')}
           </Button>
         )}
       </div>
@@ -279,7 +281,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
 
         {decision?.allow_custom && type !== 'ranked' && (
           <Textarea
-            placeholder="Or type your own answer..."
+            placeholder={t('decision.customAnswerPlaceholder')}
             value={customInput}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomInput(e.target.value)}
             rows={2}
@@ -290,7 +292,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
 
         {showComment ? (
           <Textarea
-            placeholder="Add a comment..."
+            placeholder={t('decision.addCommentPlaceholder')}
             value={comment}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value)}
             rows={1}
@@ -306,7 +308,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <MessageSquare className="h-3 w-3" />
-            Add a comment
+            {t('decision.addComment')}
           </button>
         )}
 
@@ -318,7 +320,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
             className="h-7 text-xs px-3"
           >
             <Send className="mr-1.5 h-3 w-3" />
-            Submit
+            {t('common.submit')}
           </Button>
           {decision?.allow_not_sure && (
             <Button
@@ -329,7 +331,7 @@ export function DecisionCard({ decision, onSubmit, disabled = false }: DecisionC
               className="h-7 text-xs px-2 text-muted-foreground"
             >
               <HelpCircle className="mr-1 h-3 w-3" />
-              Not sure
+              {t('decision.notSure')}
             </Button>
           )}
         </div>

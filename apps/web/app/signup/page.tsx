@@ -10,8 +10,10 @@ import { Label } from '@/components/ui/label'
 import { Mail, Lock, User, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { useI18n } from '@/src/i18n'
 
 export default function SignupPage() {
+  const { tp } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, isPending } = useSession()
@@ -35,11 +37,11 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !email.trim() || !password) {
-      toast.error('Please fill in all fields')
+      toast.error(tp('fillAllFields', 'Please fill in all fields'))
       return
     }
     if (password.length < 8) {
-      toast.error('Password must be at least 8 characters')
+      toast.error(tp('passwordMin', 'Password must be at least 8 characters'))
       return
     }
     setLoading(true)
@@ -50,7 +52,7 @@ export default function SignupPage() {
         password,
       })
       if (signUpResult.error) {
-        toast.error(signUpResult.error.message ?? 'Signup failed')
+        toast.error(signUpResult.error.message ?? tp('signupFailed', 'Signup failed'))
         return
       }
       // Auto sign in
@@ -59,29 +61,32 @@ export default function SignupPage() {
         password,
       })
       if (result.error) {
-        toast.error('Account created but login failed. Please sign in.')
+        toast.error(tp('loginAfterSignupFailed', 'Account created but login failed. Please sign in.'))
         router.replace(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)
       } else {
         router.replace(callbackUrl)
       }
     } catch {
-      toast.error('Something went wrong')
+      toast.error(tp('somethingWentWrong', 'Something went wrong'))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <AuthLayout title="Create your account" description="Start turning ideas into PRDs with 20 free credits">
+    <AuthLayout
+      title={tp('title', 'Create your account')}
+      description={tp('description', 'Start turning ideas into PRDs with 20 free credits')}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Name</Label>
+          <Label htmlFor="name">{tp('nameLabel', 'Name')}</Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="name"
               type="text"
-              placeholder="Your name"
+              placeholder={tp('namePlaceholder', 'Your name')}
               value={name}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
               className="pl-10"
@@ -91,13 +96,13 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{tp('emailLabel', 'Email')}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder={tp('emailPlaceholder', 'you@example.com')}
               value={email}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               className="pl-10"
@@ -107,13 +112,13 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{tp('passwordLabel', 'Password')}</Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="password"
               type="password"
-              placeholder="At least 8 characters"
+              placeholder={tp('passwordPlaceholder', 'At least 8 characters')}
               value={password}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               className="pl-10"
@@ -124,15 +129,15 @@ export default function SignupPage() {
         </div>
 
         <Button type="submit" className="w-full" loading={loading}>
-          Create Account
+          {tp('submit', 'Create Account')}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </form>
 
       <p className="mt-4 text-center text-sm text-muted-foreground">
-        Already have an account?{' '}
+        {tp('alreadyAccount', 'Already have an account?')}{' '}
         <Link href="/login" className="text-primary hover:underline font-medium">
-          Sign in
+          {tp('signinCta', 'Sign in')}
         </Link>
       </p>
     </AuthLayout>

@@ -21,6 +21,7 @@ import {
   assessPrdSplitReadiness,
   buildTemplateClustersFromPrd,
 } from '@/lib/prd-content-for-ai';
+import { useI18n } from '@/src/i18n';
 
 interface FeatureSplitWorkspaceProps {
   projectId: string;
@@ -49,6 +50,7 @@ const PROPOSAL_STATUS_MESSAGES = [
 ] as const;
 
 export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWorkspaceProps) {
+  const { t } = useI18n();
   const [prdVersions, setPrdVersions] = useState<PrdVersionDTO[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [split, setSplit] = useState<FeatureSplitDTO | null>(null);
@@ -174,20 +176,20 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
 
   const handleBuildFromSections = async () => {
     if (!selectedVersion?.content) {
-      toast.error('No PRD content found for this version');
+      toast.error(t('featureSplit.noPrdContent'));
       return;
     }
 
     const template = buildTemplateClustersFromPrd(selectedVersion.content);
     if (template.length === 0) {
-      toast.error('No filled PRD sections to convert. Complete the PRD in the workspace first.');
+      toast.error(t('featureSplit.noFilledSections'));
       return;
     }
 
     setBuildingTemplate(true);
     try {
       await revealClustersSequentially(template);
-      toast.success(`${template.length} clusters loaded from PRD sections — edit each field`);
+      toast.success(t('featureSplit.clustersLoaded').replace('{count}', String(template.length)));
     } finally {
       setBuildingTemplate(false);
     }
@@ -222,21 +224,21 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
       const raw = await res.json();
       if (!res.ok) {
         if (res.status === 402) {
-          toast.error('Insufficient credits for AI proposal');
+          toast.error(t('featureSplit.insufficientCredits'));
         } else if (res.status === 504) {
-          toast.error('AI request timed out. Try again or shorten your PRD.');
+          toast.error(t('featureSplit.aiTimeout'));
         } else if (res.status === 503) {
-          toast.error('AI provider is not configured on this server.');
+          toast.error(t('featureSplit.aiProviderNotConfigured'));
         } else if (res.status === 400 || res.status === 422) {
-          toast.error(raw?.error ?? 'PRD is not ready for AI splitting');
+          toast.error(raw?.error ?? t('featureSplit.prdNotReady'));
         } else {
-          toast.error(raw?.error ?? 'AI proposal failed');
+          toast.error(raw?.error ?? t('featureSplit.aiProposalFailed'));
         }
         return;
       }
       const parsed = ProposeFeatureSplitResponseSchema.safeParse(raw);
       if (!parsed.success) {
-        toast.error('Unexpected response from AI');
+        toast.error(t('common.unexpectedResponse'));
         return;
       }
       const proposal = parsed.data.proposal;
@@ -247,9 +249,9 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
         boundaryCue: cluster.boundaryCue,
       }));
       await revealClustersSequentially(mapped);
-      toast.success('AI proposal loaded — review each cluster, then save as draft');
+      toast.success(t('featureSplit.aiProposalLoaded'));
     } catch {
-      toast.error('Network error during AI proposal');
+      toast.error(t('featureSplit.networkErrorAiProposal'));
     } finally {
       window.clearInterval(statusTimer);
       setProposalStatus(null);
@@ -263,7 +265,7 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
       (c) => c.label.trim() && c.valueLine.trim() && c.boundaryCue.trim()
     );
     if (validClusters.length === 0) {
-      toast.error('Add at least one complete cluster before saving');
+      toast.error(t('featureSplit.addCompleteCluster'));
       return;
     }
     setSaving(true);
@@ -278,18 +280,18 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
       });
       const raw = await res.json();
       if (!res.ok) {
-        toast.error(raw?.error ?? 'Failed to save draft');
+        toast.error(raw?.error ?? t('featureSplit.saveDraftFailed'));
         return;
       }
       const parsed = FeatureSplitDTOSchema.safeParse(raw);
       if (!parsed.success) {
-        toast.error('Unexpected response');
+        toast.error(t('common.unexpectedResponse'));
         return;
       }
       setSplit(parsed.data);
-      toast.success('Draft saved');
+      toast.success(t('featureSplit.draftSaved'));
     } catch {
-      toast.error('Network error while saving');
+      toast.error(t('featureSplit.networkErrorSaving'));
     } finally {
       setSaving(false);
     }
@@ -306,14 +308,14 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
       });
       const raw = await res.json();
       if (!res.ok) {
-        toast.error(raw?.error ?? 'Failed to confirm');
+        toast.error(raw?.error ?? t('featureSplit.confirmFailed'));
         return;
       }
       const parsed = FeatureSplitDTOSchema.safeParse(raw);
       if (parsed.success) setSplit(parsed.data);
-      toast.success('Feature split confirmed');
+      toast.success(t('featureSplit.confirmed'));
     } catch {
-      toast.error('Network error while confirming');
+      toast.error(t('featureSplit.networkErrorConfirming'));
     } finally {
       setConfirming(false);
     }
@@ -331,14 +333,14 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to {projectName}
+            {t('common.backTo')} {projectName}
           </Link>
           <div className="flex items-center gap-3">
             <Layers className="h-6 w-6 text-primary" />
             <div>
-              <h1 className="text-xl font-semibold">Feature Split</h1>
+              <h1 className="text-xl font-semibold">{t('projectNav.featureSplit')}</h1>
               <p className="text-sm text-muted-foreground">
-                Break your PRD into independently deliverable clusters.
+                {t('featureSplit.subtitle')}
               </p>
             </div>
           </div>
@@ -347,7 +349,7 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
         {/* PRD version picker */}
         {prdVersions.length > 1 && (
           <div className="mb-4">
-            <label className="text-sm font-medium mb-1 block">PRD version</label>
+            <label className="text-sm font-medium mb-1 block">{t('prd.version')}</label>
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={selectedVersionId ?? ''}
@@ -376,32 +378,32 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
               {isConfirmed ? (
                 <>
                   <CheckCircle className="h-3 w-3" />
-                  Confirmed
+                  {t('featureSplit.statusConfirmed')}
                 </>
               ) : (
-                'Draft'
+                t('featureSplit.statusDraft')
               )}
             </span>
             <span className="text-xs text-muted-foreground">
-              {split.clusters.length} cluster{split.clusters.length !== 1 ? 's' : ''}
+              {split.clusters.length} {t('featureSplit.clusterWord')}{split.clusters.length !== 1 ? 's' : ''}
             </span>
           </div>
         )}
 
         {/* Loading */}
         {loading && (
-          <div className="py-12 text-center text-muted-foreground text-sm">Loading…</div>
+          <div className="py-12 text-center text-muted-foreground text-sm">{t('common.loading')}</div>
         )}
 
         {!loading && (
           <FadeIn>
             {prdReadiness && !prdReadiness.isReadyForAiSplit && (
               <div className="mb-6 rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
-                <p className="font-medium text-foreground">PRD not ready for AI split</p>
+                <p className="font-medium text-foreground">{t('featureSplit.prdNotReadyTitle')}</p>
                 <p className="text-muted-foreground mt-1">{prdReadiness.message}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button asChild variant="outline" size="sm" className="min-h-[44px]">
-                    <Link href={`/dashboard/projects/${projectId}`}>Open project workspace</Link>
+                    <Link href={`/dashboard/projects/${projectId}`}>{t('featureSplit.openWorkspace')}</Link>
                   </Button>
                   <Button
                     type="button"
@@ -412,7 +414,7 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                     onClick={() => void handleBuildFromSections()}
                   >
                     {buildingTemplate ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    <span className="ml-2">From PRD sections</span>
+                    <span className="ml-2">{t('featureSplit.fromPrdSections')}</span>
                   </Button>
                 </div>
               </div>
@@ -421,7 +423,7 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
             {(proposing || buildingTemplate || proposalStatus) && (
               <div className="mb-6 rounded-md border bg-muted/30 p-4 text-sm flex items-center gap-3">
                 <Loader2 className="h-4 w-4 animate-spin shrink-0 text-primary" />
-                <span>{proposalStatus ?? 'Preparing clusters…'}</span>
+                <span>{proposalStatus ?? t('featureSplit.preparingClusters')}</span>
               </div>
             )}
 
@@ -435,7 +437,7 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                   disabled={proposing || buildingTemplate || !selectedVersionId || !prdReadiness?.isReadyForAiSplit}
                 >
                   <Wand2 className="h-4 w-4 mr-1" />
-                  {proposing ? 'Generating…' : 'AI propose'}
+                  {proposing ? t('common.generating') : t('featureSplit.aiPropose')}
                 </Button>
                 <Button
                   variant="outline"
@@ -444,7 +446,7 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                   disabled={proposing || buildingTemplate || !selectedVersion?.content}
                 >
                   <Sparkles className="h-4 w-4 mr-1" />
-                  {buildingTemplate ? 'Building…' : 'From PRD sections'}
+                  {buildingTemplate ? t('common.building') : t('featureSplit.fromPrdSections')}
                 </Button>
                 <Button
                   variant="outline"
@@ -453,7 +455,7 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                   disabled={proposing || buildingTemplate}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Add cluster
+                  {t('featureSplit.addCluster')}
                 </Button>
               </div>
             )}
@@ -472,14 +474,14 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Cluster {index + 1}
+                      {t('featureSplit.clusterWord')} {index + 1}
                     </span>
                     {!isConfirmed && clusters.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveCluster(index)}
                         className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                        aria-label="Remove cluster"
+                        aria-label={t('featureSplit.removeCluster')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -487,11 +489,11 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium mb-1 block">Name</label>
+                    <label className="text-xs font-medium mb-1 block">{t('common.name')}</label>
                     <input
                       type="text"
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-60"
-                      placeholder="e.g. Payments"
+                      placeholder={t('featureSplit.namePlaceholder')}
                       value={cluster.label}
                       onChange={(e) => handleClusterChange(index, 'label', e.target.value)}
                       disabled={isConfirmed}
@@ -500,11 +502,11 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium mb-1 block">Value</label>
+                    <label className="text-xs font-medium mb-1 block">{t('featureSplit.value')}</label>
                     <input
                       type="text"
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-60"
-                      placeholder="What user value does this cluster deliver?"
+                      placeholder={t('featureSplit.valuePlaceholder')}
                       value={cluster.valueLine}
                       onChange={(e) => handleClusterChange(index, 'valueLine', e.target.value)}
                       disabled={isConfirmed}
@@ -513,11 +515,11 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium mb-1 block">Boundary</label>
+                    <label className="text-xs font-medium mb-1 block">{t('featureSplit.boundary')}</label>
                     <input
                       type="text"
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-60"
-                      placeholder="What does this cluster NOT include?"
+                      placeholder={t('featureSplit.boundaryPlaceholder')}
                       value={cluster.boundaryCue}
                       onChange={(e) => handleClusterChange(index, 'boundaryCue', e.target.value)}
                       disabled={isConfirmed}
@@ -537,7 +539,7 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                   disabled={saving}
                   className="flex-1 sm:flex-none"
                 >
-                  {saving ? 'Saving…' : 'Save draft'}
+                  {saving ? t('common.saving') : t('featureSplit.saveDraft')}
                 </Button>
                 {split && (
                   <Button
@@ -547,7 +549,7 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                     className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700"
                   >
                     <CheckCircle className="h-4 w-4 mr-1" />
-                    {confirming ? 'Confirming…' : 'Confirm split'}
+                    {confirming ? t('featureSplit.confirming') : t('featureSplit.confirmSplit')}
                   </Button>
                 )}
               </div>
@@ -556,10 +558,10 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
             {isConfirmed && (
               <div className="mt-6 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 space-y-3">
                 <p className="text-sm text-green-800 dark:text-green-300 font-medium">
-                  Feature split confirmed. Generate user stories from your clusters next.
+                  {t('featureSplit.confirmedNextStep')}
                 </p>
                 <Button asChild className="min-h-[44px] w-full sm:w-auto">
-                  <Link href={`/dashboard/projects/${projectId}/user-stories`}>Generate user stories</Link>
+                  <Link href={`/dashboard/projects/${projectId}/user-stories`}>{t('featureSplit.generateUserStories')}</Link>
                 </Button>
               </div>
             )}

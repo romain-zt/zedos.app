@@ -29,9 +29,8 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { useI18n } from '@/src/i18n'
 import { LocaleSwitcher } from '@/components/locale-switcher'
-import type { MessageKey } from '@/src/i18n/messages/en'
 
-const NAV_ITEMS: { href: string; labelKey: MessageKey; icon: LucideIcon }[] = [
+const NAV_ITEMS: { href: string; labelKey: string; icon: LucideIcon }[] = [
   { href: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
   { href: '/dashboard/projects', labelKey: 'nav.projects', icon: FolderOpen },
   { href: '/dashboard/credits', labelKey: 'nav.credits', icon: Coins },
@@ -50,7 +49,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [roadmapModal, setRoadmapModal] = useState<DeferredRoadmapPlaceholder | null>(null)
 
-  const userName = session?.user?.name ?? 'Founder'
+  const userName = session?.user?.name ?? t('dashboard.userFallback')
   const userInitial = userName?.charAt(0)?.toUpperCase() ?? 'F'
   const workspaceProjectId = pathname?.match(/^\/dashboard\/projects\/([^/]+)/)?.[1] ?? null
 
@@ -121,15 +120,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <>
                 <div className="pt-4 pb-2">
                   <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    This project
+                    {t('dashboard.thisProject')}
                   </p>
                 </div>
                 {([
-                  { href: `/dashboard/projects/${workspaceProjectId}`, label: 'Workspace', icon: FileText },
-                  { href: `/dashboard/projects/${workspaceProjectId}/feature-split`, label: 'Feature split', icon: Layers },
-                  { href: `/dashboard/projects/${workspaceProjectId}/user-stories`, label: 'User stories', icon: GitBranch },
-                  { href: `/dashboard/projects/${workspaceProjectId}/task-split`, label: 'Task split', icon: BarChart3 },
-                  { href: `/dashboard/projects/${workspaceProjectId}/delivery`, label: 'Delivery', icon: Package },
+                  { href: `/dashboard/projects/${workspaceProjectId}`, labelKey: 'projectNav.workspace', icon: FileText },
+                  { href: `/dashboard/projects/${workspaceProjectId}/feature-split`, labelKey: 'projectNav.featureSplit', icon: Layers },
+                  { href: `/dashboard/projects/${workspaceProjectId}/user-stories`, labelKey: 'projectNav.userStories', icon: GitBranch },
+                  { href: `/dashboard/projects/${workspaceProjectId}/task-split`, labelKey: 'projectNav.taskSplit', icon: BarChart3 },
+                  { href: `/dashboard/projects/${workspaceProjectId}/delivery`, labelKey: 'projectNav.delivery', icon: Package },
                 ] as const).map((sub) => {
                   const isSubActive =
                     pathname === sub.href || pathname?.startsWith(`${sub.href}/`)
@@ -146,7 +145,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                         )}
                       >
                         <sub.icon className="h-4 w-4 shrink-0" />
-                        {sub.label}
+                        {t(sub.labelKey)}
                       </button>
                       {sub.href.endsWith('/user-stories') && isSubActive ? (
                         <ProjectStoryClusterNav projectId={workspaceProjectId} />
@@ -160,7 +159,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             {DEFERRED_ROADMAP_PLACEHOLDERS.length > 0 && (
               <div className="pt-4 pb-2">
                 <p className="px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Coming in v1
+                  {t('roadmap.comingV1')}
                 </p>
               </div>
             )}
@@ -179,7 +178,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     'transition-colors'
                   )}
-                  aria-label={`${item.title} — coming in v1, tap to learn more`}
+                  aria-label={`${item.title} — ${t('roadmap.tapToLearnMore')}`}
                 >
                   <Icon className="h-4 w-4 shrink-0 opacity-80" />
                   <span className="flex-1 min-w-0 leading-snug">{item.title}</span>
@@ -199,7 +198,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   setSidebarOpen(false)
                 }}
                 className="flex flex-1 items-center gap-3 rounded-md px-2 py-1 text-left transition-colors hover:bg-muted"
-                title="Open settings"
+                title={t('dashboard.openSettings')}
               >
                 <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
                   {userInitial}

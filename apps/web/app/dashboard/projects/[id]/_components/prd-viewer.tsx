@@ -99,14 +99,14 @@ export function PrdViewer({
         const raw = await res.json()
         const validated = ShareLinkMintResponseSchema.safeParse(raw)
         if (!validated.success) {
-          toast.error('Invalid share link response')
+          toast.error(t('prd.invalidShareLinkResponse'))
           return
         }
         const data = validated.data
         const link = `${window?.location?.origin ?? ''}/share/${data.token}`
         setShareLink(link)
         setShareLinkObj({ id: data.id, token: data.token, enabled: data.enabled })
-        toast.success('Share link created!')
+        toast.success(t('prd.shareLinkCreated'))
         // Milestone feedback for sharing
         setFeedbackType('prd_shared')
         setShowFeedback(true)
@@ -116,7 +116,7 @@ export function PrdViewer({
           prdVersionId: selectedVersion.id,
         })
       } else {
-        let msg = 'Failed to create share link'
+        let msg = t('prd.createShareLinkFailed')
         try {
           const errBody = (await res.json()) as { error?: string }
           if (errBody?.error) msg = errBody.error
@@ -126,7 +126,7 @@ export function PrdViewer({
         toast.error(msg)
       }
     } catch {
-      toast.error('Failed to create share link')
+      toast.error(t('prd.createShareLinkFailed'))
     } finally {
       setSharing(false)
     }
@@ -142,10 +142,10 @@ export function PrdViewer({
       })
       setShareLink(null)
       setShareLinkObj(null)
-      toast.success('Share link disabled')
+      toast.success(t('prd.shareLinkDisabled'))
       onRefresh()
     } catch {
-      toast.error('Failed to disable share link')
+      toast.error(t('prd.disableShareLinkFailed'))
     }
   }
 
@@ -154,23 +154,23 @@ export function PrdViewer({
       navigator?.clipboard?.writeText?.(shareLink)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      toast.success('Copied to clipboard')
+      toast.success(t('common.copiedToClipboard'))
     }
   }
 
   const handleDownloadPdf = () => {
     if (!selectedVersion?.id) {
-      toast.error('No PRD version selected')
+      toast.error(t('prd.noVersionSelected'))
       return
     }
     const url = `/api/projects/${projectId}/prd-print?versionId=${encodeURIComponent(selectedVersion.id)}`
     window.open(url, '_blank', 'noopener,noreferrer')
-    toast.success('PDF print dialog opened')
+    toast.success(t('prd.pdfDialogOpened'))
   }
 
   const handleDownloadMarkdown = () => {
     if (!selectedVersion?.content) {
-      toast.error('No PRD content to export')
+      toast.error(t('prd.noContentToExport'))
       return
     }
     const markdown = formatPrdContentForAi(selectedVersion.content)
@@ -185,7 +185,7 @@ export function PrdViewer({
     anchor.download = filename
     anchor.click()
     URL.revokeObjectURL(url)
-    toast.success('PRD downloaded as Markdown')
+    toast.success(t('prd.downloadedAsMarkdown'))
   }
 
   const getConfidenceColor = (confidence: string) => {
@@ -211,9 +211,9 @@ export function PrdViewer({
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-16">
           <FileText className="h-12 w-12 text-muted-foreground/30 mb-4" />
-          <h3 className="font-display text-lg font-semibold mb-1">No PRD yet</h3>
+          <h3 className="font-display text-lg font-semibold mb-1">{t('prd.emptyTitle')}</h3>
           <p className="text-sm text-muted-foreground text-center max-w-md">
-            Go through the clarification flow and generate your first PRD version.
+            {t('prd.emptyDescription')}
           </p>
         </CardContent>
       </Card>
@@ -232,13 +232,13 @@ export function PrdViewer({
               if (v) onSelectVersion(v)
             }}
           >
-            <SelectTrigger className="w-full sm:w-48 min-h-11 text-base" aria-label="PRD version">
-              <SelectValue placeholder="Select version" />
+            <SelectTrigger className="w-full sm:w-48 min-h-11 text-base" aria-label={t('prd.version')}>
+              <SelectValue placeholder={t('prd.selectVersion')} />
             </SelectTrigger>
             <SelectContent>
               {(versions ?? []).map((v) => (
                 <SelectItem key={v.id} value={v.id} className="min-h-11 text-base">
-                  Version {v.versionNumber}
+                  {t('prd.version')} {v.versionNumber}
                   {v.status ? ` (${v.status})` : ''}
                 </SelectItem>
               ))}
@@ -255,7 +255,7 @@ export function PrdViewer({
             size="sm"
             onClick={handleDownloadMarkdown}
             disabled={!selectedVersion?.content}
-            title="Download this PRD version as Markdown"
+            title={t('prd.downloadMarkdownTitle')}
           >
             <Download className="mr-2 h-3.5 w-3.5" />
             {t('prd.exportMd')}
@@ -265,7 +265,7 @@ export function PrdViewer({
             size="sm"
             onClick={handleDownloadPdf}
             disabled={!selectedVersion?.content}
-            title="Open print-friendly PDF export"
+            title={t('prd.downloadPdfTitle')}
           >
             <Download className="mr-2 h-3.5 w-3.5" />
             {t('prd.exportPdf')}
@@ -275,28 +275,28 @@ export function PrdViewer({
               variant="ghost"
               size="sm"
               onClick={() => onOpenRefinement({ label: 'my PRD', prdVersionId: selectedVersion?.id ?? null })}
-              title="Open a focused chat to refine this PRD"
+              title={t('prd.refineTitle')}
             >
               <MessageSquare className="mr-2 h-3.5 w-3.5" />
-              Refine PRD
+              {t('prd.refine')}
             </Button>
           )}
           {shareLink ? (
             <div className="flex items-center gap-1">
               <Button variant="outline" size="sm" onClick={handleCopy}>
                 {copied ? <Check className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
-                {copied ? 'Copied' : 'Copy Link'}
+                {copied ? t('common.copied') : t('common.copyLink')}
               </Button>
               <Button variant="ghost" size="sm" onClick={handleDisableShare} className="text-destructive">
                 <XCircle className="mr-1 h-3.5 w-3.5" />
-                Disable
+                {t('common.disable')}
               </Button>
             </div>
           ) : (
             <>
               <div className="flex flex-col gap-1 w-full sm:w-auto">
                 <Label htmlFor="share-password" className="text-xs text-muted-foreground">
-                  Mot de passe partage (optionnel, 8+ car.)
+                  {t('prd.sharePasswordLabel')}
                 </Label>
                 <Input
                   id="share-password"
@@ -309,7 +309,7 @@ export function PrdViewer({
               </div>
               <div className="flex flex-col gap-1 w-full sm:w-28">
                 <Label htmlFor="share-expiry" className="text-xs text-muted-foreground">
-                  Expiration (jours)
+                  {t('prd.expirationDays')}
                 </Label>
                 <Input
                   id="share-expiry"
@@ -323,7 +323,7 @@ export function PrdViewer({
               </div>
               <Button variant="outline" size="sm" onClick={handleShare} loading={sharing}>
                 <Share2 className="mr-2 h-3.5 w-3.5" />
-                Share
+                {t('prd.share')}
               </Button>
             </>
           )}
@@ -333,13 +333,13 @@ export function PrdViewer({
       <Alert className="border-primary/20 bg-primary/5">
         <FileText className="h-4 w-4" />
         <AlertTitle className="text-sm font-medium leading-snug">
-          Active version: {selectedVersion ? `v${selectedVersion.versionNumber}` : '—'}
+          {t('prd.activeVersion')}: {selectedVersion ? `v${selectedVersion.versionNumber}` : '—'}
           {selectedVersion?.status ? ` · ${selectedVersion.status}` : ''}
         </AlertTitle>
         <AlertDescription className="text-xs text-muted-foreground sm:text-sm mt-0.5">
           {versions.length > 1
-            ? `This project has ${versions.length} versions. Pick one above — Clarify and sharing use the version shown here.`
-            : 'You are viewing the only PRD version for this project.'}
+            ? t('prd.projectHasVersions').replace('{count}', String(versions.length))
+            : t('prd.singleVersion')}
         </AlertDescription>
       </Alert>
 
@@ -363,7 +363,7 @@ export function PrdViewer({
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-base font-display pr-1 flex-1 min-w-0">
-                      {section?.title ?? 'Section'}
+                      {section?.title ?? t('prd.section')}
                     </CardTitle>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {onOpenRefinement ? (
@@ -372,10 +372,10 @@ export function PrdViewer({
                           variant="ghost"
                           size="icon"
                           className="h-11 w-11 sm:h-9 sm:w-9 text-muted-foreground hover:text-foreground"
-                          aria-label={`Refine section ${section?.title ?? 'Section'}`}
+                          aria-label={`${t('prd.refine')} ${section?.title ?? t('prd.section')}`}
                           onClick={() =>
                             onOpenRefinement({
-                              label: `${section?.title ?? 'Section'} (PRD)`,
+                              label: `${section?.title ?? t('prd.section')} (PRD)`,
                               prdVersionId: selectedVersion?.id ?? null,
                             })
                           }
@@ -397,11 +397,11 @@ export function PrdViewer({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                    {section?.content ?? 'No content'}
+                    {section?.content ?? t('shareToken.noContent')}
                   </div>
                   {(section?.open_questions?.length ?? 0) > 0 && (
                     <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3">
-                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">Open Questions</p>
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">{t('prd.openQuestions')}</p>
                       <ul className="text-xs text-amber-600 dark:text-amber-300 space-y-1">
                         {(section.open_questions ?? []).map((q: string, qi: number) => (
                           <li key={qi} className="flex items-start gap-1.5">
@@ -439,12 +439,12 @@ export function PrdViewer({
         milestoneType={feedbackType}
         title={
           feedbackType === 'prd_shared'
-            ? 'PRD Shared!'
+            ? t('prd.feedbackSharedTitle')
             : feedbackType === 'prd_reopened'
-            ? 'Welcome back to your PRD'
-            : 'How was that?'
+            ? t('prd.feedbackReopenedTitle')
+            : t('common.feedbackPromptTitle')
         }
-        description="Quick feedback helps improve the experience."
+        description={t('common.feedbackPromptDescription')}
       />
     </div>
   )

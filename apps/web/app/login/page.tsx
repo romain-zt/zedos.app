@@ -10,8 +10,10 @@ import { Label } from '@/components/ui/label'
 import { Mail, Lock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { useI18n } from '@/src/i18n'
 
 export default function LoginPage() {
+  const { tp } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, isPending } = useSession()
@@ -37,7 +39,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim() || !password) {
-      toast.error('Please fill in all fields')
+      toast.error(tp('fillAllFields', 'Please fill in all fields'))
       return
     }
     setLoading(true)
@@ -47,29 +49,32 @@ export default function LoginPage() {
         password,
       })
       if (result.error) {
-        toast.error('Invalid email or password')
+        toast.error(tp('invalidCredentials', 'Invalid email or password'))
       } else {
         router.replace(callbackUrl)
       }
     } catch {
-      toast.error('Something went wrong')
+      toast.error(tp('somethingWentWrong', 'Something went wrong'))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <AuthLayout title="Welcome back" description="Sign in to continue building your PRDs">
+    <AuthLayout
+      title={tp('title', 'Welcome back')}
+      description={tp('description', 'Sign in to continue building your PRDs')}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{tp('emailLabel', 'Email')}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="email"
               type="email"
               autoComplete="off"
-              placeholder="you@example.com"
+              placeholder={tp('emailPlaceholder', 'you@example.com')}
               value={email}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               className="pl-10"
@@ -80,9 +85,9 @@ export default function LoginPage() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{tp('passwordLabel', 'Password')}</Label>
             <Link href="/forgot-password" className="text-xs text-primary hover:underline font-medium">
-              Forgot password?
+              {tp('forgotPassword', 'Forgot password?')}
             </Link>
           </div>
           <div className="relative">
@@ -91,7 +96,7 @@ export default function LoginPage() {
               id="password"
               type="password"
               autoComplete="off"
-              placeholder="Enter your password"
+              placeholder={tp('passwordPlaceholder', 'Enter your password')}
               value={password}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               className="pl-10"
@@ -101,15 +106,15 @@ export default function LoginPage() {
         </div>
 
         <Button type="submit" className="w-full" loading={loading}>
-          Sign In
+          {tp('submit', 'Sign In')}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </form>
 
       <p className="mt-4 text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{' '}
+        {tp('noAccount', "Don’t have an account?")}{' '}
         <Link href="/signup" className="text-primary hover:underline font-medium">
-          Sign up
+          {tp('signupCta', 'Sign up')}
         </Link>
       </p>
     </AuthLayout>

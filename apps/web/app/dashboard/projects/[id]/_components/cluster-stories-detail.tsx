@@ -19,6 +19,7 @@ import {
   type FeatureCluster,
 } from '@repo/contracts/feature-split/feature-split';
 import { UserStoryCorpusSchema, type UserStoryCorpusDTO } from '@repo/contracts/user-stories';
+import { useI18n } from '@/src/i18n';
 
 interface ClusterStoriesDetailProps {
   projectId: string;
@@ -56,6 +57,7 @@ export function ClusterStoriesDetail({
   projectName,
   clusterId,
 }: ClusterStoriesDetailProps) {
+  const { t } = useI18n();
   const [cluster, setCluster] = useState<FeatureCluster | null>(null);
   const [lines, setLines] = useState<LineDraft[]>([emptyLine(0)]);
   const [reviewReadyAt, setReviewReadyAt] = useState<Date | null>(null);
@@ -96,13 +98,13 @@ export function ClusterStoriesDetail({
         return;
       }
       if (!res.ok) {
-        toast.error('Could not load stories');
+        toast.error(t('userStoriesDetail.loadFailed'));
         return;
       }
       const raw = await res.json();
       const parsed = UserStoryCorpusSchema.safeParse(raw);
       if (!parsed.success) {
-        toast.error('Unexpected response');
+        toast.error(t('common.unexpectedResponse'));
         return;
       }
       const corpus = parsed.data;
@@ -111,11 +113,11 @@ export function ClusterStoriesDetail({
       const drafts = corpusToDrafts(corpus);
       setLines(drafts.length > 0 ? drafts : [emptyLine(0)]);
     } catch {
-      toast.error('Network error');
+      toast.error(t('common.networkError'));
     } finally {
       setLoading(false);
     }
-  }, [projectId, clusterId]);
+  }, [projectId, clusterId, t]);
 
   useEffect(() => {
     fetchCluster();
@@ -141,7 +143,7 @@ export function ClusterStoriesDetail({
   const handleSave = async () => {
     const valid = lines.filter((l) => l.title.trim() && l.body.trim());
     if (valid.length === 0) {
-      toast.error('Add at least one story with title and description');
+      toast.error(t('userStoriesDetail.addOneStoryRequired'));
       return;
     }
     setSaving(true);
@@ -163,7 +165,7 @@ export function ClusterStoriesDetail({
       });
       const raw = await res.json();
       if (!res.ok) {
-        toast.error(raw?.error ?? 'Save failed');
+        toast.error(raw?.error ?? t('common.saveFailed'));
         return;
       }
       const parsed = UserStoryCorpusSchema.safeParse(raw);
@@ -173,9 +175,9 @@ export function ClusterStoriesDetail({
         const drafts = corpusToDrafts(parsed.data);
         setLines(drafts.length > 0 ? drafts : [emptyLine(0)]);
       }
-      toast.success('Stories saved');
+      toast.success(t('userStoriesDetail.storiesSaved'));
     } catch {
-      toast.error('Network error while saving');
+      toast.error(t('userStoriesDetail.networkErrorSaving'));
     } finally {
       setSaving(false);
     }
@@ -192,7 +194,7 @@ export function ClusterStoriesDetail({
       });
       const raw = await res.json();
       if (!res.ok) {
-        toast.error(raw?.error ?? 'Could not mark review-ready');
+        toast.error(raw?.error ?? t('userStoriesDetail.markReviewReadyFailed'));
         return;
       }
       const parsed = UserStoryCorpusSchema.safeParse(raw);
@@ -201,9 +203,9 @@ export function ClusterStoriesDetail({
         const drafts = corpusToDrafts(parsed.data);
         setLines(drafts.length > 0 ? drafts : [emptyLine(0)]);
       }
-      toast.success('Marked ready for review');
+      toast.success(t('userStoriesDetail.markedReadyForReview'));
     } catch {
-      toast.error('Network error');
+      toast.error(t('common.networkError'));
     } finally {
       setMarkingReady(false);
     }
@@ -219,20 +221,20 @@ export function ClusterStoriesDetail({
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-3 min-h-[44px]"
             >
               <ArrowLeft className="h-4 w-4" />
-              All clusters
+              {t('userStoriesDetail.allClusters')}
             </Link>
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
                   <BookOpen className="h-6 w-6 shrink-0 text-primary" />
-                  {cluster?.label ?? 'User stories'}
+                  {cluster?.label ?? t('projectNav.userStories')}
                 </h1>
                 <p className="text-muted-foreground text-sm mt-0.5">{projectName}</p>
               </div>
               {reviewReadyAt && (
                 <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 shrink-0">
                   <CheckCircle className="h-4 w-4 shrink-0" />
-                  Review-ready
+                  {t('userStoriesDetail.reviewReady')}
                 </p>
               )}
             </div>
@@ -254,7 +256,7 @@ export function ClusterStoriesDetail({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Story {index + 1}
+                      {t('userStoriesDetail.story')} {index + 1}
                     </span>
                     <Button
                       type="button"
@@ -262,20 +264,20 @@ export function ClusterStoriesDetail({
                       size="icon"
                       className="shrink-0 h-9 w-9 text-destructive hover:text-destructive"
                       onClick={() => handleRemoveLine(index)}
-                      aria-label="Remove story"
+                      aria-label={t('userStoriesDetail.removeStory')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                   <input
                     className="w-full min-h-[44px] rounded-md border bg-background px-3 py-2 text-base font-medium"
-                    placeholder="Title"
+                    placeholder={t('common.title')}
                     value={line.title}
                     onChange={(e) => handleLineChange(index, 'title', e.target.value)}
                   />
                   <textarea
                     className="w-full min-h-[140px] rounded-md border bg-background px-3 py-2 text-sm leading-relaxed resize-none"
-                    placeholder="Given … When … Then …"
+                    placeholder={t('userStoriesDetail.givenWhenThenPlaceholder')}
                     value={line.body}
                     onChange={(e) => handleLineChange(index, 'body', e.target.value)}
                   />
@@ -289,7 +291,7 @@ export function ClusterStoriesDetail({
                 className="min-h-[44px] w-full"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add story
+                {t('userStoriesDetail.addStory')}
               </Button>
 
               <div className="flex flex-col gap-2 sm:flex-row pt-2 border-t">
@@ -301,7 +303,7 @@ export function ClusterStoriesDetail({
                   className="min-h-[44px] sm:flex-1"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Save
+                  {t('common.save')}
                 </Button>
                 <Button
                   type="button"
@@ -315,12 +317,12 @@ export function ClusterStoriesDetail({
                   ) : (
                     <CheckCircle className="h-4 w-4 mr-2" />
                   )}
-                  Mark review-ready
+                  {t('userStoriesDetail.markReviewReady')}
                 </Button>
                 <Button asChild className="min-h-[44px] sm:flex-1">
                   <Link href={`/dashboard/projects/${projectId}/task-split`}>
                     <ListChecks className="h-4 w-4 mr-2" />
-                    Split into tasks
+                    {t('userStories.splitIntoTasks')}
                   </Link>
                 </Button>
               </div>

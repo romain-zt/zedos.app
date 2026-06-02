@@ -12,12 +12,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ChevronDown, FolderOpen, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/src/i18n'
 
 type ProjectSwitcherProps = {
   activeProjectId: string
 }
 
 export function ProjectSwitcher({ activeProjectId }: ProjectSwitcherProps) {
+  const { t } = useI18n()
   const router = useRouter()
   const [projects, setProjects] = useState<ProjectWithCounts[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,8 +34,8 @@ export function ProjectSwitcher({ activeProjectId }: ProjectSwitcherProps) {
         setProjects([])
         setListError(
           res
-            ? `Could not load projects (HTTP ${res.status}). Try again.`
-            : 'Could not load projects. Try again.'
+            ? t('errors.loadProjectsHttp').replace('{status}', String(res.status))
+            : t('errors.loadProjects')
         )
         return
       }
@@ -41,19 +43,19 @@ export function ProjectSwitcher({ activeProjectId }: ProjectSwitcherProps) {
       setProjects(Array.isArray(data) ? (data as ProjectWithCounts[]) : [])
     } catch (e) {
       setProjects([])
-      const detail = e instanceof Error ? e.message : 'Network error'
-      setListError(`Could not load projects: ${detail}`)
+      const detail = e instanceof Error ? e.message : t('common.networkError')
+      setListError(t('errors.loadProjectsWithDetail').replace('{detail}', detail))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void fetchProjects()
   }, [fetchProjects, activeProjectId])
 
   const current = projects.find((p) => p.id === activeProjectId)
-  const label = current?.name ?? (loading ? 'Loading…' : 'Project')
+  const label = current?.name ?? (loading ? t('common.loading') : t('projectSwitcher.project'))
 
   if (listError) {
     return (
@@ -67,7 +69,7 @@ export function ProjectSwitcher({ activeProjectId }: ProjectSwitcherProps) {
           onClick={() => void fetchProjects()}
         >
           <RefreshCw className="h-4 w-4" aria-hidden />
-          Retry
+          {t('common.retry')}
         </Button>
       </div>
     )
@@ -84,7 +86,7 @@ export function ProjectSwitcher({ activeProjectId }: ProjectSwitcherProps) {
             'sm:max-w-xs'
           )}
           disabled={loading && projects.length === 0}
-          aria-label="Switch project"
+          aria-label={t('projectSwitcher.switchProject')}
         >
           <span className="flex min-w-0 items-center gap-2">
             <FolderOpen className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
@@ -95,9 +97,9 @@ export function ProjectSwitcher({ activeProjectId }: ProjectSwitcherProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[min(calc(100vw-2rem),18rem)] sm:w-72">
         {loading && projects.length === 0 ? (
-          <div className="px-2 py-3 text-sm text-muted-foreground">Loading projects…</div>
+          <div className="px-2 py-3 text-sm text-muted-foreground">{t('projectSwitcher.loadingProjects')}</div>
         ) : projects.length === 0 ? (
-          <div className="px-2 py-3 text-sm text-muted-foreground">No projects yet.</div>
+          <div className="px-2 py-3 text-sm text-muted-foreground">{t('projectSwitcher.noProjectsYet')}</div>
         ) : (
           projects.map((p) => (
             <DropdownMenuItem

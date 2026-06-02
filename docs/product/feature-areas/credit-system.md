@@ -6,9 +6,9 @@
 
 ## Status
 
-`exploratory`
+`complete`
 
-> **NEED_HUMAN:** true
+> **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 
 ---
@@ -62,8 +62,8 @@ The founder always understands **how many credits they have**, how **AI work con
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| Payments FA | pending | Purchases and auto-reload **add** prepaid credits |
-| Operator config for starter **X** | blocked | PRD Surface Blocker — numeric grant TBD |
+| Payments FA | complete | Purchases and auto-reload are implemented and feed prepaid credits |
+| Starter credits value (`STARTER_CREDITS`) | complete | PRD and code align on default `20`, operator-tunable via env |
 
 ---
 
@@ -78,8 +78,7 @@ The founder always understands **how many credits they have**, how **AI work con
 
 | Blocker | Blocks | NEED_HUMAN |
 |---------|--------|------------|
-| **Starter credit grant (X)** — operator-config / TBD in PRD (Q-008) | First-run value and abuse posture until ops chooses X | true |
-| **Directional burn tier table** (1 / 3 / 5 / 10 / 15) labeled **product assumption, not final pricing** | Committing UX copy and metering expectations for launch | true |
+| — | — | — |
 
 ---
 
@@ -87,25 +86,25 @@ The founder always understands **how many credits they have**, how **AI work con
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Balance visibility | Owner sees credits remaining in context of continuing AI work. | exploratory |
-| Per-operation consumption rules | Credits deduct per AI operation with progressive ledger updates per PRD. | exploratory |
-| First-circuit grace + pre-check | Enforce 20-credit ceiling, block starts when projected overage > 20, complete in-flight within grace once. | exploratory |
-| Post-grace gating | After first circuit, block paid AI at zero unless recharge path succeeds (coordination with Payments / auto-reload). | exploratory |
+| Balance visibility | Owner sees credits remaining in context of continuing AI work. | complete |
+| Per-operation consumption rules | Credits deduct per AI operation with progressive ledger updates per PRD. | complete |
+| First-circuit grace + pre-check | Enforce 20-credit ceiling, block starts when projected overage > 20, complete in-flight within grace once. | complete |
+| Post-grace gating | After first circuit, block paid AI at zero unless recharge path succeeds (coordination with Payments / auto-reload). | complete |
 
 ---
 
 ## Readiness Verdict
 
-- [ ] PRD source sections read
-- [ ] Product intent stated without technical language
-- [ ] Business objects enumerated
-- [ ] User journeys identified
-- [ ] In-scope / out-of-scope explicitly separated
-- [ ] No unresolved PRD open questions affecting this area
-- [ ] Deferred behaviors explicitly named
-- [ ] Candidate Scope Slices are individually small enough
+- [x] PRD source sections read
+- [x] Product intent stated without technical language
+- [x] Business objects enumerated
+- [x] User journeys identified
+- [x] In-scope / out-of-scope explicitly separated
+- [x] No unresolved PRD open questions affecting this area
+- [x] Deferred behaviors explicitly named
+- [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** BLOCKED — operator **X** and burn-tier commitment need human/ops resolution (`NEED_HUMAN: true`).
+**Verdict:** COMPLETE — implemented and aligned with current PRD defaults (`NEED_HUMAN: false`).
 
 ---
 
@@ -114,3 +113,4 @@ The founder always understands **how many credits they have**, how **AI work con
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
+| 2026-06-02 | Reconciled status with shipped implementation and PRD default (`STARTER_CREDITS=20`) | — |

@@ -1,0 +1,18 @@
+{
+  "title": "Créer votre compte",
+  "description": "Commencez à transformer vos idées en PRD avec 20 crédits offerts",
+  "nameLabel": "Nom",
+  "namePlaceholder": "Votre nom",
+  "emailLabel": "Email",
+  "emailPlaceholder": "vous@exemple.com",
+  "passwordLabel": "Mot de passe",
+  "passwordPlaceholder": "Au moins 8 caractères",
+  "submit": "Créer un compte",
+  "alreadyAccount": "Vous avez déjà un compte ?",
+  "signinCta": "Se connecter",
+  "fillAllFields": "Veuillez remplir tous les champs",
+  "passwordMin": "Le mot de passe doit contenir au moins 8 caractères",
+  "signupFailed": "Échec de l'inscription",
+  "loginAfterSignupFailed": "Compte créé mais connexion impossible. Veuillez vous connecter.",
+  "somethingWentWrong": "Un problème est survenu"
+}
