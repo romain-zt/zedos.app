@@ -1,0 +1,23 @@
+{
+  "title": "Facturation",
+  "subtitle": "Téléchargez vos factures Stripe et gérez votre moyen de paiement enregistré.",
+  "savedCardTitle": "Carte enregistrée",
+  "savedCardDescription": "Cette carte est utilisée uniquement pour les achats prépayés (dont auto-reload).",
+  "noCard": "Aucune carte enregistrée",
+  "removeCard": "Supprimer la carte enregistrée",
+  "removeCardHint": "La suppression désactive aussi la recharge automatique jusqu'à un nouveau checkout manuel.",
+  "removeSuccess": "Carte supprimée. Auto-reload désactivé.",
+  "removeFailed": "Impossible de supprimer la carte enregistrée.",
+  "invoicesTitle": "Factures",
+  "invoicesDescription": "Historique des factures Stripe liées à vos achats.",
+  "documentTypeInvoice": "Facture",
+  "documentTypeReceipt": "Reçu",
+  "noInvoices": "Aucune facture disponible pour le moment.",
+  "statusPaid": "payée",
+  "statusOpen": "ouverte",
+  "statusDraft": "brouillon",
+  "statusVoid": "annulée",
+  "downloadPdf": "PDF",
+  "openHosted": "Voir en ligne",
+  "loadFailed": "Impossible de charger la facturation."
+}

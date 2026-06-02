@@ -143,4 +143,42 @@ export class DrizzleAutoReloadRepository implements IAutoReloadRepository {
       return err(new DatabaseError('Failed to save payment method'));
     }
   }
+
+  async clearStripePaymentMethod(
+    userId: string
+  ): Promise<Result<AutoReloadPreference, ApplicationError>> {
+    try {
+      const [existingRow] = await db
+        .select({ id: autoReloadPreferences.id })
+        .from(autoReloadPreferences)
+        .where(eq(autoReloadPreferences.userId, userId))
+        .limit(1);
+
+      if (existingRow) {
+        await db.execute(sql`
+          UPDATE auto_reload_preferences
+          SET enabled = false,
+              stripe_customer_id = NULL,
+              stripe_payment_method_id = NULL,
+              updated_at = NOW()
+          WHERE user_id = ${userId}
+        `);
+      } else {
+        await db.execute(sql`
+          INSERT INTO auto_reload_preferences (
+            id, user_id, enabled, pack_size, threshold_credits,
+            stripe_customer_id, stripe_payment_method_id, created_at, updated_at
+          ) VALUES (
+            gen_random_uuid()::text, ${userId}, false, ${DEFAULT_PACK_SIZE}, ${DEFAULT_THRESHOLD},
+            NULL, NULL, NOW(), NOW()
+          )
+        `);
+      }
+
+      return this.getByUserId(userId);
+    } catch (error) {
+      logger.error('Failed to clear Stripe payment method for auto-reload', error);
+      return err(new DatabaseError('Failed to clear payment method'));
+    }
+  }
 }

@@ -25,6 +25,7 @@ import {
   Layers,
   FileText,
   Package,
+  Receipt,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useI18n } from '@/src/i18n'
@@ -34,6 +35,7 @@ const NAV_ITEMS: { href: string; labelKey: string; icon: LucideIcon }[] = [
   { href: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
   { href: '/dashboard/projects', labelKey: 'nav.projects', icon: FolderOpen },
   { href: '/dashboard/credits', labelKey: 'nav.credits', icon: Coins },
+  { href: '/dashboard/billing', labelKey: 'nav.billing', icon: Receipt },
 ]
 
 const PLACEHOLDER_ICONS: Record<string, LucideIcon> = {
