@@ -8,10 +8,11 @@ import {
 test.describe('PRD generation', () => {
   test('happy path: runs real generate-prd flow and persists a version', async ({ page }) => {
     await page.goto(`/dashboard/projects/${E2E_PROJECT_ID}`);
-    await expect(page.getByRole('button', { name: 'Generate PRD' })).toBeEnabled();
+    const generatePrdButton = page.getByRole('button', { name: /Generate PRD|Générer le PRD/i });
+    await expect(generatePrdButton).toBeEnabled();
 
-    await page.getByRole('button', { name: 'Generate PRD' }).click();
-    await expect(page.getByText('PRD generated!')).toBeVisible({ timeout: 30_000 });
+    await generatePrdButton.click();
+    await expect(page.getByText(/PRD generated!|PRD généré !/i)).toBeVisible({ timeout: 30_000 });
 
     const prdList = await page.request.get(`/api/projects/${E2E_PROJECT_ID}/prd`);
     expect(prdList.ok(), `GET /prd failed: ${prdList.status()} ${await prdList.text()}`).toBeTruthy();
@@ -27,8 +28,9 @@ test.describe('PRD generation', () => {
     const page = await context.newPage();
 
     await page.goto(`/dashboard/projects/${E2E_PROJECT_NO_CREDITS_ID}`);
-    await expect(page.getByRole('button', { name: 'Generate PRD' })).toBeEnabled();
-    await page.getByRole('button', { name: 'Generate PRD' }).click();
+    const generatePrdButton = page.getByRole('button', { name: /Generate PRD|Générer le PRD/i });
+    await expect(generatePrdButton).toBeEnabled();
+    await generatePrdButton.click();
 
     await expect(
       page.getByText(/insufficient|crédit|credit/i).first(),

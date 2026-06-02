@@ -11,20 +11,24 @@ async function readBalance(page: import('@playwright/test').Page): Promise<numbe
 test.describe('Credit purchase', () => {
   test('completes checkout via server E2E stub and increases balance', async ({ page }) => {
     await page.goto('/dashboard/credits');
-    await expect(page.getByText('Current Balance')).toBeVisible();
+    await expect(page.getByText(/Current Balance|Solde actuel/i)).toBeVisible();
 
     const balanceBefore = await readBalance(page);
 
-    const buyButton = page.getByRole('button', { name: /Buy (\d+) Credits/ }).first();
+    const buyButton = page
+      .getByRole('button', { name: /(Buy|Acheter)\s+(\d+)\s+(Credits|crédits)/i })
+      .first();
     await expect(buyButton).toBeEnabled();
     const label = await buyButton.textContent();
-    const packMatch = label?.match(/Buy (\d+) Credits/);
+    const packMatch = label?.match(/(?:Buy|Acheter)\s+(\d+)\s+(?:Credits|crédits)/i);
     const packSize = packMatch ? Number.parseInt(packMatch[1], 10) : 100;
 
     await buyButton.click();
 
     await expect(page).toHaveURL(/\/dashboard\/credits/, { timeout: 20_000 });
-    await expect(page.getByText(/crédits ajoutés/i).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/crédits ajoutés|credits added/i).first()).toBeVisible({
+      timeout: 15_000,
+    });
 
     const balanceAfter = await readBalance(page);
     expect(balanceAfter).toBe(balanceBefore + packSize);
