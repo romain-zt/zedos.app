@@ -4,6 +4,7 @@ import { requireUser } from '@repo/auth/guards';
 import { GetProjectUseCase } from '@application/project/get-project-usecase';
 import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository';
 import { ClusterStoriesDetail } from '../../_components/cluster-stories-detail';
+import { redirectIfExpressPostPrdBlocked } from '@/lib/express-post-prd-guard';
 
 export default async function ClusterStoriesPage({
   params,
@@ -19,6 +20,7 @@ export default async function ClusterStoriesPage({
   if (result.isErr()) redirect('/dashboard/projects');
 
   const project = result.unwrap();
+  redirectIfExpressPostPrdBlocked(project);
 
   return (
     <ClusterStoriesDetail

@@ -8,6 +8,8 @@
 
 `executed`
 
+> **Plan/US lifecycle** — not a Scope Slice status. Slice stays **`ready-for-user-stories`** (SS-11).
+
 > **Layout in effect:** post-migration (`apps/web/` + `packages/`)
 > **Architecture Surface:** resolved
 > **NEED_HUMAN:** false

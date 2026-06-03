@@ -56,6 +56,8 @@ Maintain a single table:
 
 **Statuses:** `candidate`, `exploratory`, `ready`, `active`, `blocked`, `done`, `deferred`
 
+**Terminal orchestration status (`complete` ≡ `done`):** `WORK_QUEUE.md` and `docs/state/status.json` → `orchestration.steps` use **`complete`** for finished work. That is **the same terminal state as `done`** in this schema — not a separate lifecycle. `/execute-prd scan` may emit either when mirroring orchestration; agents must treat both as **closed** rows (no new slice work unless a new row is added).
+
 **Priority column:** Product band **`P0`–`P4`** (Zedos mapping below), not checker pass order.
 
 **Parent:** Empty for Feature Area; parent **queue ID** for children (e.g. Scope Slice parent = `FA-*`).
@@ -69,6 +71,7 @@ When rebuilding from Feature Area / Scope Slice files:
 - Feature Area frontmatter **`Status: validated`** → queue **`ready`** (ready for slice decomposition / slice advancement per workflow).
 - Feature Area **`exploratory`**, **`blocked`**, **`deferred`** → align queue **`exploratory`**, **`blocked`**, **`deferred`** respectively.
 - Scope Slice **`exploratory`** / **`blocked`**, **`deferred`**, **`ready-for-user-stories`** → queue **`exploratory`**, **`blocked`**, **`deferred`**, **`ready`** respectively.
+- Scope Slice file still **`ready-for-user-stories`** (SS-11 product-spec gate) but US/plan **`executed`** and/or **`orchestration.steps`** key **complete** → queue **`complete`** (terminal). **Do not** set slice file `## Status` to `executed` — that is not a valid Scope Slice status.
 
 ---
 

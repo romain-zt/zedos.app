@@ -78,6 +78,7 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
     versionNumber: snap.versionNumber,
     content: snap.content,
     status: snap.status,
+    deliverableKind: snap.deliverableKind,
     createdAt: snap.createdAt,
   });
   if (!out.success) {

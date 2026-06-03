@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { GeneratePrdAiResponseSchema, GeneratePrdSectionSchema } from '../ai/generate-prd-stream';
 import { ShareLinkSummarySchema } from '../share/mint';
+import { PrdDeliverableKindSchema } from './deliverable-kind';
 
 /** Intake-era PRD body: section slug → text (pre–AI-generated shape). */
 export const IntakePrdContentSchema = z.record(z.string(), z.string());
@@ -36,12 +37,13 @@ export type CreateOrCapturePrdVersionRequest = z.infer<typeof CreateOrCapturePrd
 
 export const CapturedPrdVersionResponseSchema = z.object({
   created: z.boolean(),
-  version: z.object({
+    version: z.object({
     id: z.string(),
     projectId: z.string(),
     versionNumber: z.number().int().positive(),
     content: PrdVersionContentSchema.nullable(),
     status: z.string(),
+    deliverableKind: PrdDeliverableKindSchema.default('standard'),
     createdAt: z.coerce.date(),
     updatedAt: z.coerce.date(),
   }),
@@ -55,6 +57,7 @@ export const PrdVersionDTOSchema = z.object({
   versionNumber: z.number().int(),
   content: PrdVersionContentSchema.nullable(),
   status: z.string(),
+  deliverableKind: PrdDeliverableKindSchema.default('standard'),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   shareLinks: z.array(ShareLinkSummarySchema).optional(),

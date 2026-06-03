@@ -13,6 +13,8 @@
 
 `ready-for-user-stories`
 
+> **Orchestration (SS-11):** statut slice inchangé. Plan/US **`executed`** ; `status.json` → `fa-read-only-sharing--anonymous-read-surface` = **complete**. FA **`complete`** dans `WORK_QUEUE.md`.
+>
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 
@@ -130,3 +132,4 @@ An anonymous visitor arriving via a valid share link sees the shared PRD content
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice read-only-sharing` proposal via `/feature-area scaffold-slices` | — |
 | 2026-05-11 | Filled UX states + Data Touched; status → `ready-for-user-stories` for execution bridge | — |
+| 2026-06-03 | SS-11 orchestration note (impl. complete; slice status unchanged) | doc-sync |

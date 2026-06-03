@@ -97,7 +97,7 @@ None in this slice — share surfaces and disclaimer copy are owned by `express-
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| `fast-track-urgent--declare-express-mode` | Scope Slice | ready-for-user-stories | Project must be in **express** mode before this slice runs |
+| `fast-track-urgent--declare-express-mode` | Scope Slice | ready-for-user-stories (impl. complete) | Project must be in **express** mode before this slice runs |
 | Guided clarification | Feature Area capability | validated | Minimum IA policy branch |
 | PRD versioning | Feature Area capability | validated | Persist express versions |
 | Credit system | Feature Area capability | validated | Same burn tiers |

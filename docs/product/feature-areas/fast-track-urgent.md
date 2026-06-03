@@ -1,7 +1,7 @@
 <!--
   Feature Area — fast-track / mode urgent (H1)
   Autonomous Feature Area (not a FG-PRD-V0 sub-component only)
-  Shipped: no — Planned v0 per PRD Flow Inventory (Q-027)
+  Shipped: v0 complete — declare, livrable express, share disclaimer, grayed post-PRD shell (2026-06-03)
 -->
 
 # Feature Area: Fast-track / mode urgent
@@ -84,7 +84,7 @@ When a founder needs a **deliverable now** (deadline, pitch, partner read, pivot
 | PRD versioning | validated | Express v1+; standard enrichment = new versions |
 | Guided clarification | validated | Minimum IA policy branch |
 | Read-only sharing | validated | Express disclaimer on anonymous surface |
-| Post-PRD pipeline (FG-POST-PRD-V1) | pending | Grayed shell + copy only in express; full pipeline v1 |
+| Post-PRD pipeline (FG-POST-PRD-V1) | complete (orchestration) | Code livré per `WORK_QUEUE`; **express** grayed shell + copy = slices fast-track restantes; v0 founders may still see **under construction** in standard |
 
 ---
 
@@ -108,10 +108,10 @@ When a founder needs a **deliverable now** (deadline, pitch, partner read, pivot
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| `fast-track-urgent--declare-express-mode` | Create or switch express journey mode at project level | exploratory |
-| `fast-track-urgent--express-deliverable-generation` | Minimum IA → livrable express (12 sections, lean content) + version tagging | exploratory |
-| `fast-track-urgent--express-share-disclaimer` | Share page and owner view: version express — à approfondir | exploratory |
-| `fast-track-urgent--grayed-post-prd-shell` | Post-PRD navigation visible but disabled with product message | exploratory |
+| `fast-track-urgent--declare-express-mode` | Create or switch express journey mode at project level | ready-for-user-stories (**impl.** US/plan executed) |
+| `fast-track-urgent--express-deliverable-generation` | Minimum IA → livrable express (12 sections, lean content) + version tagging | ready-for-user-stories |
+| `fast-track-urgent--express-share-disclaimer` | Share page and owner view: version express — à approfondir | ready-for-user-stories |
+| `fast-track-urgent--grayed-post-prd-shell` | Post-PRD navigation visible but disabled with product message | ready-for-user-stories |
 
 ---
 
@@ -134,5 +134,7 @@ When a founder needs a **deliverable now** (deadline, pitch, partner read, pivot
 
 | Date | Change | Author |
 |------|--------|--------|
-| 2026-06-03 | Aligned with PRD Q-024–Q-029, PD-002, autonomous FA; status exploratory | — |
+| 2026-06-03 | Aligned with PRD Q-024–Q-029, PD-002, autonomous FA | — |
 | 2026-06-03 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
+| 2026-06-03 | Doc sync: slice table statuses; partial Shipped (declare impl. complete) | — |
+| 2026-06-03 | Post-PRD dependency `pending` → `complete (orchestration)` — align PRD Flow Inventory + WORK_QUEUE | doc-sync |

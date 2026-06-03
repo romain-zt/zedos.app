@@ -1,5 +1,6 @@
 <!--
   Feature Area — scaffolded from approved map + docs/prd/PRD.md
+  Shipped: Yes — Flow Inventory (mint, anonymous read, revoke, noindex); orchestration complete per status.json
 -->
 
 # Feature Area: Read-only sharing
@@ -60,7 +61,7 @@ The owner can mint a **read-only public link** so **anonymous viewers** can read
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| PRD versioning | pending | Share must reference stable “what is shown” semantics for a version |
+| PRD versioning | validated | Share must reference stable “what is shown” semantics for a version |
 
 ---
 
@@ -78,13 +79,15 @@ The owner can mint a **read-only public link** so **anonymous viewers** can read
 
 ---
 
-## Candidate Scope Slices
+## Scope Slices
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Mint read-only link | Owner creates a public read-only link for the intended PRD content. | exploratory |
-| Anonymous read surface | Viewer reads shared content only, with no edit/comment/workspace/history exposure per PRD. | exploratory |
-| Revoke link + noindex | Owner disables link; share URL treated as non-indexable by product intent. | exploratory |
+| [`read-only-sharing--mint-read-only-link`](../scope-slices/read-only-sharing--mint-read-only-link.md) | Owner creates a public read-only link for the intended PRD content. | ready-for-user-stories (**impl.** US/plan executed) |
+| [`read-only-sharing--anonymous-read-surface`](../scope-slices/read-only-sharing--anonymous-read-surface.md) | Viewer reads shared content only; no edit/comment/workspace/history on share surface. | ready-for-user-stories (**impl.** US/plan executed) |
+| [`read-only-sharing--revoke-link-and-noindex`](../scope-slices/read-only-sharing--revoke-link-and-noindex.md) | Owner disables link; share URL non-indexable by product intent. | ready-for-user-stories (**impl.** US/plan executed) |
+
+> **Queue :** `FA-read-only-sharing` + **`SS-read-only-sharing--*`** ×3 = **`complete`** (`docs/WORK_QUEUE.md`). Slice files keep **`ready-for-user-stories`** per SS-11; orchestration keys `fa-read-only-sharing--*` = **complete** in `status.json`.
 
 ---
 
@@ -109,3 +112,4 @@ The owner can mint a **read-only public link** so **anonymous viewers** can read
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
 | 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
+| 2026-06-03 | Scope Slices table synced — Shipped; removed stale `exploratory` | doc-sync |

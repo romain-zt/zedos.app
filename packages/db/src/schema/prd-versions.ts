@@ -8,6 +8,7 @@ export const prdVersions = pgTable('prd_versions', {
   versionNumber: integer('version_number').notNull(),
   content: json('content'),
   status: text('status').notNull().default('draft'),
+  deliverableKind: text('deliverable_kind').notNull().default('standard'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().$onUpdate(() => new Date()),
 }, (t) => [

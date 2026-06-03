@@ -8,6 +8,8 @@
 
 `ready-for-user-stories`
 
+> **Orchestration (SS-11):** le statut slice reste **`ready-for-user-stories`** (readiness produit). L’implémentation close est portée par le plan/US **`executed`** et `WORK_QUEUE` → **`complete`** pour `SS-fast-track-urgent--declare-express-mode` — pas de statut `executed` sur la slice.
+>
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 
@@ -132,3 +134,4 @@ A signed-in founder can create a project with **express** or **standard** intent
 |------|--------|--------|
 | 2026-06-03 | Scaffolded from approved `/feature-area slice` proposal via `/feature-area scaffold-slices` | — |
 | 2026-06-03 | Promoted to ready-for-user-stories after CLEAR readiness check (`/feature-area promote-slice`) | — |
+| 2026-06-03 | Implementation tracked in US/plan `executed` + WORK_QUEUE `complete`; slice status stays `ready-for-user-stories` (SS-11) | doc-sync |

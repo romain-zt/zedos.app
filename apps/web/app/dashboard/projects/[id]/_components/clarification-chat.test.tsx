@@ -64,6 +64,7 @@ describe('ClarificationChat — Coming up chips', () => {
         createElement(ClarificationChat, {
           projectId: 'proj-1',
           prdVersionId: null,
+          journeyMode: 'standard',
           onPrdGenerated: () => {},
         })
       )

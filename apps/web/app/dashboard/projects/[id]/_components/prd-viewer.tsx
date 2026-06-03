@@ -24,6 +24,7 @@ import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 import { useI18n } from '@/src/i18n'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ExpressPrdDisclaimer } from '@/components/express-prd-disclaimer'
 
 interface PrdViewerProps {
   projectId: string
@@ -270,6 +271,7 @@ export function PrdViewer({
               {(versions ?? []).map((v) => (
                 <SelectItem key={v.id} value={v.id} className="min-h-11 text-base">
                   {t('prd.version')} {v.versionNumber}
+                  {v.deliverableKind === 'express' ? ` · ${t('prd.expressBadge')}` : ''}
                   {v.status ? ` (${v.status})` : ''}
                 </SelectItem>
               ))}
@@ -363,9 +365,16 @@ export function PrdViewer({
 
       <Alert className="border-primary/20 bg-primary/5">
         <FileText className="h-4 w-4" />
-        <AlertTitle className="text-sm font-medium leading-snug">
-          {t('prd.activeVersion')}: {selectedVersion ? `v${selectedVersion.versionNumber}` : '—'}
-          {selectedVersion?.status ? ` · ${selectedVersion.status}` : ''}
+        <AlertTitle className="text-sm font-medium leading-snug flex flex-wrap items-center gap-2">
+          <span>
+            {t('prd.activeVersion')}: {selectedVersion ? `v${selectedVersion.versionNumber}` : '—'}
+            {selectedVersion?.status ? ` · ${selectedVersion.status}` : ''}
+          </span>
+          {selectedVersion?.deliverableKind === 'express' && (
+            <Badge variant="secondary" className="text-xs font-normal">
+              {t('prd.expressBadge')}
+            </Badge>
+          )}
         </AlertTitle>
         <AlertDescription className="text-xs text-muted-foreground sm:text-sm mt-0.5">
           {versions.length > 1
@@ -373,6 +382,8 @@ export function PrdViewer({
             : t('prd.singleVersion')}
         </AlertDescription>
       </Alert>
+
+      {selectedVersion?.deliverableKind === 'express' ? <ExpressPrdDisclaimer /> : null}
 
       {/* Version summary */}
       {content?.version_summary && (

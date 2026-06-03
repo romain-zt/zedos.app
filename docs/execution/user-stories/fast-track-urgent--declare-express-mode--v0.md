@@ -8,6 +8,8 @@
 
 `executed`
 
+> Plan/US **`executed`** only — parent slice remains **`ready-for-user-stories`** (SS-11).
+
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 

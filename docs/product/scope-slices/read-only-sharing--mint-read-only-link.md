@@ -13,6 +13,8 @@
 
 `ready-for-user-stories`
 
+> **Orchestration (SS-11):** statut slice inchangé. Plan/US **`executed`** ; `status.json` → `fa-read-only-sharing--mint-read-only-link` = **complete**. FA **`complete`** dans `WORK_QUEUE.md`.
+>
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 
@@ -129,3 +131,4 @@ A signed-in founder can generate a share link for their PRD; the link is immedia
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice read-only-sharing` proposal via `/feature-area scaffold-slices` | — |
 | 2026-05-11 | UX states, data touched, readiness — orchestrator `fa-read-only-sharing--mint-read-only-link` | — |
+| 2026-06-03 | SS-11 orchestration note (impl. complete; slice status unchanged) | doc-sync |

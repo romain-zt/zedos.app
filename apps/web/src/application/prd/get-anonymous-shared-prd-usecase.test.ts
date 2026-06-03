@@ -10,6 +10,7 @@ describe('GetAnonymousSharedPrdUseCase', () => {
       versionNumber: 1,
       content: null,
       status: 'draft' as const,
+      deliverableKind: 'standard' as const,
       createdAt: new Date(),
     };
     const repo: IPrdRepository = {

@@ -79,7 +79,22 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 
 # Flow Inventory
 
-**Legend:** **Shipped** = in production today. **Planned v0** = v0 product scope, **not yet in prod** (Q-027).
+**Legend**
+
+| Column / value | Meaning |
+|----------------|---------|
+| **Shipped = Yes** | Live for real users today |
+| **Shipped = Partial** | **Some** v0 behavior is in prod (see row note); remaining scope on that row is still **Planned v0** |
+| **Shipped = No** | Not a v0 product commitment (e.g. export, team) |
+| **Planned v0 = Yes** | In **v0 product scope**, **not yet in prod** (Q-027) — doc + queue may exist (`docs/WORK_QUEUE.md`, plans `draft` / `approved`) |
+| **Planned v0 = —** | Either fully shipped, out of v0 scope, or **special row** (see below) |
+
+**How to read (avoid false “not built”)**
+
+1. **Express** — declare/switch = **Partial** shipped ; livrable, disclaimer, grayed shell = **Planned v0** (plans § `doc-ok-checklist.md` D3).
+2. **Post-PRD pipeline** — **Shipped = Yes** here means **implementation complete** per `WORK_QUEUE` / FG-POST-PRD-V1 ; founders in **standard** mode may still see **under construction** ; in **express** mode surfaces are **grayed** (PD-002) — not “missing code”.
+3. **Import external PRD** — **Planned v0** only (FA `prd-import` documented, not prod).
+4. **Product analytics (PostHog)** — not in this table ; spec in `docs/product/feature-areas/product-analytics.md` ; **not in prod** until implemented + **B-ANALYTICS-001** (see `docs/observability/README.md`).
 
 | Flow | Shipped | Planned v0 |
 |------|---------|------------|
@@ -92,14 +107,14 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 | **Opt-in auto-reload** (buy **one pack** via saved PM; **not** a subscription) | Yes | — |
 | **Owner milestone feedback** (skippable; **anonymous viewers**: none) | Yes | — |
 | **Share:** mint read-only URL, anonymous read, revoke link, noindex | Yes | — |
-| **Express journey mode:** declare at **project creation** or **mid-project**; switch back to standard later | — | Yes (PD-002, Q-024) |
+| **Express journey mode:** declare at **project creation** or **mid-project**; switch back to standard later | Partial (`journeyMode` UI shipped) | Yes — livrable, disclaimer, grayed shell (PD-002, Q-024) |
 | **Express path:** minimum IA clarify → **livrable express** → share/export same day | — | Yes |
 | **Express share:** **version express — à approfondir** disclaimer on anonymous read surface | — | Yes |
 | **Post-PRD surfaces in express mode:** **grayed** (visible, disabled + message) — not hidden | — | Yes |
 | **Import external PRD** (paste / file → in-app version) | — | Yes (Q-028) |
 | Markdown / PDF export | No | — |
 | Team / invites / roles | No | — |
-| Post-PRD pipeline (services/feature split, user stories, test-first workflows, Cursor delivery) | — | Yes (v1 scope — FG-POST-PRD-V1) |
+| Post-PRD pipeline (services/feature split, user stories, test-first workflows, Cursor delivery) | Yes (code **complete** per `WORK_QUEUE`; surfaces may still show **under construction** for v0 founders) | — (v1 **positioning** / UX labeling — not “not built”) |
 
 # Business Objects
 
@@ -142,16 +157,18 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 
 # MVP Completeness Checklist
 
-- [ ] Founder can **sign up** and reach the PRD workflow.
-- [ ] Founder can manage **multiple projects** and **multiple PRD versions** per project.
-- [ ] **Guided clarification** runs with **in-app** advance/approve affordances.
-- [ ] **Question history** is persisted for the owner workspace.
-- [ ] **Versioned PRD state** is authoritative **in-app**; “done” for a version **does not** depend on file export.
-- [ ] **Credit** ledger, **per-operation** consumption, **first-circuit grace**, **post-grace block at zero**, **Stripe** top-up path (**100 / 200 / 1000**), and **opt-in auto-reload** (prepaid pack) exist.
-- [ ] **Signed-in owner** receives **milestone feedback** prompts (**skippable**; **no** prompts for **anonymous share** viewers).
-- [ ] **Read-only share link**: generate, anonymous read, **no** edit/comment/duplicate/share of private history on viewer surface; **disable** link; **noindex** behavior.
-- [ ] Non-PRD product areas show **under construction** where applicable.
-- [ ] Founder can declare **express** mode at **project creation** or **switch mid-project** (**Planned v0** — Q-027).
+> **Sync rule:** checkboxes mirror **Flow Inventory** above. **Shipped** rows → `[x]`; **Planned v0** → `[ ]`.
+
+- [x] Founder can **sign up** and reach the PRD workflow.
+- [x] Founder can manage **multiple projects** and **multiple PRD versions** per project.
+- [x] **Guided clarification** runs with **in-app** advance/approve affordances.
+- [x] **Question history** is persisted for the owner workspace.
+- [x] **Versioned PRD state** is authoritative **in-app**; “done” for a version **does not** depend on file export.
+- [x] **Credit** ledger, **per-operation** consumption, **first-circuit grace**, **post-grace block at zero**, **Stripe** top-up path (**100 / 200 / 1000**), and **opt-in auto-reload** (prepaid pack) exist.
+- [x] **Signed-in owner** receives **milestone feedback** prompts (**skippable**; **no** prompts for **anonymous share** viewers).
+- [x] **Read-only share link**: generate, anonymous read, **no** edit/comment/duplicate/share of private history on viewer surface; **disable** link; **noindex** behavior.
+- [x] Non-PRD product areas show **under construction** where applicable (standard mode); post-PRD pipeline code may exist under FG-POST-PRD-V1 — **founder-facing v0 narrative** remains “PRD first”.
+- [x] Founder can declare **express** mode at **project creation** or **switch mid-project** (slice `declare-express-mode` — **impl. complete**, WORK_QUEUE `complete`; Flow Inventory express livrable/disclaimer/grayed still **Planned v0**).
 - [ ] **Express** path delivers a **livrable express**, **minimum IA** clarify, **same credit burn tiers**, and **share/export** without requiring post-PRD completion (**Planned v0**).
 - [ ] **Express** share surfaces show **version express — à approfondir** (**Planned v0**).
 - [ ] **Post-PRD** areas are **grayed** (not hidden) when project is in express mode, with clear product copy (**Planned v0**).
@@ -162,8 +179,8 @@ Establish a single narrative PRD for **Zedos**: a web product that moves the cur
 
 | Id | Name | Status | Notes |
 |----|------|--------|--------|
-| FG-PRD-V0 | PRD workspace (web): projects, versions, clarification, credits, share | `exploratory` | Sole v0 delivery slice |
-| FG-POST-PRD-V1 | Post-PRD pipeline: services/feature split, user stories, test-first workflows, Cursor delivery | `exploratory` | Active v1 scope — see FG-POST-PRD-V1 sub-components |
+| FG-PRD-V0 | PRD workspace (web): projects, versions, clarification, credits, share | `active` | Core flows **Shipped** per Flow Inventory; express + import **Planned v0** |
+| FG-POST-PRD-V1 | Post-PRD pipeline: services/feature split, user stories, test-first workflows, Cursor delivery | `active` | **Code complete** per `docs/WORK_QUEUE.md` (orchestration). **Founder-facing v0** may still label surfaces **under construction**; **express mode** grays them per PD-002 — distinct from “not implemented”. |
 | FG-FUTURE | Services/feature split, tech alignment, Cursor packaging, user stories, delivery loop | `archived` | Superseded by FG-POST-PRD-V1 |
 
 ## FG-PRD-V0 Sub-components

@@ -21,8 +21,13 @@ import {
   buildClarifyMessages,
   buildClarifyMessagesFromClientThread,
   normalizePrdSection,
+  type ClarifyHistoryRow,
   type ClientThreadMessage,
 } from '@/lib/clarify-prompt'
+import {
+  buildExpressClarifyMessages,
+  buildExpressClarifyMessagesFromClientThread,
+} from '@/lib/express-clarify-prompt'
 import { createLogger } from '@shared/observability/logger'
 import { validationFailureData } from '@shared/observability/log-safe'
 
@@ -57,6 +62,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       .limit(1)
 
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+
+    const isExpress = project.journeyMode === 'express'
 
     const rawBody = await request.json().catch(() => ({}))
     const bodyParsed = ClarifyPostBodySchema.safeParse(rawBody ?? {})
@@ -101,7 +108,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       .from(questionHistory)
       .where(eq(questionHistory.projectId, projectId))
       .orderBy(asc(questionHistory.createdAt))
-      .limit(20)
+      .limit(isExpress ? 12 : 20)
+
+    const historyRows: ClarifyHistoryRow[] = (history ?? []).map((q) => ({
+      structuredQuestion: q.structuredQuestion,
+      founderAnswer: q.founderAnswer,
+      prdImpact: q.prdImpact,
+    }))
 
     let userMessage = ''
     if (decisionResponse) {
@@ -109,29 +122,33 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     } else if (message) {
       userMessage = message
     } else {
-      userMessage =
-        'Start clarification. Ask one high-value question for the first uncovered PRD section.'
+      userMessage = isExpress
+        ? 'Start express (minimum IA) clarification. Ask one focused question for the first uncovered minimum section.'
+        : 'Start clarification. Ask one high-value question for the first uncovered PRD section.'
     }
+
+    const projectCtx = { name: project.name, description: project.description }
 
     const messages =
       threadOverride != null && threadOverride.length > 0
-        ? buildClarifyMessagesFromClientThread(
-            { name: project.name, description: project.description },
-            threadOverride,
-            userMessage,
-            refinementContextLabel,
-            responseLanguage
-          )
-        : buildClarifyMessages(
-            { name: project.name, description: project.description },
-            (history ?? []).map((q) => ({
-              structuredQuestion: q.structuredQuestion,
-              founderAnswer: q.founderAnswer,
-              prdImpact: q.prdImpact,
-            })),
-            userMessage,
-            responseLanguage
-          )
+        ? isExpress
+          ? buildExpressClarifyMessagesFromClientThread(
+              projectCtx,
+              threadOverride,
+              userMessage,
+              refinementContextLabel,
+              responseLanguage
+            )
+          : buildClarifyMessagesFromClientThread(
+              projectCtx,
+              threadOverride,
+              userMessage,
+              refinementContextLabel,
+              responseLanguage
+            )
+        : isExpress
+          ? buildExpressClarifyMessages(projectCtx, historyRows, userMessage, responseLanguage)
+          : buildClarifyMessages(projectCtx, historyRows, userMessage, responseLanguage)
 
     const aiResponse = await callAI({
       messages,

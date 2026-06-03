@@ -92,6 +92,13 @@
       "when": 1780500000000,
       "tag": "0012_project_journey_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780600000000,
+      "tag": "0013_prd_deliverable_kind",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { requireUser } from '@repo/auth/guards';
 import { GetProjectUseCase } from '@application/project/get-project-usecase';
 import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository';
 import { FeatureSplitWorkspace } from '../_components/feature-split-workspace';
+import { redirectIfExpressPostPrdBlocked } from '@/lib/express-post-prd-guard';
 
 export default async function FeatureSplitPage({ params }: { params: { id: string } }) {
   const userResult = await requireUser(headers());
@@ -15,6 +16,7 @@ export default async function FeatureSplitPage({ params }: { params: { id: strin
   if (result.isErr()) redirect('/dashboard/projects');
 
   const project = result.unwrap();
+  redirectIfExpressPostPrdBlocked(project);
 
   return (
     <FeatureSplitWorkspace
