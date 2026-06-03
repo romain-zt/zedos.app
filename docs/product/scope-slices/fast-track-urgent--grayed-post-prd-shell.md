@@ -93,9 +93,9 @@ None — viewing or clicking grayed post-PRD entries does **not** trigger owner 
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| `fast-track-urgent--declare-express-mode` | Scope Slice | ready-for-user-stories | Journey mode + **Approfondir** path must exist |
+| `fast-track-urgent--declare-express-mode` | Scope Slice | ready-for-user-stories (impl. complete) | Journey mode + **Approfondir** path must exist |
 | Project workspace | Feature Area capability | validated | Shell where post-PRD destinations appear |
-| Post-PRD pipeline | PRD scope (v1) | pending | Destinations exist as placeholders; behavior not v0 |
+| Post-PRD pipeline (FG-POST-PRD-V1) | PRD scope (v1) | complete (orchestration) | Nav destinations implemented; this slice adds **grayed + message** in express only |
 | PD-002 | Product decision | accepted | Visible + disabled + message (not hidden) |
 
 ---
@@ -137,3 +137,4 @@ A signed-in founder with a project in **express** mode sees **Services / feature
 |------|--------|--------|
 | 2026-06-03 | Scaffolded from approved `/feature-area slice` proposal via `/feature-area scaffold-slices` | — |
 | 2026-06-03 | Promoted to ready-for-user-stories after CLEAR readiness check (`/feature-area promote-slice`) | — |
+| 2026-06-03 | Post-PRD dependency aligned with WORK_QUEUE `complete` (orchestration) | doc-sync |

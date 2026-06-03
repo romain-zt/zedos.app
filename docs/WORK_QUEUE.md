@@ -2,6 +2,8 @@
 
 Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc` §3.
 
+> **Statut `complete` :** équivalent à **`done`** (orchestration / impl terminée). Voir execution-loop §3 — terminal orchestration status.
+
 | ID | Type | Parent | Status | Priority | NEED_HUMAN | NEED_UPDATE | Blocked By | Next Action |
 |---|---|---|---|:---:|:---:|:---:|---|---|
 | FA-account-session | Feature Area | — | complete | P0 | false | false | — | Aucun (terminé dans `orchestration.steps`) |
@@ -14,7 +16,10 @@ Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc`
 | FA-prd-versioning | Feature Area | — | complete | P1 | false | false | — | Aucun (terminé) |
 | FA-guided-clarification | Feature Area | — | complete | P2 | false | false | — | Aucun (terminé) |
 | FA-question-history | Feature Area | — | complete | P2 | false | false | — | Aucun (terminé) |
-| FA-read-only-sharing | Feature Area | — | complete | P3 | false | false | — | Aucun (terminé) |
+| FA-read-only-sharing | Feature Area | — | complete | P3 | false | false | — | Aucun — 3 slices `complete` (SS-11) |
+| SS-read-only-sharing--mint-read-only-link | Scope Slice | FA-read-only-sharing | complete | P3 | false | false | — | Aucun — slice `ready-for-user-stories`; plan/US `executed` (SS-11) |
+| SS-read-only-sharing--anonymous-read-surface | Scope Slice | FA-read-only-sharing | complete | P3 | false | false | — | Aucun — slice `ready-for-user-stories`; plan/US `executed` (SS-11) |
+| SS-read-only-sharing--revoke-link-and-noindex | Scope Slice | FA-read-only-sharing | complete | P3 | false | false | — | Aucun — slice `ready-for-user-stories`; plan/US `executed` (SS-11) |
 | FA-owner-milestone-feedback | Feature Area | — | complete | P3 | false | false | — | Aucun (milestone + feedback capture terminés) |
 | SS-owner-milestone-feedback--milestone-detection-and-prompt | Scope Slice | FA-owner-milestone-feedback | complete | P3 | false | false | — | Aucun (terminé) |
 | SS-owner-milestone-feedback--feedback-capture-and-attribution | Scope Slice | FA-owner-milestone-feedback | complete | P3 | false | false | — | Aucun (terminé) |
@@ -32,3 +37,14 @@ Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc`
 | SS-delivery--cursor-package-export | Scope Slice | FA-delivery | complete | P2 | false | false | — | Aucun (terminé) |
 | SS-payments--auto-reload-opt-in-and-outcomes | Scope Slice | FA-payments | complete | P4 | false | false | — | Aucun (implémenté 2026-06-01) |
 | SS-payments--tax-and-vat-legibility | Scope Slice | FA-payments | complete | P4 | false | false | — | Aucun (implémenté 2026-06-01) |
+| FA-fast-track-urgent | Feature Area | — | complete | P1 | false | false | — | Aucun — 4 slices livrées (declare + generation + disclaimer + grayed shell) |
+| SS-fast-track-urgent--declare-express-mode | Scope Slice | FA-fast-track-urgent | complete | P1 | false | false | — | Aucun — slice file `ready-for-user-stories`; plan/US `executed` (SS-11) |
+| SS-fast-track-urgent--express-deliverable-generation | Scope Slice | FA-fast-track-urgent | complete | P1 | false | false | — | Aucun — plan/US `executed` (2026-06-03) |
+| SS-fast-track-urgent--express-share-disclaimer | Scope Slice | FA-fast-track-urgent | complete | P1 | false | false | — | Aucun — plan/US `executed` (2026-06-03) |
+| SS-fast-track-urgent--grayed-post-prd-shell | Scope Slice | FA-fast-track-urgent | complete | P1 | false | false | — | Aucun — plan/US `executed` (2026-06-03) |
+| FA-prd-import | Feature Area | — | ready | P1 | false | false | — | Approuver plan `prd-import--capture-external-prd-at-create` → `/implement` |
+| SS-prd-import--capture-external-prd-at-create | Scope Slice | FA-prd-import | ready | P1 | false | false | — | Approuver plan draft → `/implement` |
+| FA-product-analytics | Feature Area | — | active | P3 | false | false | — | Implémenter funnel (tracking default-off); activer prod PostHog seulement après B-ANALYTICS-001 |
+| SS-product-analytics--owner-product-journey-funnels | Scope Slice | FA-product-analytics | active | P3 | false | false | — | Plan **approved** — PIS + `/implement` (prod tracking: B-ANALYTICS-001) |
+| SS-product-analytics--credit-blockage-and-monetization | Scope Slice | FA-product-analytics | ready | P3 | false | false | — | Approuver plan draft → `/implement` (après funnel adapter) |
+| SS-product-analytics--friction-replay-and-error-signals | Scope Slice | FA-product-analytics | exploratory | P3 | false | false | B-ANALYTICS-002 | Phase 2 — après funnel+crédits **shipped** ; approuver plan draft ; `promote-slice` puis `/implement` ; replay prod après B-ANALYTICS-002 |

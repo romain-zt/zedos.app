@@ -21,8 +21,8 @@ Le décalage : on traite tout le monde comme s’il avait **le temps** de faire 
 
 | # | Hic | Gravité | Géré aujourd’hui ? | Symptôme |
 |---|-----|---------|---------------------|----------|
-| **H1** | **Fast-track / urgent** | **Critique** | **Non — 0 %** | Tunnel unique long ; pas de livrable express assumé |
-| H2 | PRD déjà existant (externe) | Haute | Non | Repartir de zéro via clarify |
+| **H1** | **Fast-track / urgent** | **Critique** | **Partiel ~25 %** | `journeyMode` express livré ; livrable 12 sections + disclaimer + shell grisé **Planned v0** (`docs/WORK_QUEUE.md`) |
+| H2 | PRD déjà existant (externe) | Haute | **Doc prête, pas shipped** | FA `prd-import` + slice ; Q-028 v0 — impl backlog |
 | H3 | Où j’en suis sur le projet | Haute | Partiel | Onglets sans fil narratif |
 | H4 | Évoluer le PRD après coup | Moy.–haute | Partiel | Pas de boucle « priorités changées » |
 | H5 | Multi-projets : reprendre | Moyenne | Faible | Liste sans état |
@@ -60,7 +60,7 @@ flowchart TD
   C --> E{Entrée}
   D --> E
   E -->|Flou| F[Clarify minimum IA]
-  E -->|Doc existant| G[Importer - FA future H2]
+  E -->|Doc existant| G[Importer - FA prd-import backlog]
   E -->|PRD déjà in-app| H[Raffiner 1-2 sections]
   F --> I[Livrable minimal]
   G --> I
@@ -92,13 +92,13 @@ Clarification guidée, génération stream, versions PRD, question history, raff
 
 | Gap | Hic | État |
 |-----|-----|------|
-| Parcours fast-track | H1 | **Absent** — PD-002 prêt, pas d’impl |
-| Import PRD | H2 | Absent |
-| Intention création (zéro / import / express) | H1, H2 | Absent |
+| Parcours fast-track (complet) | H1 | **Partiel ~25 %** — `declare-express-mode` **livré** (`WORK_QUEUE` `complete`) ; livrable 12 sections + disclaimer + shell grisé **backlog** (plans draft) |
+| Import PRD | H2 | **Doc prête** — FA `prd-import` ; **pas shipped** (Flow Inventory Planned v0) |
+| Intention création (zéro / import / express) | H1, H2 | **Partiel** — express déclarable ; import + choix unifié création **non livrés** |
 | Journey orientation | H3 | Absent UX |
 | Évolution besoins | H4 | Partiel |
 | Liste projets + reprendre | H5 | Absent |
-| Copy gating post-PRD | H6 | Faible — express = **grisé** (PD-002) |
+| Copy gating post-PRD | H6 | Faible — express grisé **Planned v0** ; standard = under construction |
 
 ---
 
@@ -106,7 +106,7 @@ Clarification guidée, génération stream, versions PRD, question history, raff
 
 | ID | Problème | Hic | Priorité | Référence |
 |----|----------|-----|----------|-----------|
-| **P0-FT** | Parcours express reconnu (PD-002) | H1 | **P0** | `fast-track-urgent.md` |
+| **P0-FT** | Finir parcours express (3 slices restantes) | H1 | **P0** | `fast-track-urgent.md` + `WORK_QUEUE` |
 | P0-1 | Entrée « PRD déjà fait » | H2 | P0 | — |
 | P0-2 | Orientation projet (où / suite) | H3 | P0 | Lié express |
 | P1-1 | Boucle priorités changées | H4 | P1 | — |
@@ -188,7 +188,7 @@ Clarification guidée, génération stream, versions PRD, question history, raff
 | Phase | Focus | Hics |
 |-------|--------|------|
 | 0 | PD-002 ✅ | H1 cadrage |
-| 1 | FA fast-track v0 | H1 |
+| 1 | FA fast-track v0 — **en cours** (declare livré ; 3 slices) | H1 |
 | 2 | Import + orientation | H2, H3 |
 | 3 | Évolution + journal | H4 |
 
@@ -204,8 +204,8 @@ Clarification guidée, génération stream, versions PRD, question history, raff
 | D4 | Import ≠ urgent (distinct, combinables) | ✅ PD-002 |
 | D5 | Fast-track avant import seul | ✅ Recommandation maintenue |
 
-**Prochaine étape PRD formelle** : `/prd note` ou `/prd update` pour persister journeys + FG dans `docs/prd/PRD.md`.
+**PRD** : journeys express/import persistés dans `docs/prd/PRD.md` (2026-06-03). Suite = exécution `docs/WORK_QUEUE.md`.
 
 ---
 
-*Index racine : `todo.md` à la racine du repo.*
+*Pilotage : `docs/WORK_QUEUE.md` — pas la queue d’exécution agent.*

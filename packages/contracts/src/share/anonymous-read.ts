@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PrdVersionContentSchema } from '../prd/prd-contracts';
+import { PrdDeliverableKindSchema } from '../prd/deliverable-kind';
 
 /** Path param for GET /api/share/[token] */
 export const ShareReadTokenParamSchema = z.string().min(1).max(256);
@@ -14,6 +15,7 @@ export const AnonymousSharedPrdResponseSchema = z
     versionNumber: z.coerce.number().int().min(1),
     content: PrdVersionContentSchema.nullable(),
     status: PrdStatusSchema,
+    deliverableKind: PrdDeliverableKindSchema.default('standard'),
     createdAt: z.coerce.date(),
   })
   .strict();

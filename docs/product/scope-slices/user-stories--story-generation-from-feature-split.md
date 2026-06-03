@@ -89,7 +89,7 @@ None — FG-PRD-V0 milestone prompts remain undefined for this pipeline stage in
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| `services-feature-split--prd-to-feature-split` readiness | Scope Slice | pending until implemented | Supplies confirmed clusters referenced by clustering identifiers |
+| `services-feature-split--prd-to-feature-split` | Scope Slice | ready-for-user-stories (impl. complete) | Feature-split clusters shipped (`WORK_QUEUE` + `status.json`). |
 | Services / feature split Feature Area | Feature Area | validated | Structural parent guaranteeing upstream intent |
 
 ---
@@ -131,3 +131,4 @@ Given a locked cluster artifact, the founder can generate drafts, materially edi
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice user-stories` proposal via `/feature-area scaffold-slices` | — |
 | 2026-05-11 | Promoted to ready-for-user-stories after CLEAR readiness check (`/feature-area promote-slice`) | — |
+| 2026-06-03 | Upstream feature-split dependency `pending` → impl. complete | doc-sync |

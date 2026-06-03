@@ -6,6 +6,7 @@
  */
 
 import type { PrdVersionContent } from '@repo/contracts/prd';
+import type { PrdDeliverableKind } from '@repo/contracts/prd';
 
 export type PrdStatus = 'draft' | 'final' | 'generated';
 
@@ -15,6 +16,7 @@ export interface PrdVersion {
   versionNumber: number;
   content: PrdVersionContent | null;
   status: PrdStatus;
+  deliverableKind: PrdDeliverableKind;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,5 +55,6 @@ export interface AnonymousSharedPrdSnapshot {
   versionNumber: number;
   content: PrdVersionContent | null;
   status: PrdStatus;
+  deliverableKind: PrdDeliverableKind;
   createdAt: Date;
 }

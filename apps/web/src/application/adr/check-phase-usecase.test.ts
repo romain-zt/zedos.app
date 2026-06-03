@@ -37,6 +37,7 @@ const basePrd = (content: Record<string, string> | null): PrdVersion => ({
   versionNumber: 1,
   content,
   status: 'draft',
+  deliverableKind: 'standard',
   createdAt: new Date(),
   updatedAt: new Date(),
 });

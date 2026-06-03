@@ -109,7 +109,7 @@ Instrumentation only. A founder blocked for credits does **not** by itself trigg
 
 | Blocker | Blocks | NEED_HUMAN | Resolution |
 |---------|--------|------------|------------|
-| B-ANALYTICS-001 (parent FA) | Production tracking | false | Prod enable after legal; slice/plan not blocked with default-off tracking |
+| B-ANALYTICS-001 (parent FA) | Production tracking enable | false (blocks slice: no) | Prod enable after legal; NEED_HUMAN on blocker = legal only — see `BLOCKERS.md` |
 
 ---
 

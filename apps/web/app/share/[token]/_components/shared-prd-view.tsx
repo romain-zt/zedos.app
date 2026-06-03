@@ -15,6 +15,7 @@ import { SharePasswordRequiredResponseSchema } from '@repo/contracts/share/acces
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/src/i18n'
+import { ExpressPrdDisclaimer } from '@/components/express-prd-disclaimer'
 
 function isGeneratedPrdContent(
   content: PrdVersionContent,
@@ -233,6 +234,8 @@ export function SharedPrdView({ token }: { token: string }) {
             {versionSummary ? <p className="mt-3 text-sm text-muted-foreground">{versionSummary}</p> : null}
           </div>
         </FadeIn>
+
+        {data.deliverableKind === 'express' ? <ExpressPrdDisclaimer /> : null}
 
         <Stagger staggerDelay={0.05}>
           <div className="space-y-3">

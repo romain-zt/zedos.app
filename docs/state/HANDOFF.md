@@ -1,10 +1,10 @@
 ---
 type: state-handoff
-date: 2026-06-02
-author: codex-agent
-workspace: /workspace
+date: 2026-06-03
+author: doc-sync
+workspace: zedos.app
 status: handoff-ready
-current_phase: v0-payments-complete--ops-hygiene-next
+current_phase: v0-core-shipped--express-import-analytics-backlog
 current_blocker: null
 ---
 
@@ -12,22 +12,34 @@ current_blocker: null
 
 ## Etat canonique
 
-La source de vérité est `docs/state/status.json` (`orchestration.steps`).  
-Les entrées de ce fichier sont désormais alignées avec cet état:
+| Source | Etat |
+|--------|------|
+| `docs/state/status.json` → `orchestration.steps` | Toutes les étapes historiques **complete** (socle v0 + post-PRD code) |
+| `docs/prd/PRD.md` → Flow Inventory | **Shipped** = socle PRD + Stripe + post-PRD **code** ; **Planned v0** = express (livrable/disclaimer/grayed), import ; analytics prod-enable (B-ANALYTICS-001) |
+| `docs/WORK_QUEUE.md` | Frontier active : **FA-fast-track-urgent**, **FA-prd-import**, **FA-product-analytics** |
 
-- Toutes les étapes listées dans `orchestration.steps` sont `complete`.
-- `WORK_QUEUE.md` reflète déjà cet état (`complete` sur les FAs/slices livrés).
-- `FA-credit-system` est traité comme livré côté code et orchestration.
+## Go-live ops (bloquant prod réelle)
 
-## Restant (hors code)
+Checklist détaillée : [`docs/ops/production-go-live.md`](../ops/production-go-live.md)
 
-Actions encore nécessaires, côté opérateur:
+1. Rotation des secrets — `secrets_rotated` reste **`false`** (**attendu** ; `secrets_rotated_policy` dans `status.json`) jusqu’à §1 de `production-go-live.md` complété.
+2. `STRIPE_WEBHOOK_SECRET` en production.
+3. Stripe Tax / `automatic_tax` pour FR/EU/US.
 
-1. Rotation des secrets signalés dans `status.json`.
-2. Vérification de `STRIPE_WEBHOOK_SECRET` dans les environnements de déploiement.
-3. Vérification Stripe Tax Dashboard pour `automatic_tax`.
+## Backlog produit documenté (pas encore Shipped)
+
+- **Fast-track :** declare livré (US/plan executed) ; 3 slices — plans/US **`draft`** (liste : `doc-ok-checklist.md` § D3).
+- **Import PRD :** plan/US **`draft`** (Q-028) — idem § D3.
+- **Analytics :** funnel plan **`approved`** → PIS + `/implement` ; crédit + replay **`draft`** ; **B-ANALYTICS-001** avant enable prod — § D3–D4.
+
+## Doc OK (checklist minimale)
+
+**Verdict documentation : OK** (2026-06-03, reconcile **12/12**) — détail : [`docs/ops/doc-ok-checklist.md`](../ops/doc-ok-checklist.md).
+
+Go-live opérateur et approbation des plans restent **pending** (§ D du même fichier).
 
 ## Notes de maintenance
 
-- Garder `status.json`, `WORK_QUEUE.md`, `HANDOFF.md` synchronisés après chaque décision.
-- Conserver ici un résumé court de l’état courant; archiver les historiques longs dans des notes dédiées.
+- Carte `docs/README.md` — ordre de lecture.
+- Après implémentation : mettre à jour Flow Inventory **Shipped** + MVP checklist + `EXECUTION_LOG.md`.
+- Ne pas marquer `secrets_rotated: true` sans rotation réelle.

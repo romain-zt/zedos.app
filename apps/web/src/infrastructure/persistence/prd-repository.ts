@@ -35,11 +35,16 @@ import {
   type NewPrdVersion,
 } from '@repo/db';
 import type { PrdVersionContent } from '@repo/contracts/prd';
+import type { PrdDeliverableKind } from '@repo/contracts/prd';
 import { AnonymousSharedPrdResponseSchema } from '@repo/contracts/share/anonymous-read';
 import { parsePrdVersionContent } from '@infrastructure/persistence/prd-content-parse';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'PrdRepository' });
+
+function mapDeliverableKind(value: string | null | undefined): PrdDeliverableKind {
+  return value === 'express' ? 'express' : 'standard';
+}
 
 export class DrizzlePrdRepository implements IPrdRepository {
   async findByProjectId(projectId: string): Promise<Result<PrdVersionWithRelations[], ApplicationError>> {
@@ -77,6 +82,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
             versionNumber: v.versionNumber,
             content: parsePrdVersionContent(v.content),
             status: v.status as PrdStatus,
+            deliverableKind: mapDeliverableKind(v.deliverableKind),
             createdAt: v.createdAt,
             updatedAt: v.updatedAt,
             shareLinks: links.map((sl) => ({
@@ -115,6 +121,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
         versionNumber: prd.versionNumber,
         content: parsePrdVersionContent(prd.content),
         status: prd.status as PrdStatus,
+        deliverableKind: mapDeliverableKind(prd.deliverableKind),
         createdAt: prd.createdAt,
         updatedAt: prd.updatedAt,
       }) as Result<PrdVersion | null, ApplicationError>;
@@ -136,6 +143,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
           versionNumber: prdVersions.versionNumber,
           content: prdVersions.content,
           status: prdVersions.status,
+          deliverableKind: prdVersions.deliverableKind,
           createdAt: prdVersions.createdAt,
           updatedAt: prdVersions.updatedAt,
           projectUserId: projects.userId,
@@ -155,6 +163,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
         versionNumber: row.versionNumber,
         content: parsePrdVersionContent(row.content),
         status: row.status as PrdStatus,
+        deliverableKind: mapDeliverableKind(row.deliverableKind),
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }) as Result<PrdVersion | null, ApplicationError>;
@@ -221,6 +230,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
           versionNumber: inserted.versionNumber,
           content: parsePrdVersionContent(inserted.content),
           status: inserted.status as PrdStatus,
+          deliverableKind: mapDeliverableKind(inserted.deliverableKind),
           createdAt: inserted.createdAt,
           updatedAt: inserted.updatedAt,
         },
@@ -424,6 +434,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
           versionNumber: prdVersions.versionNumber,
           content: prdVersions.content,
           status: prdVersions.status,
+          deliverableKind: prdVersions.deliverableKind,
           createdAt: prdVersions.createdAt,
         })
         .from(shareLinks)
@@ -445,6 +456,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
         versionNumber: row.versionNumber ?? 1,
         content,
         status: (row.status ?? 'draft') as PrdStatus,
+        deliverableKind: mapDeliverableKind(row.deliverableKind),
         createdAt: row.createdAt,
       };
 
@@ -460,6 +472,7 @@ export class DrizzlePrdRepository implements IPrdRepository {
         versionNumber: parsed.data.versionNumber,
         content: parsed.data.content,
         status: parsed.data.status as PrdStatus,
+        deliverableKind: parsed.data.deliverableKind,
         createdAt: parsed.data.createdAt,
       });
     } catch (error) {

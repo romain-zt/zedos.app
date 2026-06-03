@@ -31,6 +31,8 @@ import type { LucideIcon } from 'lucide-react'
 import { useI18n } from '@/src/i18n'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { localePath, normalizePathWithoutLocale, projectIdFromDashboardPath } from '@/lib/locale-path'
+import { isExpressBlockedPostPrdPath } from '@/lib/express-post-prd-guard'
+import { useWorkspaceJourneyMode } from '../_lib/use-workspace-journey-mode'
 
 const NAV_ITEMS: { href: string; labelKey: string; icon: LucideIcon }[] = [
   { href: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
@@ -56,6 +58,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const userName = session?.user?.name ?? t('dashboard.userFallback')
   const userInitial = userName?.charAt(0)?.toUpperCase() ?? 'F'
   const workspaceProjectId = projectIdFromDashboardPath(pathname)
+  const workspaceJourneyMode = useWorkspaceJourneyMode(workspaceProjectId)
 
   const navigate = (href: string) => {
     router.push(localePath(href, locale))
@@ -141,23 +144,38 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   { href: `/dashboard/projects/${workspaceProjectId}/task-split`, labelKey: 'projectNav.taskSplit', icon: BarChart3 },
                   { href: `/dashboard/projects/${workspaceProjectId}/delivery`, labelKey: 'projectNav.delivery', icon: Package },
                 ] as const).map((sub) => {
-                  const isSubActive =
-                    pathWithoutLocale === sub.href 
+                  const isSubActive = pathWithoutLocale === sub.href
+                  const postPrdBlocked =
+                    workspaceJourneyMode === 'express' &&
+                    workspaceProjectId != null &&
+                    isExpressBlockedPostPrdPath(sub.href, workspaceProjectId)
                   return (
                     <div key={sub.href}>
                       <button
                         type="button"
-                        onClick={() => navigate(sub.href)}
+                        disabled={postPrdBlocked}
+                        aria-disabled={postPrdBlocked}
+                        title={postPrdBlocked ? t('workspace.expressPostPrdNavHint') : undefined}
+                        onClick={() => {
+                          if (postPrdBlocked) return
+                          navigate(sub.href)
+                        }}
                         className={cn(
                           'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px]',
                           isSubActive
                             ? 'bg-primary/10 text-primary'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                          postPrdBlocked && 'opacity-50 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground'
                         )}
                       >
                         <sub.icon className="h-4 w-4 shrink-0" />
-                        {t(sub.labelKey)}
+                        <span className="flex-1 text-left">{t(sub.labelKey)}</span>
                       </button>
+                      {postPrdBlocked ? (
+                        <p className="px-3 pb-1 text-[11px] leading-snug text-muted-foreground">
+                          {t('workspace.expressPostPrdNavHint')}
+                        </p>
+                      ) : null}
                       {sub.href.endsWith('/user-stories') && isSubActive ? (
                         <ProjectStoryClusterNav projectId={workspaceProjectId} />
                       ) : null}

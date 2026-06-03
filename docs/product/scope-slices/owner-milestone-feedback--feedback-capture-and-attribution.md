@@ -90,9 +90,9 @@ This slice **is** the capture mechanism. It stores the structured response that 
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| `milestone-detection-and-prompt` | Scope Slice | pending | Prompt eligibility and rendering must exist before capture can occur. |
-| `project-workspace--create-project` | Scope Slice | ready | Project context is required for attribution. |
-| `prd-versioning--create-or-capture-prd-version` | Scope Slice | ready | PRD version context is required for attribution. |
+| `owner-milestone-feedback--milestone-detection-and-prompt` | Scope Slice | ready-for-user-stories (impl. complete) | Prompt eligibility and rendering shipped (`status.json` + `WORK_QUEUE`). |
+| `project-workspace--create-project` | Scope Slice | ready-for-user-stories (impl. complete) | Project context for attribution — orchestration complete. |
+| `prd-versioning--create-or-capture-prd-version` | Scope Slice | ready-for-user-stories (impl. complete) | PRD version context for attribution — orchestration complete. |
 
 ---
 
@@ -133,3 +133,4 @@ When a signed-in founder submits a feedback response after a milestone prompt, t
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice owner-milestone-feedback` proposal via `/feature-area scaffold-slices` | — |
 | 2026-05-28 | Promoted to ready-for-user-stories after CLEAR readiness check (`/feature-area promote-slice`) | — |
+| 2026-06-03 | Dependencies: `pending` → impl. complete per orchestration | doc-sync |

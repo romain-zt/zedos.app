@@ -13,6 +13,8 @@
 
 `ready-for-user-stories`
 
+> **Orchestration (SS-11):** statut slice inchangé. Plan/US **`executed`** ; `status.json` → `fa-read-only-sharing--revoke-link-and-noindex` = **complete**. FA **`complete`** dans `WORK_QUEUE.md`.
+>
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
 
@@ -131,3 +133,4 @@ A signed-in founder can disable a live share link; after revocation, visitors ac
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice read-only-sharing` proposal via `/feature-area scaffold-slices` | — |
 | 2026-05-11 | Refined UX States, Data Touched, dependency status; promoted to `ready-for-user-stories` for orchestrator `fa-read-only-sharing--revoke-link-and-noindex` | cloud-agent |
+| 2026-06-03 | SS-11 orchestration note (impl. complete; slice status unchanged) | doc-sync |

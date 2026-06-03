@@ -214,6 +214,7 @@ export function ProjectWorkspace({
           <ClarificationChat
             projectId={projectId}
             prdVersionId={selectedVersion?.id ?? null}
+            journeyMode={journeyMode}
             onPrdGenerated={handlePrdGenerated}
           />
         </TabsContent>

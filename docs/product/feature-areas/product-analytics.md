@@ -10,7 +10,7 @@
 
 `validated`
 
-> **NEED_HUMAN:** false
+> **NEED_HUMAN:** false (FA validation / `/implement` path). **B-ANALYTICS-001** in Open Blockers uses `NEED_HUMAN: true (legal prod only)` — same blocker as `docs/BLOCKERS.md`; does not block default-off tracking.
 > **NEED_UPDATE:** false
 
 ---
@@ -112,7 +112,7 @@ No journey **changes** for the founder; instrumentation is invisible when correc
 
 | Blocker | Blocks | NEED_HUMAN | Resolution |
 |---------|--------|------------|------------|
-| B-ANALYTICS-001 | Enabling analytics on **production** real users (cookies / consent beyond marketing API) | false | **Does not block** `validated` FA, scope slices, `/plan`, or `/implement`. Approved Plan (2026-06-03) ships with tracking **disabled by default** until legal go-ahead. Operator enables PostHog in prod only after consent stance is decided (OQ-PA-001 → future PD). |
+| B-ANALYTICS-001 | Enabling analytics on **production** real users (cookies / consent beyond marketing API) | true (legal prod only) | See `docs/BLOCKERS.md` — **does not block** FA `validated`, `/plan`, or `/implement` with tracking **default-off**. Operator enables PostHog in prod after consent (OQ-PA-001 → future PD). |
 | — | — | — | — |
 
 ---

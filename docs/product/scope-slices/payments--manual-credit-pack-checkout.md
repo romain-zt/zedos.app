@@ -95,7 +95,7 @@ None — completing a credit pack purchase is not a defined owner milestone trig
 
 | Dependency | Type | Status | Notes |
 |------------|------|--------|-------|
-| Credit system | Feature Area | pending | Ledger must apply purchased credits exactly once on successful checkout and never on canceled/failed outcomes. |
+| Credit system (`FA-credit-system`) | Feature Area | complete (orchestration) | Ledger + webhook path shipped (`orch-credit-system--ledger-concurrency-and-stripe-webhook`). |
 | Stripe as named payment provider | Constraint | ready | Integration Boundaries in PRD |
 | Account & session | Feature Area | ready | Signed-in owner identity is required to attribute purchase and credit addition to the correct account. |
 
@@ -138,3 +138,4 @@ A signed-in founder can select a 100, 200, or 1000 credit pack, complete a one-t
 |------|--------|--------|
 | 2026-05-11 | Scaffolded from approved `/feature-area slice payments` proposal via `/feature-area scaffold-slices` | — |
 | 2026-05-28 | Promoted to ready-for-user-stories after CLEAR readiness check (`/feature-area promote-slice`) | — |
+| 2026-06-03 | Credit system dependency `pending` → `complete` | doc-sync |

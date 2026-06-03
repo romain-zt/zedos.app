@@ -80,6 +80,7 @@ export interface PrdVersionInsert {
   versionNumber: number;
   content?: unknown | null;
   status?: string;
+  deliverableKind?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

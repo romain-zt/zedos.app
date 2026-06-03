@@ -27,6 +27,10 @@ import {
 import { comingUpPrdSectionsFromAssistantParsed } from '@repo/contracts/questions/history'
 import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
 import { useI18n } from '@/src/i18n'
+import type { JourneyMode } from '@domain/project/project'
+import { EXPRESS_MINIMUM_CLARIFY_SECTIONS } from '@repo/contracts/prd'
+import { isExpressMinimumClarifyMet } from '@/lib/express-clarify-prompt'
+import { normalizePrdSection, type ClarifyHistoryRow } from '@/lib/clarify-prompt'
 
 interface Message {
   id: string
@@ -55,13 +59,44 @@ function newMsgId(): string {
   return crypto.randomUUID()
 }
 
+function buildClarifyHistoryFromMessages(messages: readonly Message[]): ClarifyHistoryRow[] {
+  const rows: ClarifyHistoryRow[] = []
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i]
+    if (m.role !== 'assistant') continue
+    let founderAnswer: string | null = null
+    for (let j = i + 1; j < messages.length; j++) {
+      const next = messages[j]
+      if (next.role === 'assistant') break
+      if (next.role === 'user') {
+        founderAnswer = next.decisionResponse
+          ? formatDecisionSelection(next.decisionResponse)
+          : next.content
+        break
+      }
+    }
+    rows.push({
+      structuredQuestion: m.content,
+      founderAnswer,
+      prdImpact: (m.parsed?.prd_section_affected as string | undefined) ?? null,
+    })
+  }
+  return rows
+}
+
 interface ClarificationChatProps {
   projectId: string
   prdVersionId: string | null
+  journeyMode: JourneyMode
   onPrdGenerated: () => void
 }
 
-export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: ClarificationChatProps) {
+export function ClarificationChat({
+  projectId,
+  prdVersionId,
+  journeyMode,
+  onPrdGenerated,
+}: ClarificationChatProps) {
   const { t } = useI18n()
   const { notifyMilestone } = useOwnerMilestonePrompt()
   const [messages, setMessages] = useState<Message[]>([])
@@ -87,15 +122,37 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
     }
   }, [])
 
+  const clarifyHistory = useMemo(
+    () => buildClarifyHistoryFromMessages(messages ?? []),
+    [messages]
+  )
+
   const comingUpSections = useMemo(() => {
+    if (journeyMode === 'express') {
+      const answered = new Set<string>()
+      for (const row of clarifyHistory) {
+        const section = normalizePrdSection(row.prdImpact)
+        if (section && row.founderAnswer?.trim()) answered.add(section)
+      }
+      return EXPRESS_MINIMUM_CLARIFY_SECTIONS.filter((s) => !answered.has(s))
+    }
     const sections = (messages ?? [])
       .filter((m) => m.role === 'assistant')
       .map((m) => m.parsed?.prd_section_affected as string | undefined)
     return comingUpPrdSectionsFromAssistantParsed(sections, 3)
-  }, [messages])
+  }, [messages, journeyMode, clarifyHistory])
 
-  const showReadyToGenerateHint =
-    comingUpSections.length === 0 && (messages ?? []).some((m) => m.role === 'assistant')
+  const isExpress = journeyMode === 'express'
+
+  const expressMinimumMet = isExpress && isExpressMinimumClarifyMet(clarifyHistory)
+
+  const showReadyToGenerateHint = isExpress
+    ? expressMinimumMet
+    : comingUpSections.length === 0 && (messages ?? []).some((m) => m.role === 'assistant')
+
+  const canGeneratePrd = isExpress
+    ? expressMinimumMet
+    : (messages?.length ?? 0) >= 2
   const idlePromptLabel = t('clarify.idlePrompt')
   const idlePrompt =
     idlePromptLabel === 'clarify.idlePrompt' ? t('clarify.starting') : idlePromptLabel
@@ -423,6 +480,11 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
 
   return (
     <div className="flex flex-col h-[calc(100vh-240px)] min-h-[500px]">
+      {isExpress && (
+        <p className="text-xs text-muted-foreground border border-dashed rounded-md px-3 py-2 mb-3">
+          {t('clarify.expressModeBanner')}
+        </p>
+      )}
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1">
         {(messages ?? []).length === 0 && !streaming && (
@@ -586,7 +648,7 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
         )}
         {showReadyToGenerateHint && (
           <p className="text-xs text-muted-foreground">
-            {t('clarify.readyToGeneratePrd')}
+            {isExpress ? t('clarify.readyToGenerateExpressPrd') : t('clarify.readyToGeneratePrd')}
           </p>
         )}
         <div className="flex gap-2">
@@ -616,10 +678,10 @@ export function ClarificationChat({ projectId, prdVersionId, onPrdGenerated }: C
             size="sm"
             onClick={handleGeneratePrd}
             loading={generatingPrd}
-            disabled={streaming || (messages?.length ?? 0) < 2}
+            disabled={streaming || !canGeneratePrd}
           >
             <FileText className="mr-2 h-4 w-4" />
-            {t('clarify.generatePrd')}
+            {isExpress ? t('clarify.generateExpressPrd') : t('clarify.generatePrd')}
           </Button>
           <span className="text-xs text-muted-foreground">
             {t('clarify.generatePrdCost')}

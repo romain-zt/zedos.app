@@ -1,6 +1,12 @@
 {
-  "handoff_date": "2026-05-12",
-  "current_phase": "v0-payments-complete--ops-hygiene-next",
+  "handoff_date": "2026-06-03",
+  "current_phase": "v0-core-shipped--express-import-analytics-backlog",
+  "doc_ok_checklist": {
+    "status": "ok",
+    "verified_at": "2026-06-03",
+    "reconcile_pass": "12/12",
+    "artifact": "docs/ops/doc-ok-checklist.md"
+  },
   "credit_system_tracking_phase": "orch-credit-system--ledger-concurrency-and-stripe-webhook",
   "_orchestrator_schema": "v3 — ordered steps in docs/state/orchestration.pipeline.json; bundled steps mirror legacy phase3 / fa_account_session; orchestration.steps is canonical per-step status",
   "orchestration": {
@@ -257,7 +263,8 @@
   "rules_merge_status": "complete",
   "rules_merge_detail": "All 7 files from zedos/.cursor/rules/ merged into root .cursor/rules/72-74*.mdc and deleted. Single source of truth at root.",
   "secrets_rotated": false,
-  "secrets_detail": "3 secrets leaked: DB password, NEXTAUTH_SECRET, ABACUSAI_API_KEY. User-owned rotation. Plus new STRIPE_WEBHOOK_SECRET needed for Phase 2b.",
+  "secrets_rotated_policy": "INTENTIONAL_FALSE — do not set true in doc or status.json until the operator completes production-go-live.md §1 (real rotation at providers). Agents: never flip this flag to unblock go-live.",
+  "secrets_detail": "3 secrets leaked: DB password, NEXTAUTH_SECRET, ABACUSAI_API_KEY. User-owned rotation. Plus STRIPE_WEBHOOK_SECRET for prod. secrets_rotated stays false until §1 done.",
   "env_file_status": ".env.example-present",
   "locked_decisions": {
     "auth": "better-auth (Phase 3 migration from NextAuth). API keys v2/v3.",
@@ -270,7 +277,7 @@
     "as_any_cleanup": "resolved on migrated monorepo (0 as any; ESLint no-explicit-any error — 2026-06-01)",
     "dual_credit_consolidation": "deferred per Implementation Plan"
   },
-  "next_action": "Ops: rotate leaked secrets (operator); confirm `STRIPE_WEBHOOK_SECRET` + Stripe Tax enabled in Dashboard for automatic_tax.",
+  "next_action": "Ops: follow docs/ops/production-go-live.md (secrets rotation, STRIPE_WEBHOOK_SECRET, Stripe Tax). Product doc frontier: WORK_QUEUE FA-fast-track-urgent (3 slices), FA-prd-import, FA-product-analytics funnel implement.",
   "orchestration_blocker": null,
   "orchestration_note_pr98_merge": "Parallel orch bookkeeping: tracking PR #98 branch (`orchestrator/tracking-orch-credit-system--ledger-concurrency-and-stripe-webhook-1778623987568`) rebased onto main; milestone detection shipped via PR #99 (prior parallel narrative referenced PR #93 / #97).",
   "phases": {
