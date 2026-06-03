@@ -12,6 +12,8 @@ import {
 } from '@infrastructure/http/credits-http-bridge'
 import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
 import { createLogger } from '@shared/observability/logger'
+import { AnalyticsEvents, balanceBucketFromCount } from '@infrastructure/analytics/analytics-events'
+import { captureServer } from '@infrastructure/analytics/posthog-server'
 
 const logger = createLogger({ operation: 'generate-prd-stream-flow' })
 
@@ -45,6 +47,11 @@ export async function generatePrdStreamForProject(
 
   const creditCheck = await checkCredits(input.userId, 'prd_generation')
   if (!creditCheck.allowed) {
+    captureServer(AnalyticsEvents.PRD_GENERATION_BLOCKED_INSUFFICIENT_CREDITS, input.userId, {
+      project_id: input.projectId,
+      action: 'prd_generation',
+      balance_bucket: balanceBucketFromCount(creditCheck.currentBalance),
+    })
     return {
       ok: false,
       status: 402,
@@ -127,6 +134,11 @@ export async function generatePrdStreamForProject(
         updatedAt: now,
       }
       await db.insert(prdVersions).values(prdInsert)
+      captureServer(AnalyticsEvents.PRD_GENERATION_COMPLETED, input.userId, {
+        project_id: input.projectId,
+        version_number: nextVersionNumber,
+        journey_mode: project.journeyMode,
+      })
     } catch (error: unknown) {
       logger.error('Failed to save PRD version', error)
     }

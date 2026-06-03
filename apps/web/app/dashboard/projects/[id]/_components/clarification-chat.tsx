@@ -31,6 +31,9 @@ import type { JourneyMode } from '@domain/project/project'
 import { EXPRESS_MINIMUM_CLARIFY_SECTIONS } from '@repo/contracts/prd'
 import { isExpressMinimumClarifyMet } from '@/lib/express-clarify-prompt'
 import { normalizePrdSection, type ClarifyHistoryRow } from '@/lib/clarify-prompt'
+import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events'
+import { captureClient } from '@infrastructure/analytics/posthog-client'
+import { captureCreditsDepletedSurface } from '@infrastructure/analytics/credits-analytics-client'
 
 interface Message {
   id: string
@@ -189,6 +192,14 @@ export function ClarificationChat({
     setInput('')
     setEditingId(null)
 
+    if (userMessage || decisionResponse) {
+      captureClient(AnalyticsEvents.CLARIFY_MESSAGE_SENT, {
+        project_id: projectId,
+        journey_mode: journeyMode,
+        has_prd_version: Boolean(prdVersionId),
+      })
+    }
+
     try {
       const res = await fetch(`/api/projects/${projectId}/clarify`, {
         method: 'POST',
@@ -203,6 +214,7 @@ export function ClarificationChat({
 
       if (res?.status === 402) {
         const data = await res.json()
+        captureCreditsDepletedSurface('clarification_chat', 'clarification', projectId)
         toast.error(data?.message ?? t('credits.insufficient'))
         setStreaming(false)
         return
@@ -290,7 +302,7 @@ export function ClarificationChat({
       setStreaming(false)
     }
     },
-    [projectId, prdVersionId, t]
+    [projectId, prdVersionId, journeyMode, t]
   )
 
   // Load existing history on mount; auto-start only once per project when truly empty.
@@ -424,6 +436,7 @@ export function ClarificationChat({
 
       if (res?.status === 402) {
         const data = await res.json()
+        captureCreditsDepletedSurface('clarification_chat', 'prd_generation', projectId)
         toast.error(data?.message ?? t('credits.insufficient'))
         setGeneratingPrd(false)
         return

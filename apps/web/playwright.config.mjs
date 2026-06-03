@@ -67,6 +67,7 @@ export default defineConfig({
       NEXTAUTH_SECRET:
         process.env.NEXTAUTH_SECRET ?? 'e2e-nextauth-secret-min-32-chars',
       E2E_MODE: 'true',
+      NEXT_PUBLIC_POSTHOG_DISABLED: 'true',
     },
   },
 });

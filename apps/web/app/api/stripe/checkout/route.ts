@@ -7,6 +7,8 @@ import { getCreditPacks } from '@/lib/config'
 import { CreateCheckoutSessionRequestSchema } from '@repo/contracts/payments'
 import { createCheckoutSessionForUser } from '@infrastructure/payments/stripe-checkout-flows'
 import { createLogger } from '@shared/observability/logger'
+import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events'
+import { captureServer } from '@infrastructure/analytics/posthog-server'
 
 const logger = createLogger({ operation: 'stripe/checkout' })
 
@@ -42,6 +44,9 @@ export async function POST(request: NextRequest) {
     if (result.ok === false) {
       return NextResponse.json({ error: result.error }, { status: result.status })
     }
+    captureServer(AnalyticsEvents.CREDIT_PACK_CHECKOUT_STARTED, userId, {
+      pack_id: packId,
+    })
     return NextResponse.json(result.value)
   } catch (error: unknown) {
     logger.withContext({ userId, packId }).error('Stripe checkout failed', error)

@@ -30,6 +30,8 @@ import {
 } from '@/lib/express-clarify-prompt'
 import { createLogger } from '@shared/observability/logger'
 import { validationFailureData } from '@shared/observability/log-safe'
+import { AnalyticsEvents, balanceBucketFromCount } from '@infrastructure/analytics/analytics-events'
+import { captureServer } from '@infrastructure/analytics/posthog-server'
 
 const logger = createLogger({ operation: 'clarify' })
 
@@ -47,6 +49,7 @@ function resolveResponseLanguage(requestHeaders: Headers): 'fr' | 'en' {
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const projectId = params.id
   let userId: string | undefined
+  const clarifyStartedAt = Date.now()
 
   try {
     const requestHeaders = await headers()
@@ -92,6 +95,11 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const creditCheck = await checkCredits(userId, opType)
     if (!creditCheck.allowed) {
+      captureServer(AnalyticsEvents.CLARIFY_BLOCKED_INSUFFICIENT_CREDITS, userId, {
+        project_id: projectId,
+        action: opType,
+        balance_bucket: balanceBucketFromCount(creditCheck.currentBalance),
+      })
       return NextResponse.json(
         {
           error: 'insufficient_credits',
@@ -201,6 +209,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           questionType: ai.suggested_credit_type,
         }
         await db.insert(questionHistory).values(qhInsert)
+        if (userId) {
+          captureServer(AnalyticsEvents.CLARIFY_STREAM_COMPLETED, userId, {
+            project_id: projectId,
+            journey_mode: isExpress ? 'express' : 'standard',
+            duration_ms: Date.now() - clarifyStartedAt,
+          })
+        }
       } catch (e: unknown) {
         routeLogger.error('Clarify failed to persist question history', e)
       }

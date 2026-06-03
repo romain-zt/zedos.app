@@ -42,9 +42,9 @@ Rebuild with **`/execute-prd scan`**. Schema: `.cursor/rules/execution-loop.mdc`
 | SS-fast-track-urgent--express-deliverable-generation | Scope Slice | FA-fast-track-urgent | complete | P1 | false | false | — | Aucun — plan/US `executed` (2026-06-03) |
 | SS-fast-track-urgent--express-share-disclaimer | Scope Slice | FA-fast-track-urgent | complete | P1 | false | false | — | Aucun — plan/US `executed` (2026-06-03) |
 | SS-fast-track-urgent--grayed-post-prd-shell | Scope Slice | FA-fast-track-urgent | complete | P1 | false | false | — | Aucun — plan/US `executed` (2026-06-03) |
-| FA-prd-import | Feature Area | — | ready | P1 | false | false | — | Approuver plan `prd-import--capture-external-prd-at-create` → `/implement` |
-| SS-prd-import--capture-external-prd-at-create | Scope Slice | FA-prd-import | ready | P1 | false | false | — | Approuver plan draft → `/implement` |
-| FA-product-analytics | Feature Area | — | active | P3 | false | false | — | Implémenter funnel (tracking default-off); activer prod PostHog seulement après B-ANALYTICS-001 |
-| SS-product-analytics--owner-product-journey-funnels | Scope Slice | FA-product-analytics | active | P3 | false | false | — | Plan **approved** — PIS + `/implement` (prod tracking: B-ANALYTICS-001) |
-| SS-product-analytics--credit-blockage-and-monetization | Scope Slice | FA-product-analytics | ready | P3 | false | false | — | Approuver plan draft → `/implement` (après funnel adapter) |
+| FA-prd-import | Feature Area | — | complete | P1 | false | false | — | Aucun — slice capture-at-create livrée ; plan/US `executed` (2026-06-03) |
+| SS-prd-import--capture-external-prd-at-create | Scope Slice | FA-prd-import | complete | P1 | false | false | — | Aucun — plan/US `executed` (2026-06-03) |
+| FA-product-analytics | Feature Area | — | active | P3 | false | false | B-ANALYTICS-001 | Funnel A shipped (default-off); activer prod PostHog après clearance légale |
+| SS-product-analytics--owner-product-journey-funnels | Scope Slice | FA-product-analytics | complete | P3 | false | false | B-ANALYTICS-001 | Aucun — plan/US `executed` (2026-06-03); crédits/replay slices restantes |
+| SS-product-analytics--credit-blockage-and-monetization | Scope Slice | FA-product-analytics | complete | P3 | false | false | B-ANALYTICS-001 | Aucun — Funnel B shipped (default-off); plan `executed` (2026-06-03) |
 | SS-product-analytics--friction-replay-and-error-signals | Scope Slice | FA-product-analytics | exploratory | P3 | false | false | B-ANALYTICS-002 | Phase 2 — après funnel+crédits **shipped** ; approuver plan draft ; `promote-slice` puis `/implement` ; replay prod après B-ANALYTICS-002 |

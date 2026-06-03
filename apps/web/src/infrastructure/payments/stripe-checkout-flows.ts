@@ -116,6 +116,7 @@ export async function createCheckoutSessionForUser(
     metadata: {
       userId: input.userId,
       purchaseId: purchase.id,
+      packId: pack.id,
       packSize: String(pack.size),
     },
     success_url: `${input.origin}/dashboard/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
