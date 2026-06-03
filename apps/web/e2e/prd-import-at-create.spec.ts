@@ -6,33 +6,50 @@ test.describe('PRD import at project creation', () => {
   test('paste import: creates project, opens PRD tab, persists v1', async ({ page }) => {
     const projectName = `E2E Import ${Date.now()}`;
 
-    // Use in-page fetch so auth cookies match the browser session (Playwright APIRequest can differ in CI).
     await page.goto('/dashboard/projects');
-    const projectId = await page.evaluate(
-      async ({ name, importPaste }) => {
-        const res = await fetch('/api/projects', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({
-            name,
-            journeyMode: 'standard',
-            importPaste,
-          }),
-        });
-        const text = await res.text();
-        if (!res.ok) {
-          throw new Error(`POST /api/projects ${res.status}: ${text.slice(0, 300)}`);
-        }
-        const data = JSON.parse(text) as { id: string };
-        return data.id;
-      },
-      { name: projectName, importPaste: IMPORT_BODY }
-    );
-    expect(projectId).toBeTruthy();
+    await expect(page.getByRole('button', { name: /New project|Nouveau projet/i }).first()).toBeVisible({
+      timeout: 20_000,
+    });
 
-    await page.goto(`/dashboard/projects/${projectId}?tab=prd`);
-    await expect(page).toHaveURL(new RegExp(`/dashboard/projects/${projectId}`));
+    await page.getByRole('button', { name: /New project|Nouveau projet/i }).first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    await page.locator('#project-name').fill(projectName);
+    await page.getByRole('button', { name: /Import existing PRD|Importer un PRD existant/i }).click();
+    await page.locator('#import-paste').fill(IMPORT_BODY);
+
+    const createResponsePromise = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        /\/api\/projects\/?$/.test(new URL(response.url()).pathname),
+      { timeout: 30_000 },
+    );
+
+    const createButton = page
+      .getByRole('dialog')
+      .getByRole('button', { name: /Create project|Créer le projet/i });
+    await expect(createButton).toBeEnabled();
+    // Radix dialog footer can sit outside Playwright's viewport; DOM click still submits.
+    await createButton.evaluate((btn) => {
+      (btn as HTMLButtonElement).click();
+    });
+
+    const createResponse = await createResponsePromise;
+    expect(
+      createResponse.ok(),
+      `POST /api/projects failed: ${createResponse.status()} ${(await createResponse.text()).slice(0, 300)}`,
+    ).toBeTruthy();
+
+    const project = (await createResponse.json()) as { id: string };
+    expect(project.id).toBeTruthy();
+
+    await expect(
+      page.getByText(/Project created with imported PRD|Projet créé avec PRD importé/i),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(page).toHaveURL(
+      new RegExp(`/dashboard/projects/${project.id}(\\?tab=prd)?`),
+      { timeout: 20_000 },
+    );
 
     const prdTab = page.getByRole('tab', { name: /PRD/i });
     await expect(prdTab).toBeVisible({ timeout: 20_000 });
@@ -43,7 +60,7 @@ test.describe('PRD import at project creation', () => {
     await expect(page.getByText('Imported content')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('founders need a fast path')).toBeVisible();
 
-    const prdList = await page.request.get(`/api/projects/${projectId}/prd`);
+    const prdList = await page.request.get(`/api/projects/${project.id}/prd`);
     expect(prdList.ok(), `GET /prd failed: ${prdList.status()}`).toBeTruthy();
     const versions = (await prdList.json()) as Array<{
       versionNumber: number;
