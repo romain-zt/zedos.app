@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
     userId,
     name: parsed.data.name,
     description: parsed.data.description ?? null,
+    journeyMode: parsed.data.journeyMode,
   })
 
   if (result.isErr()) {

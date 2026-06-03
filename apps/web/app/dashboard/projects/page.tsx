@@ -8,7 +8,9 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import type { JourneyMode } from '@repo/contracts/project/project-contracts'
 import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import {
   Plus, FileText, ArrowRight, FolderOpen, MoreVertical, Trash2, Pencil,
@@ -30,6 +32,7 @@ export default function ProjectsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
+  const [newJourneyMode, setNewJourneyMode] = useState<JourneyMode>('standard')
   const [creating, setCreating] = useState(false)
 
   const fetchProjects = useCallback(async () => {
@@ -69,7 +72,11 @@ export default function ProjectsPage() {
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim(), description: newDesc.trim() || null }),
+        body: JSON.stringify({
+          name: newName.trim(),
+          description: newDesc.trim() || null,
+          journeyMode: newJourneyMode,
+        }),
       })
       if (res?.ok) {
         const project = await res.json()
@@ -77,6 +84,7 @@ export default function ProjectsPage() {
         setShowCreate(false)
         setNewName('')
         setNewDesc('')
+        setNewJourneyMode('standard')
         router.push(`/dashboard/projects/${project?.id}`)
       } else {
         const data = await res.json()
@@ -238,6 +246,35 @@ export default function ProjectsPage() {
                 rows={3}
                 className="resize-none"
               />
+            </div>
+            <div className="space-y-3">
+              <Label>{t('projects.journeyModeLabel')}</Label>
+              <RadioGroup
+                value={newJourneyMode}
+                onValueChange={(value) => setNewJourneyMode(value as JourneyMode)}
+                className="gap-3"
+              >
+                <label
+                  htmlFor="journey-standard"
+                  className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer has-[:checked]:border-primary"
+                >
+                  <RadioGroupItem value="standard" id="journey-standard" className="mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-medium">{t('projects.journeyModeStandard')}</span>
+                    <p className="text-xs text-muted-foreground">{t('projects.journeyModeStandardHint')}</p>
+                  </div>
+                </label>
+                <label
+                  htmlFor="journey-express"
+                  className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer has-[:checked]:border-primary"
+                >
+                  <RadioGroupItem value="express" id="journey-express" className="mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="text-sm font-medium">{t('projects.journeyModeExpress')}</span>
+                    <p className="text-xs text-muted-foreground">{t('projects.journeyModeExpressHint')}</p>
+                  </div>
+                </label>
+              </RadioGroup>
             </div>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button

@@ -2,7 +2,7 @@ import { IProjectRepository } from '@domain/project/project-repository';
 import { ProjectDomainService } from '@domain/project/project-service';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, ErrorCode, ValidationError } from '@shared/errors/application-error';
-import { ProjectDTO } from '@repo/contracts/project/project-contracts';
+import { ProjectDTO, type JourneyMode } from '@repo/contracts/project/project-contracts';
 import { createLogger } from '@shared/observability/logger';
 import { forwardErr } from '@shared/result/propagate';
 import { toProjectDTO } from '@application/project/project-dto';
@@ -14,6 +14,7 @@ export interface CreateProjectInput {
   userId: string;
   name: string;
   description: string | null;
+  journeyMode?: JourneyMode;
 }
 
 export class CreateProjectUseCase {
@@ -29,7 +30,8 @@ export class CreateProjectUseCase {
         uuidv4(),
         input.userId,
         input.name,
-        input.description
+        input.description,
+        input.journeyMode ?? 'standard'
       );
 
       const createResult = await this.projectRepository.create(project);

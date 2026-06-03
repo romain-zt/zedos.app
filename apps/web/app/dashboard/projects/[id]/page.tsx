@@ -23,6 +23,7 @@ export default async function ProjectPage({ params }: { params: { id: string } }
       projectId={project.id}
       projectName={project.name}
       projectDescription={project.description}
+      initialJourneyMode={project.journeyMode}
     />
   )
 }

@@ -44,6 +44,7 @@ export interface NewProjectRow {
   name: string;
   description?: string | null;
   phase?: string;
+  journeyMode?: string;
   architectureStartedAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
@@ -55,6 +56,7 @@ export interface ProjectUpdate {
   name?: string;
   description?: string | null;
   phase?: string;
+  journeyMode?: string;
   architectureStartedAt?: Date | null;
 }
 

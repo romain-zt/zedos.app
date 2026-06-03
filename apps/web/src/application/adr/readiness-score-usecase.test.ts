@@ -24,6 +24,7 @@ const baseProject = (overrides: Partial<Project>): Project => ({
   name: 'Test',
   description: null,
   phase: 'intake',
+  journeyMode: 'standard',
   architectureStartedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),

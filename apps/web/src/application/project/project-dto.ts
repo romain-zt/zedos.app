@@ -8,6 +8,7 @@ export function toProjectDTO(project: Project): ProjectDTO {
     name: project.name,
     description: project.description,
     phase: project.phase,
+    journeyMode: project.journeyMode,
     architectureStartedAt: project.architectureStartedAt,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
