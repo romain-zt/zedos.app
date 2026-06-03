@@ -6,7 +6,7 @@
 
 ## Status
 
-`draft`
+`executed`
 
 > **Layout in effect:** post-migration (`apps/web/` + `packages/`)
 > **Architecture Surface:** resolved (extends funnel plan adapter)

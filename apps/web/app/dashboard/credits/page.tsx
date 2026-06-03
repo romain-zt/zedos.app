@@ -14,6 +14,8 @@ import { CREDITS_UPDATED_EVENT } from '@/lib/credits-events'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useI18n } from '@/src/i18n'
+import { AnalyticsEvents, balanceBucketFromCount } from '@infrastructure/analytics/analytics-events'
+import { captureClient } from '@infrastructure/analytics/posthog-client'
 
 interface CreditPack {
   id: string
@@ -129,15 +131,17 @@ export default function CreditsPage() {
     balanceShort: tp('balanceShort', 'bal'),
   }), [tp])
 
-  const refreshCredits = useCallback(async (): Promise<void> => {
+  const refreshCredits = useCallback(async (): Promise<number | null> => {
     const credRes = await fetch('/api/credits', { cache: 'no-store' })
-    if (!credRes.ok) return
+    if (!credRes.ok) return null
 
     const data = await credRes.json()
-    setBalance(data?.creditBalance ?? 0)
+    const nextBalance = data?.creditBalance ?? 0
+    setBalance(nextBalance)
     setGraceUsed(data?.graceUsed ?? false)
     setTransactions(data?.recentTransactions ?? [])
     window.dispatchEvent(new Event(CREDITS_UPDATED_EVENT))
+    return nextBalance
   }, [])
 
   useEffect(() => {
@@ -206,7 +210,12 @@ export default function CreditsPage() {
         }
 
         if (!cancelled) {
-          await refreshCredits()
+          const loadedBalance = await refreshCredits()
+          if (loadedBalance !== null) {
+            captureClient(AnalyticsEvents.CREDITS_PAGE_VIEWED, {
+              balance_bucket: balanceBucketFromCount(loadedBalance),
+            })
+          }
         }
       } catch {
         if (!cancelled) toast.error(copy.creditsLoadFailed)

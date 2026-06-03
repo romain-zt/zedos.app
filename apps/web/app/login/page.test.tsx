@@ -6,6 +6,7 @@ import LoginPage from './page';
 
 const replaceMock = vi.hoisted(() => vi.fn());
 const signInEmailMock = vi.hoisted(() => vi.fn());
+const getSessionMock = vi.hoisted(() => vi.fn());
 const useSessionMock = vi.hoisted(() => vi.fn());
 const toastErrorMock = vi.hoisted(() => vi.fn());
 
@@ -26,6 +27,12 @@ vi.mock('@repo/auth', () => ({
     email: (input: { email: string; password: string }) => signInEmailMock(input),
   },
   useSession: () => useSessionMock(),
+  getSession: () => getSessionMock(),
+}));
+
+vi.mock('@infrastructure/analytics/posthog-client', () => ({
+  captureClient: vi.fn(),
+  identifyClient: vi.fn(),
 }));
 
 vi.mock('sonner', () => ({
@@ -46,6 +53,7 @@ describe('LoginPage', () => {
 
   it('submits credentials and redirects on success', async () => {
     signInEmailMock.mockResolvedValue({ error: null });
+    getSessionMock.mockResolvedValue({ data: { user: { id: 'user-1' } } });
     render(<LoginPage />);
 
     fireEvent.change(screen.getByLabelText('Email'), {

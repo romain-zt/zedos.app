@@ -11,6 +11,9 @@ import { Mail, Lock, User, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { useI18n } from '@/src/i18n'
+import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events'
+import { captureClient, identifyClient } from '@infrastructure/analytics/posthog-client'
+import { getSession } from '@repo/auth'
 
 export default function SignupPage() {
   const { tp } = useI18n()
@@ -52,6 +55,9 @@ export default function SignupPage() {
         password,
       })
       if (signUpResult.error) {
+        captureClient(AnalyticsEvents.SIGN_UP_FAILED, {
+          error_code: signUpResult.error.code ?? 'sign_up_failed',
+        })
         toast.error(signUpResult.error.message ?? tp('signupFailed', 'Signup failed'))
         return
       }
@@ -61,12 +67,22 @@ export default function SignupPage() {
         password,
       })
       if (result.error) {
+        captureClient(AnalyticsEvents.SIGN_UP_FAILED, {
+          error_code: result.error.code ?? 'sign_in_after_signup_failed',
+        })
         toast.error(tp('loginAfterSignupFailed', 'Account created but login failed. Please sign in.'))
         router.replace(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)
       } else {
+        const session = await getSession()
+        const userId = session.data?.user?.id
+        if (userId) {
+          identifyClient(userId)
+          captureClient(AnalyticsEvents.SIGN_UP_COMPLETED, {})
+        }
         router.replace(callbackUrl)
       }
     } catch {
+      captureClient(AnalyticsEvents.SIGN_UP_FAILED, { error_code: 'unexpected_error' })
       toast.error(tp('somethingWentWrong', 'Something went wrong'))
     } finally {
       setLoading(false)

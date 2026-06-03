@@ -7,13 +7,16 @@ import { requireUser } from '@repo/auth/guards'
 import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
 import { ListProjectsUseCase } from '@application/project/list-projects-usecase'
 import { CreateProjectUseCase } from '@application/project/create-project-usecase'
+import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
 import {
-  CreateProjectRequestSchema,
   ProjectDTOSchema,
   ProjectListItemDTOSchema,
 } from '@contracts/project/project-contracts'
+import { parseCreateProjectRequest } from './parse-create-project-request'
 import { createLogger } from '@shared/observability/logger'
 import { validationFailureData } from '@shared/observability/log-safe'
+import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events'
+import { captureServer } from '@infrastructure/analytics/posthog-server'
 
 const logger = createLogger({ operation: 'projects' })
 
@@ -52,23 +55,21 @@ export async function POST(request: NextRequest) {
   if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = userResult.unwrap().id
 
-  const body = await request.json()
-  const parsed = CreateProjectRequestSchema.safeParse(body)
-  if (!parsed.success) {
-    logger.warn('Create project validation failed', validationFailureData(parsed.error.flatten()))
-    return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? 'Validation error' },
-      { status: 400 },
-    )
+  const parsedBody = await parseCreateProjectRequest(request)
+  if (parsedBody.ok === false) {
+    logger.warn('Create project validation failed', { userId, message: parsedBody.message })
+    return NextResponse.json({ error: parsedBody.message }, { status: parsedBody.status })
   }
 
   const repo = new PrismaProjectRepository()
-  const useCase = new CreateProjectUseCase(repo)
+  const prdRepo = new PrismaPrdRepository()
+  const useCase = new CreateProjectUseCase(repo, prdRepo)
   const result = await useCase.execute({
     userId,
-    name: parsed.data.name,
-    description: parsed.data.description ?? null,
-    journeyMode: parsed.data.journeyMode,
+    name: parsedBody.data.name,
+    description: parsedBody.data.description,
+    journeyMode: parsedBody.data.journeyMode,
+    importedPrdContent: parsedBody.data.importedPrd,
   })
 
   if (result.isErr()) {
@@ -86,5 +87,9 @@ export async function POST(request: NextRequest) {
   }
 
   logger.info('Project created', { userId, projectId: dtoValidation.data.id })
+  captureServer(AnalyticsEvents.PROJECT_CREATED, userId, {
+    project_id: dtoValidation.data.id,
+    journey_mode: dtoValidation.data.journeyMode,
+  })
   return NextResponse.json(dtoValidation.data, { status: 201 })
 }

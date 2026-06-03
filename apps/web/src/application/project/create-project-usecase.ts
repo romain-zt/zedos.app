@@ -1,6 +1,8 @@
 import { IProjectRepository } from '@domain/project/project-repository';
+import { IPrdRepository } from '@domain/prd/prd-repository';
 import { ProjectDomainService } from '@domain/project/project-service';
 import { Result, ok, err } from '@repo/result';
+import type { PrdVersionContent } from '@repo/contracts/prd';
 import { ApplicationError, ErrorCode, ValidationError } from '@shared/errors/application-error';
 import { ProjectDTO, type JourneyMode } from '@repo/contracts/project/project-contracts';
 import { createLogger } from '@shared/observability/logger';
@@ -15,10 +17,15 @@ export interface CreateProjectInput {
   name: string;
   description: string | null;
   journeyMode?: JourneyMode;
+  /** When set, persists first PRD version atomically with project create (rollback on failure). */
+  importedPrdContent?: PrdVersionContent | null;
 }
 
 export class CreateProjectUseCase {
-  constructor(private projectRepository: IProjectRepository) {}
+  constructor(
+    private projectRepository: IProjectRepository,
+    private prdRepository?: IPrdRepository
+  ) {}
 
   async execute(input: CreateProjectInput): Promise<Result<ProjectDTO, ApplicationError>> {
     try {
@@ -40,7 +47,35 @@ export class CreateProjectUseCase {
       }
 
       const created = createResult.unwrap();
-      logger.info('Project created', { projectId: created.id, userId: input.userId });
+
+      if (input.importedPrdContent) {
+        if (!this.prdRepository) {
+          await this.projectRepository.delete(created.id);
+          return err(
+            new ApplicationError({
+              code: ErrorCode.INTERNAL_SERVER_ERROR,
+              message: 'PRD import is not configured',
+              statusCode: 500,
+            })
+          );
+        }
+
+        const prdResult = await this.prdRepository.ensureFirstVersion(
+          created.id,
+          input.importedPrdContent
+        );
+        if (prdResult.isErr()) {
+          await this.projectRepository.delete(created.id);
+          return forwardErr(prdResult);
+        }
+        logger.info('Project created with imported PRD', {
+          projectId: created.id,
+          userId: input.userId,
+          prdVersionId: prdResult.unwrap().version.id,
+        });
+      } else {
+        logger.info('Project created', { projectId: created.id, userId: input.userId });
+      }
 
       return ok(toProjectDTO(created));
     } catch (error: unknown) {

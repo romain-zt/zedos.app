@@ -11,6 +11,8 @@ import { GetAutoReloadPreferenceUseCase } from '@application/auto-reload/get-aut
 import { UpdateAutoReloadPreferenceUseCase } from '@application/auto-reload/update-auto-reload-preference-usecase';
 import { DrizzleAutoReloadRepository } from '@infrastructure/persistence/auto-reload-repository';
 import { toNextErrorResponse } from '@shared/http';
+import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events';
+import { captureServer } from '@infrastructure/analytics/posthog-server';
 
 const repo = new DrizzleAutoReloadRepository();
 
@@ -56,6 +58,14 @@ export async function PATCH(request: Request) {
   const parsed = AutoReloadPreferenceDTOSchema.safeParse(result.unwrap());
   if (!parsed.success) {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+  const userId = userResult.unwrap().id;
+  if (patch.enabled === true) {
+    captureServer(AnalyticsEvents.AUTO_RELOAD_ENABLED, userId, {
+      pack_id: String(patch.packSize ?? parsed.data.packSize),
+    });
+  } else if (patch.enabled === false) {
+    captureServer(AnalyticsEvents.AUTO_RELOAD_DISABLED, userId, {});
   }
   return NextResponse.json(parsed.data);
 }

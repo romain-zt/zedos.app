@@ -12,6 +12,9 @@ import type { JourneyMode } from '@repo/contracts/project/project-contracts'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { validateImportPasteClient } from '@/app/api/projects/parse-create-project-request'
+import { IMPORTED_PRD_MAX_BYTES } from '@repo/contracts/project/prd-import-at-create'
 import {
   Plus, FileText, ArrowRight, FolderOpen, MoreVertical, Trash2, Pencil,
   AlertTriangle, RefreshCw,
@@ -33,7 +36,13 @@ export default function ProjectsPage() {
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
   const [newJourneyMode, setNewJourneyMode] = useState<JourneyMode>('standard')
+  const [importOpen, setImportOpen] = useState(false)
+  const [importPaste, setImportPaste] = useState('')
+  const [importFile, setImportFile] = useState<File | null>(null)
   const [creating, setCreating] = useState(false)
+
+  const importActive =
+    importOpen && (importPaste.trim().length > 0 || importFile != null)
 
   const fetchProjects = useCallback(async () => {
     setLoading(true)
@@ -62,30 +71,69 @@ export default function ProjectsPage() {
 
   useEffect(() => { void fetchProjects() }, [fetchProjects])
 
+  const resetCreateForm = () => {
+    setNewName('')
+    setNewDesc('')
+    setNewJourneyMode('standard')
+    setImportOpen(false)
+    setImportPaste('')
+    setImportFile(null)
+  }
+
   const handleCreate = async () => {
     if (!newName.trim()) {
       toast.error(t('projects.nameRequired'))
       return
     }
+    if (importOpen && importPaste.trim()) {
+      const pasteError = validateImportPasteClient(importPaste)
+      if (pasteError) {
+        toast.error(pasteError)
+        return
+      }
+    }
     setCreating(true)
     try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newName.trim(),
-          description: newDesc.trim() || null,
-          journeyMode: newJourneyMode,
-        }),
-      })
+      let res: Response
+      if (importOpen && importFile) {
+        const formData = new FormData()
+        formData.set('name', newName.trim())
+        formData.set('description', newDesc.trim())
+        formData.set('journeyMode', newJourneyMode)
+        formData.set('importKind', 'file')
+        formData.set('importFile', importFile)
+        res = await fetch('/api/projects', { method: 'POST', body: formData })
+      } else if (importOpen && importPaste.trim()) {
+        res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newName.trim(),
+            description: newDesc.trim() || null,
+            journeyMode: newJourneyMode,
+            importPaste: importPaste.trim(),
+          }),
+        })
+      } else {
+        res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newName.trim(),
+            description: newDesc.trim() || null,
+            journeyMode: newJourneyMode,
+          }),
+        })
+      }
       if (res?.ok) {
         const project = await res.json()
-        toast.success(t('projects.created'))
+        toast.success(
+          importActive ? t('projects.createdWithImport') : t('projects.created')
+        )
         setShowCreate(false)
-        setNewName('')
-        setNewDesc('')
-        setNewJourneyMode('standard')
-        router.push(`/dashboard/projects/${project?.id}`)
+        resetCreateForm()
+        const tab = importActive ? '?tab=prd' : ''
+        router.push(`/dashboard/projects/${project?.id}${tab}`)
       } else {
         const data = await res.json()
         toast.error(data?.error ?? t('projects.createFailed'))
@@ -276,10 +324,62 @@ export default function ProjectsPage() {
                 </label>
               </RadioGroup>
             </div>
+            <Collapsible open={importOpen} onOpenChange={setImportOpen}>
+              <CollapsibleTrigger asChild>
+                <Button type="button" variant="outline" className="w-full justify-between min-h-11">
+                  {t('projects.importPrdToggle')}
+                  <span className="text-xs text-muted-foreground">
+                    {importOpen ? t('common.close') : t('projects.importPrdOptional')}
+                  </span>
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-3 pt-3">
+                <p className="text-xs text-muted-foreground">{t('projects.importPrdHint')}</p>
+                <div className="space-y-2">
+                  <Label htmlFor="import-paste">{t('projects.importPasteLabel')}</Label>
+                  <Textarea
+                    id="import-paste"
+                    value={importPaste}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                      setImportPaste(e.target.value)
+                      if (e.target.value.trim()) setImportFile(null)
+                    }}
+                    rows={6}
+                    className="resize-y font-mono text-sm"
+                    placeholder={t('projects.importPastePlaceholder')}
+                    disabled={importFile != null}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="import-file">{t('projects.importFileLabel')}</Label>
+                  <Input
+                    id="import-file"
+                    type="file"
+                    accept=".md,.txt,text/plain,text/markdown"
+                    disabled={importPaste.trim().length > 0}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const file = e.target.files?.[0] ?? null
+                      setImportFile(file)
+                      if (file) setImportPaste('')
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('projects.importFileHint').replace(
+                      '{maxMb}',
+                      String(Math.floor(IMPORTED_PRD_MAX_BYTES / (1024 * 1024)))
+                    )}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('projects.importNoCredits')}</p>
+              </CollapsibleContent>
+            </Collapsible>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 variant="ghost"
-                onClick={() => setShowCreate(false)}
+                onClick={() => {
+                  setShowCreate(false)
+                  resetCreateForm()
+                }}
                 className="min-h-11 w-full sm:w-auto"
               >
                 {t('common.cancel')}

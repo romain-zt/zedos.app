@@ -23,6 +23,7 @@ export const CheckoutSessionCompletedEventSchema = z.object({
         userId: z.string(),
         purchaseId: z.string(),
         packSize: z.string(),
+        packId: z.string().optional(),
       }),
       payment_intent: z.string().nullable().optional(),
       amount_total: z.number().nullable().optional(),

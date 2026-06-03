@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { signIn, useSession } from '@repo/auth'
+import { signIn, useSession, getSession } from '@repo/auth'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthLayout } from '@/components/layouts/auth-layout'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,8 @@ import { Mail, Lock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { useI18n } from '@/src/i18n'
+import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events'
+import { captureClient, identifyClient } from '@infrastructure/analytics/posthog-client'
 
 export default function LoginPage() {
   const { tp } = useI18n()
@@ -49,11 +51,21 @@ export default function LoginPage() {
         password,
       })
       if (result.error) {
+        captureClient(AnalyticsEvents.SIGN_IN_FAILED, {
+          error_code: result.error.code ?? 'sign_in_failed',
+        })
         toast.error(tp('invalidCredentials', 'Invalid email or password'))
       } else {
+        const session = await getSession()
+        const userId = session.data?.user?.id
+        if (userId) {
+          identifyClient(userId)
+          captureClient(AnalyticsEvents.SIGN_IN_COMPLETED, {})
+        }
         router.replace(callbackUrl)
       }
     } catch {
+      captureClient(AnalyticsEvents.SIGN_IN_FAILED, { error_code: 'unexpected_error' })
       toast.error(tp('somethingWentWrong', 'Something went wrong'))
     } finally {
       setLoading(false)

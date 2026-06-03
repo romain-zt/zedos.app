@@ -23,12 +23,17 @@ import {
 } from '@repo/contracts/prd/prd-contracts'
 import { useI18n } from '@/src/i18n'
 import { JourneyModeControls } from './journey-mode-controls'
+import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events'
+import { captureClient } from '@infrastructure/analytics/posthog-client'
+
+type WorkspaceTab = 'clarify' | 'prd' | 'architecture' | 'history'
 
 interface ProjectWorkspaceProps {
   projectId: string
   projectName: string
   projectDescription: string | null
   initialJourneyMode: JourneyMode
+  initialActiveTab?: WorkspaceTab
 }
 
 export function ProjectWorkspace({
@@ -36,9 +41,10 @@ export function ProjectWorkspace({
   projectName,
   projectDescription,
   initialJourneyMode,
+  initialActiveTab = 'clarify',
 }: ProjectWorkspaceProps) {
   const { t } = useI18n()
-  const [activeTab, setActiveTab] = useState('clarify')
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(initialActiveTab)
   const [prdVersions, setPrdVersions] = useState<PrdVersionDTO[]>([])
   const [selectedVersion, setSelectedVersion] = useState<PrdVersionDTO | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -179,7 +185,18 @@ export function ProjectWorkspace({
         </div>
       </FadeIn>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const tab = value as WorkspaceTab
+          setActiveTab(tab)
+          captureClient(AnalyticsEvents.WORKSPACE_TAB_SELECTED, {
+            project_id: projectId,
+            tab,
+            journey_mode: journeyMode,
+          })
+        }}
+      >
         <div className="flex items-center justify-between mb-4">
           <TabsList>
             <TabsTrigger value="clarify" className="gap-2">
