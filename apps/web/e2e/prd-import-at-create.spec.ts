@@ -3,23 +3,36 @@ import { test, expect } from '@playwright/test';
 const IMPORT_BODY = '# E2E imported PRD\n\nVision: founders need a fast path from idea to PRD.';
 
 test.describe('PRD import at project creation', () => {
-  test('paste import: creates project, opens PRD tab, persists v1', async ({ page, request }) => {
+  test('paste import: creates project, opens PRD tab, persists v1', async ({ page }) => {
     const projectName = `E2E Import ${Date.now()}`;
 
-    const createRes = await request.post('/api/projects', {
-      data: {
-        name: projectName,
-        description: null,
-        journeyMode: 'standard',
-        importPaste: IMPORT_BODY,
+    // Use in-page fetch so auth cookies match the browser session (Playwright APIRequest can differ in CI).
+    await page.goto('/dashboard/projects');
+    const projectId = await page.evaluate(
+      async ({ name, importPaste }) => {
+        const res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            name,
+            journeyMode: 'standard',
+            importPaste,
+          }),
+        });
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(`POST /api/projects ${res.status}: ${text.slice(0, 300)}`);
+        }
+        const data = JSON.parse(text) as { id: string };
+        return data.id;
       },
-    });
-    expect(createRes.ok(), `POST /api/projects failed: ${createRes.status()}`).toBeTruthy();
-    const project = (await createRes.json()) as { id: string };
-    expect(project.id).toBeTruthy();
+      { name: projectName, importPaste: IMPORT_BODY }
+    );
+    expect(projectId).toBeTruthy();
 
-    await page.goto(`/dashboard/projects/${project.id}?tab=prd`);
-    await expect(page).toHaveURL(new RegExp(`/dashboard/projects/${project.id}`));
+    await page.goto(`/dashboard/projects/${projectId}?tab=prd`);
+    await expect(page).toHaveURL(new RegExp(`/dashboard/projects/${projectId}`));
 
     const prdTab = page.getByRole('tab', { name: /PRD/i });
     await expect(prdTab).toBeVisible({ timeout: 20_000 });
@@ -30,7 +43,7 @@ test.describe('PRD import at project creation', () => {
     await expect(page.getByText('Imported content')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('founders need a fast path')).toBeVisible();
 
-    const prdList = await request.get(`/api/projects/${project.id}/prd`);
+    const prdList = await page.request.get(`/api/projects/${projectId}/prd`);
     expect(prdList.ok(), `GET /prd failed: ${prdList.status()}`).toBeTruthy();
     const versions = (await prdList.json()) as Array<{
       versionNumber: number;
