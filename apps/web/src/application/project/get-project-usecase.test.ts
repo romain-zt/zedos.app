@@ -22,6 +22,7 @@ describe('GetProjectUseCase', () => {
       name: 'Alpha',
       description: null,
       phase: 'intake' as const,
+      journeyMode: 'standard' as const,
       architectureStartedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),

@@ -12,6 +12,7 @@ const project = {
   name: 'Test',
   description: null,
   phase: 'intake' as const,
+  journeyMode: 'standard' as const,
   architectureStartedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),

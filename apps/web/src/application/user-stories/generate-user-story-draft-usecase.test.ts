@@ -17,6 +17,7 @@ const makeProject = () => ({
   name: 'Test Project',
   description: null,
   phase: 'intake' as const,
+  journeyMode: 'standard' as const,
   architectureStartedAt: null,
   createdAt: now,
   updatedAt: now,

@@ -8,6 +8,7 @@ const makeProject = (overrides: Partial<Project> = {}): Project => ({
   name: 'Test Project',
   description: null,
   phase: 'intake',
+  journeyMode: 'standard',
   architectureStartedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -20,7 +21,23 @@ describe('ProjectDomainService', () => {
       const p = ProjectDomainService.createProject('id1', 'user1', ' My Project ', 'desc');
       expect(p.name).toBe('My Project');
       expect(p.phase).toBe('intake');
+      expect(p.journeyMode).toBe('standard');
       expect(p.architectureStartedAt).toBeNull();
+    });
+
+    it('creates a project with express journey mode', () => {
+      const p = ProjectDomainService.createProject('id1', 'user1', 'Express', null, 'express');
+      expect(p.journeyMode).toBe('express');
+    });
+  });
+
+  describe('setJourneyMode', () => {
+    it('updates journey mode without changing phase', () => {
+      const p = makeProject({ journeyMode: 'standard' });
+      const updated = ProjectDomainService.setJourneyMode(p, 'express');
+      expect(updated.journeyMode).toBe('express');
+      expect(updated.phase).toBe('intake');
+      expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(p.updatedAt.getTime());
     });
   });
 

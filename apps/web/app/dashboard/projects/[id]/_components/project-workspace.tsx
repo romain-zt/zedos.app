@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import type { JourneyMode } from '@repo/contracts/project/project-contracts'
 import { ClarificationChat } from './clarification-chat'
 import { PrdViewer } from './prd-viewer'
 import { QuestionHistoryPanel } from './question-history'
@@ -21,14 +22,21 @@ import {
   type PrdVersionDTO,
 } from '@repo/contracts/prd/prd-contracts'
 import { useI18n } from '@/src/i18n'
+import { JourneyModeControls } from './journey-mode-controls'
 
 interface ProjectWorkspaceProps {
   projectId: string
   projectName: string
   projectDescription: string | null
+  initialJourneyMode: JourneyMode
 }
 
-export function ProjectWorkspace({ projectId, projectName, projectDescription }: ProjectWorkspaceProps) {
+export function ProjectWorkspace({
+  projectId,
+  projectName,
+  projectDescription,
+  initialJourneyMode,
+}: ProjectWorkspaceProps) {
   const { t } = useI18n()
   const [activeTab, setActiveTab] = useState('clarify')
   const [prdVersions, setPrdVersions] = useState<PrdVersionDTO[]>([])
@@ -38,6 +46,7 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
   const [editDesc, setEditDesc] = useState(projectDescription ?? '')
   const [saving, setSaving] = useState(false)
   const [phase, setPhase] = useState('intake')
+  const [journeyMode, setJourneyMode] = useState<JourneyMode>(initialJourneyMode)
   const [loadingPhase, setLoadingPhase] = useState(true)
   const [refinement, setRefinement] = useState<{
     isOpen: boolean
@@ -104,6 +113,9 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
         if (res?.ok) {
           const data = await res.json()
           setPhase(data.phase || 'intake')
+          if (data.journeyMode === 'express' || data.journeyMode === 'standard') {
+            setJourneyMode(data.journeyMode)
+          }
         }
       } catch {
       } finally {
@@ -146,16 +158,24 @@ export function ProjectWorkspace({ projectId, projectName, projectDescription }:
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       <FadeIn>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="font-display text-2xl font-bold tracking-tight">{projectName}</h1>
             {projectDescription && (
               <p className="text-sm text-muted-foreground mt-0.5">{projectDescription}</p>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <JourneyModeControls
+              projectId={projectId}
+              journeyMode={journeyMode}
+              onJourneyModeChange={setJourneyMode}
+              onExpressActivated={() => setActiveTab('clarify')}
+            />
+            <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)}>
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </FadeIn>
 

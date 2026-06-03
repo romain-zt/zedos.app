@@ -8,7 +8,7 @@
 import type { PrdVersionContent } from '@repo/contracts/prd';
 import type { GeneratePrdSection } from '@repo/contracts/ai/generate-prd-stream';
 import type { ArchitectureUnlockReasonCode } from '@repo/contracts/adr/adr-contracts';
-import { Project, ProjectPhase } from './project';
+import { Project, ProjectPhase, type JourneyMode } from './project';
 
 // These IDs match the section `id` values produced by the AI PRD generation prompt.
 const PRD_REQUIRED_SECTIONS = [
@@ -36,7 +36,8 @@ export class ProjectDomainService {
     id: string,
     userId: string,
     name: string,
-    description: string | null
+    description: string | null,
+    journeyMode: JourneyMode = 'standard'
   ): Project {
     return {
       id,
@@ -44,8 +45,20 @@ export class ProjectDomainService {
       name: name.trim(),
       description: description?.trim() || null,
       phase: 'intake',
+      journeyMode,
       architectureStartedAt: null,
       createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  /**
+   * Update journey mode (express ↔ standard). Does not alter version history.
+   */
+  static setJourneyMode(project: Project, journeyMode: JourneyMode): Project {
+    return {
+      ...project,
+      journeyMode,
       updatedAt: new Date(),
     };
   }

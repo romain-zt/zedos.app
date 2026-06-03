@@ -90,6 +90,7 @@ export class DrizzleProjectRepository implements IProjectRepository {
           name: projects.name,
           description: projects.description,
           phase: projects.phase,
+          journeyMode: projects.journeyMode,
           architectureStartedAt: projects.architectureStartedAt,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
@@ -155,6 +156,7 @@ export class DrizzleProjectRepository implements IProjectRepository {
         name: project.name,
         description: project.description,
         phase: project.phase,
+        journeyMode: project.journeyMode,
       };
       const [row] = await db
         .insert(projects)
@@ -175,6 +177,7 @@ export class DrizzleProjectRepository implements IProjectRepository {
         name: project.name,
         description: project.description,
         phase: project.phase,
+        journeyMode: project.journeyMode,
         architectureStartedAt: project.architectureStartedAt,
       };
       const [row] = await db
@@ -207,12 +210,14 @@ export class DrizzleProjectRepository implements IProjectRepository {
   }
 
   private mapToDomain(row: typeof projects.$inferSelect): Project {
+    const journeyMode = row.journeyMode === 'express' ? 'express' : 'standard';
     return {
       id: row.id,
       userId: row.userId,
       name: row.name,
       description: row.description,
       phase: (row.phase || 'intake') as ProjectPhase,
+      journeyMode,
       architectureStartedAt: row.architectureStartedAt,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

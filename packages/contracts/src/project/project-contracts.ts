@@ -8,9 +8,14 @@
 import { z } from 'zod';
 import { PrdVersionContentSchema } from '../prd/prd-contracts';
 
+export const JourneyModeSchema = z.enum(['standard', 'express']);
+
+export type JourneyMode = z.infer<typeof JourneyModeSchema>;
+
 export const CreateProjectRequestSchema = z.object({
   name: z.string().min(1, 'Project name is required').transform((v) => v.trim()),
   description: z.string().optional().nullable().transform((v) => v?.trim() ?? null),
+  journeyMode: JourneyModeSchema.optional().default('standard'),
 });
 
 export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;
@@ -22,12 +27,19 @@ export const UpdateProjectRequestSchema = z.object({
 
 export type UpdateProjectRequest = z.infer<typeof UpdateProjectRequestSchema>;
 
+export const UpdateProjectJourneyModeRequestSchema = z.object({
+  journeyMode: JourneyModeSchema,
+});
+
+export type UpdateProjectJourneyModeRequest = z.infer<typeof UpdateProjectJourneyModeRequestSchema>;
+
 export const ProjectDTOSchema = z.object({
   id: z.string(),
   userId: z.string(),
   name: z.string(),
   description: z.string().nullable(),
   phase: z.string(),
+  journeyMode: JourneyModeSchema,
   architectureStartedAt: z.date().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),

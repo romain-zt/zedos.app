@@ -7,12 +7,15 @@
 
 export type ProjectPhase = 'intake' | 'architecture';
 
+export type JourneyMode = 'standard' | 'express';
+
 export interface Project {
   id: string;
   userId: string;
   name: string;
   description: string | null;
   phase: ProjectPhase;
+  journeyMode: JourneyMode;
   architectureStartedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

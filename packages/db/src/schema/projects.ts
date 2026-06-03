@@ -8,6 +8,7 @@ export const projects = pgTable('projects', {
   name: text('name').notNull(),
   description: text('description'),
   phase: text('phase').notNull().default('intake'),
+  journeyMode: text('journey_mode').notNull().default('standard'),
   architectureStartedAt: timestamp('architecture_started_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().$onUpdate(() => new Date()),
