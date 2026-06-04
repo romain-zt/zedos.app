@@ -82,8 +82,8 @@ After sign-in, the founder sees a **home base** that orients them toward PRD wor
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Signed-in home orientation | Owner lands on a shell that routes toward projects/PRD and sets expectations for v0 vs under construction. | exploratory |
-| Under-construction placeholders | Non-PRD roadmap surfaces show honest deferred state without implying feature completeness. | exploratory |
+| `dashboard-shell--signed-in-home` | Owner lands on a shell that routes toward projects/PRD and sets expectations for v0 vs under construction. | complete |
+| `dashboard-shell--under-construction` | Non-PRD roadmap surfaces show honest deferred state without implying feature completeness. | complete |
 
 ---
 
@@ -98,7 +98,7 @@ After sign-in, the founder sees a **home base** that orients them toward PRD wor
 - [x] Deferred behaviors explicitly named
 - [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** READY FOR SCOPE SLICES — two candidate slices defined.
+**Verdict:** COMPLETE — both slices shipped (`WORK_QUEUE`).
 
 ---
 
@@ -108,3 +108,4 @@ After sign-in, the founder sees a **home base** that orients them toward PRD wor
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
 | 2026-05-11 | Readiness checklist ticked; status promoted to `validated` — unblocked as part of Phase 4 loop restart | local-agent |
+| 2026-06-04 | Candidate slices synced **complete** (`WORK_QUEUE`) | — |

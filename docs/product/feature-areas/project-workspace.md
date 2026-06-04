@@ -86,6 +86,11 @@ The founder can organize work into **multiple projects** (each a container for a
 | Create project | Founder creates a new project container and can proceed to PRD work inside it. | complete |
 | List and open project | Founder finds an existing project and opens it to resume work. | complete |
 | Switch active project | Founder moves between projects without losing account context. | complete |
+| `project-workspace--next-action-banner` | Contextual next-step banner in project workspace (Phase 1 ordre #1). | ready-for-user-stories |
+
+---
+
+> **Phase 1:** `WORK_QUEUE` rows `FA-project-workspace` (active) + gate `GATE-PHASE1-A` — distinct from v0 rows marked `complete`.
 
 ---
 
@@ -110,3 +115,4 @@ The founder can organize work into **multiple projects** (each a container for a
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
 | 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
+| 2026-06-04 | Added blueprint slice `project-workspace--next-action-banner` (ready, Gate A) | — |

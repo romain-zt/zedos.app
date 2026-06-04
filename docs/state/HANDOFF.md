@@ -1,11 +1,11 @@
 ---
 type: state-handoff
-date: 2026-06-03
+date: 2026-06-04
 author: doc-sync
 workspace: zedos.app
 status: handoff-ready
-current_phase: v0-core-shipped--express-import-analytics-backlog
-current_blocker: null
+current_phase: v0-shipped--blueprint-phase1-moat-backlog
+current_blocker: GATE-PHASE1-A (in progress — voir docs/ops/gate-a-execution-runbook.md)
 ---
 
 # Cloud Agent State Handoff
@@ -14,32 +14,40 @@ current_blocker: null
 
 | Source | Etat |
 |--------|------|
-| `docs/state/status.json` → `orchestration.steps` | Toutes les étapes historiques **complete** (socle v0 + post-PRD code) |
-| `docs/prd/PRD.md` → Flow Inventory | **Shipped** = socle PRD + Stripe + post-PRD **code** ; **Planned v0** = express (livrable/disclaimer/grayed), import ; analytics prod-enable (B-ANALYTICS-001) |
-| `docs/WORK_QUEUE.md` | Frontier active : **FA-fast-track-urgent**, **FA-prd-import**, **FA-product-analytics** |
+| `docs/state/status.json` → `orchestration.steps` | Socle v0 + post-PRD + express + import + guided-clarification slices **complete** |
+| `docs/prd/PRD.md` → Flow Inventory | **Shipped** : standard + **express** (PD-002), **import**, share, crédits/Stripe, post-PRD **code** ; **Phase 1 wedge** documenté (Builder, collab PD-003, export MD, O1) — **gated** (A/B/B′/C) |
+| `docs/WORK_QUEUE.md` | v0 **complete** ; frontier = **blueprint** (17 slices `ready-for-user-stories`, gates `GATE-PHASE1-*` / `GATE-MOAT-C`) ; analytics replay **exploratory** ; Linear / Team **exploratory** |
 
 ## Go-live ops (bloquant prod réelle)
 
 Checklist détaillée : [`docs/ops/production-go-live.md`](../ops/production-go-live.md)
 
-1. Rotation des secrets — `secrets_rotated` reste **`false`** (**attendu** ; `secrets_rotated_policy` dans `status.json`) jusqu’à §1 de `production-go-live.md` complété.
+1. Rotation des secrets — `secrets_rotated` reste **`false`** jusqu’à §1 complété.
 2. `STRIPE_WEBHOOK_SECRET` en production.
 3. Stripe Tax / `automatic_tax` pour FR/EU/US.
 
-## Backlog produit documenté (pas encore Shipped)
+## Backlog produit (code)
 
-- **Fast-track :** declare livré (US/plan executed) ; 3 slices — plans/US **`draft`** (liste : `doc-ok-checklist.md` § D3).
-- **Import PRD :** plan/US **`draft`** (Q-028) — idem § D3.
-- **Analytics :** funnel plan **`approved`** → PIS + `/implement` ; crédit + replay **`draft`** ; **B-ANALYTICS-001** avant enable prod — § D3–D4.
+| Horizon | Contenu | Gate / statut |
+|---------|---------|----------------|
+| **Phase 1** | Bannière → Builder → export gate → O1 → export MD → collab | `GATE-PHASE1-A` puis **B** ou **B′** (voir `PRD.md`) |
+| **Moat** | Decision graph, drift GitHub, templates, red-team | `GATE-MOAT-C` (≥100 payants) |
+| **Analytics** | Funnel A/B **complete** (code default-off) ; replay **exploratory** | Prod = **B-ANALYTICS-001** ; mois 1 = **Plan B** sheet (`posthog-legal-decision-plan-b.md`) |
+| **Hold** | Linear, Team data room | `GATE-LINEAR-001`, `GATE-MRR-500` |
 
-## Doc OK (checklist minimale)
+Plans blueprint : **19** paires US/plan **`draft`** — approuver puis `/implement` après gates.
 
-**Verdict documentation : OK** (2026-06-03, reconcile **12/12**) — détail : [`docs/ops/doc-ok-checklist.md`](../ops/doc-ok-checklist.md).
+## Doc OK
 
-Go-live opérateur et approbation des plans restent **pending** (§ D du même fichier).
+**Verdict documentation : OK** pour le noyau produit (PRD + `WORK_QUEUE` + FAs blueprint resync 2026-06-04).
+
+**Alignement 12 incohérences :** `docs/product/doc-alignment-resolution-2026-06-04.md`.
+
+Go-live opérateur (**secrets_rotated** reste `false` jusqu’à rotation réelle) et **Gate A** (entretiens + express chronométré) restent **pending humain**.
 
 ## Notes de maintenance
 
-- Carte `docs/README.md` — ordre de lecture.
-- Après implémentation : mettre à jour Flow Inventory **Shipped** + MVP checklist + `EXECUTION_LOG.md`.
+- Carte `docs/README.md` — ordre de lecture et règle de sync.
+- Hiérarchie conflit : `PRD.md` → `WORK_QUEUE.md` → scope-slices → feature-areas → `TODO.md`.
 - Ne pas marquer `secrets_rotated: true` sans rotation réelle.
+- Snapshot alignement express : [`prd/flow-inventory-work-queue-alignment-2026-06-04.md`](../prd/flow-inventory-work-queue-alignment-2026-06-04.md) (**done** — PRD sync 2026-06-04).

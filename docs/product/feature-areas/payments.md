@@ -37,7 +37,8 @@ The founder can **buy prepaid credit packs** (**100 / 200 / 1000** credits) usin
 
 ## Out of Scope
 
-- Subscription billing, BYOK, unlimited free AI (Hard v0 exclusions).
+- **Recurring subscription in v0 launch** (Hard v0 exclusions); **Builder monthly** is **Phase 1 wedge** per `PRD.md` (2026-06-04).
+- BYOK, unlimited free AI (Hard v0 exclusions).
 - Choosing implementation-specific payment edge cases beyond PRD’s SCA/manual-fallback story (this FA states product behavior, not integration specs).
 - Setting fixed EUR/USD list prices in the PRD (operator-config per Q-016).
 
@@ -62,7 +63,7 @@ The founder can **buy prepaid credit packs** (**100 / 200 / 1000** credits) usin
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| Credit system | pending | Ledger must apply purchased credits correctly |
+| Credit system | complete | Ledger + Stripe webhook shipped (`WORK_QUEUE`) |
 | **Stripe** as named provider | ready | Integration Boundaries |
 
 ---
@@ -78,7 +79,7 @@ The founder can **buy prepaid credit packs** (**100 / 200 / 1000** credits) usin
 
 | Blocker | Blocks | NEED_HUMAN |
 |---------|--------|------------|
-| — | — | — |
+| _(none — B-SUB-PRD-001 resolved 2026-06-04 `/prd update`)_ | — | — |
 
 *Operator-config **list prices** are tuning, not an open PRD question row; track in ops/commercial planning.*
 
@@ -88,9 +89,10 @@ The founder can **buy prepaid credit packs** (**100 / 200 / 1000** credits) usin
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Manual credit pack checkout | Owner buys a 100/200/1000 pack via one-time payment and receives credits. | exploratory |
-| Auto-reload opt-in and outcomes | Owner enables auto-reload; success continues generation; failure/SCA routes to manual recharge UX with clear copy. | exploratory |
-| Tax/VAT legibility | Purchase and receipts communicate digital-credits tax stance clearly in supported markets. | exploratory |
+| `payments--manual-credit-pack-checkout` | Owner buys a 100/200/1000 pack via one-time payment and receives credits. | complete |
+| `payments--auto-reload-opt-in-and-outcomes` | Owner enables auto-reload; success continues generation; failure/SCA routes to manual recharge UX with clear copy. | complete |
+| `payments--tax-and-vat-legibility` | Purchase and receipts communicate digital-credits tax stance clearly in supported markets. | complete |
+| `payments--builder-subscription-checkout` | Builder monthly Stripe subscription (Phase 1 wedge). | ready-for-user-stories |
 
 ---
 
@@ -115,3 +117,4 @@ The founder can **buy prepaid credit packs** (**100 / 200 / 1000** credits) usin
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
 | 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
+| 2026-06-04 | Sync candidate slices with `WORK_QUEUE` — v0 packs shipped; Builder slice ready (gates `GATE-PHASE1-A`, `GATE-PHASE1-B′` / `B`) | — |

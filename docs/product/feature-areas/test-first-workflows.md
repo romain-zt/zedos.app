@@ -90,7 +90,7 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Task splitting with prompts | Founder breaks a user story into tasks and receives a Cursor-ready prompt for each, producing a story ready for implementation. | ready-for-user-stories |
+| `test-first-workflows--task-splitting-with-prompts` | Founder breaks a user story into tasks with Cursor-ready prompts per task. | complete |
 
 ---
 
@@ -105,7 +105,7 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 - [x] Deferred behaviors explicitly named
 - [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** READY FOR SCOPE SLICES
+**Verdict:** COMPLETE — task splitting shipped (`WORK_QUEUE`)
 
 ---
 
@@ -116,3 +116,4 @@ For v0 of this area: Zedos takes each user story and breaks it down into **concr
 | 2026-05-11 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) — created as `deferred` per PRD v1 FG-FUTURE; product intent clarified as task splitting + prompt-per-task for v0 of this area | — |
 | 2026-05-11 | Activated — PRD v2 promotes FG-FUTURE → FG-POST-PRD-V1 (active v1 scope); status changed `deferred` → `exploratory`; PRD scope blocker cleared | — |
 | 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
+| 2026-06-04 | Slice `test-first-workflows--task-splitting-with-prompts` synced **complete** | — |

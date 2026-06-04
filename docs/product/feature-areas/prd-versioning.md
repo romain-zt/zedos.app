@@ -35,7 +35,8 @@ Within a project, the founder maintains a **versioned PRD** where the **in-app**
 
 ## Out of Scope
 
-- Markdown export or PDF export as **mandatory** completion criteria for a version (PRD: export not required for “done”; PDF not v0-critical; MD may be fast follow).
+- Markdown export or PDF export as **mandatory** completion criteria for a version (PRD: export not required for “done”; PDF not v0-critical).
+- **Markdown export v0.1** is **Phase 1 wedge** (gated), not v0 launch — see slice `prd-versioning--export-markdown-v0-1`.
 - Co-editing or version branching with collaborators (Hard v0 exclusions).
 
 ---
@@ -83,6 +84,7 @@ Within a project, the founder maintains a **versioned PRD** where the **in-app**
 |-------|-------------|--------|
 | Create or capture PRD version | Founder can establish a version line and persist PRD content for that version in-app. | complete |
 | Browse and switch PRD versions | Founder moves between versions inside a project without losing context of which version is active. | complete |
+| `prd-versioning--export-markdown-v0-1` | Optional Markdown export for stakeholders (Phase 1 ordre #5; gates A + B). | ready-for-user-stories |
 
 ---
 
@@ -109,3 +111,4 @@ Within a project, the founder maintains a **versioned PRD** where the **in-app**
 | 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
 | 2026-05-11 | Marked "Create or capture PRD version" slice **complete** after orchestrated delivery | cloud-agent |
 | 2026-05-11 | Marked "Browse and switch PRD versions" slice **complete** after orchestrated delivery (PR #46) | cloud-agent |
+| 2026-06-04 | Added Phase 1 slice `prd-versioning--export-markdown-v0-1` (ready, `WORK_QUEUE`) | — |
