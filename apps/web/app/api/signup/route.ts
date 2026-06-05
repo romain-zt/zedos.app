@@ -8,7 +8,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { SignUpRequestSchema } from '@contracts/auth/auth-contracts';
+import { SignUpRequestSchema } from '@repo/contracts/auth/auth-contracts';
 import { SignUpUseCase } from '@application/auth/sign-up-usecase';
 import { DrizzleUserRepository } from '@infrastructure/persistence/user-repository';
 import { DrizzleCreditsRepository } from '@infrastructure/persistence/credits-repository';

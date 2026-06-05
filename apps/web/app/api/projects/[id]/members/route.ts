@@ -9,6 +9,7 @@ import {
   ProjectMemberDTOSchema,
 } from '@repo/contracts/project/members';
 import { DrizzleProjectMemberRepository } from '@infrastructure/persistence/project-member-repository';
+import { InviteCommenterUseCase } from '@application/collab/invite-commenter-usecase';
 import { validationFailureData } from '@shared/observability/log-safe';
 import { createLogger } from '@shared/observability/logger';
 
@@ -53,12 +54,28 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const result = await repo.invite(
-    params.id,
-    userResult.unwrap().id,
-    parsed.data.inviteEmail,
-    parsed.data.role
-  );
+  const ownerId = userResult.unwrap().id;
+  const { inviteEmail, role } = parsed.data;
+
+  if (role === 'commenter') {
+    const useCase = new InviteCommenterUseCase(repo);
+    const result = await useCase.execute({
+      projectId: params.id,
+      ownerUserId: ownerId,
+      inviteEmail,
+    });
+    if (result.isErr()) {
+      return NextResponse.json({ error: result.error.message }, { status: result.error.statusCode });
+    }
+    const out = ProjectMemberDTOSchema.safeParse(result.unwrap());
+    if (!out.success) {
+      logger.error('Commenter invite outbound validation failed', validationFailureData(out.error.flatten()));
+      return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    }
+    return NextResponse.json(out.data, { status: 201 });
+  }
+
+  const result = await repo.invite(params.id, ownerId, inviteEmail, role);
   if (result.isErr()) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.statusCode });
   }

@@ -90,8 +90,8 @@ describe('POST /api/stripe/webhook', () => {
   it('acks unrelated event types without processor', async () => {
     verifyMock.mockReturnValue(
       ok({
-        type: 'customer.subscription.created',
-        id: 'evt_sub',
+        type: 'account.updated',
+        id: 'evt_acct',
         data: { object: {} },
       })
     );

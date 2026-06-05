@@ -17,6 +17,13 @@ export const users = pgTable('users', {
   creditBalance: integer('credit_balance').notNull().default(0),
   starterCreditsGranted: boolean('starter_credits_granted').notNull().default(false),
   graceUsed: boolean('grace_used').notNull().default(false),
+  /**
+   * Plan tier mirror — derived from active subscription, advisory source-of-truth is `subscriptions`.
+   * 'free' | 'builder' | 'pro' | 'team'. Default 'free'. Updated synchronously on webhook.
+   */
+  planTier: text('plan_tier').notNull().default('free'),
+  /** First Cursor export attempt per account — used by conversion gate to lower repeat-visit friction. */
+  hasAttemptedExport: boolean('has_attempted_export').notNull().default(false),
   marketingConsent: boolean('marketing_consent').notNull().default(false),
   productUpdatesConsent: boolean('product_updates_consent').notNull().default(false),
   consentUpdatedAt: timestamp('consent_updated_at'),

@@ -45,7 +45,20 @@
       "fa-user-stories--corpus-reliability-batch-quality--impl": "complete",
       "fa-payments--auto-reload-opt-in-and-outcomes": "complete",
       "fa-delivery--cursor-package-export": "complete",
-      "fa-payments--tax-and-vat-legibility": "complete"
+      "fa-payments--tax-and-vat-legibility": "complete",
+      "fa-decision-graph--all-slices": "complete",
+      "fa-project-workspace--next-action-banner": "complete",
+      "fa-owner-milestone-feedback--outcome-prompt-on-share": "complete",
+      "fa-prd-versioning--export-markdown-v0-1": "complete",
+      "fa-collab-async--invite-and-threads": "complete",
+      "fa-templates-marketplace--catalog-and-create": "complete",
+      "fa-product-analytics--friction-replay": "complete",
+      "fa-payments--builder-subscription-checkout": "complete",
+      "fa-delivery--export-cursor-conversion-gate": "complete",
+      "fa-ai-red-team--adversarial-review": "complete",
+      "fa-prd-drift-github--v1-scaffold": "complete",
+      "fa-integrations-linear--v1-scaffold": "complete",
+      "fa-team-data-room--bundle-export": "complete"
     },
     "remediation_counts": {
       "fa-user-stories--story-generation-from-feature-split--impl": 1,

@@ -245,16 +245,55 @@ Comparer cohortes `journey_mode=express` vs `standard` sur la rétention J7.
 
 ## 6. Session replay
 
-Activer dans PostHog Project Settings :
+> **Production gates :** B-ANALYTICS-001 (légal) ET B-ANALYTICS-002 (revue masking) doivent être levés avant d’activer en prod. Par défaut, le replay est **désactivé partout** (env var `NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED` absente ou `"false"`). Un opérateur n’active prod qu’après :
+>
+> 1. Validation produit + ops du périmètre masquant ci-dessous (B-ANALYTICS-002).
+> 2. Validation juridique (B-ANALYTICS-001).
+> 3. Smoke staging : un replay sur le chemin `clarify_blocked_insufficient_credits` confirme que les sélecteurs ci-dessous sont bien masqués.
 
-- **Enregistrer** les sessions avec erreurs JS (`$exception`).
-- **Sample rate** prod : commencer à 20–30 % pour maîtriser le volume ; monter si besoin en debug.
-- **Masquer** les champs sensibles : `input[type=password]`, textareas clarification/PRD (CSS class `ph-no-capture` sur les conteneurs de chat).
+### 6.1 Activation côté client
 
-Utilisation typique :
+Le bootstrap (`apps/web/instrumentation-client.ts`) lit l’env var et passe à `posthog.init` :
 
-1. Filtrer les sessions avec `clarify_blocked_insufficient_credits` ou `prd_generation_failed`.
+```typescript
+disable_session_recording: !replayEnabled, // true par défaut → aucun enregistrement
+session_recording: {
+  maskAllInputs: true,
+  maskTextSelector: '[data-ph-mask], .ph-no-capture',
+  blockSelector: '[data-ph-block]',
+},
+capture_exceptions: {
+  capture_unhandled_errors: true,
+  capture_unhandled_rejections: true,
+  capture_console_errors: false,
+},
+```
+
+### 6.2 Catalogue de sélecteurs masqués (B-ANALYTICS-002)
+
+Inventaire exhaustif des surfaces masquées **avant** sign-off prod :
+
+| Surface | Sélecteur | Composant | Raison |
+|---|---|---|---|
+| Fil de clarification | `[data-ph-mask="clarification-thread"]` + `.ph-no-capture` | `clarification-chat.tsx` (scroll container) | Réponses fondateur + questions IA peuvent contenir PII / vision produit |
+| Input clarification | `[data-ph-mask="clarification-input"]` + `.ph-no-capture` | `clarification-chat.tsx` (Textarea principal) | Saisie en clair |
+| Édition message clarification | `[data-ph-mask="clarification-edit"]` + `.ph-no-capture` | `clarification-chat.tsx` (Textarea édition) | Saisie en clair |
+| Corps PRD | `[data-ph-mask="prd-body"]` + `.ph-no-capture` | `prd-viewer.tsx` (wrapper sections + raw fallback) | Texte PRD complet — couche la plus sensible |
+| Tous les inputs | `maskAllInputs: true` (rrweb) | global | Couvre password, email, search, … hors textareas explicitement masquées |
+
+**Règles d’extension :** chaque nouvelle surface affichant texte fondateur, PRD, clarification, ou décisions doit ajouter `data-ph-mask="<surface>"` + classe `ph-no-capture`. Toute exception nécessite une note dans ce tableau et une re-revue B-ANALYTICS-002.
+
+### 6.3 Sampling / triggers
+
+- **Sample rate** : démarrer à 20–30 % en prod après activation ; monter ponctuellement pour debug.
+- **Filtres ciblés** : Project Settings → Recording triggers → enregistrer uniquement les sessions avec `clarify_blocked_insufficient_credits`, `prd_generation_blocked_insufficient_credits`, `prd_generation_failed`, `clarify_failed`, ou un `$exception` lié.
+- **Pas de 100 %** : exclu par scope slice ([friction-replay-and-error-signals](../product/scope-slices/product-analytics--friction-replay-and-error-signals.md)).
+
+### 6.4 Utilisation typique
+
+1. Filtrer les sessions avec `clarify_blocked_insufficient_credits`, `prd_generation_failed`, `clarify_failed`, ou `chunk_load_error`.
 2. Ouvrir le replay → voir si l’utilisateur a compris le message, cliqué crédits, ou quitté.
+3. Croiser avec PostHog Error Tracking (`$exception`, `client_exception`, `server_exception`) pour reproduire.
 
 ---
 
@@ -307,14 +346,24 @@ Procédure hebdomadaire (5 min) :
 
 1. **Trends** : volume des événements `*_blocked_insufficient_credits` vs `*_completed` par `action`.
 2. **Funnel A** : étape avec la plus forte chute ; croiser avec `workspace_tab_selected` (onglet jamais ouvert ?).
-3. **Error tracking** : top 3 issues nouvelles ; ouvrir un replay par issue.
+3. **Error tracking** (P4) : top 3 issues nouvelles ; ouvrir **un replay par issue** (filtrer sur `$exception` + `clarify_failed | prd_generation_failed | chunk_load_error`).
 4. **Rétention** : utilisateurs ayant `prd_generation_completed` — reviennent-ils J7 ?
+5. **Audit masking** : ouvrir 1 replay tiré au hasard parmi les sessions de la semaine. Confirmer que les sélecteurs `[data-ph-mask]` (§6.2) restent vides à l’écran. Si du texte PRD/clarification apparaît → incident B-ANALYTICS-002 : couper le replay (`NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED=false`) et corriger avant de réactiver.
 
 Alertes suggérées (PostHog) :
 
 - Spike `prd_generation_failed` > 2× baseline 1 h
+- Spike `clarify_failed` > 2× baseline 1 h
 - Chute `sign_up_completed` > 30 % jour/jour
 - Zéro `credit_pack_checkout_completed` pendant 48 h en prod (si trafic attendu)
+- Pic `chunk_load_error` après déploiement (>10/min sur 5 min) → vérifier source maps + cache invalidation Vercel
+
+### 10.1 Procédure incident — fuite PRD/clarification dans replay
+
+1. Couper immédiatement : sur Vercel, mettre `NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED=false` et redeployer.
+2. Côté PostHog : Project Settings → Recording → désactiver, puis supprimer les enregistrements affectés.
+3. Identifier la surface manquant `data-ph-mask` ; ajouter au tableau §6.2 ; corriger le composant.
+4. Re-tester sur staging avec un compte interne ; sign-off opérateur avant de réactiver.
 
 ---
 

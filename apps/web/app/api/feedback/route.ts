@@ -79,6 +79,10 @@ export async function POST(request: NextRequest) {
         ownerUserId: string,
         requestBody
       ) => {
+        const outcomeComment =
+          requestBody.ratingType === 'outcome' && requestBody.outcomeValue
+            ? requestBody.outcomeValue
+            : null
         const feedbackInsert: MilestoneFeedbackInsert = {
           userId: ownerUserId,
           projectId: requestBody.projectId,
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
           milestoneType: requestBody.milestoneType,
           ratingType: requestBody.ratingType ?? 'stars',
           ratingValue: requestBody.ratingValue ?? null,
-          comment: requestBody.comment ?? null,
+          comment: requestBody.comment ?? outcomeComment,
         }
         const [feedback] = await db.insert(milestoneFeedback).values(feedbackInsert).returning()
         const dto = MilestoneFeedbackRowDTOSchema.safeParse(feedback)

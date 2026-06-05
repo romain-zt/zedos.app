@@ -3,8 +3,8 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
-import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
+import { DrizzleAdrRepository } from '@infrastructure/persistence/adr-repository'
 import { ListAdrsUseCase } from '@application/adr/list-adrs-usecase'
 import { toNextErrorResponse } from '@shared/http'
 import { createLogger } from '@shared/observability/logger'
@@ -17,8 +17,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const resolvedUserId = userResult.unwrap().id
   const routeContext = { projectId: params.id, userId: resolvedUserId }
 
-  const projectRepo = new PrismaProjectRepository()
-  const adrRepo = new PrismaAdrRepository()
+  const projectRepo = new DrizzleProjectRepository()
+  const adrRepo = new DrizzleAdrRepository()
   const useCase = new ListAdrsUseCase(projectRepo, adrRepo)
   const result = await useCase.execute(params.id, resolvedUserId)
 

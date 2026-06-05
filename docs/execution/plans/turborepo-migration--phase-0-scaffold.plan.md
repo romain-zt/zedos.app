@@ -16,7 +16,7 @@
 
 ## Status
 
-`approved`
+`executed`
 
 > **Layout in effect:** pre-migration → post-migration (this Plan performs the migration)
 > **Architecture Surface:** resolved

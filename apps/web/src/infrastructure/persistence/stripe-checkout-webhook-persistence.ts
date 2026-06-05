@@ -112,12 +112,14 @@ export async function processCheckoutWebhookAtomically(
       return { kind: 'invalid_purchase' };
     }
 
-    const [user] = await tx
-      .select({ creditBalance: users.creditBalance })
-      .from(users)
-      .where(eq(users.id, input.userId))
-      .limit(1);
-    const currentBalance = user?.creditBalance ?? 0;
+    const lockedRows = await tx.execute(
+      sql`SELECT credit_balance FROM users WHERE id = ${input.userId} FOR UPDATE`
+    );
+    const locked = lockedRows as unknown as Array<{ credit_balance: number }>;
+    if (!locked || locked.length === 0) {
+      return { kind: 'invalid_purchase' };
+    }
+    const currentBalance = locked[0]?.credit_balance ?? 0;
 
     const correlationId = `purchase:${input.purchaseId}`;
     const [existingPurchaseTx] = await tx

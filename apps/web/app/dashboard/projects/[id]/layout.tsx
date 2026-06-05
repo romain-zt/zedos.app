@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
 import { GetProjectUseCase } from '@application/project/get-project-usecase'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
 import { OwnerMilestonePromptProvider } from './_components/owner-milestone-prompt'
 
 export default async function ProjectWorkspaceLayout({
@@ -16,7 +16,7 @@ export default async function ProjectWorkspaceLayout({
   if (userResult.isErr()) redirect('/sign-in')
   const userId = userResult.unwrap().id
 
-  const repo = new PrismaProjectRepository()
+  const repo = new DrizzleProjectRepository()
   const useCase = new GetProjectUseCase(repo)
   const result = await useCase.execute(params.id, userId)
 

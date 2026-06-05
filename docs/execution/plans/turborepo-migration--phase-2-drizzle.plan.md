@@ -15,7 +15,7 @@
 
 ## Status
 
-`proposed`
+`executed`
 
 > **Layout in effect:** post-Phase-1 (packages/db/ exists with Prisma schema; all persistence repos import from @repo/db)
 > **Architecture Surface:** resolved

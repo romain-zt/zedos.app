@@ -5,7 +5,7 @@ import {
   ShareAccessRequestSchema,
   ShareAccessResponseSchema,
 } from '@repo/contracts/share/access';
-import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository';
+import { DrizzlePrdRepository } from '@infrastructure/persistence/prd-repository';
 import { createLogger } from '@shared/observability/logger';
 import { ShareReadTokenParamSchema } from '@repo/contracts/share/anonymous-read';
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
   }
 
-  const repo = new PrismaPrdRepository();
+  const repo = new DrizzlePrdRepository();
   const gateResult = await repo.getShareLinkGateByToken(token);
   if (gateResult.isErr()) {
     return NextResponse.json({ error: 'Not available' }, { status: 404 });

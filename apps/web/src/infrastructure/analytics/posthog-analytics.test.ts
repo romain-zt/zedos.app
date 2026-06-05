@@ -12,6 +12,7 @@ import {
   isServerAnalyticsConfigured,
   resetServerPostHogForTests,
 } from './posthog-server';
+import { readSessionReplayEnabledFromEnv } from './posthog-client';
 
 describe('posthog-analytics', () => {
   const envBackup = { ...process.env };
@@ -23,6 +24,7 @@ describe('posthog-analytics', () => {
     delete process.env.NEXT_PUBLIC_POSTHOG_DISABLED;
     delete process.env.NEXT_PUBLIC_POSTHOG_KEY;
     delete process.env.POSTHOG_API_KEY;
+    delete process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED;
   });
 
   afterEach(() => {
@@ -80,5 +82,62 @@ describe('posthog-analytics', () => {
     for (const name of names) {
       expect(name).toMatch(/^[a-z][a-z0-9_]*$/);
     }
+  });
+
+  it('exposes friction-replay error events for filtering', () => {
+    expect(AnalyticsEvents.CLARIFY_FAILED).toBe('clarify_failed');
+    expect(AnalyticsEvents.PRD_GENERATION_FAILED).toBe('prd_generation_failed');
+    expect(AnalyticsEvents.CLIENT_EXCEPTION).toBe('client_exception');
+    expect(AnalyticsEvents.SERVER_EXCEPTION).toBe('server_exception');
+    expect(AnalyticsEvents.CHUNK_LOAD_ERROR).toBe('chunk_load_error');
+  });
+
+  it('readSessionReplayEnabledFromEnv defaults to false', () => {
+    expect(readSessionReplayEnabledFromEnv()).toBe(false);
+  });
+
+  it('readSessionReplayEnabledFromEnv stays false when flag is unset', () => {
+    process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test';
+    expect(readSessionReplayEnabledFromEnv()).toBe(false);
+  });
+
+  it('readSessionReplayEnabledFromEnv is true only on explicit "true" opt-in', () => {
+    process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test';
+    process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED = 'true';
+    expect(readSessionReplayEnabledFromEnv()).toBe(true);
+  });
+
+  it('readSessionReplayEnabledFromEnv is false when PostHog disabled even with replay opt-in', () => {
+    process.env.NEXT_PUBLIC_POSTHOG_DISABLED = 'true';
+    process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED = 'true';
+    expect(readSessionReplayEnabledFromEnv()).toBe(false);
+  });
+
+  it('readSessionReplayEnabledFromEnv ignores ambiguous truthy values like "1" or "yes"', () => {
+    process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test';
+    process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED = '1';
+    expect(readSessionReplayEnabledFromEnv()).toBe(false);
+    process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED = 'yes';
+    expect(readSessionReplayEnabledFromEnv()).toBe(false);
+  });
+
+  it('sanitizeAnalyticsProperties strips PRD/clarification text from exception metadata', () => {
+    const sanitized = sanitizeAnalyticsProperties({
+      project_id: 'proj-1',
+      route: 'api/projects/[id]/clarify',
+      error_code: 'clarify_request_failed',
+      http_status: 500,
+      message: 'sensitive AI prompt content',
+      content: 'PRD body',
+      transcript: 'clarification transcript',
+      structured_question: 'should not leak',
+      founder_answer: 'should not leak',
+    });
+    expect(sanitized).toEqual({
+      project_id: 'proj-1',
+      route: 'api/projects/[id]/clarify',
+      error_code: 'clarify_request_failed',
+      http_status: 500,
+    });
   });
 });

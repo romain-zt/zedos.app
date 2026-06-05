@@ -81,6 +81,11 @@ export default function CreditsPage() {
     creditsAdded: tp('creditsAdded', 'credits added.'),
     stripeReceipt: tp('stripeReceipt', 'Stripe receipt for tax details.'),
     verifyFailed: tp('verifyFailed', 'Payment verification failed'),
+    creditsStillProcessing: tp(
+      'creditsStillProcessing',
+      'Payment received — your credits will appear shortly.'
+    ),
+    paymentConfirmed: tp('paymentConfirmed', 'Payment confirmed. Your balance is updated.'),
     packsLoadFailed: tp('packsLoadFailed', 'Could not load credit packs'),
     creditsLoadFailed: tp('creditsLoadFailed', 'Could not load credits'),
     checkoutStartFailed: tp('checkoutStartFailed', 'Failed to start checkout'),
@@ -160,30 +165,62 @@ export default function CreditsPage() {
         }
 
         if (success === 'true' && sessionId) {
-          const verifyRes = await fetch('/api/stripe/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId }),
-            cache: 'no-store',
-          })
-
-          if (verifyRes.ok) {
-            const verifyData = await verifyRes.json()
-            if (!verifyData?.alreadyProcessed) {
-              const tax = verifyData?.taxLegibility
-              const taxLine =
-                tax?.taxCents != null && tax.taxCents > 0
-                  ? ` TVA/taxe : €${(tax.taxCents / 100).toFixed(2)} (total €${((tax.totalCents ?? 0) / 100).toFixed(2)}).`
-                  : ''
-              toast.success(
-                `${verifyData?.creditsAdded ?? 0} ${copy.creditsAdded}${taxLine} ${copy.stripeReceipt}`
+          const postVerify = async () => {
+            const verifyRes = await fetch('/api/stripe/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId }),
+              cache: 'no-store',
+            })
+            if (!verifyRes.ok) {
+              const errBody = await verifyRes.json().catch(() => ({}))
+              throw new Error(
+                typeof errBody?.error === 'string' ? errBody.error : copy.verifyFailed
               )
             }
-          } else {
-            const errBody = await verifyRes.json().catch(() => ({}))
-            toast.error(
-              typeof errBody?.error === 'string' ? errBody.error : copy.verifyFailed
-            )
+            return verifyRes.json() as Promise<{
+              status?: 'processing' | 'completed' | 'failed'
+              creditsAdded?: number
+              alreadyProcessed?: boolean
+              taxLegibility?: {
+                taxCents?: number | null
+                totalCents?: number | null
+              }
+            }>
+          }
+
+          try {
+            let verifyData = await postVerify()
+            let attempts = 0
+            while (verifyData.status === 'processing' && attempts < 10) {
+              await new Promise((resolve) => setTimeout(resolve, 1000))
+              verifyData = await postVerify()
+              attempts += 1
+            }
+
+            if (verifyData.status === 'completed') {
+              await refreshCredits()
+              if (verifyData.creditsAdded != null && verifyData.creditsAdded > 0) {
+                const tax = verifyData.taxLegibility
+                const taxLine =
+                  tax?.taxCents != null && tax.taxCents > 0
+                    ? ` TVA/taxe : €${(tax.taxCents / 100).toFixed(2)} (total €${((tax.totalCents ?? 0) / 100).toFixed(2)}).`
+                    : ''
+                toast.success(
+                  `${verifyData.creditsAdded} ${copy.creditsAdded}${taxLine} ${copy.stripeReceipt}`
+                )
+              } else if (!verifyData.alreadyProcessed) {
+                toast.success(copy.paymentConfirmed)
+              }
+            } else if (verifyData.status === 'processing') {
+              toast.info(copy.creditsStillProcessing)
+            } else if (verifyData.status === 'failed') {
+              toast.error(copy.verifyFailed)
+            }
+          } catch (verifyError: unknown) {
+            const message =
+              verifyError instanceof Error ? verifyError.message : copy.verifyFailed
+            toast.error(message)
           }
 
           router.replace('/dashboard/credits')

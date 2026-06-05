@@ -9,6 +9,7 @@ import { ClarifyPostBodySchema } from '@repo/contracts/questions/history'
 import {
   checkCreditsForApi as checkCredits,
   deductCreditsForApi as deductCredits,
+  reverseCreditsForApi as reverseCredits,
   type ApiCreditOperationType as OperationType,
 } from '@infrastructure/http/credits-http-bridge'
 import {
@@ -31,7 +32,12 @@ import {
 import { createLogger } from '@shared/observability/logger'
 import { validationFailureData } from '@shared/observability/log-safe'
 import { AnalyticsEvents, balanceBucketFromCount } from '@infrastructure/analytics/analytics-events'
-import { captureServer } from '@infrastructure/analytics/posthog-server'
+import {
+  captureServer,
+  captureServerException,
+} from '@infrastructure/analytics/posthog-server'
+import { persistDecisionFromQuestionHistoryEntryUseCase } from '@application/decision-graph/persist-decision-from-question-history-usecase'
+import { decisionGraphRepository } from '@infrastructure/persistence/decision-graph-repository'
 
 const logger = createLogger({ operation: 'clarify' })
 
@@ -171,6 +177,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const routeLogger = logger.withContext({ projectId, userId })
 
     const persistAfterValidStream = async (result: string) => {
+      let consumptionCorrelationId: string | null = null
       try {
         const raw = JSON.parse(result)
         const validated = ClarifyAiResponseSchema.safeParse(raw)
@@ -190,10 +197,15 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         }
         const ai = validated.success ? validated.data : withDefaultQuestionType.data
         try {
-          await deductCredits(userId, opType, {
+          const deductResult = await deductCredits(userId, opType, {
             projectId,
             prdVersionId: prdVersionIdResolved ?? undefined,
           })
+          if (!deductResult.success) {
+            routeLogger.error('Clarify credit deduction failed after validated AI response')
+            return
+          }
+          consumptionCorrelationId = deductResult.correlationId
         } catch (e: unknown) {
           routeLogger.error('Clarify credit deduction failed after validated AI response', e)
           return
@@ -208,7 +220,44 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           prdImpact: normalizePrdSection(ai.prd_section_affected) ?? ai.prd_section_affected,
           questionType: ai.suggested_credit_type,
         }
-        await db.insert(questionHistory).values(qhInsert)
+        const [insertedHistory] = await db
+          .insert(questionHistory)
+          .values(qhInsert)
+          .returning({
+            id: questionHistory.id,
+            projectId: questionHistory.projectId,
+            prdVersionId: questionHistory.prdVersionId,
+            structuredQuestion: questionHistory.structuredQuestion,
+            availableOptions: questionHistory.availableOptions,
+            founderAnswer: questionHistory.founderAnswer,
+            optionalComment: questionHistory.optionalComment,
+            aiInterpretation: questionHistory.aiInterpretation,
+            prdImpact: questionHistory.prdImpact,
+          })
+
+        if (insertedHistory) {
+          const persistDecisionResult = await persistDecisionFromQuestionHistoryEntryUseCase(
+            {
+              id: insertedHistory.id,
+              projectId: insertedHistory.projectId,
+              prdVersionId: insertedHistory.prdVersionId ?? null,
+              structuredQuestion: insertedHistory.structuredQuestion,
+              availableOptions: insertedHistory.availableOptions,
+              founderAnswer: insertedHistory.founderAnswer ?? null,
+              optionalComment: insertedHistory.optionalComment ?? null,
+              aiInterpretation: insertedHistory.aiInterpretation ?? null,
+              prdImpact: insertedHistory.prdImpact ?? null,
+            },
+            decisionGraphRepository,
+          )
+          if (persistDecisionResult.isErr()) {
+            routeLogger.error('Decision persist skipped after clarify', {
+              questionHistoryId: insertedHistory.id,
+              code: persistDecisionResult.error.code,
+            })
+          }
+        }
+
         if (userId) {
           captureServer(AnalyticsEvents.CLARIFY_STREAM_COMPLETED, userId, {
             project_id: projectId,
@@ -218,6 +267,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         }
       } catch (e: unknown) {
         routeLogger.error('Clarify failed to persist question history', e)
+        if (consumptionCorrelationId) {
+          await reverseCredits(userId, consumptionCorrelationId, { projectId })
+        }
       }
     }
 
@@ -234,9 +286,36 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     logger.withContext({ projectId, userId }).error('Clarify request failed', error)
     if (error instanceof AiServiceError) {
       const mapped = aiServiceErrorToHttpPayload(error)
+      if (userId) {
+        captureServer(AnalyticsEvents.CLARIFY_FAILED, userId, {
+          project_id: projectId,
+          error_code: 'ai_service_error',
+          http_status: mapped.status,
+        })
+        captureServerException(error, userId, {
+          project_id: projectId,
+          route: 'api/projects/[id]/clarify',
+          error_code: 'ai_service_error',
+          http_status: mapped.status,
+        })
+      }
       return NextResponse.json(mapped.body, { status: mapped.status })
     }
-    const msg = error instanceof Error ? error.message : 'Clarification failed'
+    const normalized = error instanceof Error ? error : new Error('clarify_request_failed')
+    if (userId) {
+      captureServer(AnalyticsEvents.CLARIFY_FAILED, userId, {
+        project_id: projectId,
+        error_code: 'clarify_request_failed',
+        http_status: 500,
+      })
+      captureServerException(normalized, userId, {
+        project_id: projectId,
+        route: 'api/projects/[id]/clarify',
+        error_code: 'clarify_request_failed',
+        http_status: 500,
+      })
+    }
+    const msg = normalized.message
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

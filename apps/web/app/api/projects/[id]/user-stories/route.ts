@@ -51,6 +51,7 @@ export async function GET(
   const routeContext = { projectId: params.id, userId };
   const useCase = new GetUserStoryCorpusUseCase(
     new DrizzleProjectRepository(),
+    new DrizzleFeatureSplitRepository(),
     new DrizzleUserStoryCorpusRepository()
   );
   const result = await useCase.execute(params.id, userId, query.data.featureSplitClusterId);

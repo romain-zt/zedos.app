@@ -3,8 +3,8 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
-import { PrismaAdrRepository } from '@infrastructure/persistence/adr-repository'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
+import { DrizzleAdrRepository } from '@infrastructure/persistence/adr-repository'
 import { GetAdrUseCase } from '@application/adr/get-adr-usecase'
 import { UpdateAdrUseCase } from '@application/adr/update-adr-usecase'
 import { toNextErrorResponse } from '@shared/http'
@@ -22,8 +22,8 @@ export async function GET(
   const routeContext = { projectId: params.id, userId, adrNumber: params.number }
 
   const adrNumber = parseInt(params.number, 10)
-  const projectRepo = new PrismaProjectRepository()
-  const adrRepo = new PrismaAdrRepository()
+  const projectRepo = new DrizzleProjectRepository()
+  const adrRepo = new DrizzleAdrRepository()
   const useCase = new GetAdrUseCase(projectRepo, adrRepo)
   const result = await useCase.execute(params.id, userId, adrNumber)
 
@@ -45,8 +45,8 @@ export async function PATCH(
 
   const body = await req.json()
   const adrNumber = parseInt(params.number, 10)
-  const projectRepo = new PrismaProjectRepository()
-  const adrRepo = new PrismaAdrRepository()
+  const projectRepo = new DrizzleProjectRepository()
+  const adrRepo = new DrizzleAdrRepository()
   const useCase = new UpdateAdrUseCase(projectRepo, adrRepo)
   const result = await useCase.execute({
     projectId: params.id,

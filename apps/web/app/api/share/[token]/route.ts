@@ -9,7 +9,7 @@ import { SharePasswordRequiredResponseSchema } from '@repo/contracts/share/acces
 
 const SHARE_UNLOCK_COOKIE = 'zedos_share_unlock';
 import { GetAnonymousSharedPrdUseCase } from '@application/prd/get-anonymous-shared-prd-usecase';
-import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository';
+import { DrizzlePrdRepository } from '@infrastructure/persistence/prd-repository';
 import {
   ApplicationError,
   DatabaseError,
@@ -38,7 +38,7 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
     return NextResponse.json({ error: 'Invalid link' }, { status: 400 });
   }
 
-  const repo = new PrismaPrdRepository();
+  const repo = new DrizzlePrdRepository();
   const gateResult = await repo.getShareLinkGateByToken(tokenParsed.data);
   if (gateResult.isErr()) {
     return NextResponse.json({ error: 'Not available' }, { status: 404 });

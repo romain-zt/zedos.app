@@ -61,6 +61,7 @@ const PAGE_ROUTE_TO_SLUG: Array<{ route: string; slug: string }> = [
   { route: '/dashboard/billing', slug: 'dashboard_billing' },
   { route: '/dashboard/projects/[id]/user-stories/[clusterId]', slug: 'dashboard_projects_id_user-stories_clusterId' },
   { route: '/dashboard/projects', slug: 'dashboard_projects' },
+  { route: '/dashboard/templates', slug: 'dashboard_templates' },
   { route: '/dashboard/projects/[id]/user-stories', slug: 'dashboard_projects_id_user-stories' },
   { route: '/signup', slug: 'signup' },
   { route: '/reset-password', slug: 'reset-password' },

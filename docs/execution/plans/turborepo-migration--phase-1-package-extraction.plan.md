@@ -15,7 +15,7 @@
 
 ## Status
 
-`proposed`
+`executed`
 
 > **Layout in effect:** post-migration (apps/web/ exists; pnpm workspace operational)
 > **Architecture Surface:** resolved

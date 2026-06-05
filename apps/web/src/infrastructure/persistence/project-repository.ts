@@ -226,4 +226,3 @@ export class DrizzleProjectRepository implements IProjectRepository {
 }
 
 // Export for backwards compatibility
-export { DrizzleProjectRepository as PrismaProjectRepository };

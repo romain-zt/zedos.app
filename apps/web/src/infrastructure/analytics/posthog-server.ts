@@ -1,7 +1,10 @@
 import { PostHog } from 'posthog-node';
 import { isE2eMode } from '@shared/testing/e2e-mode';
 import { sanitizeAnalyticsProperties } from './analytics-sanitize';
-import type { AnalyticsProperties } from './analytics-events';
+import {
+  AnalyticsEvents,
+  type AnalyticsProperties,
+} from './analytics-events';
 
 export function isServerAnalyticsConfigured(): boolean {
   if (isE2eMode()) return false;
@@ -38,6 +41,39 @@ export function captureServer(
       distinctId,
       event,
       properties: sanitizeAnalyticsProperties(properties),
+    });
+  } catch {
+    // Fire-and-forget
+  }
+}
+
+/** Metadata accepted on a captured server exception. PII keys are stripped. */
+export type ServerExceptionMetadata = AnalyticsProperties;
+
+/**
+ * Capture a server-side exception (no PRD/clarification text in properties).
+ *
+ * Uses a `server_exception` analytics event because `posthog-node` does not
+ * expose `captureException`; the typed properties bag carries `error_code`,
+ * `route`, `project_id`, etc. for grouping in PostHog Error Tracking.
+ */
+export function captureServerException(
+  error: Error,
+  distinctId: string,
+  metadata: ServerExceptionMetadata = {}
+): void {
+  if (!distinctId.trim()) return;
+  const client = getServerPostHog();
+  if (!client) return;
+  const sanitized = sanitizeAnalyticsProperties(metadata);
+  try {
+    client.capture({
+      distinctId,
+      event: AnalyticsEvents.SERVER_EXCEPTION,
+      properties: {
+        ...sanitized,
+        exception_name: error.name,
+      },
     });
   } catch {
     // Fire-and-forget

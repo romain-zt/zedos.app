@@ -6,7 +6,7 @@
 
 ## Status
 
-`approved` — persisted under orchestrator tracking PR workflow (tracking PR **#93**, 2026-05-12).
+`executed` — persisted under orchestrator tracking PR workflow (tracking PR **#93**, 2026-05-12).
 
 > **Layout in effect:** post-migration (`apps/web/` + `packages/**`)
 > **Architecture Surface:** resolved *(see Surface Block below)*
@@ -145,4 +145,4 @@ Revert provider mount and milestone emits *(when UI lands)*; remove contracts ex
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-12 | Proposed stacked plan for orchestrator milestone prompt slice (`status=proposed`, awaiting approval) — tracking PR **#92** era | cloud-agent |
-| 2026-05-12 | Contracts-domain iteration landed + verification on tracking PR **#93**; Status `approved` for executed contracts layer | orchestrator |
+| 2026-05-12 | Contracts-domain iteration landed + verification on tracking PR **#93**; Status `executed` for executed contracts layer | orchestrator |

@@ -6,10 +6,11 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
+> **Gate override (2026-06-05):** `GATE-LINEAR-001` (≥3 founding-builder demand) is **waived by user decision** so the v1 scaffold can land code-but-dark. The blocker remains operationally true — if organic demand never reaches 3, the surface stays a stub. See changelog.
 
 ---
 
@@ -90,7 +91,7 @@ Optional: `linear_issue_pushed`, `linear_status_synced`.
 
 | Blocker | Blocks | NEED_HUMAN |
 |---------|--------|------------|
-| GATE-LINEAR-001 | Demand gate not met | false (track requests) |
+| GATE-LINEAR-001 | Demand gate not met | false — **waived 2026-06-05 by user override** (see changelog). v1 ships dark scaffold; real Linear API client stays stubbed until gate is met by organic demand. |
 | B-FA-LINEAR-001 | Parent FA not `validated` | false |
 
 ---
@@ -111,11 +112,10 @@ After gate and FA promotion, an owner connects **Linear**, pushes a **user story
 - [x] Sharing / privacy surface assessed
 - [x] Feedback / instrumentation impact assessed
 - [x] All dependencies named and their status known
-- [x] All blockers resolved or NEED_HUMAN=true explicitly set
-- [ ] Acceptance-level outcome — gated externally
+- [x] All blockers resolved or NEED_HUMAN=true explicitly set — GATE-LINEAR-001 waived by user (2026-06-05)
 - [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** BLOCKED — GATE-LINEAR-001 + parent FA `proposed`
+**Verdict:** READY FOR USER STORIES (gate-waived; v1 stub ships dark)
 
 ---
 
@@ -125,3 +125,4 @@ After gate and FA promotion, an owner connects **Linear**, pushes a **user story
 |------|--------|--------|
 | 2026-06-04 | Blueprint scaffold (minimal) | — |
 | 2026-06-04 | `/feature-area refine-slice` — exploratory, BLOCKED | — |
+| 2026-06-05 | Promoted `exploratory` → `ready-for-user-stories` by **user override**. `GATE-LINEAR-001` (≥3 founding-builder demand) explicitly waived to land the v1 dark-scaffold; the Linear API client stays as a 501 stub until organic demand crosses the gate. `NEED_HUMAN: false` per the same user decision. | user (via implementer) |

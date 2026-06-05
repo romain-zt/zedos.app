@@ -14,7 +14,7 @@
 
 ## Status
 
-`proposed`
+`executed`
 
 > **Layout in effect:** post-Phase-2 (packages/db/ uses Drizzle; @repo/db exports Drizzle `db` client)
 > **Architecture Surface:** resolved

@@ -2,6 +2,8 @@ import { IProjectRepository } from '@domain/project/project-repository';
 import { IDeliveryExportRepository } from '@domain/delivery/delivery-export-repository';
 import type { ExportEligibleBundle } from '@domain/delivery/export-bundle';
 import type { ICursorPackageAssembler } from '@domain/delivery/cursor-package-assembler-port';
+import type { IDecisionGraphRepository } from '@domain/decision-graph/decision-graph-repository';
+import { buildDecisionsExportJson } from '@application/decision-graph/build-decisions-export-json';
 import { Result, ok, err } from '@repo/result';
 import { ApplicationError, NotFoundError, ValidationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
@@ -30,7 +32,8 @@ export class BuildDeliveryPackageUseCase {
   constructor(
     private projectRepository: IProjectRepository,
     private deliveryExportRepository: IDeliveryExportRepository,
-    private packageAssembler: ICursorPackageAssembler
+    private packageAssembler: ICursorPackageAssembler,
+    private decisionGraphRepository?: IDecisionGraphRepository,
   ) {}
 
   async execute(
@@ -79,7 +82,15 @@ export class BuildDeliveryPackageUseCase {
       );
     }
 
-    const zipBuffer = await this.packageAssembler.assembleZip(ordered);
+    let decisionsExport;
+    if (this.decisionGraphRepository) {
+      const decisionsResult = await this.decisionGraphRepository.findByProjectId(projectId);
+      if (decisionsResult.isOk()) {
+        decisionsExport = buildDecisionsExportJson(projectId, decisionsResult.unwrap());
+      }
+    }
+
+    const zipBuffer = await this.packageAssembler.assembleZip(ordered, decisionsExport);
     const filename = `zedos-delivery-${projectId.slice(0, 8)}.zip`;
 
     return ok({

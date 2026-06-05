@@ -1,15 +1,18 @@
 import { IProjectRepository } from '@domain/project/project-repository';
+import { IFeatureSplitRepository } from '@domain/feature-split/feature-split-repository';
 import { IUserStoryCorpusRepository } from '@domain/user-stories/user-story-corpus-repository';
 import type { UserStoryCorpusDomain } from '@domain/user-stories/user-story-corpus';
 import { Result, err } from '@repo/result';
 import { ApplicationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
+import { requireConfirmedClusterForUserStories } from './require-confirmed-cluster';
 
 const logger = createLogger({ operation: 'GetUserStoryCorpusUseCase' });
 
 export class GetUserStoryCorpusUseCase {
   constructor(
     private projectRepository: IProjectRepository,
+    private featureSplitRepository: IFeatureSplitRepository,
     private corpusRepository: IUserStoryCorpusRepository
   ) {}
 
@@ -23,6 +26,13 @@ export class GetUserStoryCorpusUseCase {
       logger.warn('Project not found or unauthorized', { projectId, userId });
       return err(projectResult.error);
     }
+
+    const clusterResult = await requireConfirmedClusterForUserStories(
+      this.featureSplitRepository,
+      projectId,
+      featureSplitClusterId
+    );
+    if (clusterResult.isErr()) return err(clusterResult.error);
 
     return this.corpusRepository.findByProjectAndCluster(projectId, featureSplitClusterId);
   }

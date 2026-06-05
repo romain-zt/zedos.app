@@ -1,14 +1,20 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { ProjectWithCounts } from '@domain/project/project-repository'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { JourneyMode } from '@repo/contracts/project/project-contracts'
+import {
+  TemplateSlugSchema,
+  type TemplateDetailDTO,
+  type TemplateSlug,
+} from '@repo/contracts/templates'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -17,7 +23,7 @@ import { validateImportPasteClient } from '@/app/api/projects/parse-create-proje
 import { IMPORTED_PRD_MAX_BYTES } from '@repo/contracts/project/prd-import-at-create'
 import {
   Plus, FileText, ArrowRight, FolderOpen, MoreVertical, Trash2, Pencil,
-  AlertTriangle, RefreshCw,
+  AlertTriangle, RefreshCw, LayoutGrid, X,
 } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -26,9 +32,14 @@ import { toast } from 'sonner'
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 import { useI18n } from '@/src/i18n'
 
+function journeyModeFromHint(hint: TemplateDetailDTO['journeyHint']): JourneyMode {
+  return hint === 'express' ? 'express' : 'standard'
+}
+
 export default function ProjectsPage() {
-  const { t } = useI18n()
+  const { t, tp } = useI18n()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [projects, setProjects] = useState<ProjectWithCounts[]>([])
   const [loading, setLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
@@ -40,9 +51,12 @@ export default function ProjectsPage() {
   const [importPaste, setImportPaste] = useState('')
   const [importFile, setImportFile] = useState<File | null>(null)
   const [creating, setCreating] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateDetailDTO | null>(null)
+  const [templateLoading, setTemplateLoading] = useState(false)
 
   const importActive =
     importOpen && (importPaste.trim().length > 0 || importFile != null)
+  const templateActive = selectedTemplate !== null
 
   const fetchProjects = useCallback(async () => {
     setLoading(true)
@@ -78,14 +92,68 @@ export default function ProjectsPage() {
     setImportOpen(false)
     setImportPaste('')
     setImportFile(null)
+    setSelectedTemplate(null)
   }
+
+  const clearTemplate = useCallback(() => {
+    setSelectedTemplate(null)
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('template')
+    const next = params.toString()
+    router.replace(`/dashboard/projects${next ? `?${next}` : ''}`)
+  }, [router, searchParams])
+
+  const loadTemplate = useCallback(async (slug: TemplateSlug) => {
+    setTemplateLoading(true)
+    try {
+      const res = await fetch(`/api/templates/${encodeURIComponent(slug)}`)
+      if (!res.ok) {
+        toast.error(tp('templatePicker.loadFailed', 'Could not load template'))
+        return
+      }
+      const json: unknown = await res.json()
+      const detail = json as TemplateDetailDTO
+      setSelectedTemplate(detail)
+      setNewJourneyMode(journeyModeFromHint(detail.journeyHint))
+      if (!newName.trim()) setNewName(detail.title)
+      setShowCreate(true)
+      setImportOpen(false)
+      setImportPaste('')
+      setImportFile(null)
+    } catch {
+      toast.error(tp('templatePicker.networkError', 'Network error loading template'))
+    } finally {
+      setTemplateLoading(false)
+    }
+  }, [newName, tp])
+
+  useEffect(() => {
+    const raw = searchParams.get('template')
+    if (!raw) return
+    const parsed = TemplateSlugSchema.safeParse(raw)
+    if (!parsed.success) {
+      clearTemplate()
+      return
+    }
+    if (selectedTemplate?.slug === parsed.data) return
+    void loadTemplate(parsed.data)
+  }, [searchParams, selectedTemplate, loadTemplate, clearTemplate])
 
   const handleCreate = async () => {
     if (!newName.trim()) {
       toast.error(t('projects.nameRequired'))
       return
     }
-    if (importOpen && importPaste.trim()) {
+    if (templateActive && importOpen) {
+      toast.error(
+        tp(
+          'templatePicker.mutualExclusion',
+          'Cannot combine import with a template — clear one before creating.'
+        )
+      )
+      return
+    }
+    if (!templateActive && importOpen && importPaste.trim()) {
       const pasteError = validateImportPasteClient(importPaste)
       if (pasteError) {
         toast.error(pasteError)
@@ -95,7 +163,18 @@ export default function ProjectsPage() {
     setCreating(true)
     try {
       let res: Response
-      if (importOpen && importFile) {
+      if (templateActive && selectedTemplate) {
+        res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newName.trim(),
+            description: newDesc.trim() || null,
+            journeyMode: newJourneyMode,
+            templateSlug: selectedTemplate.slug,
+          }),
+        })
+      } else if (importOpen && importFile) {
         const formData = new FormData()
         formData.set('name', newName.trim())
         formData.set('description', newDesc.trim())
@@ -128,11 +207,16 @@ export default function ProjectsPage() {
       if (res?.ok) {
         const project = await res.json()
         toast.success(
-          importActive ? t('projects.createdWithImport') : t('projects.created')
+          templateActive
+            ? tp('templatePicker.createdFromTemplate', 'Project created from template')
+            : importActive
+              ? t('projects.createdWithImport')
+              : t('projects.created')
         )
         setShowCreate(false)
         resetCreateForm()
-        const tab = importActive ? '?tab=prd' : ''
+        if (templateActive) clearTemplate()
+        const tab = templateActive || importActive ? '?tab=prd' : ''
         router.push(`/dashboard/projects/${project?.id}${tab}`)
       } else {
         const data = await res.json()
@@ -268,13 +352,52 @@ export default function ProjectsPage() {
       )}
 
       {/* Create Dialog */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+      <Dialog
+        open={showCreate}
+        onOpenChange={(next: boolean) => {
+          setShowCreate(next)
+          if (!next && templateActive) {
+            clearTemplate()
+            resetCreateForm()
+          }
+        }}
+      >
         <DialogContent className="w-[calc(100%-2rem)] max-w-md sm:w-full rounded-lg">
           <DialogHeader>
             <DialogTitle className="font-display">{t('projects.dialogNewTitle')}</DialogTitle>
             <DialogDescription>{t('projects.dialogNewDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {templateLoading ? (
+              <div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                {tp('templatePicker.loading', 'Loading template…')}
+              </div>
+            ) : null}
+            {selectedTemplate ? (
+              <div className="flex items-start gap-2 rounded-md border bg-primary/5 px-3 py-2">
+                <LayoutGrid className="mt-0.5 h-4 w-4 text-primary" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">
+                    {tp('templatePicker.label', 'Using template')}: {selectedTemplate.title}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {tp(
+                      'templatePicker.journeyLocked',
+                      'Journey mode is locked to the template’s recommendation. PRD seed is pre-filled — review and refine inside the workspace.'
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearTemplate}
+                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label={tp('templatePicker.clear', 'Clear template')}
+                  title={tp('templatePicker.clear', 'Clear template')}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="project-name">{t('projects.projectName')}</Label>
               <Input
@@ -297,33 +420,45 @@ export default function ProjectsPage() {
             </div>
             <div className="space-y-3">
               <Label>{t('projects.journeyModeLabel')}</Label>
-              <RadioGroup
-                value={newJourneyMode}
-                onValueChange={(value) => setNewJourneyMode(value as JourneyMode)}
-                className="gap-3"
-              >
-                <label
-                  htmlFor="journey-standard"
-                  className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer has-[:checked]:border-primary"
+              {templateActive ? (
+                <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                  <Badge variant="outline" className="capitalize">
+                    {newJourneyMode}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {tp('templatePicker.journeyLockedShort', 'Set by template')}
+                  </span>
+                </div>
+              ) : (
+                <RadioGroup
+                  value={newJourneyMode}
+                  onValueChange={(value) => setNewJourneyMode(value as JourneyMode)}
+                  className="gap-3"
                 >
-                  <RadioGroupItem value="standard" id="journey-standard" className="mt-0.5" />
-                  <div className="space-y-0.5">
-                    <span className="text-sm font-medium">{t('projects.journeyModeStandard')}</span>
-                    <p className="text-xs text-muted-foreground">{t('projects.journeyModeStandardHint')}</p>
-                  </div>
-                </label>
-                <label
-                  htmlFor="journey-express"
-                  className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer has-[:checked]:border-primary"
-                >
-                  <RadioGroupItem value="express" id="journey-express" className="mt-0.5" />
-                  <div className="space-y-0.5">
-                    <span className="text-sm font-medium">{t('projects.journeyModeExpress')}</span>
-                    <p className="text-xs text-muted-foreground">{t('projects.journeyModeExpressHint')}</p>
-                  </div>
-                </label>
-              </RadioGroup>
+                  <label
+                    htmlFor="journey-standard"
+                    className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer has-[:checked]:border-primary"
+                  >
+                    <RadioGroupItem value="standard" id="journey-standard" className="mt-0.5" />
+                    <div className="space-y-0.5">
+                      <span className="text-sm font-medium">{t('projects.journeyModeStandard')}</span>
+                      <p className="text-xs text-muted-foreground">{t('projects.journeyModeStandardHint')}</p>
+                    </div>
+                  </label>
+                  <label
+                    htmlFor="journey-express"
+                    className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer has-[:checked]:border-primary"
+                  >
+                    <RadioGroupItem value="express" id="journey-express" className="mt-0.5" />
+                    <div className="space-y-0.5">
+                      <span className="text-sm font-medium">{t('projects.journeyModeExpress')}</span>
+                      <p className="text-xs text-muted-foreground">{t('projects.journeyModeExpressHint')}</p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              )}
             </div>
+            {templateActive ? null : (
             <Collapsible open={importOpen} onOpenChange={setImportOpen}>
               <CollapsibleTrigger asChild>
                 <Button type="button" variant="outline" className="w-full justify-between min-h-11">
@@ -373,12 +508,14 @@ export default function ProjectsPage() {
                 <p className="text-xs text-muted-foreground">{t('projects.importNoCredits')}</p>
               </CollapsibleContent>
             </Collapsible>
+            )}
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 variant="ghost"
                 onClick={() => {
                   setShowCreate(false)
                   resetCreateForm()
+                  if (templateActive) clearTemplate()
                 }}
                 className="min-h-11 w-full sm:w-auto"
               >

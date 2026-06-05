@@ -7,11 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   FileText, Share2, Copy, Check, XCircle, Download,
-  AlertCircle, CheckCircle2, CircleDot, MessageSquare,
+  AlertCircle, CheckCircle2, CircleDot, MessageSquare, GitBranch,
 } from 'lucide-react'
 import { formatPrdContentForAi } from '@/lib/prd-content-for-ai'
 import { toast } from 'sonner'
-import { MilestoneFeedbackModal } from '@/components/milestone-feedback-modal'
+import { ShareOutcomeModal } from '@/components/share-outcome-modal'
 import { FadeIn, Stagger, StaggerItem } from '@/components/ui/animate'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { PrdVersionDTO } from '@repo/contracts/prd/prd-contracts'
@@ -20,7 +20,12 @@ import {
   type GeneratePrdSection,
 } from '@repo/contracts/ai/generate-prd-stream'
 import { ShareLinkMintResponseSchema, ShareLinkSummarySchema } from '@repo/contracts/share/mint'
+import {
+  SectionDecisionCountsResponseSchema,
+} from '@repo/contracts/decisions/decision'
+import { PRD_SECTIONS } from '@repo/contracts/questions/history'
 import { useOwnerMilestonePrompt } from './owner-milestone-prompt'
+import { SectionCommentsPanel } from './section-comments-panel'
 import { useI18n } from '@/src/i18n'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -37,6 +42,7 @@ interface PrdViewerProps {
     prdVersionId: string | null
     initialPrompt?: string
   }) => void
+  onViewDecisionsForSection?: (sectionTitle: string) => void
 }
 
 export function PrdViewer({
@@ -46,6 +52,7 @@ export function PrdViewer({
   onSelectVersion,
   onRefresh,
   onOpenRefinement,
+  onViewDecisionsForSection,
 }: PrdViewerProps) {
   const { t } = useI18n()
   const { notifyMilestone } = useOwnerMilestonePrompt()
@@ -57,8 +64,8 @@ export function PrdViewer({
   >(null)
   const [sharing, setSharing] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [showFeedback, setShowFeedback] = useState(false)
-  const [feedbackType, setFeedbackType] = useState('')
+  const [showOutcomePrompt, setShowOutcomePrompt] = useState(false)
+  const [sectionDecisionCounts, setSectionDecisionCounts] = useState<Record<string, number>>({})
 
   // Check for existing share link
   useEffect(() => {
@@ -82,6 +89,23 @@ export function PrdViewer({
       prdVersionId: selectedVersion.id,
     })
   }, [projectId, selectedVersion?.id, notifyMilestone])
+
+  useEffect(() => {
+    const loadSectionCounts = async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/decisions/section-counts`)
+        if (!res.ok) return
+        const raw = await res.json()
+        const parsed = SectionDecisionCountsResponseSchema.safeParse(raw)
+        if (parsed.success) {
+          setSectionDecisionCounts(parsed.data)
+        }
+      } catch {
+        /* non-blocking */
+      }
+    }
+    void loadSectionCounts()
+  }, [projectId, selectedVersion?.id])
 
   const parsedContent = GeneratePrdAiResponseSchema.safeParse(selectedVersion?.content)
   const content = parsedContent.success ? parsedContent.data : null
@@ -139,9 +163,7 @@ export function PrdViewer({
         setShareLink(link)
         setShareLinkObj({ id: data.id, token: data.token, enabled: data.enabled })
         toast.success(t('prd.shareLinkCreated'))
-        // Milestone feedback for sharing
-        setFeedbackType('prd_shared')
-        setShowFeedback(true)
+        setShowOutcomePrompt(true)
         notifyMilestone({
           projectId,
           milestoneType: 'prd_shared',
@@ -385,20 +407,24 @@ export function PrdViewer({
 
       {selectedVersion?.deliverableKind === 'express' ? <ExpressPrdDisclaimer /> : null}
 
-      {/* Version summary */}
-      {content?.version_summary && (
-        <FadeIn>
-          <Card className="bg-muted/30">
-            <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">{content.version_summary}</p>
-            </CardContent>
-          </Card>
-        </FadeIn>
-      )}
+      {/* PRD body — masked in PostHog session replay (B-ANALYTICS-002).
+          Wraps version summary + sections + raw fallback so no founder PRD
+          text reaches the recording even when replay is enabled. */}
+      <div className="space-y-3 ph-no-capture" data-ph-mask="prd-body">
+        {/* Version summary */}
+        {content?.version_summary && (
+          <FadeIn>
+            <Card className="bg-muted/30">
+              <CardContent className="p-4">
+                <p className="text-sm text-muted-foreground">{content.version_summary}</p>
+              </CardContent>
+            </Card>
+          </FadeIn>
+        )}
 
-      {/* PRD Sections */}
-      <Stagger staggerDelay={0.05}>
-        <div className="space-y-3">
+        {/* PRD Sections */}
+        <Stagger staggerDelay={0.05}>
+          <div className="space-y-3">
           {sections.map((section, i) => (
             <StaggerItem key={section?.id ?? i}>
               <Card className="group">
@@ -408,6 +434,30 @@ export function PrdViewer({
                       {section?.title ?? t('prd.section')}
                     </CardTitle>
                     <div className="flex items-center gap-1.5 shrink-0">
+                      {(() => {
+                        const sectionTitle = section?.title ?? ''
+                        const canonicalSection = (PRD_SECTIONS as readonly string[]).includes(sectionTitle)
+                          ? sectionTitle
+                          : null
+                        const decisionCount = canonicalSection
+                          ? sectionDecisionCounts[canonicalSection] ?? 0
+                          : 0
+                        if (decisionCount > 0 && onViewDecisionsForSection && canonicalSection) {
+                          return (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              className="h-7 px-2 text-xs gap-1"
+                              onClick={() => onViewDecisionsForSection(canonicalSection)}
+                            >
+                              <GitBranch className="h-3 w-3" />
+                              {t('prd.decisionsBadge').replace('{count}', String(decisionCount))}
+                            </Button>
+                          )
+                        }
+                        return null
+                      })()}
                       {onOpenRefinement ? (
                         <Button
                           type="button"
@@ -471,6 +521,21 @@ export function PrdViewer({
                       </ul>
                     </div>
                   )}
+                  {(() => {
+                    const sectionTitle = section?.title ?? ''
+                    const canonicalSection = (PRD_SECTIONS as readonly string[]).includes(sectionTitle)
+                      ? sectionTitle
+                      : null
+                    if (!canonicalSection) return null
+                    return (
+                      <SectionCommentsPanel
+                        projectId={projectId}
+                        prdVersionId={selectedVersion?.id ?? null}
+                        sectionId={canonicalSection}
+                        sectionTitle={canonicalSection}
+                      />
+                    )
+                  })()}
                 </CardContent>
               </Card>
             </StaggerItem>
@@ -478,32 +543,23 @@ export function PrdViewer({
         </div>
       </Stagger>
 
-      {/* Raw content fallback */}
-      {(sections?.length ?? 0) === 0 && content && (
-        <Card>
-          <CardContent className="p-4">
-            <pre className="text-sm whitespace-pre-wrap font-mono">
-              {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
+        {/* Raw content fallback */}
+        {(sections?.length ?? 0) === 0 && content && (
+          <Card>
+            <CardContent className="p-4">
+              <pre className="text-sm whitespace-pre-wrap font-mono">
+                {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
+              </pre>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
-      {/* Milestone Feedback */}
-      <MilestoneFeedbackModal
-        open={showFeedback}
-        onClose={() => setShowFeedback(false)}
+      <ShareOutcomeModal
+        open={showOutcomePrompt}
+        onClose={() => setShowOutcomePrompt(false)}
         projectId={projectId}
         prdVersionId={selectedVersion?.id}
-        milestoneType={feedbackType}
-        title={
-          feedbackType === 'prd_shared'
-            ? t('prd.feedbackSharedTitle')
-            : feedbackType === 'prd_reopened'
-            ? t('prd.feedbackReopenedTitle')
-            : t('common.feedbackPromptTitle')
-        }
-        description={t('common.feedbackPromptDescription')}
       />
     </div>
   )

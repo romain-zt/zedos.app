@@ -26,6 +26,7 @@ import {
   FileText,
   Package,
   Receipt,
+  LayoutGrid,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useI18n } from '@/src/i18n'
@@ -37,6 +38,7 @@ import { useWorkspaceJourneyMode } from '../_lib/use-workspace-journey-mode'
 const NAV_ITEMS: { href: string; labelKey: string; icon: LucideIcon }[] = [
   { href: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
   { href: '/dashboard/projects', labelKey: 'nav.projects', icon: FolderOpen },
+  { href: '/dashboard/templates', labelKey: 'nav.templates', icon: LayoutGrid },
   { href: '/dashboard/credits', labelKey: 'nav.credits', icon: Coins },
   { href: '/dashboard/billing', labelKey: 'nav.billing', icon: Receipt },
 ]

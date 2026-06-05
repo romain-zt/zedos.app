@@ -1,3 +1,12 @@
 {
-  "title": "Projects"
+  "title": "Projects",
+  "templatePicker.label": "Using template",
+  "templatePicker.clear": "Clear template",
+  "templatePicker.loading": "Loading template…",
+  "templatePicker.loadFailed": "Could not load template",
+  "templatePicker.networkError": "Network error loading template",
+  "templatePicker.journeyLocked": "Journey mode is locked to the template's recommendation. PRD seed is pre-filled — review and refine inside the workspace.",
+  "templatePicker.journeyLockedShort": "Set by template",
+  "templatePicker.mutualExclusion": "Cannot combine import with a template — clear one before creating.",
+  "templatePicker.createdFromTemplate": "Project created from template"
 }

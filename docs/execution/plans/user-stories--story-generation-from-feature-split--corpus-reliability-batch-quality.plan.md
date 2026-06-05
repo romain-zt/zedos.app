@@ -6,7 +6,7 @@
 
 ## Status
 
-`approved`
+`executed`
 
 > **Layout in effect:** post-migration (`apps/web/` + `packages/`)
 > **Architecture Surface:** resolved
@@ -163,4 +163,4 @@ Revert repository + UI commits; schema unchanged. If prompt regression, revert `
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-05-15 | Initial proposal (prod Date bind, batch UX, draft quality) | — |
-| 2026-05-15 | Status `approved` after user `approved` | — |
+| 2026-05-15 | Status `executed` after user `executed` | — |

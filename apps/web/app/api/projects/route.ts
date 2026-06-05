@@ -4,14 +4,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { z } from 'zod'
 import { requireUser } from '@repo/auth/guards'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
 import { ListProjectsUseCase } from '@application/project/list-projects-usecase'
 import { CreateProjectUseCase } from '@application/project/create-project-usecase'
-import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
+import { DrizzlePrdRepository } from '@infrastructure/persistence/prd-repository'
+import { staticTemplateCatalog } from '@infrastructure/templates'
 import {
   ProjectDTOSchema,
   ProjectListItemDTOSchema,
-} from '@contracts/project/project-contracts'
+} from '@repo/contracts/project/project-contracts'
 import { parseCreateProjectRequest } from './parse-create-project-request'
 import { createLogger } from '@shared/observability/logger'
 import { validationFailureData } from '@shared/observability/log-safe'
@@ -29,7 +30,7 @@ export async function GET() {
   if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = userResult.unwrap().id
 
-  const repo = new PrismaProjectRepository()
+  const repo = new DrizzleProjectRepository()
   const useCase = new ListProjectsUseCase(repo)
   const result = await useCase.execute(userId)
 
@@ -61,15 +62,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsedBody.message }, { status: parsedBody.status })
   }
 
-  const repo = new PrismaProjectRepository()
-  const prdRepo = new PrismaPrdRepository()
-  const useCase = new CreateProjectUseCase(repo, prdRepo)
+  const repo = new DrizzleProjectRepository()
+  const prdRepo = new DrizzlePrdRepository()
+  const useCase = new CreateProjectUseCase(repo, prdRepo, staticTemplateCatalog)
   const result = await useCase.execute({
     userId,
     name: parsedBody.data.name,
     description: parsedBody.data.description,
     journeyMode: parsedBody.data.journeyMode,
     importedPrdContent: parsedBody.data.importedPrd,
+    ...(parsedBody.data.templateSlug ? { templateSlug: parsedBody.data.templateSlug } : {}),
   })
 
   if (result.isErr()) {
@@ -91,5 +93,12 @@ export async function POST(request: NextRequest) {
     project_id: dtoValidation.data.id,
     journey_mode: dtoValidation.data.journeyMode,
   })
+  if (parsedBody.data.templateSlug) {
+    captureServer(AnalyticsEvents.PROJECT_CREATED_FROM_TEMPLATE, userId, {
+      project_id: dtoValidation.data.id,
+      template_slug: parsedBody.data.templateSlug,
+      journey_mode: dtoValidation.data.journeyMode,
+    })
+  }
   return NextResponse.json(dtoValidation.data, { status: 201 })
 }
