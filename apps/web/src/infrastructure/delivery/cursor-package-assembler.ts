@@ -3,6 +3,7 @@
  */
 
 import archiver from 'archiver';
+import type { DecisionsExportJson } from '@repo/contracts/decisions/decision';
 import type { ExportEligibleBundle } from '@domain/delivery/export-bundle';
 import type { ICursorPackageAssembler } from '@domain/delivery/cursor-package-assembler-port';
 
@@ -59,7 +60,10 @@ export function buildStoryMarkdown(bundle: ExportEligibleBundle): string {
   return lines.join('\n');
 }
 
-export function buildPackageFiles(bundles: ExportEligibleBundle[]): PackageFile[] {
+export function buildPackageFiles(
+  bundles: ExportEligibleBundle[],
+  decisionsExport?: DecisionsExportJson,
+): PackageFile[] {
   const files: PackageFile[] = [
     {
       path: 'WORK_QUEUE.md',
@@ -84,6 +88,13 @@ export function buildPackageFiles(bundles: ExportEligibleBundle[]): PackageFile[
     files.push({
       path: `docs/execution/user-stories/${safeId}.md`,
       content: buildStoryMarkdown(bundle),
+    });
+  }
+
+  if (decisionsExport) {
+    files.push({
+      path: 'decisions.json',
+      content: JSON.stringify(decisionsExport, null, 2),
     });
   }
 
@@ -113,13 +124,19 @@ export function zipPackageFiles(files: PackageFile[]): Promise<Buffer> {
   });
 }
 
-export async function assembleDeliveryZip(bundles: ExportEligibleBundle[]): Promise<Buffer> {
-  const files = buildPackageFiles(bundles);
+export async function assembleDeliveryZip(
+  bundles: ExportEligibleBundle[],
+  decisionsExport?: DecisionsExportJson,
+): Promise<Buffer> {
+  const files = buildPackageFiles(bundles, decisionsExport);
   return zipPackageFiles(files);
 }
 
 export class CursorPackageAssembler implements ICursorPackageAssembler {
-  assembleZip(bundles: ExportEligibleBundle[]): Promise<Buffer> {
-    return assembleDeliveryZip(bundles);
+  assembleZip(
+    bundles: ExportEligibleBundle[],
+    decisionsExport?: DecisionsExportJson,
+  ): Promise<Buffer> {
+    return assembleDeliveryZip(bundles, decisionsExport);
   }
 }

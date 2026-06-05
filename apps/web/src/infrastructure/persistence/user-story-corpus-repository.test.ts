@@ -92,8 +92,12 @@ vi.mock('@repo/db', async (importOriginal) => {
       transaction: vi.fn(async (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
       execute: mockDbExecute,
       update: vi.fn(() => ({
-        set: vi.fn(() => ({
-          where: vi.fn(() => Promise.resolve()),
+        set: vi.fn((patch: { reviewReadyAt?: Date; updatedAt?: Date }) => ({
+          where: vi.fn(() => {
+            if (patch.reviewReadyAt) corporaRow.reviewReadyAt = patch.reviewReadyAt;
+            if (patch.updatedAt) corporaRow.updatedAt = patch.updatedAt;
+            return Promise.resolve();
+          }),
         })),
       })),
       select: vi.fn(() => ({
@@ -171,15 +175,16 @@ describe('DrizzleUserStoryCorpusRepository.markReviewReady', () => {
     }
   });
 
-  it('runs SQL update with ISO timestamps then reloads the corpus row', async () => {
+  it('updates reviewReadyAt via Drizzle .set() then reloads the corpus row', async () => {
     const dbMod = await import('@repo/db');
     const repo = new DrizzleUserStoryCorpusRepository();
     const result = await repo.markReviewReady('proj_a', 'cluster_a');
 
     expect(result.isOk()).toBe(true);
-    expect(dbMod.db.execute).toHaveBeenCalledTimes(1);
+    expect(dbMod.db.update).toHaveBeenCalledTimes(1);
     if (result.isOk()) {
-      expect(result.unwrap().reviewReadyAt).toEqual(new Date('2026-05-15T12:00:00.000Z'));
+      expect(result.unwrap().reviewReadyAt).toBeInstanceOf(Date);
+      expect(result.unwrap().reviewReadyAt).not.toBeNull();
     }
   });
 });

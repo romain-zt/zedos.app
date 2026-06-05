@@ -1,0 +1,18 @@
+{
+  "title": "Templates marketplace",
+  "subtitle": "Start from a proven PRD structure instead of a blank doc. Preview a template, then use it to create a new project in one click.",
+  "loadFailed": "Could not load templates",
+  "loadFailedTitle": "Catalog did not load",
+  "networkError": "Network error loading templates",
+  "emptyTitle": "No templates available yet",
+  "emptyDescription": "Seed catalog is missing. Try refreshing — if the issue persists, the server is in maintenance.",
+  "card.preview": "Preview",
+  "card.use": "Use template",
+  "preview.loading": "Loading template…",
+  "preview.loadFailed": "Could not load template",
+  "preview.networkError": "Network error loading template",
+  "preview.close": "Close",
+  "preview.use": "Use this template",
+  "preview.sectionsOutline": "Sections outline",
+  "preview.clarifyHints": "Clarify hints"
+}

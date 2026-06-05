@@ -6,7 +6,7 @@
 
 ## Status
 
-`draft`
+`executed`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false

@@ -6,7 +6,7 @@
 
 ## Status
 
-`approved`
+`executed`
 
 > **Layout in effect:** `apps/web/` + `packages/db` + `packages/contracts` (where shared DTOs are lifted)
 > **Architecture Surface:** resolved

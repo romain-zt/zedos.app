@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   ListChecks,
   Loader2,
@@ -17,6 +19,7 @@ import {
   Sparkles,
   Trash2,
   Wand2,
+  X,
   Zap,
 } from 'lucide-react';
 import {
@@ -52,16 +55,26 @@ function confirmedSplitForVersion(splits: FeatureSplitDTO[], prdVersionId: strin
   return match ?? null;
 }
 
-function corpusToDrafts(corpus: UserStoryCorpusDTO): LineDraft[] {
-  const active = corpus.lines.filter((l) => !l.archivedAt);
-  const sorted = [...active].sort((a, b) => a.sortOrder - b.sortOrder);
-  return sorted.map((l) => ({
+function mapCorpusLine(l: UserStoryCorpusDTO['lines'][number]): LineDraft {
+  return {
     id: l.id,
     sortOrder: l.sortOrder,
     title: l.title,
     body: l.body,
+    archivedAt: l.archivedAt ? l.archivedAt.toISOString() : null,
     draftMarker: l.draftMarker,
-  }));
+  };
+}
+
+function splitCorpusLines(corpus: UserStoryCorpusDTO): { active: LineDraft[]; archived: LineDraft[] } {
+  const sorted = [...corpus.lines].sort((a, b) => a.sortOrder - b.sortOrder);
+  const active = sorted.filter((l) => !l.archivedAt).map(mapCorpusLine);
+  const archived = sorted.filter((l) => l.archivedAt).map(mapCorpusLine);
+  return { active, archived };
+}
+
+function corpusToDrafts(corpus: UserStoryCorpusDTO): LineDraft[] {
+  return splitCorpusLines(corpus).active;
 }
 
 export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWorkspaceProps) {
@@ -72,7 +85,9 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   const [splits, setSplits] = useState<FeatureSplitDTO[]>([]);
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
   const [lines, setLines] = useState<LineDraft[]>([]);
+  const [archivedLines, setArchivedLines] = useState<LineDraft[]>([]);
   const [reviewReadyAt, setReviewReadyAt] = useState<Date | null>(null);
+  const generationAbortRef = useRef<AbortController | null>(null);
   const [hasPersistedCorpus, setHasPersistedCorpus] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingCorpus, setLoadingCorpus] = useState(false);
@@ -172,6 +187,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
         );
         if (res.status === 404) {
           setLines([emptyLine(0)]);
+          setArchivedLines([]);
           setReviewReadyAt(null);
           setHasPersistedCorpus(false);
           markClusterHasCorpus(clusterId, false);
@@ -188,10 +204,12 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
           return;
         }
         const corpus = parsed.data;
+        const { active, archived } = splitCorpusLines(corpus);
         setReviewReadyAt(corpus.reviewReadyAt);
         setHasPersistedCorpus(true);
         markClusterHasCorpus(clusterId, true);
-        setLines(corpusToDrafts(corpus).length > 0 ? corpusToDrafts(corpus) : [emptyLine(0)]);
+        setArchivedLines(archived);
+        setLines(active.length > 0 ? active : [emptyLine(0)]);
       } catch {
         toast.error(t('userStories.networkLoadError'));
       } finally {
@@ -210,6 +228,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
       setSelectedClusterId(null);
       setBatchClusterIds([]);
       setLines([]);
+      setArchivedLines([]);
       fetchSplitsForVersion(selectedVersionId);
     }
   }, [selectedVersionId, fetchSplitsForVersion]);
@@ -268,26 +287,45 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
     setLines((prev) => [...prev, emptyLine(prev.length)]);
   };
 
-  const handleRemoveLine = (index: number) => {
+  const handleArchiveLine = (index: number) => {
+    const line = lines[index];
+    if (!line) return;
+    const archivedAt = new Date().toISOString();
+    setArchivedLines((prev) => [...prev, { ...line, archivedAt }]);
     setLines((prev) =>
       prev
         .filter((_, i) => i !== index)
-        .map((line, i) => ({ ...line, sortOrder: i }))
+        .map((l, i) => ({ ...l, sortOrder: i }))
     );
   };
 
+  const handleMoveLine = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    setLines((prev) => {
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+      const next = [...prev];
+      const current = next[index];
+      const swap = next[targetIndex];
+      if (!current || !swap) return prev;
+      next[index] = { ...swap, sortOrder: index };
+      next[targetIndex] = { ...current, sortOrder: targetIndex };
+      return next;
+    });
+  };
+
   const buildSavePayload = (clusterId: string) => {
-    const valid = lines.filter((l) => l.title.trim() && l.body.trim());
+    const validActive = lines.filter((l) => l.title.trim() && l.body.trim());
+    const mapLine = (l: LineDraft) => ({
+      ...(l.id ? { id: l.id } : {}),
+      sortOrder: l.sortOrder,
+      title: l.title.trim(),
+      body: l.body.trim(),
+      archivedAt: l.archivedAt ?? null,
+      draftMarker: l.draftMarker ?? null,
+    });
     return {
       featureSplitClusterId: clusterId,
-      lines: valid.map((l) => ({
-        ...(l.id ? { id: l.id } : {}),
-        sortOrder: l.sortOrder,
-        title: l.title.trim(),
-        body: l.body.trim(),
-        archivedAt: l.archivedAt ?? null,
-        draftMarker: l.draftMarker ?? null,
-      })),
+      lines: [...validActive.map(mapLine), ...archivedLines.map(mapLine)],
     };
   };
 
@@ -298,19 +336,30 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
       return;
     }
     const corpus = parsed.data;
+    const { active, archived } = splitCorpusLines(corpus);
     setReviewReadyAt(corpus.reviewReadyAt);
     setHasPersistedCorpus(true);
-    setLines(corpusToDrafts(corpus));
+    setArchivedLines(archived);
+    setLines(active.length > 0 ? active : [emptyLine(0)]);
     markClusterHasCorpus(corpus.featureSplitClusterId, true);
+  };
+
+  const handleCancelGeneration = () => {
+    generationAbortRef.current?.abort();
+    generationAbortRef.current = null;
+    setGeneratingAi(false);
+    toast.dismiss('ai-story-gen');
+    toast.info(t('userStories.generationCancelled'));
   };
 
   const handleSave = async () => {
     if (!selectedClusterId) return;
-    const payload = buildSavePayload(selectedClusterId);
-    if (payload.lines.length === 0) {
+    const activeCount = lines.filter((l) => l.title.trim() && l.body.trim()).length;
+    if (activeCount === 0) {
       toast.error(t('userStories.addOneStoryRequired'));
       return;
     }
+    const payload = buildSavePayload(selectedClusterId);
     setSaving(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/user-stories`, {
@@ -335,11 +384,13 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
   const generateAiStoriesForCluster = async (
     clusterId: string,
     clusterLabel: string,
+    signal: AbortSignal,
     onStoryProgress?: (corpus: UserStoryCorpusDTO) => void
   ): Promise<UserStoryCorpusDTO | null> => {
     const outlineRes = await fetch(`/api/projects/${projectId}/user-stories/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal,
       body: JSON.stringify({
         featureSplitClusterId: clusterId,
         mode: 'ai',
@@ -370,6 +421,7 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
       const storyRes = await fetch(`/api/projects/${projectId}/user-stories/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal,
         body: JSON.stringify({
           featureSplitClusterId: clusterId,
           mode: 'ai',
@@ -422,6 +474,11 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
     }
     const setBusy = mode === 'template' ? setGeneratingTemplate : setGeneratingAi;
     setBusy(true);
+    if (mode === 'ai') {
+      generationAbortRef.current?.abort();
+      generationAbortRef.current = new AbortController();
+    }
+    const signal = generationAbortRef.current?.signal;
     try {
       let rawForCurrentView: UserStoryCorpusDTO | null = null;
       const confirmedSplit = selectedVersionId
@@ -436,9 +493,11 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
         const clusterLabel = clusterById.get(clusterId)?.label ?? t('userStories.cluster');
 
         if (mode === 'ai') {
+          if (!signal) return;
           const corpus = await generateAiStoriesForCluster(
             clusterId,
             clusterLabel,
+            signal,
             selectedClusterId === clusterId ? applyCorpusResponse : undefined
           );
           if (corpus === null) return;
@@ -494,9 +553,13 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
             }
           : undefined,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
       toast.error(t('userStories.networkGenerationError'));
     } finally {
+      generationAbortRef.current = null;
       setBusy(false);
     }
   };
@@ -702,6 +765,17 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                     {generatingAi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                     <span className="ml-2">{t('userStories.draftWithAi')}</span>
                   </Button>
+                  {generatingAi ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancelGeneration}
+                      className="min-h-[44px] w-full sm:w-auto"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="ml-2">{t('userStories.cancelGeneration')}</span>
+                    </Button>
+                  ) : null}
                 </div>
                 {batchClusterIds.length > 0 && (
                   <div className="border-t border-primary/10 pt-3">
@@ -789,16 +863,40 @@ export function UserStoriesWorkspace({ projectId, projectName }: UserStoriesWork
                       <div key={line.id ?? `new-${index}`} className="rounded-lg border p-3 sm:p-4 space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <span className="text-xs font-medium text-muted-foreground">{t('userStories.story')} {index + 1}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="shrink-0 min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
-                            onClick={() => handleRemoveLine(index)}
-                            aria-label={t('userStories.removeStory')}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="min-h-[44px] min-w-[44px]"
+                              disabled={index === 0}
+                              onClick={() => handleMoveLine(index, 'up')}
+                              aria-label={t('userStories.moveStoryUp')}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="min-h-[44px] min-w-[44px]"
+                              disabled={index === lines.length - 1}
+                              onClick={() => handleMoveLine(index, 'down')}
+                              aria-label={t('userStories.moveStoryDown')}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
+                              onClick={() => handleArchiveLine(index)}
+                              aria-label={t('userStories.archiveStory')}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                         <input
                           className="w-full min-h-[44px] rounded-md border bg-background px-3 py-2 text-base font-medium"

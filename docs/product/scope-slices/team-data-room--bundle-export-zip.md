@@ -6,10 +6,11 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
-> **NEED_HUMAN:** true
+> **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
+> **Gate override (2026-06-05):** `B-TEAM-PRICE-001` (Team plan pricing not signed off) and `GATE-MRR-500` were **waived by user decision** to unblock user-story authoring. Pricing remains operationally unresolved — the slice can be planned, but `/implement` of this slice must not ship until pricing is set. See changelog.
 
 ---
 
@@ -92,8 +93,8 @@ Optional: `data_room_zip_downloaded`.
 
 | Blocker | Blocks | NEED_HUMAN |
 |---------|--------|------------|
-| GATE-MRR-500 | Scale gate | false |
-| B-TEAM-PRICE-001 | Team plan $199–399 not signed off | **true** |
+| GATE-MRR-500 | Scale gate | false — **waived 2026-06-05 by user** for readiness step only |
+| B-TEAM-PRICE-001 | Team plan $199–399 not signed off | false — **waived 2026-06-05 by user** for readiness step. Pricing is **still unresolved**; do not run `/implement` for this slice until a `docs/product-decisions/` entry locks the Team price. |
 | B-FA-TEAM-001 | Parent FA not validated | false |
 
 ---
@@ -114,10 +115,10 @@ An eligible **Team** owner generates a **single zip** containing the due-diligen
 - [x] Sharing / privacy surface assessed
 - [x] Feedback / instrumentation impact assessed
 - [x] All dependencies named and their status known
-- [ ] Blockers — **B-TEAM-PRICE-001**
+- [x] Blockers — `B-TEAM-PRICE-001` waived for readiness step (2026-06-05); **still required before `/implement`**
 - [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** BLOCKED — pricing NEED_HUMAN + MRR gate
+**Verdict:** READY FOR USER STORIES (gate-waived for planning; not yet ready for `/implement`)
 
 ---
 
@@ -127,3 +128,4 @@ An eligible **Team** owner generates a **single zip** containing the due-diligen
 |------|--------|--------|
 | 2026-06-04 | Blueprint scaffold (minimal) | — |
 | 2026-06-04 | `/feature-area refine-slice` — exploratory, BLOCKED | — |
+| 2026-06-05 | Promoted `exploratory` → `ready-for-user-stories` by **user override**. `B-TEAM-PRICE-001` (Team plan pricing) and `GATE-MRR-500` waived for the readiness step. Pricing remains operationally unresolved — `/implement` of this slice is still blocked until a `docs/product-decisions/` entry sets the Team price. `NEED_HUMAN` lowered from `true` → `false` per the same user decision. | user (via implementer) |

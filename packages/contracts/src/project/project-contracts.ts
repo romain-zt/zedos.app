@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { PrdVersionContentSchema } from '../prd/prd-contracts';
+import { TemplateSlugSchema } from '../templates/template';
 
 export const JourneyModeSchema = z.enum(['standard', 'express']);
 
@@ -16,6 +17,13 @@ export const CreateProjectRequestSchema = z.object({
   name: z.string().min(1, 'Project name is required').transform((v) => v.trim()),
   description: z.string().optional().nullable().transform((v) => v?.trim() ?? null),
   journeyMode: JourneyModeSchema.optional().default('standard'),
+  /**
+   * Optional templates-marketplace slug. When set, the create-project use case
+   * resolves the template, overrides `journeyMode` with the template's mode,
+   * and seeds the first PRD version from the template content. Mutually
+   * exclusive with an inline `importPaste`/`importedPrd` payload.
+   */
+  templateSlug: TemplateSlugSchema.optional(),
 });
 
 export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;
@@ -43,6 +51,8 @@ export const ProjectDTOSchema = z.object({
   architectureStartedAt: z.date().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
+  /** Slug of the templates-marketplace template used to seed this project, if any. */
+  templateSlug: TemplateSlugSchema.optional(),
 });
 
 export type ProjectDTO = z.infer<typeof ProjectDTOSchema>;

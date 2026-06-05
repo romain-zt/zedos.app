@@ -102,4 +102,3 @@ export class DrizzleAdrRepository implements IAdrRepository {
 }
 
 // Export for backwards compatibility
-export { DrizzleAdrRepository as PrismaAdrRepository };

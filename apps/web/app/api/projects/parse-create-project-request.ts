@@ -4,6 +4,7 @@ import {
   CreateProjectImportPasteSchema,
   JourneyModeSchema,
 } from '@repo/contracts/project';
+import { TemplateSlugSchema, type TemplateSlug } from '@repo/contracts/templates';
 import {
   buildImportedPrdVersionContent,
   parseImportedPrdUploadFile,
@@ -16,6 +17,7 @@ export type ParsedCreateProjectRequest = {
   description: string | null;
   journeyMode: z.infer<typeof JourneyModeSchema>;
   importedPrd: PrdVersionContent | null;
+  templateSlug: TemplateSlug | null;
 };
 
 function fieldString(formData: FormData, key: string): string | null {
@@ -40,17 +42,36 @@ export async function parseCreateProjectRequest(
     const journeyRaw = fieldString(formData, 'journeyMode');
     const journeyParsed = JourneyModeSchema.safeParse(journeyRaw ?? 'standard');
     const journeyMode = journeyParsed.success ? journeyParsed.data : 'standard';
+    const templateSlugRaw = fieldString(formData, 'templateSlug');
 
     if (!name) {
       return { ok: false, message: 'Project name is required', status: 400 };
     }
 
+    const templateSlugParsed = templateSlugRaw
+      ? TemplateSlugSchema.safeParse(templateSlugRaw)
+      : null;
+    if (templateSlugParsed && !templateSlugParsed.success) {
+      return { ok: false, message: 'Invalid template slug', status: 400 };
+    }
+    const templateSlug = templateSlugParsed?.data ?? null;
+
     const importKind = fieldString(formData, 'importKind');
+
+    if (templateSlug && importKind && importKind !== 'none') {
+      return {
+        ok: false,
+        message: 'Cannot combine an import payload with a template slug',
+        status: 400,
+      };
+    }
+
     if (!importKind || importKind === 'none') {
       const parsed = CreateProjectRequestSchema.safeParse({
         name,
         description,
         journeyMode,
+        ...(templateSlug ? { templateSlug } : {}),
       });
       if (!parsed.success) {
         return {
@@ -66,6 +87,7 @@ export async function parseCreateProjectRequest(
           description: parsed.data.description ?? null,
           journeyMode: parsed.data.journeyMode,
           importedPrd: null,
+          templateSlug: parsed.data.templateSlug ?? null,
         },
       };
     }
@@ -97,6 +119,7 @@ export async function parseCreateProjectRequest(
           description: pasteParsed.data.description ?? null,
           journeyMode: pasteParsed.data.journeyMode,
           importedPrd: content,
+          templateSlug: null,
         },
       };
     }
@@ -119,6 +142,7 @@ export async function parseCreateProjectRequest(
             description: description?.trim() || null,
             journeyMode,
             importedPrd: content,
+            templateSlug: null,
           },
         };
       } catch (e) {
@@ -143,6 +167,7 @@ export async function parseCreateProjectRequest(
       description: z.string().optional().nullable(),
       journeyMode: JourneyModeSchema.optional(),
       importPaste: z.string().optional(),
+      templateSlug: TemplateSlugSchema.optional(),
     })
     .safeParse(raw);
 
@@ -150,7 +175,16 @@ export async function parseCreateProjectRequest(
     return { ok: false, message: 'Invalid request body', status: 400 };
   }
 
-  const { importPaste, ...rest } = withImport.data;
+  const { importPaste, templateSlug, ...rest } = withImport.data;
+
+  if (templateSlug && importPaste != null && importPaste.trim() !== '') {
+    return {
+      ok: false,
+      message: 'Cannot combine an import payload with a template slug',
+      status: 400,
+    };
+  }
+
   if (importPaste != null && importPaste.trim() !== '') {
     const pasteParsed = CreateProjectImportPasteSchema.safeParse({
       name: rest.name,
@@ -177,11 +211,15 @@ export async function parseCreateProjectRequest(
         description: pasteParsed.data.description ?? null,
         journeyMode: pasteParsed.data.journeyMode,
         importedPrd: content,
+        templateSlug: null,
       },
     };
   }
 
-  const parsed = CreateProjectRequestSchema.safeParse(rest);
+  const parsed = CreateProjectRequestSchema.safeParse({
+    ...rest,
+    ...(templateSlug ? { templateSlug } : {}),
+  });
   if (!parsed.success) {
     return {
       ok: false,
@@ -197,6 +235,7 @@ export async function parseCreateProjectRequest(
       description: parsed.data.description ?? null,
       journeyMode: parsed.data.journeyMode,
       importedPrd: null,
+      templateSlug: parsed.data.templateSlug ?? null,
     },
   };
 }

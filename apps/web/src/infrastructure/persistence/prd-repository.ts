@@ -483,4 +483,3 @@ export class DrizzlePrdRepository implements IPrdRepository {
 }
 
 // Export for backwards compatibility
-export { DrizzlePrdRepository as PrismaPrdRepository };

@@ -9,11 +9,15 @@ import {
 import {
   checkCreditsForApi as checkCredits,
   deductCreditsForApi as deductCredits,
+  reverseCreditsForApi as reverseCredits,
 } from '@infrastructure/http/credits-http-bridge'
 import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
 import { createLogger } from '@shared/observability/logger'
 import { AnalyticsEvents, balanceBucketFromCount } from '@infrastructure/analytics/analytics-events'
-import { captureServer } from '@infrastructure/analytics/posthog-server'
+import {
+  captureServer,
+  captureServerException,
+} from '@infrastructure/analytics/posthog-server'
 
 const logger = createLogger({ operation: 'generate-prd-stream-flow' })
 
@@ -121,9 +125,21 @@ export async function generatePrdStreamForProject(
           : GeneratePrdAiResponseSchema.safeParse(parsed)
       if (!validated.success) {
         logger.error('Generate PRD AI response validation failed', validated.error.flatten())
+        captureServer(AnalyticsEvents.PRD_GENERATION_FAILED, input.userId, {
+          project_id: input.projectId,
+          journey_mode: project.journeyMode,
+          error_code: 'prd_response_schema_invalid',
+        })
         return
       }
-      await deductCredits(input.userId, 'prd_generation', { projectId: input.projectId })
+      const deductResult = await deductCredits(input.userId, 'prd_generation', {
+        projectId: input.projectId,
+      })
+      if (!deductResult.success) {
+        logger.error('PRD generation credit deduction failed after validated AI response')
+        return
+      }
+      const consumptionCorrelationId = deductResult.correlationId
       const now = new Date()
       const prdInsert: PrdVersionInsert = {
         projectId: input.projectId,
@@ -133,7 +149,16 @@ export async function generatePrdStreamForProject(
         deliverableKind,
         updatedAt: now,
       }
-      await db.insert(prdVersions).values(prdInsert)
+      try {
+        await db.insert(prdVersions).values(prdInsert)
+      } catch (insertError: unknown) {
+        if (consumptionCorrelationId) {
+          await reverseCredits(input.userId, consumptionCorrelationId, {
+            projectId: input.projectId,
+          })
+        }
+        throw insertError
+      }
       captureServer(AnalyticsEvents.PRD_GENERATION_COMPLETED, input.userId, {
         project_id: input.projectId,
         version_number: nextVersionNumber,
@@ -141,6 +166,17 @@ export async function generatePrdStreamForProject(
       })
     } catch (error: unknown) {
       logger.error('Failed to save PRD version', error)
+      const normalized = error instanceof Error ? error : new Error('prd_generation_persist_failure')
+      captureServer(AnalyticsEvents.PRD_GENERATION_FAILED, input.userId, {
+        project_id: input.projectId,
+        journey_mode: project.journeyMode,
+        error_code: 'prd_generation_persist_failure',
+      })
+      captureServerException(normalized, input.userId, {
+        project_id: input.projectId,
+        route: 'generate-prd-stream-flow',
+        error_code: 'prd_generation_persist_failure',
+      })
     }
   })
 

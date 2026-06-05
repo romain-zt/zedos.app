@@ -8,7 +8,7 @@ import {
   ShareLinkMintResponseSchema,
 } from '@repo/contracts/share/mint'
 import { MintReadOnlyShareLinkUseCase } from '@application/prd'
-import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
+import { DrizzlePrdRepository } from '@infrastructure/persistence/prd-repository'
 import { createLogger } from '@shared/observability/logger'
 import { validationFailureData } from '@shared/observability/log-safe'
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const useCase = new MintReadOnlyShareLinkUseCase(new PrismaPrdRepository())
+  const useCase = new MintReadOnlyShareLinkUseCase(new DrizzlePrdRepository())
   const result = await useCase.execute(parsed.data.prdVersionId, userId, {
     password: parsed.data.password,
     expiresInDays: parsed.data.expiresInDays,

@@ -55,4 +55,63 @@ describe('ProjectDTOSchema', () => {
     });
     expect(r.success).toBe(true);
   });
+
+  it('accepts an optional templateSlug', () => {
+    const now = new Date();
+    const r = ProjectDTOSchema.safeParse({
+      id: 'p1',
+      userId: 'u1',
+      name: 'Test',
+      description: null,
+      phase: 'intake',
+      journeyMode: 'express',
+      architectureStartedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      templateSlug: 'pitch-tomorrow',
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('rejects an unknown templateSlug', () => {
+    const now = new Date();
+    const r = ProjectDTOSchema.safeParse({
+      id: 'p1',
+      userId: 'u1',
+      name: 'Test',
+      description: null,
+      phase: 'intake',
+      journeyMode: 'standard',
+      architectureStartedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      templateSlug: 'not-a-template',
+    });
+    expect(r.success).toBe(false);
+  });
+});
+
+describe('CreateProjectRequestSchema — templateSlug', () => {
+  it('accepts a valid templateSlug', () => {
+    const r = CreateProjectRequestSchema.safeParse({
+      name: 'Pitch',
+      templateSlug: 'fr-pitch-demain',
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.templateSlug).toBe('fr-pitch-demain');
+  });
+
+  it('rejects an unknown templateSlug', () => {
+    const r = CreateProjectRequestSchema.safeParse({
+      name: 'Pitch',
+      templateSlug: 'mystery-template',
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('omits templateSlug when not provided', () => {
+    const r = CreateProjectRequestSchema.safeParse({ name: 'Plain' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.templateSlug).toBeUndefined();
+  });
 });

@@ -1,23 +1,20 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { Trash2 } from 'lucide-react';
 import {
   ProjectMemberListResponseSchema,
+  COMMENTER_ACTIVE_CAP,
   type ProjectMemberDTO,
 } from '@repo/contracts/project/members';
 import { useI18n } from '@/src/i18n';
+import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events';
+import { captureClient } from '@infrastructure/analytics/posthog-client';
 
 interface ProjectMembersPanelProps {
   projectId: string;
@@ -27,9 +24,9 @@ export function ProjectMembersPanel({ projectId }: ProjectMembersPanelProps) {
   const { t } = useI18n();
   const [members, setMembers] = useState<ProjectMemberDTO[]>([]);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'editor' | 'viewer'>('viewer');
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -48,14 +45,22 @@ export function ProjectMembersPanel({ projectId }: ProjectMembersPanelProps) {
     void loadMembers();
   }, [loadMembers]);
 
+  const activeCommenters = useMemo(
+    () => members.filter((m) => m.role === 'commenter' && m.status === 'active').length,
+    [members],
+  );
+  const commenters = useMemo(() => members.filter((m) => m.role === 'commenter'), [members]);
+  const capReached = activeCommenters >= COMMENTER_ACTIVE_CAP;
+
   const handleInvite = async () => {
-    if (!email.trim()) return;
+    const normalized = email.trim();
+    if (!normalized) return;
     setInviting(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteEmail: email.trim(), role }),
+        body: JSON.stringify({ inviteEmail: normalized, role: 'commenter' }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -64,6 +69,7 @@ export function ProjectMembersPanel({ projectId }: ProjectMembersPanelProps) {
       }
       setEmail('');
       toast.success(t('members.invitationSaved'));
+      captureClient(AnalyticsEvents.COMMENTER_INVITED, { project_id: projectId });
       await loadMembers();
     } catch {
       toast.error(t('members.inviteFailed'));
@@ -72,12 +78,33 @@ export function ProjectMembersPanel({ projectId }: ProjectMembersPanelProps) {
     }
   };
 
+  const handleRevoke = async (memberId: string) => {
+    setRevokingId(memberId);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/members/${memberId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok && res.status !== 204) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(body.error ?? t('members.revokeFailed'));
+        return;
+      }
+      toast.success(t('members.revoked'));
+      captureClient(AnalyticsEvents.COMMENTER_REVOKED, { project_id: projectId });
+      await loadMembers();
+    } catch {
+      toast.error(t('members.revokeFailed'));
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('members.title')}</CardTitle>
         <CardDescription>
-          {t('members.description')}
+          {t('members.description').replace('{cap}', String(COMMENTER_ACTIVE_CAP))}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -88,32 +115,48 @@ export function ProjectMembersPanel({ projectId }: ProjectMembersPanelProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             aria-label={t('members.invite')}
+            disabled={capReached}
           />
-          <Select value={role} onValueChange={(v: string) => setRole(v as 'editor' | 'viewer')}>
-            <SelectTrigger className="sm:w-36">
-              <SelectValue placeholder={t('members.role')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="viewer">{t('members.viewer')}</SelectItem>
-              <SelectItem value="editor">{t('members.editor')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={() => void handleInvite()} disabled={inviting || !email.trim()}>
+          <Button
+            onClick={() => void handleInvite()}
+            disabled={inviting || !email.trim() || capReached}
+          >
             {t('members.invite')}
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground">
+          {capReached
+            ? t('members.capReached').replace('{cap}', String(COMMENTER_ACTIVE_CAP))
+            : t('members.capRemaining')
+                .replace('{used}', String(activeCommenters))
+                .replace('{cap}', String(COMMENTER_ACTIVE_CAP))}
+        </p>
         {loading ? (
           <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
-        ) : members.length === 0 ? (
+        ) : commenters.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('members.none')}</p>
         ) : (
           <ul className="space-y-2">
-            {members.map((m) => (
-              <li key={m.id} className="flex items-center justify-between text-sm border rounded-md px-3 py-2">
-                <span>{m.inviteEmail}</span>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{m.role}</Badge>
-                  <Badge variant={m.status === 'active' ? 'default' : 'secondary'}>{m.status}</Badge>
+            {commenters.map((m) => (
+              <li
+                key={m.id}
+                className="flex items-center justify-between text-sm border rounded-md px-3 py-2"
+              >
+                <span className="truncate">{m.inviteEmail}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant="outline">{t('members.commenter')}</Badge>
+                  <Badge variant={m.status === 'active' ? 'default' : 'secondary'}>
+                    {m.status === 'active' ? t('members.statusActive') : t('members.statusPending')}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('members.revoke')}
+                    onClick={() => void handleRevoke(m.id)}
+                    disabled={revokingId === m.id}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
               </li>
             ))}

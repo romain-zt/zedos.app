@@ -11,7 +11,14 @@ export const OwnerMilestoneTypeSchema = z.enum([
 
 export type OwnerMilestoneType = z.infer<typeof OwnerMilestoneTypeSchema>
 
-export const RatingTypeSchema = z.enum(['stars'])
+export const RatingTypeSchema = z.enum(['stars', 'outcome'])
+
+export type RatingType = z.infer<typeof RatingTypeSchema>
+
+/** O1 share outcome — `prd_shared` milestone */
+export const ShareOutcomeValueSchema = z.enum(['yes', 'not_yet', 'no'])
+
+export type ShareOutcomeValue = z.infer<typeof ShareOutcomeValueSchema>
 
 export const MilestoneFeedbackSubmitRequestSchema = z.object({
   projectId: IdSchema,
@@ -19,6 +26,7 @@ export const MilestoneFeedbackSubmitRequestSchema = z.object({
   milestoneType: OwnerMilestoneTypeSchema,
   ratingType: RatingTypeSchema.optional().default('stars'),
   ratingValue: z.number().int().min(0).max(5).nullable().optional(),
+  outcomeValue: ShareOutcomeValueSchema.optional(),
   comment: z.string().max(8000).nullable().optional(),
 })
 

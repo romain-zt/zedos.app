@@ -5,6 +5,7 @@ import {
   zipPackageFiles,
 } from './cursor-package-assembler';
 import type { ExportEligibleBundle } from '@domain/delivery/export-bundle';
+import type { DecisionsExportJson } from '@repo/contracts/decisions/decision';
 
 const sampleBundle = (): ExportEligibleBundle => ({
   id: 'bundle-abc123',
@@ -31,6 +32,29 @@ describe('cursor-package-assembler', () => {
     expect(paths).toContain('.cursor/README.md');
     expect(paths).toContain('docs/execution/user-stories/bundle-abc123.md');
     expect(buildWorkQueueMarkdown([sampleBundle()])).toContain('Checkout flow');
+  });
+
+  it('includes decisions.json when export payload is provided', () => {
+    const decisionsExport: DecisionsExportJson = {
+      version: 1,
+      projectId: 'proj-1',
+      exportedAt: '2026-06-05T10:00:00.000Z',
+      decisions: [
+        {
+          question: 'Who is the primary user?',
+          chosenOption: 'SMB founders',
+          rejectedOptions: ['Enterprise IT'],
+          ownerComment: null,
+          aiInterpretation: null,
+          sectionIds: ['Target Users'],
+          createdAt: '2026-06-01T12:00:00.000Z',
+        },
+      ],
+    };
+    const files = buildPackageFiles([sampleBundle()], decisionsExport);
+    const decisionsFile = files.find((f) => f.path === 'decisions.json');
+    expect(decisionsFile).toBeDefined();
+    expect(decisionsFile?.content).toContain('SMB founders');
   });
 
   it('produces a non-empty ZIP buffer', async () => {

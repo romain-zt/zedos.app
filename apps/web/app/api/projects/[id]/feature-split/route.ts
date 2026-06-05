@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { requireUser } from '@repo/auth/guards';
 import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository';
+import { DrizzlePrdRepository } from '@infrastructure/persistence/prd-repository';
 import { DrizzleFeatureSplitRepository } from '@infrastructure/persistence/feature-split-repository';
 import { GetFeatureSplitUseCase } from '@application/feature-split/get-feature-split-usecase';
 import { SaveFeatureSplitDraftUseCase } from '@application/feature-split/save-feature-split-draft-usecase';
@@ -123,6 +124,7 @@ export async function PUT(
   const routeContext = { projectId: params.id, userId };
   const useCase = new SaveFeatureSplitDraftUseCase(
     new DrizzleProjectRepository(),
+    new DrizzlePrdRepository(),
     new DrizzleFeatureSplitRepository()
   );
   const result = await useCase.execute({

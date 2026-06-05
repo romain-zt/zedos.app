@@ -13,7 +13,7 @@
 
 ## Status
 
-`proposed` — moves to `approved` only on user `approved` reply to the PIS, after `domain-guardian` + `scope-critic` PASS and `implementation-readiness-checker.md` returns CLEAR.
+`executed` — post-migration gaps closed 2026-06-05 (verify read-only, checkout idempotency, webhook FOR UPDATE, ReverseCreditsUseCase).
 
 > **Layout in effect:** **pre-migration** — paths use `zedos/nextjs_space/...` per `71-monorepo-context.mdc` §2.
 > **Architecture Surface:** **resolved** (no UNKNOWN load-bearing fields) — see Surface Block below.

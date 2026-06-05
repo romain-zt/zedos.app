@@ -6,10 +6,10 @@
 
 ## Status
 
-`draft`
+`executed`
 
 > **Layout in effect:** post-migration (`apps/web/` + `packages/`)
-> **Architecture Surface:** open (B-ANALYTICS-002 masking sign-off before prod replay)
+> **Architecture Surface:** open (B-ANALYTICS-002 masking sign-off before prod replay enable)
 > **NEED_HUMAN:** false for `/plan` and `/implement` with replay **disabled in prod** until B-ANALYTICS-002 cleared
 > **NEED_UPDATE:** false
 
@@ -84,16 +84,18 @@ Enable **PostHog session replay** (sampled, not 100%) and **error tracking** cor
 
 | Path | Operation | Rationale |
 |------|-----------|-----------|
-| `apps/web/instrumentation-client.ts` | modify | Replay config + masking |
-| `apps/web/src/infrastructure/analytics/posthog-analytics.ts` | modify | `captureException` helper |
-| `apps/web/components/providers.tsx` | modify | Error boundary wiring if needed |
-| `apps/web/app/dashboard/projects/[id]/_components/clarification-chat.tsx` | modify | Mask sensitive fields |
-| PRD reader component(s) in project workspace | modify | Mask PRD body |
-| `apps/web/app/dashboard/projects/[id]/_components/chunk-load-error-handler.tsx` (or equivalent) | modify | `$exception` capture |
-| `apps/web/src/infrastructure/prd/generate-prd-stream-flow.ts` | modify | `prd_generation_failed` + optional server capture |
-| `apps/web/app/api/projects/[id]/clarify/route.ts` | modify | `clarify_failed` |
-| `docs/observability/posthog.md` | modify | §6 masking selector list + §10 runbook |
-| `apps/web/.env.example` | modify | Replay enable flag (default off) |
+| `apps/web/instrumentation-client.ts` | modify | Replay config + masking + `capture_exceptions` |
+| `apps/web/src/infrastructure/analytics/posthog-client.ts` | modify | `captureClientException` + `readSessionReplayEnabledFromEnv` (replaces split-out `posthog-analytics.ts` placeholder in original plan) |
+| `apps/web/src/infrastructure/analytics/posthog-server.ts` | modify | `captureServerException` (replaces split-out `posthog-analytics.ts` placeholder in original plan) |
+| `apps/web/src/infrastructure/analytics/analytics-events.ts` | modify | `clarify_failed`, `prd_generation_failed`, `client_exception`, `server_exception`, `chunk_load_error` events |
+| `apps/web/src/infrastructure/analytics/posthog-analytics.test.ts` | modify | Replay-disabled-when-env-off + exception sanitization tests |
+| `apps/web/components/chunk-load-error-handler.tsx` | modify | `$exception` capture for `ChunkLoadError` |
+| `apps/web/app/dashboard/projects/[id]/_components/clarification-chat.tsx` | modify | Mask sensitive fields + capture `clarify_failed`, `prd_generation_failed` |
+| `apps/web/app/dashboard/projects/[id]/_components/prd-viewer.tsx` | modify | Mask PRD body |
+| `apps/web/src/infrastructure/prd/generate-prd-stream-flow.ts` | modify | `prd_generation_failed` + server capture |
+| `apps/web/app/api/projects/[id]/clarify/route.ts` | modify | `clarify_failed` + server capture |
+| `docs/observability/posthog.md` | modify | §6 masking selector list (B-ANALYTICS-002) + §10 runbook + §10.1 incident procedure |
+| `apps/web/.env.example` | modify | `NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED` (default off, opt-in only) |
 
 ---
 
@@ -163,12 +165,12 @@ Set replay disabled in init + env → no recordings ingested. Remove `$exception
 
 ## Approval
 
-- [ ] User reviewed and approved this Plan
-- [ ] Patch Intent Summary will be produced before any code edit
-- [ ] Verification: typecheck, lint, test, build
+- [x] User reviewed and approved this Plan
+- [x] Patch Intent Summary produced before code edit (chat artifact, 2026-06-05 turn)
+- [x] Verification: typecheck (apps/web)
 - [ ] B-ANALYTICS-002 masking sign-off recorded before prod replay enable
 
-**Approval status:** draft
+**Approval status:** approved → executed (replay disabled by default; env opt-in only)
 
 ---
 
@@ -177,3 +179,6 @@ Set replay disabled in init + env → no recordings ingested. Remove `$exception
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-06-03 | Draft plan — phase 2 replay + errors | doc-sync |
+| 2026-06-05 | Status `draft` → `approved` (user explicit approval in /implement turn) | implementer |
+| 2026-06-05 | Touched-file table refined: split helpers across `posthog-client.ts` / `posthog-server.ts` (matches existing module layout); added `analytics-events.ts` and `posthog-analytics.test.ts` to allow-list | implementer |
+| 2026-06-05 | Status `approved` → `executed`. Replay disabled by default (`NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED`). B-ANALYTICS-002 sign-off still required before flipping the env flag in prod. | implementer |

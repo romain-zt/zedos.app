@@ -33,6 +33,7 @@ export const CreditPacksResponseSchema = z.object({
 export type CreditPacksResponse = z.infer<typeof CreditPacksResponseSchema>;
 
 export const VerifyCheckoutResultSchema = z.object({
+  status: z.enum(['processing', 'completed', 'failed']),
   balance: z.number().int(),
   creditsAdded: z.number().int().positive().optional(),
   alreadyProcessed: z.boolean().optional(),

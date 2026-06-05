@@ -124,4 +124,3 @@ export class DrizzleUserRepository implements IUserRepository {
 }
 
 // Export for backwards compatibility
-export { DrizzleUserRepository as PrismaUserRepository };

@@ -18,6 +18,8 @@ export interface NewUserRow {
   marketingConsent?: boolean;
   productUpdatesConsent?: boolean;
   consentUpdatedAt?: Date | null;
+  planTier?: string;
+  hasAttemptedExport?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -35,6 +37,8 @@ export interface UserUpdate {
   marketingConsent?: boolean;
   productUpdatesConsent?: boolean;
   consentUpdatedAt?: Date | null;
+  planTier?: string;
+  hasAttemptedExport?: boolean;
 }
 
 // Project insert type
@@ -230,6 +234,57 @@ export interface TaskSplitBundleUpdate {
   updatedAt?: Date;
 }
 
+/** Explicit insert row — Drizzle $inferInsert does not resolve across package boundaries. */
+export interface DecisionGraphInsertRow {
+  id?: string;
+  projectId: string;
+  prdVersionId?: string | null;
+  questionHistoryId: string;
+  structuredQuestion: string;
+  chosenOption?: string | null;
+  rejectedOptions?: string[];
+  ownerComment?: string | null;
+  aiInterpretation?: string | null;
+  createdAt?: Date;
+}
+
+export interface DecisionGraphLinkInsertRow {
+  id?: string;
+  decisionId: string;
+  sectionId: string;
+  anchor?: string | null;
+  createdAt?: Date;
+}
+
+/** Insert row for project_comment_threads. */
+export interface NewCommentThreadRow {
+  id?: string;
+  projectId: string;
+  prdVersionId?: string | null;
+  sectionId: string;
+  status?: string;
+  createdByUserId: string;
+  createdAt?: Date;
+  resolvedAt?: Date | null;
+  ownerLastReadAt?: Date | null;
+}
+
+/** Update row for project_comment_threads. */
+export interface CommentThreadUpdate {
+  status?: string;
+  resolvedAt?: Date | null;
+  ownerLastReadAt?: Date | null;
+}
+
+/** Insert row for project_comment_messages. */
+export interface NewCommentMessageRow {
+  id?: string;
+  threadId: string;
+  authorUserId: string;
+  body: string;
+  createdAt?: Date;
+}
+
 export interface NewTaskSplitTaskRow {
   id?: string;
   bundleId: string;
@@ -249,4 +304,153 @@ export interface TaskSplitTaskUpdate {
   manual?: boolean;
   deletedAt?: Date | null;
   updatedAt?: Date;
+}
+
+/** Insert row for github_connections. */
+export interface NewGithubConnectionRow {
+  id?: string;
+  projectId: string;
+  connectedByUserId: string;
+  ownerLogin: string;
+  repoName: string;
+  installationId?: string | null;
+  status?: string;
+  createdAt?: Date;
+  disconnectedAt?: Date | null;
+}
+
+export interface GithubConnectionUpdate {
+  status?: string;
+  installationId?: string | null;
+  disconnectedAt?: Date | null;
+}
+
+/** Insert row for drift_signals. */
+export interface NewDriftSignalRow {
+  id?: string;
+  projectId: string;
+  kind: string;
+  severity?: string;
+  summary: string;
+  payload?: Record<string, unknown>;
+  source: string;
+  externalDeliveryId: string;
+  status?: string;
+  createdAt?: Date;
+  resolvedAt?: Date | null;
+  dismissedAt?: Date | null;
+}
+
+export interface DriftSignalUpdate {
+  status?: string;
+  resolvedAt?: Date | null;
+  dismissedAt?: Date | null;
+}
+
+/** Insert row for linear_connections. */
+export interface NewLinearConnectionRow {
+  id?: string;
+  projectId: string;
+  connectedByUserId: string;
+  teamId: string;
+  linearProjectId?: string | null;
+  status?: string;
+  createdAt?: Date;
+  disconnectedAt?: Date | null;
+}
+
+export interface LinearConnectionUpdate {
+  status?: string;
+  linearProjectId?: string | null;
+  disconnectedAt?: Date | null;
+}
+
+/** Insert row for linear_issue_links. */
+export interface NewLinearIssueLinkRow {
+  id?: string;
+  projectId: string;
+  userStoryLineId: string;
+  linearIssueId: string;
+  linearIssueIdentifier: string;
+  status?: string;
+  lastSyncedAt?: Date | null;
+  createdAt?: Date;
+}
+
+export interface LinearIssueLinkUpdate {
+  status?: string;
+  lastSyncedAt?: Date | null;
+}
+
+/** Insert row for subscriptions. */
+export interface NewSubscriptionRow {
+  id?: string;
+  userId: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  stripePriceId: string;
+  planTier: string;
+  status: string;
+  cancelAtPeriodEnd?: boolean;
+  currentPeriodEnd?: Date | null;
+  endedAt?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface SubscriptionUpdate {
+  stripePriceId?: string;
+  planTier?: string;
+  status?: string;
+  cancelAtPeriodEnd?: boolean;
+  currentPeriodEnd?: Date | null;
+  endedAt?: Date | null;
+  updatedAt?: Date;
+}
+
+/** Insert row for data_room_bundles. */
+export interface NewDataRoomBundleRow {
+  id?: string;
+  projectId: string;
+  generatedByUserId: string;
+  fileCount: number;
+  byteSize: number;
+  manifestJson: string;
+  createdAt?: Date;
+}
+
+/** Insert row for red_team_reports. */
+export interface NewRedTeamReportRow {
+  id?: string;
+  projectId: string;
+  prdVersionId: string;
+  requestedByUserId: string;
+  status?: string;
+  creditCost: number;
+  findingCount?: number;
+  errorMessage?: string | null;
+  createdAt?: Date;
+  completedAt?: Date | null;
+}
+
+export interface RedTeamReportUpdate {
+  status?: string;
+  findingCount?: number;
+  errorMessage?: string | null;
+  completedAt?: Date | null;
+}
+
+/** Insert row for red_team_findings. */
+export interface NewRedTeamFindingRow {
+  id?: string;
+  reportId: string;
+  sortOrder: number;
+  category: string;
+  severity: string;
+  sectionId?: string | null;
+  title: string;
+  evidence: string;
+  suggestion: string;
+  metadata?: Record<string, string>;
+  createdAt?: Date;
 }

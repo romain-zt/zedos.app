@@ -4,15 +4,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { requireUser } from '@repo/auth/guards';
 import { DeliveryExportRequestSchema } from '@repo/contracts/delivery';
+import { ExportGatedErrorSchema } from '@repo/contracts/delivery/conversion-gate';
 import { BuildDeliveryPackageUseCase } from '@application/delivery/build-delivery-package-usecase';
+import { EvaluateExportConversionGateUseCase } from '@application/delivery/evaluate-export-conversion-gate-usecase';
 import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository';
 import { DrizzleDeliveryExportRepository } from '@infrastructure/delivery/delivery-export-repository';
 import { CursorPackageAssembler } from '@infrastructure/delivery/cursor-package-assembler';
+import { decisionGraphRepository } from '@infrastructure/persistence/decision-graph-repository';
+import { DrizzlePlanTierReader } from '@infrastructure/persistence/plan-tier-reader';
 import { ApplicationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
 import { validationFailureData } from '@shared/observability/log-safe';
+import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events';
+import { captureServer } from '@infrastructure/analytics/posthog-server';
 
 const logger = createLogger({ operation: 'delivery-export' });
+const UPGRADE_PATH = '/dashboard/billing?upgrade=builder&source=export';
 
 function toErrorResponse(e: ApplicationError) {
   return NextResponse.json({ error: e.message }, { status: e.statusCode });
@@ -25,6 +32,26 @@ export async function POST(
   const userResult = await requireUser(await headers());
   if (userResult.isErr()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const userId = userResult.unwrap().id;
+
+  const gateResult = await new EvaluateExportConversionGateUseCase().execute(userId);
+  if (gateResult.isErr()) return toErrorResponse(gateResult.error);
+  const gate = gateResult.unwrap();
+  if (gate.decision === 'soft-gate') {
+    captureServer(AnalyticsEvents.CURSOR_EXPORT_GATE_SHOWN, userId, {
+      plan_tier: gate.planTier,
+      has_attempted_export: gate.hasAttemptedExport,
+      surface: 'export_attempt',
+    });
+    const body = ExportGatedErrorSchema.parse({
+      error: 'export_gated',
+      decision: 'soft-gate',
+      planTier: gate.planTier,
+      hasAttemptedExport: gate.hasAttemptedExport,
+      upgradeUrl: UPGRADE_PATH,
+      message: 'Cursor export requires Builder. Preview the package or upgrade to download the full zip.',
+    });
+    return NextResponse.json(body, { status: 402 });
+  }
 
   let raw: unknown;
   try {
@@ -42,7 +69,8 @@ export async function POST(
   const useCase = new BuildDeliveryPackageUseCase(
     new DrizzleProjectRepository(),
     new DrizzleDeliveryExportRepository(),
-    new CursorPackageAssembler()
+    new CursorPackageAssembler(),
+    decisionGraphRepository,
   );
   const result = await useCase.execute(params.id, userId, parsed.data.bundleIds);
   if (result.isErr()) {
@@ -55,6 +83,13 @@ export async function POST(
   }
 
   const build = result.unwrap();
+  await new DrizzlePlanTierReader().markExportAttempted(userId);
+  captureServer(AnalyticsEvents.CURSOR_EXPORT_COMPLETED, userId, {
+    plan_tier: gate.planTier,
+    project_id: params.id,
+    bundle_count: parsed.data.bundleIds.length,
+    zip_bytes: build.zipBuffer.length,
+  });
   logger.info('Delivery export succeeded', {
     projectId: params.id,
     userId,

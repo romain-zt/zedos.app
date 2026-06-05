@@ -6,10 +6,12 @@ import type { JourneyMode } from '@repo/contracts/project/project-contracts'
 import { ClarificationChat } from './clarification-chat'
 import { PrdViewer } from './prd-viewer'
 import { QuestionHistoryPanel } from './question-history'
+import { DecisionsPanel } from './decisions-panel'
 import { ArchitecturePanel } from './architecture-panel'
 import { WorkspaceScorePanel } from './workspace-score-panel'
 import { ContextualRefinementPanel } from './contextual-refinement-panel'
-import { MessageSquare, FileText, History, Settings, Layers } from 'lucide-react'
+import { NextActionBanner } from './next-action-banner'
+import { MessageSquare, FileText, History, Settings, Layers, GitBranch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -20,12 +22,24 @@ import {
   PrdVersionListResponseSchema,
   type PrdVersionDTO,
 } from '@repo/contracts/prd/prd-contracts'
+import { z } from 'zod'
 import { useI18n } from '@/src/i18n'
 import { JourneyModeControls } from './journey-mode-controls'
+import { ProjectMembersPanel } from './project-members-panel'
 import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events'
 import { captureClient } from '@infrastructure/analytics/posthog-client'
 
-type WorkspaceTab = 'clarify' | 'prd' | 'architecture' | 'history'
+type WorkspaceTab = 'clarify' | 'prd' | 'architecture' | 'history' | 'decisions'
+
+const ProjectMetadataResponseSchema = z.object({
+  phase: z.string().optional(),
+  journeyMode: z.enum(['standard', 'express']).optional(),
+  _count: z
+    .object({
+      questionHistory: z.coerce.number().int().nonnegative().optional(),
+    })
+    .optional(),
+})
 
 interface ProjectWorkspaceProps {
   projectId: string
@@ -53,12 +67,14 @@ export function ProjectWorkspace({
   const [phase, setPhase] = useState('intake')
   const [journeyMode, setJourneyMode] = useState<JourneyMode>(initialJourneyMode)
   const [loadingPhase, setLoadingPhase] = useState(true)
+  const [questionHistoryCount, setQuestionHistoryCount] = useState(0)
   const [refinement, setRefinement] = useState<{
     isOpen: boolean
     label: string
     prdVersionId: string | null
     initialPrompt?: string
   }>({ isOpen: false, label: '', prdVersionId: null, initialPrompt: '' })
+  const [decisionsSectionFilter, setDecisionsSectionFilter] = useState<string | null>(null)
 
   const openRefinement = useCallback((payload: {
     label: string
@@ -116,10 +132,14 @@ export function ProjectWorkspace({
       try {
         const res = await fetch(`/api/projects/${projectId}`)
         if (res?.ok) {
-          const data = await res.json()
-          setPhase(data.phase || 'intake')
-          if (data.journeyMode === 'express' || data.journeyMode === 'standard') {
-            setJourneyMode(data.journeyMode)
+          const raw = await res.json()
+          const parsed = ProjectMetadataResponseSchema.safeParse(raw)
+          if (parsed.success) {
+            setPhase(parsed.data.phase ?? 'intake')
+            if (parsed.data.journeyMode) {
+              setJourneyMode(parsed.data.journeyMode)
+            }
+            setQuestionHistoryCount(parsed.data._count?.questionHistory ?? 0)
           }
         }
       } catch {
@@ -140,6 +160,18 @@ export function ProjectWorkspace({
     await fetchVersions({ selectLatest: true })
     setActiveTab('prd')
   }, [fetchVersions, closeRefinement])
+
+  const openDecisionsForSection = useCallback((sectionTitle: string) => {
+    setDecisionsSectionFilter(sectionTitle)
+    setActiveTab('decisions')
+  }, [])
+
+  const latestPrdVersion = prdVersions.length === 0
+    ? null
+    : prdVersions.reduce((best, v) => (v.versionNumber > best.versionNumber ? v : best))
+  const hasActiveShareLinkOnLatestPrd = (latestPrdVersion?.shareLinks ?? []).some(
+    (s) => s.enabled
+  )
 
   const handleSaveSettings = async () => {
     setSaving(true)
@@ -184,6 +216,17 @@ export function ProjectWorkspace({
         </div>
       </FadeIn>
 
+      <NextActionBanner
+        projectId={projectId}
+        journeyMode={journeyMode}
+        prdVersionCount={prdVersions.length}
+        questionHistoryCount={questionHistoryCount}
+        hasActiveShareLinkOnLatestPrd={hasActiveShareLinkOnLatestPrd}
+        loading={loadingPhase}
+        onSwitchTab={setActiveTab}
+        onJourneyModeChange={setJourneyMode}
+      />
+
       <Tabs
         value={activeTab}
         onValueChange={(value) => {
@@ -222,6 +265,10 @@ export function ProjectWorkspace({
               <History className="h-4 w-4" />
               {t('workspace.tabHistory')}
             </TabsTrigger>
+            <TabsTrigger value="decisions" className="gap-2">
+              <GitBranch className="h-4 w-4" />
+              {t('workspace.tabDecisions')}
+            </TabsTrigger>
           </TabsList>
           {!loadingPhase && <WorkspaceScorePanel projectId={projectId} />}
         </div>
@@ -243,6 +290,7 @@ export function ProjectWorkspace({
             onSelectVersion={setSelectedVersion}
             onRefresh={fetchVersions}
             onOpenRefinement={openRefinement}
+            onViewDecisionsForSection={openDecisionsForSection}
           />
         </TabsContent>
 
@@ -261,6 +309,16 @@ export function ProjectWorkspace({
             prdVersions={prdVersions}
             isTabActive={activeTab === 'history'}
             onOpenRefinement={openRefinement}
+          />
+        </TabsContent>
+
+        <TabsContent value="decisions" className="mt-4">
+          <DecisionsPanel
+            projectId={projectId}
+            prdVersions={prdVersions}
+            isTabActive={activeTab === 'decisions'}
+            initialSectionFilter={decisionsSectionFilter}
+            onSectionFilterApplied={() => setDecisionsSectionFilter(null)}
           />
         </TabsContent>
       </Tabs>
@@ -302,6 +360,7 @@ export function ProjectWorkspace({
                 <Button onClick={handleSaveSettings} loading={saving}>{t('common.save')}</Button>
               </div>
             </div>
+            <ProjectMembersPanel projectId={projectId} />
           </div>
         </DialogContent>
       </Dialog>

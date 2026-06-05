@@ -6,7 +6,6 @@ import {
   isE2eMode,
   parseE2eCheckoutSessionId,
 } from '@shared/testing/e2e-mode'
-import { resolvePaymentMethodFromCheckoutSession } from '@infrastructure/payments/stripe-off-session-auto-reload'
 import { DrizzleAutoReloadRepository } from '@infrastructure/persistence/auto-reload-repository'
 import {
   e2eStubTaxLegibility,
@@ -42,6 +41,7 @@ type VerifyCheckoutInput = {
 }
 
 type VerifyCheckoutOutput = {
+  status: 'processing' | 'completed' | 'failed'
   balance: number
   creditsAdded?: number
   alreadyProcessed?: boolean
@@ -51,10 +51,6 @@ type VerifyCheckoutOutput = {
 function stripeClient(): Stripe | null {
   const secret = process.env.STRIPE_SECRET_KEY
   return secret ? new Stripe(secret) : null
-}
-
-function getPaymentIntentId(paymentIntent: string | Stripe.PaymentIntent | null): string | null {
-  return typeof paymentIntent === 'string' ? paymentIntent : null
 }
 
 export async function createCheckoutSessionForUser(
@@ -92,12 +88,18 @@ export async function createCheckoutSessionForUser(
 
   const automaticTax = isStripeAutomaticTaxEnabled()
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await stripe.checkout.sessions.create(
+    {
     mode: 'payment',
     payment_method_types: ['card'],
     customer_creation: 'always',
     payment_intent_data: {
       setup_future_usage: 'off_session',
+      metadata: {
+        purchaseId: purchase.id,
+        userId: input.userId,
+        packSize: String(pack.size),
+      },
     },
     ...(automaticTax ? { automatic_tax: { enabled: true } } : {}),
     line_items: [
@@ -121,7 +123,9 @@ export async function createCheckoutSessionForUser(
     },
     success_url: `${input.origin}/dashboard/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${input.origin}/dashboard/credits?canceled=true`,
-  })
+    },
+    { idempotencyKey: purchase.id }
+  )
 
   await db.execute(sql`UPDATE purchases SET stripe_session_id = ${session.id} WHERE id = ${purchase.id}`)
 
@@ -148,7 +152,14 @@ export async function verifyCheckoutSessionForUser(
         .from(users)
         .where(eq(users.id, input.userId))
         .limit(1)
-      return { ok: true, value: { balance: user?.creditBalance ?? 0, alreadyProcessed: true } }
+      return {
+        ok: true,
+        value: {
+          status: 'completed',
+          balance: user?.creditBalance ?? 0,
+          alreadyProcessed: true,
+        },
+      }
     }
 
     const grantResult = await addPurchaseCreditsForApi(input.userId, purchase.packSize, {
@@ -177,6 +188,7 @@ export async function verifyCheckoutSessionForUser(
     return {
       ok: true,
       value: {
+        status: 'completed',
         balance: grantResult.unwrap(),
         creditsAdded: purchase.packSize,
         taxLegibility: e2eStubTaxLegibility(purchase.amountEur),
@@ -207,53 +219,30 @@ export async function verifyCheckoutSessionForUser(
     return { ok: false, status: 404, error: 'Purchase not found' }
   }
 
+  const [user] = await db
+    .select({ creditBalance: users.creditBalance })
+    .from(users)
+    .where(eq(users.id, input.userId))
+    .limit(1)
+  const currentBalance = user?.creditBalance ?? 0
+
   if (purchase.status === 'completed') {
-    const [user] = await db
-      .select({ creditBalance: users.creditBalance })
-      .from(users)
-      .where(eq(users.id, input.userId))
-      .limit(1)
     return {
       ok: true,
       value: {
-        balance: user?.creditBalance ?? 0,
+        status: 'completed',
+        balance: currentBalance,
         alreadyProcessed: true,
         taxLegibility: extractTaxLegibilityFromCheckoutSession(checkoutSession),
       },
     }
   }
 
-  const grantResult = await addPurchaseCreditsForApi(input.userId, packSize, {
-    purchaseId,
-    stripeSessionId: input.sessionId,
-    packSize,
-  })
-  if (grantResult.isErr()) {
-    return {
-      ok: false,
-      status: grantResult.error.statusCode ?? 500,
-      error: grantResult.error.message,
-    }
-  }
-
-  await db.execute(
-    sql`UPDATE purchases SET status = 'completed', stripe_payment_intent_id = ${getPaymentIntentId(checkoutSession.payment_intent)} WHERE id = ${purchaseId}`
-  )
-
-  const paymentMethod = await resolvePaymentMethodFromCheckoutSession(input.sessionId)
-  if (paymentMethod) {
-    await new DrizzleAutoReloadRepository().saveStripePaymentMethod(
-      input.userId,
-      paymentMethod.customerId,
-      paymentMethod.paymentMethodId
-    )
-  }
-
   return {
     ok: true,
     value: {
-      balance: grantResult.unwrap(),
-      creditsAdded: packSize,
+      status: 'processing',
+      balance: currentBalance,
       taxLegibility: extractTaxLegibilityFromCheckoutSession(checkoutSession),
     },
   }

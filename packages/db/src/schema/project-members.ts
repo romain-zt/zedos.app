@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { projects } from './projects';
 import { users } from './users';
 
-export const projectMemberRoles = ['owner', 'editor', 'viewer'] as const;
+export const projectMemberRoles = ['owner', 'editor', 'viewer', 'commenter'] as const;
 export type ProjectMemberRole = (typeof projectMemberRoles)[number];
 
 export const projectMemberStatuses = ['pending', 'active'] as const;

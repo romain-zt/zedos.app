@@ -3,8 +3,8 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { requireUser } from '@repo/auth/guards'
-import { PrismaProjectRepository } from '@infrastructure/persistence/project-repository'
-import { PrismaPrdRepository } from '@infrastructure/persistence/prd-repository'
+import { DrizzleProjectRepository } from '@infrastructure/persistence/project-repository'
+import { DrizzlePrdRepository } from '@infrastructure/persistence/prd-repository'
 import { GetPrdVersionsUseCase } from '@application/prd/get-prd-versions-usecase'
 import { EnsureFirstPrdVersionUseCase } from '@application/prd/ensure-first-prd-version-usecase'
 import {
@@ -33,7 +33,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   const userId = userResult.unwrap().id
   const routeContext = { projectId: params.id, userId }
 
-  const useCase = new GetPrdVersionsUseCase(new PrismaProjectRepository(), new PrismaPrdRepository())
+  const useCase = new GetPrdVersionsUseCase(new DrizzleProjectRepository(), new DrizzlePrdRepository())
   const result = await useCase.execute(params.id, userId)
   if (result.isErr()) return toErrorResponse(result.error, routeContext, 'PRD versions GET failed')
   const out = PrdVersionListResponseSchema.safeParse(result.unwrap())
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  const useCase = new EnsureFirstPrdVersionUseCase(new PrismaProjectRepository(), new PrismaPrdRepository())
+  const useCase = new EnsureFirstPrdVersionUseCase(new DrizzleProjectRepository(), new DrizzlePrdRepository())
   const result = await useCase.execute(params.id, userId, parsed.data)
   if (result.isErr()) return toErrorResponse(result.error, routeContext, 'PRD version POST failed')
   const out = CapturedPrdVersionResponseSchema.safeParse(result.unwrap())

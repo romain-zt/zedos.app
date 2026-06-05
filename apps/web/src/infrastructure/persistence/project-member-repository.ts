@@ -5,6 +5,7 @@ import {
   users,
   eq,
   and,
+  count,
 } from '@repo/db';
 import { Result, ok, err } from '@repo/result';
 import {
@@ -15,9 +16,12 @@ import {
   NotFoundError,
 } from '@shared/errors/application-error';
 import type { ProjectMemberDTO } from '@repo/contracts/project/members';
+import type { IProjectMemberRepository } from '@domain/collab/project-member-repository';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ service: 'ProjectMemberRepository' });
+
+type InvitableRole = 'editor' | 'viewer' | 'commenter';
 
 function mapRow(row: typeof projectMembers.$inferSelect): ProjectMemberDTO {
   return {
@@ -32,7 +36,7 @@ function mapRow(row: typeof projectMembers.$inferSelect): ProjectMemberDTO {
   };
 }
 
-export class DrizzleProjectMemberRepository {
+export class DrizzleProjectMemberRepository implements IProjectMemberRepository {
   async userHasProjectAccess(projectId: string, userId: string): Promise<boolean> {
     const [owned] = await db
       .select({ id: projects.id })
@@ -93,7 +97,7 @@ export class DrizzleProjectMemberRepository {
     projectId: string,
     ownerUserId: string,
     inviteEmail: string,
-    role: 'editor' | 'viewer'
+    role: InvitableRole
   ): Promise<Result<ProjectMemberDTO, ApplicationError>> {
     try {
       const ownerCheck = await this.assertOwner(projectId, ownerUserId);
@@ -145,6 +149,71 @@ export class DrizzleProjectMemberRepository {
     } catch (error) {
       logger.error('invite failed', error);
       return err(new DatabaseError('Failed to invite member'));
+    }
+  }
+
+  async countActiveCommenters(projectId: string): Promise<Result<number, ApplicationError>> {
+    try {
+      const rows = await db
+        .select({ value: count() })
+        .from(projectMembers)
+        .where(
+          and(
+            eq(projectMembers.projectId, projectId),
+            eq(projectMembers.role, 'commenter'),
+            eq(projectMembers.status, 'active'),
+          ),
+        );
+      return ok(Number(rows[0]?.value ?? 0));
+    } catch (error) {
+      logger.error('countActiveCommenters failed', error);
+      return err(new DatabaseError('Failed to count commenters'));
+    }
+  }
+
+  async findById(
+    projectId: string,
+    memberId: string,
+  ): Promise<Result<ProjectMemberDTO | null, ApplicationError>> {
+    try {
+      const [row] = await db
+        .select()
+        .from(projectMembers)
+        .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.id, memberId)))
+        .limit(1);
+      return ok(row ? mapRow(row) : null);
+    } catch (error) {
+      logger.error('findById failed', error);
+      return err(new DatabaseError('Failed to find member'));
+    }
+  }
+
+  async revoke(
+    projectId: string,
+    memberId: string,
+    ownerUserId: string,
+  ): Promise<Result<void, ApplicationError>> {
+    try {
+      const ownerCheck = await this.assertOwner(projectId, ownerUserId);
+      if (ownerCheck.isErr()) return err(ownerCheck.error);
+
+      const [existing] = await db
+        .select({ id: projectMembers.id })
+        .from(projectMembers)
+        .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.id, memberId)))
+        .limit(1);
+      if (!existing) {
+        return err(new NotFoundError('Member not found'));
+      }
+
+      await db
+        .delete(projectMembers)
+        .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.id, memberId)));
+
+      return ok(undefined);
+    } catch (error) {
+      logger.error('revoke failed', error);
+      return err(new DatabaseError('Failed to revoke member'));
     }
   }
 }

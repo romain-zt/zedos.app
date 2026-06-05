@@ -1,3 +1,12 @@
 {
-  "title": "Projets"
+  "title": "Projets",
+  "templatePicker.label": "Template utilisé",
+  "templatePicker.clear": "Retirer le template",
+  "templatePicker.loading": "Chargement du template…",
+  "templatePicker.loadFailed": "Impossible de charger le template",
+  "templatePicker.networkError": "Erreur réseau lors du chargement",
+  "templatePicker.journeyLocked": "Le mode de parcours est fixé par le template. Le PRD initial est pré-rempli — relisez et affinez dans l’espace projet.",
+  "templatePicker.journeyLockedShort": "Fixé par le template",
+  "templatePicker.mutualExclusion": "Import et template ne peuvent pas être combinés — retirez-en un avant de créer.",
+  "templatePicker.createdFromTemplate": "Projet créé depuis le template"
 }

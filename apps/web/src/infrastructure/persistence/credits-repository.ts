@@ -497,4 +497,3 @@ export class DrizzleCreditsRepository implements ICreditsRepository {
 }
 
 // Export for backwards compatibility
-export { DrizzleCreditsRepository as PrismaCreditsRepository };

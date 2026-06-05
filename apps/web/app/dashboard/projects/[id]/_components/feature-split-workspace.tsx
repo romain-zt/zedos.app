@@ -4,7 +4,19 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { FadeIn } from '@/components/ui/animate';
-import { Layers, Plus, Trash2, Wand2, CheckCircle, ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
+import {
+  Layers,
+  Plus,
+  Trash2,
+  Wand2,
+  CheckCircle,
+  ArrowLeft,
+  Sparkles,
+  Loader2,
+  ChevronUp,
+  ChevronDown,
+  RotateCcw,
+} from 'lucide-react';
 import Link from 'next/link';
 import {
   FeatureSplitListResponseSchema,
@@ -62,6 +74,9 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
   const [proposalStatus, setProposalStatus] = useState<string | null>(null);
   const [revealedClusterCount, setRevealedClusterCount] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [versionsLoaded, setVersionsLoaded] = useState(false);
+  const [proposalError, setProposalError] = useState<string | null>(null);
+  const [creditsBlocked, setCreditsBlocked] = useState(false);
 
   const selectedVersion = useMemo(
     () => prdVersions.find((version) => version.id === selectedVersionId) ?? null,
@@ -86,6 +101,8 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
       }
     } catch {
       // silent
+    } finally {
+      setVersionsLoaded(true);
     }
   }, [projectId, selectedVersionId]);
 
@@ -151,6 +168,20 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
     );
   };
 
+  const handleMoveCluster = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    setClusters((prev) => {
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+      const next = [...prev];
+      const current = next[index];
+      const swap = next[targetIndex];
+      if (!current || !swap) return prev;
+      next[index] = { ...swap, sortOrder: index };
+      next[targetIndex] = { ...current, sortOrder: targetIndex };
+      return next;
+    });
+  };
+
   const handleClusterChange = (
     index: number,
     field: keyof ClusterDraft,
@@ -204,6 +235,8 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
     }
 
     setProposing(true);
+    setProposalError(null);
+    setCreditsBlocked(false);
     setProposalStatus(PROPOSAL_STATUS_MESSAGES[0]);
     const statusTimer = window.setInterval(() => {
       setProposalStatus((current) => {
@@ -223,17 +256,22 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
       });
       const raw = await res.json();
       if (!res.ok) {
+        const message =
+          res.status === 402
+            ? t('featureSplit.insufficientCredits')
+            : res.status === 504
+              ? t('featureSplit.aiTimeout')
+              : res.status === 503
+                ? t('featureSplit.aiProviderNotConfigured')
+                : res.status === 400 || res.status === 422
+                  ? (raw?.error ?? t('featureSplit.prdNotReady'))
+                  : (raw?.error ?? t('featureSplit.aiProposalFailed'));
         if (res.status === 402) {
-          toast.error(t('featureSplit.insufficientCredits'));
-        } else if (res.status === 504) {
-          toast.error(t('featureSplit.aiTimeout'));
-        } else if (res.status === 503) {
-          toast.error(t('featureSplit.aiProviderNotConfigured'));
-        } else if (res.status === 400 || res.status === 422) {
-          toast.error(raw?.error ?? t('featureSplit.prdNotReady'));
+          setCreditsBlocked(true);
         } else {
-          toast.error(raw?.error ?? t('featureSplit.aiProposalFailed'));
+          setProposalError(message);
         }
+        toast.error(message);
         return;
       }
       const parsed = ProposeFeatureSplitResponseSchema.safeParse(raw);
@@ -251,7 +289,9 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
       await revealClustersSequentially(mapped);
       toast.success(t('featureSplit.aiProposalLoaded'));
     } catch {
-      toast.error(t('featureSplit.networkErrorAiProposal'));
+      const message = t('featureSplit.networkErrorAiProposal');
+      setProposalError(message);
+      toast.error(message);
     } finally {
       window.clearInterval(statusTimer);
       setProposalStatus(null);
@@ -346,22 +386,39 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
           </div>
         </div>
 
+        {!loading && versionsLoaded && prdVersions.length === 0 && (
+          <div className="mb-6 rounded-md border border-dashed p-6 text-center space-y-3">
+            <p className="text-sm font-medium">{t('featureSplit.noPrdGateTitle')}</p>
+            <p className="text-sm text-muted-foreground">{t('featureSplit.noPrdGateBody')}</p>
+            <Button asChild className="min-h-[44px]">
+              <Link href={`/dashboard/projects/${projectId}`}>{t('featureSplit.openWorkspace')}</Link>
+            </Button>
+          </div>
+        )}
+
         {/* PRD version picker */}
-        {prdVersions.length > 1 && (
+        {prdVersions.length > 0 && (
           <div className="mb-4">
-            <label className="text-sm font-medium mb-1 block">{t('prd.version')}</label>
-            <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={selectedVersionId ?? ''}
-              onChange={(e) => setSelectedVersionId(e.target.value)}
-            >
-              {prdVersions.map((v) => (
-                <option key={v.id} value={v.id}>
-                  v{v.versionNumber}
-                  {v.status ? ` — ${v.status}` : ''}
-                </option>
-              ))}
-            </select>
+            <label className="text-sm font-medium mb-1 block">{t('featureSplit.sourcePrdVersion')}</label>
+            {prdVersions.length > 1 ? (
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={selectedVersionId ?? ''}
+                onChange={(e) => setSelectedVersionId(e.target.value)}
+              >
+                {prdVersions.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    v{v.versionNumber}
+                    {v.status ? ` — ${v.status}` : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                v{prdVersions[0]?.versionNumber ?? 1}
+                {prdVersions[0]?.status ? ` — ${prdVersions[0].status}` : ''}
+              </p>
+            )}
           </div>
         )}
 
@@ -395,8 +452,32 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
           <div className="py-12 text-center text-muted-foreground text-sm">{t('common.loading')}</div>
         )}
 
-        {!loading && (
+        {!loading && prdVersions.length > 0 && (
           <FadeIn>
+            {creditsBlocked && (
+              <div className="mb-6 rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm space-y-3">
+                <p className="text-muted-foreground">{t('featureSplit.rechargeCreditsHint')}</p>
+                <Button asChild variant="outline" size="sm" className="min-h-[44px]">
+                  <Link href="/dashboard/credits">{t('featureSplit.rechargeCredits')}</Link>
+                </Button>
+              </div>
+            )}
+
+            {proposalError && !proposing && (
+              <div className="mb-6 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm flex flex-wrap items-center justify-between gap-3">
+                <p className="text-muted-foreground">{proposalError}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-[44px]"
+                  onClick={() => void handlePropose()}
+                >
+                  <RotateCcw className="h-4 w-4 mr-1" />
+                  {t('featureSplit.retryProposal')}
+                </Button>
+              </div>
+            )}
             {prdReadiness && !prdReadiness.isReadyForAiSplit && (
               <div className="mb-6 rounded-md border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
                 <p className="font-medium text-foreground">{t('featureSplit.prdNotReadyTitle')}</p>
@@ -476,15 +557,37 @@ export function FeatureSplitWorkspace({ projectId, projectName }: FeatureSplitWo
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       {t('featureSplit.clusterWord')} {index + 1}
                     </span>
-                    {!isConfirmed && clusters.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCluster(index)}
-                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                        aria-label={t('featureSplit.removeCluster')}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    {!isConfirmed && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveCluster(index, 'up')}
+                          disabled={index === 0}
+                          className="text-muted-foreground hover:text-foreground transition-colors p-1 disabled:opacity-30"
+                          aria-label={t('featureSplit.moveClusterUp')}
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveCluster(index, 'down')}
+                          disabled={index === clusters.length - 1}
+                          className="text-muted-foreground hover:text-foreground transition-colors p-1 disabled:opacity-30"
+                          aria-label={t('featureSplit.moveClusterDown')}
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                        {clusters.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCluster(index)}
+                            className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                            aria-label={t('featureSplit.removeCluster')}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
 

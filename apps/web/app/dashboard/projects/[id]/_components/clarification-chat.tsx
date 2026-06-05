@@ -32,8 +32,12 @@ import { EXPRESS_MINIMUM_CLARIFY_SECTIONS } from '@repo/contracts/prd'
 import { isExpressMinimumClarifyMet } from '@/lib/express-clarify-prompt'
 import { normalizePrdSection, type ClarifyHistoryRow } from '@/lib/clarify-prompt'
 import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events'
-import { captureClient } from '@infrastructure/analytics/posthog-client'
+import {
+  captureClient,
+  captureClientException,
+} from '@infrastructure/analytics/posthog-client'
 import { captureCreditsDepletedSurface } from '@infrastructure/analytics/credits-analytics-client'
+import { ReadinessScoreBadge } from './readiness-score-badge'
 
 interface Message {
   id: string
@@ -221,6 +225,12 @@ export function ClarificationChat({
       }
 
       if (!res?.ok) {
+        captureClient(AnalyticsEvents.CLARIFY_FAILED, {
+          project_id: projectId,
+          journey_mode: journeyMode,
+          error_code: 'clarify_response_not_ok',
+          http_status: typeof res?.status === 'number' ? res.status : null,
+        })
         throw new Error(t('clarify.aiResponseFailed'))
       }
 
@@ -296,7 +306,18 @@ export function ClarificationChat({
       if (!streamCompleted && assistantContent.trim()) {
         appendAssistantFromBuffer(assistantContent)
       }
-    } catch {
+    } catch (error: unknown) {
+      const normalized = error instanceof Error ? error : new Error('clarify_stream_failure')
+      captureClient(AnalyticsEvents.CLARIFY_FAILED, {
+        project_id: projectId,
+        journey_mode: journeyMode,
+        error_code: 'clarify_stream_failure',
+      })
+      captureClientException(normalized, {
+        project_id: projectId,
+        component: 'ClarificationChat',
+        error_code: 'clarify_stream_failure',
+      })
       toast.error(t('clarify.aiResponseFailed'))
     } finally {
       setStreaming(false)
@@ -463,21 +484,35 @@ export function ClarificationChat({
               if (parsed?.status === 'completed') {
                 toast.success(t('clarify.prdGenerated'))
                 onPrdGenerated()
-                // Trigger milestone feedback
-                setFeedbackMilestone('prd_created')
+                const newPrdVersionId =
+                  typeof parsed.prdVersionId === 'string' ? parsed.prdVersionId : prdVersionId
+                const isUpdate = prdVersionId !== null
+                const milestoneType = isUpdate ? 'prd_updated' : 'prd_created'
+                setFeedbackMilestone(milestoneType)
                 setShowFeedback(true)
                 notifyMilestone({
                   projectId,
-                  milestoneType: 'prd_created',
-                  ...(prdVersionId ? { prdVersionId } : {}),
+                  milestoneType,
+                  ...(newPrdVersionId ? { prdVersionId: newPrdVersionId } : {}),
                 })
               }
             } catch { }
           }
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      const normalized = error instanceof Error ? error : new Error('prd_generation_failure')
       console.error('PRD generation error:', error)
+      captureClient(AnalyticsEvents.PRD_GENERATION_FAILED, {
+        project_id: projectId,
+        journey_mode: journeyMode,
+        error_code: 'prd_generation_client_failure',
+      })
+      captureClientException(normalized, {
+        project_id: projectId,
+        component: 'ClarificationChat',
+        error_code: 'prd_generation_client_failure',
+      })
       toast.error(t('clarify.generatePrdFailed'))
     } finally {
       setGeneratingPrd(false)
@@ -493,13 +528,20 @@ export function ClarificationChat({
 
   return (
     <div className="flex flex-col h-[calc(100vh-240px)] min-h-[500px]">
+      <div className="flex justify-end mb-3">
+        <ReadinessScoreBadge projectId={projectId} />
+      </div>
       {isExpress && (
         <p className="text-xs text-muted-foreground border border-dashed rounded-md px-3 py-2 mb-3">
           {t('clarify.expressModeBanner')}
         </p>
       )}
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1">
+      {/* Messages — masked in PostHog session replay (B-ANALYTICS-002) */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1 ph-no-capture"
+        data-ph-mask="clarification-thread"
+      >
         {(messages ?? []).length === 0 && !streaming && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Sparkles className="h-10 w-10 text-primary/30 mb-3" />
@@ -520,7 +562,8 @@ export function ClarificationChat({
                           value={editDraft}
                           onChange={(e) => setEditDraft(e.target.value)}
                           rows={3}
-                          className="resize-none text-sm w-full h-[200px]"
+                          className="resize-none text-sm w-full h-[200px] ph-no-capture"
+                          data-ph-mask="clarification-edit"
                           disabled={streaming}
                           aria-label={t('clarify.editMessage')}
                         />
@@ -671,7 +714,8 @@ export function ClarificationChat({
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={2}
-            className="resize-none flex-1"
+            className="resize-none flex-1 ph-no-capture"
+            data-ph-mask="clarification-input"
             disabled={streaming}
           />
           <div className="flex flex-col gap-2">

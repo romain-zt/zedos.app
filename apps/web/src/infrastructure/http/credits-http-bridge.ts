@@ -20,6 +20,7 @@ export type ApiCreditOperationType =
   | 'prd_generation'
   | 'prd_challenge'
   | 'feature_split'
+  | 'user_stories'
   | 'task_split';
 
 function toDomainOperation(operationType: ApiCreditOperationType): DomainOperationType {
@@ -34,6 +35,7 @@ export function getCreditCost(operationType: ApiCreditOperationType): number {
     prd_generation: parseInt(process.env.CREDIT_COST_PRD_GENERATION ?? '10', 10),
     prd_challenge: parseInt(process.env.CREDIT_COST_PRD_CHALLENGE ?? '15', 10),
     feature_split: parseInt(process.env.CREDIT_COST_FEATURE_SPLIT ?? '5', 10),
+    user_stories: parseInt(process.env.CREDIT_COST_USER_STORIES ?? '5', 10),
     task_split: parseInt(process.env.CREDIT_COST_TASK_SPLIT ?? '5', 10),
   };
   return costs[operationType] ?? 1;
@@ -175,7 +177,12 @@ export async function deductCreditsForApi(
   userId: string,
   operationType: ApiCreditOperationType,
   metadata?: CreditTransactionMetadata
-): Promise<{ success: boolean; newBalance: number; graceActivated: boolean }> {
+): Promise<{
+  success: boolean;
+  newBalance: number;
+  graceActivated: boolean;
+  correlationId: string | null;
+}> {
   const { repo, deductCredits: deductUc } = getCreditsComposition();
   const cost = getCreditCost(operationType);
   const correlationId = consumptionCorrelationId(userId, operationType, metadata);
@@ -192,7 +199,7 @@ export async function deductCreditsForApi(
   });
 
   if (deductResult.isErr()) {
-    return { success: false, newBalance: 0, graceActivated: false };
+    return { success: false, newBalance: 0, graceActivated: false, correlationId: null };
   }
 
   const dto = deductResult.unwrap();
@@ -202,7 +209,28 @@ export async function deductCreditsForApi(
     success: true,
     newBalance: dto.amount,
     graceActivated,
+    correlationId: correlationId ?? null,
   };
+}
+
+export async function reverseCreditsForApi(
+  userId: string,
+  originalConsumptionCorrelationId: string,
+  metadata?: CreditTransactionMetadata
+): Promise<{ success: boolean; newBalance: number }> {
+  const { reverseCredits: reverseUc } = getCreditsComposition();
+
+  const result = await reverseUc.execute({
+    userId,
+    originalConsumptionCorrelationId,
+    metadata: metadata ?? {},
+  });
+
+  if (result.isErr()) {
+    return { success: false, newBalance: 0 };
+  }
+
+  return { success: true, newBalance: result.unwrap().amount };
 }
 
 export function purchaseCorrelationId(metadata?: CreditTransactionMetadata): string | undefined {

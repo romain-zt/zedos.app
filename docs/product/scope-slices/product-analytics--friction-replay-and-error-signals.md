@@ -10,7 +10,7 @@
 
 ## Status
 
-`exploratory`
+`ready-for-user-stories`
 
 > **NEED_HUMAN:** false
 > **NEED_UPDATE:** false
@@ -128,7 +128,7 @@ For a known error spike, an operator opens one session replay, confirms the user
 | CC-04 · NEED_HUMAN propagates | PASS | Slice and parent `NEED_HUMAN: false` |
 | CC-05 · NEED_UPDATE actioned | PASS | — |
 
-**Advancement verdict:** CLEAR for **`exploratory`** — product spec complete; **implementation** waits on funnel (+ credit) adapter in prod code. Plan draft exists (`docs/execution/plans/product-analytics--friction-replay-and-error-signals--v0.plan.md`).
+**Advancement verdict:** CLEAR for **`ready-for-user-stories`** — product spec complete; implementation Plan executed with replay **disabled in prod by default** (`NEXT_PUBLIC_POSTHOG_SESSION_REPLAY_ENABLED`, default `false`). Prod enablement still gated on B-ANALYTICS-001 (legal) and B-ANALYTICS-002 (masking sign-off recorded in `docs/observability/posthog.md` §6.2). Plan: `docs/execution/plans/product-analytics--friction-replay-and-error-signals--v0.plan.md` (status `executed`).
 
 ---
 
@@ -145,7 +145,7 @@ For a known error spike, an operator opens one session replay, confirms the user
 - [x] All blockers resolved or NEED_HUMAN=true explicitly set
 - [x] Acceptance-level outcome is behavioral (not a test or code spec)
 
-**Verdict:** READY FOR USER STORIES at product-spec level — status stays **`exploratory`** until funnel slice is **shipped in prod**; then `/feature-area promote-slice` before `/implement` phase 2.
+**Verdict:** READY FOR USER STORIES — phase 2 implementation executed (replay off-by-default + error capture wired). Status promoted to `ready-for-user-stories` per user decision on 2026-06-05 because all readiness checks are PASS and prerequisite slices ship the funnel/credit events that the friction replay filters depend on. Prod enable of the replay itself remains operator-gated by B-ANALYTICS-001/002.
 
 ---
 
@@ -156,3 +156,4 @@ For a known error spike, an operator opens one session replay, confirms the user
 | 2026-06-03 | Initial slice — replay/errors phase 2 | — |
 | 2026-06-03 | Checker fixes: UX states, product-level Data Touched, blocker resolutions (SS-03/04/09, CC-04) | — |
 | 2026-06-03 | Readiness checklist aligned; B-ANALYTICS-001 NEED_HUMAN harmonized; plan draft noted | doc-sync |
+| 2026-06-05 | Status `exploratory` → `ready-for-user-stories` after Plan executed (replay disabled by default; B-ANALYTICS-002 sign-off still required before prod opt-in) | implementer |

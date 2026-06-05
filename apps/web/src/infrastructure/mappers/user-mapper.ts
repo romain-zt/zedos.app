@@ -24,6 +24,8 @@ export class UserMapper extends Mapper<User, DbUser, UserDTO> {
       marketingConsent: false,
       productUpdatesConsent: false,
       consentUpdatedAt: null,
+      planTier: 'free',
+      hasAttemptedExport: false,
       createdAt: domain.createdAt,
       updatedAt: domain.updatedAt,
     };

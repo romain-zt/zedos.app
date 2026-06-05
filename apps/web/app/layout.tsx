@@ -3,7 +3,7 @@ import { DM_Sans, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
-import { ChunkLoadErrorHandler } from '@/components/chunk-load-error-handler'
+import { ChunkLoadErrorHandler } from '@/app/_components/chunk-load-error-handler'
 import { Providers } from '@/components/providers'
 
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-sans' })

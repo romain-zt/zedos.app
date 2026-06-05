@@ -46,7 +46,7 @@ describe('POST /api/stripe/verify', () => {
   it('returns alreadyProcessed balance when purchase is completed', async () => {
     verifyCheckoutSessionForUserMock.mockResolvedValue({
       ok: true,
-      value: { balance: 320, alreadyProcessed: true },
+      value: { status: 'completed', balance: 320, alreadyProcessed: true },
     });
 
     const POST = await loadRoute();
@@ -58,7 +58,11 @@ describe('POST /api/stripe/verify', () => {
 
     const res = await POST(req as never);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ balance: 320, alreadyProcessed: true });
+    expect(await res.json()).toEqual({
+      status: 'completed',
+      balance: 320,
+      alreadyProcessed: true,
+    });
   });
 
   it('returns 401 when user is unauthorized', async () => {
@@ -74,10 +78,10 @@ describe('POST /api/stripe/verify', () => {
     expect(res.status).toBe(401);
   });
 
-  it('adds credits and marks purchase completed', async () => {
+  it('returns processing status while webhook has not completed purchase', async () => {
     verifyCheckoutSessionForUserMock.mockResolvedValue({
       ok: true,
-      value: { balance: 500, creditsAdded: 100 },
+      value: { status: 'processing', balance: 120 },
     });
 
     const POST = await loadRoute();
@@ -89,7 +93,29 @@ describe('POST /api/stripe/verify', () => {
 
     const res = await POST(req as never);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ balance: 500, creditsAdded: 100 });
+    expect(await res.json()).toEqual({ status: 'processing', balance: 120 });
+  });
+
+  it('returns completed status with creditsAdded in e2e grant path', async () => {
+    verifyCheckoutSessionForUserMock.mockResolvedValue({
+      ok: true,
+      value: { status: 'completed', balance: 500, creditsAdded: 100 },
+    });
+
+    const POST = await loadRoute();
+    const req = new Request('http://localhost/api/stripe/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ sessionId: 'cs_test_123' }),
+    });
+
+    const res = await POST(req as never);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      status: 'completed',
+      balance: 500,
+      creditsAdded: 100,
+    });
     expect(verifyCheckoutSessionForUserMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -59,6 +59,7 @@ Rules:
 - Body: begin with "### User-visible outcome" (2–4 sentences); then 3–6 bullet acceptance criteria. Keep under 2500 characters total.
 - sortOrder is optional.
 - Do not merge unrelated behaviors; stay on the provided outline only.
+- Do NOT copy cluster fields (label, valueLine, boundaryCue) verbatim as the story body — paraphrase into user-visible behavior and acceptance criteria.
 - Body must end with observable acceptance signals.
 - Output only the JSON object, no extra text.`;
 

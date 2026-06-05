@@ -7,6 +7,10 @@ import {
   getUserCreditBalance,
   processCheckoutSessionCompletedWebhook,
 } from '@infrastructure/payments/checkout-session-webhook-processor';
+import {
+  isSubscriptionWebhookEventType,
+  processSubscriptionWebhook,
+} from '@infrastructure/payments/stripe-subscription-webhook-processor';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ operation: 'stripe/webhook' });
@@ -33,6 +37,18 @@ export async function POST(request: Request) {
 
   if (event.type === 'payment_intent.succeeded') {
     return NextResponse.json({ received: true });
+  }
+
+  if (isSubscriptionWebhookEventType(event.type)) {
+    const subOutcome = await processSubscriptionWebhook(event);
+    if (subOutcome.isErr()) {
+      const e = subOutcome.error;
+      logger
+        .withContext({ eventId: event.id, eventType: event.type })
+        .error('Subscription webhook processing failed', e);
+      return NextResponse.json({ error: e.message }, { status: e.statusCode ?? 500 });
+    }
+    return NextResponse.json({ received: true, subscription: subOutcome.unwrap() });
   }
 
   if (event.type !== 'checkout.session.completed') {

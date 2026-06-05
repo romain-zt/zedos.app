@@ -6,7 +6,7 @@
 
 ## Status
 
-`approved`
+`executed`
 
 > **Layout in effect:** `apps/web/` + `packages/contracts` + `packages/db` (read-only on locked bundles)
 > **Architecture Surface:** resolved

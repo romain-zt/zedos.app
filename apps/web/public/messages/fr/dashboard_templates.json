@@ -1,0 +1,18 @@
+{
+  "title": "Marketplace de templates",
+  "subtitle": "Démarre avec une structure PRD éprouvée plutôt qu’un document vide. Prévisualise un template, puis crée un nouveau projet en un clic.",
+  "loadFailed": "Impossible de charger les templates",
+  "loadFailedTitle": "Le catalogue ne s’est pas chargé",
+  "networkError": "Erreur réseau lors du chargement",
+  "emptyTitle": "Aucun template disponible pour l’instant",
+  "emptyDescription": "Le catalogue est vide. Réessayez — si le problème persiste, le serveur est en maintenance.",
+  "card.preview": "Prévisualiser",
+  "card.use": "Utiliser ce template",
+  "preview.loading": "Chargement du template…",
+  "preview.loadFailed": "Impossible de charger le template",
+  "preview.networkError": "Erreur réseau lors du chargement",
+  "preview.close": "Fermer",
+  "preview.use": "Utiliser ce template",
+  "preview.sectionsOutline": "Plan des sections",
+  "preview.clarifyHints": "Pistes de clarification"
+}

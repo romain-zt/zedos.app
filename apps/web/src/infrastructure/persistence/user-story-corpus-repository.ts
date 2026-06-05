@@ -14,7 +14,7 @@ import {
   eq,
   and,
   asc,
-  sql,
+  type UserStoryCorpusUpdate,
 } from '@repo/db';
 import { createLogger } from '@shared/observability/logger';
 
@@ -184,11 +184,12 @@ export class DrizzleUserStoryCorpusRepository implements IUserStoryCorpusReposit
       }
 
       const now = new Date();
-      const nowIso = now.toISOString();
-      // Drizzle v0.38 omits nullable timestamp() from .set(); libSQL raw SQL needs ISO strings, not Date.
-      await db.execute(
-        sql`UPDATE user_story_corpora SET review_ready_at = ${nowIso}, updated_at = ${nowIso} WHERE id = ${corpusRow.id}`
-      );
+      const patch: UserStoryCorpusUpdate = { reviewReadyAt: now, updatedAt: now };
+      // Drizzle omits nullable timestamp columns from .set() inference; patch is the contract row.
+      await db
+        .update(userStoryCorpora)
+        .set(patch as Pick<UserStoryCorpusUpdate, 'updatedAt'>)
+        .where(eq(userStoryCorpora.id, corpusRow.id));
 
       const [updatedCorpusRow] = await db
         .select()

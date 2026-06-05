@@ -8,7 +8,7 @@ import { UpdateProjectJourneyModeUseCase } from '@application/project/update-pro
 import {
   ProjectDTOSchema,
   UpdateProjectJourneyModeRequestSchema,
-} from '@contracts/project/project-contracts'
+} from '@repo/contracts/project/project-contracts'
 import { toNextErrorResponse } from '@shared/http'
 import { createLogger } from '@shared/observability/logger'
 import { validationFailureData } from '@shared/observability/log-safe'
