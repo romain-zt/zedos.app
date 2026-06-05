@@ -86,14 +86,14 @@ The founder moves from fuzzy thinking to concrete product decisions through a **
 
 ---
 
-## Scope Slices
+## Candidate Scope Slices
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Chat-led clarification turn | Owner receives guidance in chat and can proceed with in-app advance/approve patterns. | exploratory |
-| Contextual mini-form decision step | When needed, owner completes a constrained input pattern (cards, lists, ranking, structured selects) including "not sure / ask me differently." | exploratory |
-| Contextual tab refinement | Owner refines a specific section or item from the PRD, Architecture, or History tab via a focused inline chat — without switching to the main clarification tab. | ready-for-user-stories |
-| Question preview and progress score | Owner sees the next 2–3 uncovered PRD sections as a preview in the clarification tab, and the readiness score reflects answered / remaining sections rather than an opaque ADR-based metric. | ready-for-user-stories |
+| Chat-led clarification turn (core FG-PRD-V0) | Owner receives guidance in chat and can proceed with in-app advance/approve patterns. | complete |
+| Contextual mini-form decision step (core FG-PRD-V0) | When needed, owner completes a constrained input pattern (cards, lists, ranking, structured selects) including "not sure / ask me differently." | complete |
+| `guided-clarification--contextual-tab-refinement` | Owner refines a section from PRD, Architecture, or History tab via focused inline chat. | complete |
+| `guided-clarification--question-preview-and-progress-score` | Preview next 2–3 uncovered sections; readiness score = answered / remaining sections. | complete |
 
 ---
 
@@ -108,7 +108,7 @@ The founder moves from fuzzy thinking to concrete product decisions through a **
 - [x] Deferred behaviors explicitly named
 - [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** VALIDATED — all blockers resolved or waived. Two new slices (contextual-tab-refinement, question-preview-and-progress-score) promoted to `ready-for-user-stories`.
+**Verdict:** COMPLETE — core clarification + tab refinement + progress score shipped (`WORK_QUEUE`, `status.json`).
 
 ---
 
@@ -118,3 +118,4 @@ The founder moves from fuzzy thinking to concrete product decisions through a **
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
 | 2026-05-11 | Waived AI provider + mini-form quality blockers (both resolved by existing implementation). Promoted to `validated`. Added two new scope slices: contextual-tab-refinement, question-preview-and-progress-score. | — |
+| 2026-06-04 | Sync all slices **complete** + `WORK_QUEUE` SS rows (`status.json` orchestration) | — |

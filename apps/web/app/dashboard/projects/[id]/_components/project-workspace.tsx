@@ -8,7 +8,6 @@ import { PrdViewer } from './prd-viewer'
 import { QuestionHistoryPanel } from './question-history'
 import { ArchitecturePanel } from './architecture-panel'
 import { WorkspaceScorePanel } from './workspace-score-panel'
-import { ProjectMembersPanel } from './project-members-panel'
 import { ContextualRefinementPanel } from './contextual-refinement-panel'
 import { MessageSquare, FileText, History, Settings, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -303,7 +302,6 @@ export function ProjectWorkspace({
                 <Button onClick={handleSaveSettings} loading={saving}>{t('common.save')}</Button>
               </div>
             </div>
-            <ProjectMembersPanel projectId={projectId} />
           </div>
         </DialogContent>
       </Dialog>

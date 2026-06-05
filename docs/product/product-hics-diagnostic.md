@@ -1,9 +1,10 @@
 # Diagnostic produit — Hics & backlog (Zedos)
 
-> **Date** : 2026-06-03  
+> **Date** : 2026-06-04 (resync PRD / WORK_QUEUE)  
 > **Nature** : diagnostic & prioritisation produit — **pas** un plan de développement.  
 > **Décisions fast-track** : `docs/product-decisions/PD-002.md` (acceptées).  
-> **Feature Area** : `docs/product/feature-areas/fast-track-urgent.md`
+> **Feature Area** : `docs/product/feature-areas/fast-track-urgent.md`  
+> **Alignement shipped :** `docs/prd/flow-inventory-work-queue-alignment-2026-06-04.md` — en cas de conflit avec ce fichier daté 2026-06-03, **PRD + WORK_QUEUE gagnent**.
 
 ---
 
@@ -21,12 +22,12 @@ Le décalage : on traite tout le monde comme s’il avait **le temps** de faire 
 
 | # | Hic | Gravité | Géré aujourd’hui ? | Symptôme |
 |---|-----|---------|---------------------|----------|
-| **H1** | **Fast-track / urgent** | **Critique** | **Partiel ~25 %** | `journeyMode` express livré ; livrable 12 sections + disclaimer + shell grisé **Planned v0** (`docs/WORK_QUEUE.md`) |
-| H2 | PRD déjà existant (externe) | Haute | **Doc prête, pas shipped** | FA `prd-import` + slice ; Q-028 v0 — impl backlog |
+| **H1** | **Fast-track / urgent** | **Moyenne** (UX polish) | **Shipped doc** — 4 slices `complete` | Parcours express livré ; **reste** : onboarding 3 intentions unifié, preuve &lt;45 min (Gate A humain) |
+| H2 | PRD déjà existant (externe) | **Basse** | **Shipped** | FA `prd-import` `complete` ; Q-028 v0 — polish onboarding |
 | H3 | Où j’en suis sur le projet | Haute | Partiel | Onglets sans fil narratif |
 | H4 | Évoluer le PRD après coup | Moy.–haute | Partiel | Pas de boucle « priorités changées » |
 | H5 | Multi-projets : reprendre | Moyenne | Faible | Liste sans état |
-| H6 | Post-PRD verrouillé | Moyenne | Partiel | `phase` peu expliquée |
+| H6 | Post-PRD copy / phase | Moyenne | **Code shipped** ; copy à polir | Express = grisé (PD-002) ; standard = prérequis `phase` + pass1 dashboard (`under-construction-dashboard-pass1.md`) |
 | H7 | App web vs Cursor `docs/prd/` | Basse | Non | Double source de vérité |
 
 ---
@@ -60,7 +61,7 @@ flowchart TD
   C --> E{Entrée}
   D --> E
   E -->|Flou| F[Clarify minimum IA]
-  E -->|Doc existant| G[Importer - FA prd-import backlog]
+  E -->|Doc existant| G[Importer - shipped]
   E -->|PRD déjà in-app| H[Raffiner 1-2 sections]
   F --> I[Livrable minimal]
   G --> I
@@ -92,13 +93,13 @@ Clarification guidée, génération stream, versions PRD, question history, raff
 
 | Gap | Hic | État |
 |-----|-----|------|
-| Parcours fast-track (complet) | H1 | **Partiel ~25 %** — `declare-express-mode` **livré** (`WORK_QUEUE` `complete`) ; livrable 12 sections + disclaimer + shell grisé **backlog** (plans draft) |
-| Import PRD | H2 | **Doc prête** — FA `prd-import` ; **pas shipped** (Flow Inventory Planned v0) |
-| Intention création (zéro / import / express) | H1, H2 | **Partiel** — express déclarable ; import + choix unifié création **non livrés** |
+| Parcours fast-track (complet) | H1 | **Shipped** — FA `fast-track-urgent` 4/4 slices `complete` (`WORK_QUEUE`) |
+| Import PRD | H2 | **Shipped** — `SS-prd-import--capture-external-prd-at-create` `complete` |
+| Intention création (zéro / import / express) | H1, H2 | **Partiel** — spec `onboarding-three-intentions-spec.md` ; impl UX unifiée **Phase 1 / polish** |
 | Journey orientation | H3 | Absent UX |
 | Évolution besoins | H4 | Partiel |
 | Liste projets + reprendre | H5 | Absent |
-| Copy gating post-PRD | H6 | Faible — express grisé **Planned v0** ; standard = under construction |
+| Copy gating post-PRD | H6 | Pass1 dashboard — `DEFERRED_ROADMAP` vide ; nav post-PRD via projet (pas « coming v1 » global) |
 
 ---
 
@@ -106,8 +107,8 @@ Clarification guidée, génération stream, versions PRD, question history, raff
 
 | ID | Problème | Hic | Priorité | Référence |
 |----|----------|-----|----------|-----------|
-| **P0-FT** | Finir parcours express (3 slices restantes) | H1 | **P0** | `fast-track-urgent.md` + `WORK_QUEUE` |
-| P0-1 | Entrée « PRD déjà fait » | H2 | P0 | — |
+| **P0-GA** | Fermer **Gate A** (5 entretiens + express &lt;45 min) | H1 | **P0** | `docs/prd/gates-status.md` |
+| P0-2 | Onboarding 3 intentions (UI) | H1, H2 | P0 | `onboarding-three-intentions-spec.md` |
 | P0-2 | Orientation projet (où / suite) | H3 | P0 | Lié express |
 | P1-1 | Boucle priorités changées | H4 | P1 | — |
 | P1-2 | Journal produit | H4 | P1 | — |
@@ -188,8 +189,8 @@ Clarification guidée, génération stream, versions PRD, question history, raff
 | Phase | Focus | Hics |
 |-------|--------|------|
 | 0 | PD-002 ✅ | H1 cadrage |
-| 1 | FA fast-track v0 — **en cours** (declare livré ; 3 slices) | H1 |
-| 2 | Import + orientation | H2, H3 |
+| 1 | FA fast-track — **shipped** ; validation Gate A | H1 |
+| 2 | Orientation (bandeau) + Gate A humain | H3 |
 | 3 | Évolution + journal | H4 |
 
 ---

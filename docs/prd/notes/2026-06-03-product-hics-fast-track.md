@@ -86,6 +86,8 @@ Express generation: **lean content** per section (PD-002); **minimum IA** clarif
 
 ## Q-027 answer (2026-06-03)
 
+> **SUPERSEDED 2026-06-04** — express + import **Shipped** ; voir `docs/prd/PRD.md` Flow Inventory et `docs/prd/questions/open-questions.md` Q-027.
+
 Flow Inventory — parcours express : **Planned v0** (pas encore en prod). Colonne / libellé à refléter au prochain `/prd update` (ne pas marquer `Yes` = shipped pour express).
 
 ## Q-028 answer (2026-06-03)

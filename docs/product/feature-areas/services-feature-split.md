@@ -87,7 +87,7 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| PRD-to-feature-split | Founder generates a first-pass feature split from a stable PRD version and can review or adjust the proposed clusters. | ready-for-user-stories |
+| `services-feature-split--prd-to-feature-split` | Founder generates a first-pass feature split from a stable PRD version and can review or adjust the proposed clusters. | complete |
 
 ---
 
@@ -102,7 +102,7 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 - [x] Deferred behaviors explicitly named
 - [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** READY FOR SCOPE SLICES
+**Verdict:** COMPLETE — post-PRD feature split shipped (`WORK_QUEUE`)
 
 ---
 
@@ -113,3 +113,4 @@ After a PRD is stable, the founder decomposes their product narrative into **dis
 | 2026-05-11 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) — created as `deferred` per PRD v1 FG-FUTURE | — |
 | 2026-05-11 | Activated — PRD v2 promotes FG-FUTURE → FG-POST-PRD-V1 (active v1 scope); status changed `deferred` → `exploratory`; PRD scope blocker cleared | — |
 | 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
+| 2026-06-04 | Slice `services-feature-split--prd-to-feature-split` synced **complete** | — |

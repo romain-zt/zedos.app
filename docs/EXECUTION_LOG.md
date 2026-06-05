@@ -27,3 +27,6 @@
 | 2026-06-03 | system | execution plans | doc fix 10/12 — D3 inventory | ok | `doc-ok-checklist.md` § D3 table (6 draft + 1 approved + declare executed ref); HANDOFF pointer. |
 | 2026-06-03 | system | PRD Flow Inventory | doc fix 11/12 — Planned v0 legend | ok | Expanded legend + How to read (express, post-PRD, import, PostHog); doc-ok D5. |
 | 2026-06-03 | system | doc-ok-checklist | doc fix 12/12 — verdict reconcile | ok | Header 12/12 summary; A5–A9, B7–B8 proofs; verdict global nuance; maintenance §. |
+| 2026-06-04 | system | docs/ | doc freshness parity — HANDOFF, FAs v0, guided-clarification WORK_QUEUE, flow-inventory alignment done | ok | `HANDOFF.md` + `status.json` phase; FA tables dashboard/post-PRD/guided-clarification; SS guided-clarification ×2 in WORK_QUEUE; `README.md` sync hierarchy; alignment doc marked done. |
+| 2026-06-04 | system | doc-alignment | 12 incohérences audit commercial — PRD, hics, gates, GTM, observability, PD-003 UI | ok | `gates-status.md`, `doc-alignment-resolution-2026-06-04.md`; Success Metrics/outcomes; pricing Pro draft; members panel removed; Gate A OPEN explicit. |
+| 2026-06-04 | system | GATE-PHASE1-A | gate-a-execution-runbook + founder-interviews-log ; gates IN_PROGRESS | ok | Operator pack ready; SATISFIED pending human runs (5 interviews + 1 express ≤45m). |

@@ -33,6 +33,7 @@ After **specific owner milestones**, Zedos asks for **lightweight, skippable** f
 - **Audience:** signed-in **owner only**.
 - Capture rating and optional comment; store with **project**, **PRD version**, **milestone**, **timestamp** (per PRD).
 - Prompts remain **automatic but selective** and **skippable** (Success Metrics / Risks).
+- **Phase 1 (Gate B):** on **`prd_shared`**, primary prompt becomes **outcome O1** (Yes / Not yet / No external share); stars optional secondary on that milestone only (`docs/product/outcome-tracking-prompts-alignment.md`).
 
 ## Out of Scope
 
@@ -60,8 +61,8 @@ After **specific owner milestones**, Zedos asks for **lightweight, skippable** f
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| PRD versioning | pending | Milestones reference versions |
-| Share flow | pending | “PRD shared” milestone depends on share link existence |
+| PRD versioning | complete | Milestones reference versions |
+| Share flow (read-only sharing) | complete | “PRD shared” milestone depends on share link existence |
 
 ---
 
@@ -83,8 +84,9 @@ After **specific owner milestones**, Zedos asks for **lightweight, skippable** f
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Milestone detection + prompt surface | Owner sees a lightweight prompt only at defined milestones; can skip. | exploratory |
-| Feedback capture + attribution | Submissions store project, PRD version, milestone, timestamp with stars/like/dislike + optional comment. | exploratory |
+| `owner-milestone-feedback--milestone-detection-and-prompt` | Owner sees a lightweight prompt only at defined milestones; can skip. | complete |
+| `owner-milestone-feedback--feedback-capture-and-attribution` | Submissions store project, PRD version, milestone, timestamp with stars/like/dislike + optional comment. | complete |
+| `owner-milestone-feedback--outcome-prompt-on-share` | Primary **outcome O1** on `prd_shared` (Phase 1 ordre #4; gates A + B). | ready-for-user-stories |
 
 ---
 
@@ -109,3 +111,4 @@ After **specific owner milestones**, Zedos asks for **lightweight, skippable** f
 |------|--------|--------|
 | 2026-05-09 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) | — |
 | 2026-05-11 | Promoted to validated after CLEAR readiness check (`/feature-area promote`) | — |
+| 2026-06-04 | Sync v0 slices complete; added Phase 1 `outcome-prompt-on-share` (ready) | — |

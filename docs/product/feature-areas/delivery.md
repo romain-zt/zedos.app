@@ -66,7 +66,7 @@ After a user story has been broken into tasks with prompts, Zedos **packages and
 
 | Dependency | Status | Notes |
 |------------|--------|-------|
-| Test-first workflows FA | exploratory | Tasks + prompts must exist before packaging; Delivery consumes that output |
+| Test-first workflows FA | complete | Tasks + prompts shipped; Delivery consumes that output |
 
 ---
 
@@ -87,7 +87,8 @@ None. Export format resolved by PD-001 (2026-05-11).
 
 | Slice | Description | Status |
 |-------|-------------|--------|
-| Cursor package export | Founder exports their completed user stories, tasks, and prompts as a structured package ready to open in Cursor. | exploratory |
+| `delivery--cursor-package-export` | Founder exports stories, tasks, and prompts as a Cursor-ready package (PD-001). | complete |
+| `delivery--export-cursor-conversion-gate` | Soft gate on first export for Free tier; upgrade path to Builder (Phase 1). | ready-for-user-stories |
 
 ---
 
@@ -100,9 +101,9 @@ None. Export format resolved by PD-001 (2026-05-11).
 - [x] In-scope / out-of-scope explicitly separated
 - [x] No unresolved PRD open questions affecting this area
 - [x] Deferred behaviors explicitly named
-- [ ] Candidate Scope Slices are individually small enough
+- [x] Candidate Scope Slices are individually small enough
 
-**Verdict:** CLEAR — PRD scope confirmed (PRD v2 / FG-POST-PRD-V1). Export format resolved by PD-001. Ready for Scope Slice definition.
+**Verdict:** READY FOR SCOPE SLICES — v0 export shipped; Phase 1 conversion gate documented (`WORK_QUEUE`, gates A / B′).
 
 ---
 
@@ -113,3 +114,4 @@ None. Export format resolved by PD-001 (2026-05-11).
 | 2026-05-11 | Initial scaffold from approved Feature Area map (`/feature-area scaffold`) — created as `deferred` per PRD v1 FG-FUTURE; maps to "Cursor packaging" + "tech alignment" from FG-FUTURE | — |
 | 2026-05-11 | Activated — PRD v2 promotes FG-FUTURE → FG-POST-PRD-V1 (active v1 scope); status changed `deferred` → `exploratory`; PRD scope blocker cleared; export format NEED_HUMAN blocker remains | — |
 | 2026-05-11 | Export format resolved via PD-001 (`.cursor/` folder structure + WORK_QUEUE-compatible entries); NEED_HUMAN cleared; status `exploratory` → `validated` | — |
+| 2026-06-04 | Sync slices — `delivery--cursor-package-export` complete; `delivery--export-cursor-conversion-gate` ready (Phase 1) | — |

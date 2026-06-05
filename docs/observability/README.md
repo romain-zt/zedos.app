@@ -15,13 +15,15 @@ Ce dossier (`docs/observability/`) est l’**annexe d’implémentation** (catal
 |---|---|
 | [posthog.md](./posthog.md) | Contrat technique PostHog (événements, funnels, RGPD, plan P0–P5) |
 
-## Statut implémentation (sync doc 2026-06-03)
+## Statut implémentation (sync doc 2026-06-04)
 
-| Slice | Spec produit | Code `apps/web` | Prod tracking |
-|-------|--------------|---------------|---------------|
-| Owner product journey funnels | plan **approved** | **Non intégré** | Off until **B-ANALYTICS-001** |
-| Credit blockage and monetization | plan **draft** ; US **draft** | **Non intégré** | Off until **B-ANALYTICS-001** ; après adapter funnel |
-| Friction replay and error signals | plan **draft** ; US **draft** ; slice **exploratory** | **Non intégré** | Phase 2 ; **B-ANALYTICS-001** + **B-ANALYTICS-002** |
+| Slice | WORK_QUEUE | Code `apps/web` | Prod tracking |
+|-------|------------|---------------|---------------|
+| Owner product journey funnels | **complete** | Intégré **default-off** (env) | **Off** until **B-ANALYTICS-001** cleared |
+| Credit blockage and monetization | **complete** | Intégré **default-off** | **Off** until **B-ANALYTICS-001** |
+| Friction replay and error signals | **exploratory** | Non prod | Phase 2 ; **B-ANALYTICS-002** |
+
+**Plan B obligatoire mois 1 si legal retard :** `docs/ops/posthog-legal-decision-plan-b.md` + `metrics-weekly-sheet-template.md` (ne remplace pas Gate A qualitatif).
 
 **Queue :** `docs/WORK_QUEUE.md` → `FA-product-analytics` et slices associées.
 
