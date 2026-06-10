@@ -13,6 +13,8 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === '/api/stripe/webhook') return true;
   if (pathname.startsWith('/_next')) return true;
   if (pathname.startsWith('/share')) return true;
+  // i18n dictionaries are public static assets — never locale-redirect or session-gate them.
+  if (pathname.startsWith('/messages/')) return true;
   if (
     pathname === '/' ||
     pathname === '/sign-in' ||
@@ -68,6 +70,7 @@ export async function middleware(request: NextRequest) {
     unlocalizedPathname.startsWith('/_next') ||
     unlocalizedPathname.startsWith('/api') ||
     unlocalizedPathname.startsWith('/share') ||
+    unlocalizedPathname.startsWith('/messages/') ||
     /\.(ico|png|jpg|jpeg|gif|svg|webp|txt|xml|webmanifest)$/i.test(unlocalizedPathname);
 
   if (!locale && !isInternalOrAssetPath) {
