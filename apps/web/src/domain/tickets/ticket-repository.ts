@@ -40,5 +40,10 @@ export interface ITicketRepository {
     projectId: string,
     patch: UpdateTicketRequest,
   ): Promise<Result<TicketDTO, ApplicationError>>;
+  /** Assigns many tickets to milestones (plan generation) in one transaction. */
+  bulkAssign(
+    projectId: string,
+    assignments: Array<{ ticketId: string; milestoneId: string; dueDate: string | null }>,
+  ): Promise<Result<void, ApplicationError>>;
   delete(ticketId: string, projectId: string): Promise<Result<void, ApplicationError>>;
 }

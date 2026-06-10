@@ -222,6 +222,32 @@ export class DrizzleTicketRepository implements ITicketRepository {
     }
   }
 
+  async bulkAssign(
+    projectId: string,
+    assignments: Array<{ ticketId: string; milestoneId: string; dueDate: string | null }>,
+  ): Promise<Result<void, ApplicationError>> {
+    if (assignments.length === 0) return ok(undefined);
+    try {
+      await db.transaction(async (tx) => {
+        for (const assignment of assignments) {
+          const update: TicketUpdate = {
+            milestoneId: assignment.milestoneId,
+            dueDate: assignment.dueDate,
+            updatedAt: new Date(),
+          };
+          await tx
+            .update(tickets)
+            .set(update)
+            .where(and(eq(tickets.id, assignment.ticketId), eq(tickets.projectId, projectId)));
+        }
+      });
+      return ok(undefined);
+    } catch (error) {
+      logger.error('Failed to assign tickets to milestones', error);
+      return err(new DatabaseError('Failed to assign tickets to milestones'));
+    }
+  }
+
   async delete(ticketId: string, projectId: string): Promise<Result<void, ApplicationError>> {
     try {
       const deleted = await db
@@ -238,30 +264,4 @@ export class DrizzleTicketRepository implements ITicketRepository {
 }
 
 export const ticketRepository = new DrizzleTicketRepository();
-
-/** Re-export used by planning to set milestone/dueDate on many tickets. */
-export async function bulkAssignTicketsToMilestone(input: {
-  projectId: string;
-  assignments: Array<{ ticketId: string; milestoneId: string; dueDate: string | null }>;
-}): Promise<Result<void, ApplicationError>> {
-  try {
-    await db.transaction(async (tx) => {
-      for (const a of input.assignments) {
-        const update: TicketUpdate = {
-          milestoneId: a.milestoneId,
-          dueDate: a.dueDate,
-          updatedAt: new Date(),
-        };
-        await tx
-          .update(tickets)
-          .set(update)
-          .where(and(eq(tickets.id, a.ticketId), eq(tickets.projectId, input.projectId)));
-      }
-    });
-    return ok(undefined);
-  } catch (error) {
-    logger.error('Failed to assign tickets to milestones', error);
-    return err(new DatabaseError('Failed to assign tickets to milestones'));
-  }
-}
 
