@@ -17,6 +17,8 @@ import {
   checkCreditsForApi as checkCredits,
   deductCreditsForApi as deductCredits,
 } from '@infrastructure/http/credits-http-bridge';
+import { RecordAgentActivityUseCase } from '@application/team/record-agent-activity-usecase';
+import { agentActivityRepository } from '@infrastructure/persistence/agent-activity-repository';
 import { ApplicationError } from '@shared/errors/application-error';
 import { createLogger } from '@shared/observability/logger';
 
@@ -87,6 +89,15 @@ export async function POST(
   }
 
   const draft = result.unwrap();
+  if (parsed.data.mode === 'ai') {
+    const activity = new RecordAgentActivityUseCase(agentActivityRepository);
+    const activityId = await activity.startSafe({
+      projectId: params.id,
+      kind: 'task_split',
+      summary: `Milo split "${draft.storyTitle ?? 'a story'}" into ${draft.tasks.length} tasks`,
+    });
+    await activity.finishSafe(activityId, 'completed');
+  }
   const body = {
     userStoryLineId: draft.userStoryLineId,
     storyTitle: draft.storyTitle,

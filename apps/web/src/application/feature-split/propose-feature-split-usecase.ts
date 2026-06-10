@@ -5,6 +5,8 @@ import { Result, err } from '@repo/result';
 import { ApplicationError, NotFoundError, ValidationError } from '@shared/errors/application-error';
 import { assessPrdSplitReadiness } from '@/lib/prd-content-for-ai';
 import { proposeFeatureSplit } from '@infrastructure/ai/feature-split-proposal';
+import { RecordAgentActivityUseCase } from '@application/team/record-agent-activity-usecase';
+import { agentActivityRepository } from '@infrastructure/persistence/agent-activity-repository';
 import { createLogger } from '@shared/observability/logger';
 
 const logger = createLogger({ operation: 'ProposeFeatureSplitUseCase' });
@@ -38,6 +40,24 @@ export class ProposeFeatureSplitUseCase {
       return err(new ValidationError(readiness.message));
     }
 
-    return proposeFeatureSplit(version.content);
+    const activity = new RecordAgentActivityUseCase(agentActivityRepository);
+    const activityId = await activity.startSafe({
+      projectId,
+      kind: 'feature_split',
+      summary: 'Milo is splitting the PRD into feature clusters',
+    });
+
+    const proposal = await proposeFeatureSplit(version.content);
+    if (proposal.isErr()) {
+      await activity.finishSafe(activityId, 'failed', 'Feature split proposal failed');
+    } else {
+      const clusterCount = proposal.unwrap().clusters.length;
+      await activity.finishSafe(
+        activityId,
+        'completed',
+        `Milo proposed ${clusterCount} feature cluster${clusterCount === 1 ? '' : 's'}`,
+      );
+    }
+    return proposal;
   }
 }

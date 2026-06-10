@@ -454,3 +454,97 @@ export interface NewRedTeamFindingRow {
   metadata?: Record<string, string>;
   createdAt?: Date;
 }
+
+/** Insert row for agent_activities (AI team feed). */
+export interface NewAgentActivityRow {
+  id?: string;
+  projectId: string;
+  agentRole: string;
+  kind: string;
+  status?: string;
+  summary: string;
+  payload?: unknown;
+  createdAt?: Date;
+  completedAt?: Date | null;
+}
+
+/** Update shape for agent_activities. */
+export interface AgentActivityUpdate {
+  status?: string;
+  summary?: string;
+  completedAt?: Date | null;
+}
+
+/** Insert row for team_plans (Scout's team & skills plan). */
+export interface NewTeamPlanRow {
+  id?: string;
+  projectId: string;
+  plan: unknown;
+  createdAt?: Date;
+  updatedAt: Date;
+}
+
+/** Update shape for team_plans. */
+export interface TeamPlanUpdate {
+  plan?: unknown;
+  updatedAt?: Date;
+}
+
+/** Insert row for milestones (planning / calendar). */
+export interface NewMilestoneRow {
+  id?: string;
+  projectId: string;
+  title: string;
+  description?: string | null;
+  startsOn?: string | null;
+  dueOn?: string | null;
+  color?: string | null;
+  sortOrder?: number;
+  createdAt?: Date;
+  updatedAt: Date;
+}
+
+/** Update shape for milestones. */
+export interface MilestoneUpdate {
+  title?: string;
+  description?: string | null;
+  startsOn?: string | null;
+  dueOn?: string | null;
+  color?: string | null;
+  sortOrder?: number;
+  updatedAt?: Date;
+}
+
+/** Insert row for tickets (project Kanban board). */
+export interface NewTicketRow {
+  id?: string;
+  projectId: string;
+  number: number;
+  title: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+  estimate?: number | null;
+  assigneeRole?: string | null;
+  userStoryLineId?: string | null;
+  taskSplitTaskId?: string | null;
+  milestoneId?: string | null;
+  dueDate?: string | null;
+  sortOrder?: number;
+  createdAt?: Date;
+  updatedAt: Date;
+}
+
+/** Update shape for tickets. */
+export interface TicketUpdate {
+  title?: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+  estimate?: number | null;
+  assigneeRole?: string | null;
+  milestoneId?: string | null;
+  dueDate?: string | null;
+  sortOrder?: number;
+  updatedAt?: Date;
+}

@@ -12,6 +12,8 @@ import {
   reverseCreditsForApi as reverseCredits,
 } from '@infrastructure/http/credits-http-bridge'
 import { callAI, createBufferedStreamingResponse } from '@/lib/ai-service'
+import { RecordAgentActivityUseCase } from '@application/team/record-agent-activity-usecase'
+import { agentActivityRepository } from '@infrastructure/persistence/agent-activity-repository'
 import { createLogger } from '@shared/observability/logger'
 import { AnalyticsEvents, balanceBucketFromCount } from '@infrastructure/analytics/analytics-events'
 import {
@@ -108,6 +110,13 @@ export async function generatePrdStreamForProject(
     })
   }
 
+  const agentActivity = new RecordAgentActivityUseCase(agentActivityRepository)
+  const activityId = await agentActivity.startSafe({
+    projectId: input.projectId,
+    kind: 'prd_generation',
+    summary: `Nova is drafting PRD v${nextVersionNumber} for "${project.name}"`,
+  })
+
   const aiResponse = await callAI({
     messages,
     stream: true,
@@ -130,6 +139,7 @@ export async function generatePrdStreamForProject(
           journey_mode: project.journeyMode,
           error_code: 'prd_response_schema_invalid',
         })
+        await agentActivity.finishSafe(activityId, 'failed', 'PRD draft failed validation — no credits were used')
         return
       }
       const deductResult = await deductCredits(input.userId, 'prd_generation', {
@@ -164,8 +174,14 @@ export async function generatePrdStreamForProject(
         version_number: nextVersionNumber,
         journey_mode: project.journeyMode,
       })
+      await agentActivity.finishSafe(
+        activityId,
+        'completed',
+        `Nova shipped PRD v${nextVersionNumber} for "${project.name}"`
+      )
     } catch (error: unknown) {
       logger.error('Failed to save PRD version', error)
+      await agentActivity.finishSafe(activityId, 'failed', 'PRD generation failed')
       const normalized = error instanceof Error ? error : new Error('prd_generation_persist_failure')
       captureServer(AnalyticsEvents.PRD_GENERATION_FAILED, input.userId, {
         project_id: input.projectId,

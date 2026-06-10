@@ -11,7 +11,8 @@ import { ArchitecturePanel } from './architecture-panel'
 import { WorkspaceScorePanel } from './workspace-score-panel'
 import { ContextualRefinementPanel } from './contextual-refinement-panel'
 import { NextActionBanner } from './next-action-banner'
-import { MessageSquare, FileText, History, Settings, Layers, GitBranch } from 'lucide-react'
+import { MessageSquare, FileText, History, Settings, Layers, GitBranch, Users } from 'lucide-react'
+import { TeamPanel } from './team-panel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -29,7 +30,7 @@ import { ProjectMembersPanel } from './project-members-panel'
 import { AnalyticsEvents } from '@infrastructure/analytics/analytics-events'
 import { captureClient } from '@infrastructure/analytics/posthog-client'
 
-type WorkspaceTab = 'clarify' | 'prd' | 'architecture' | 'history' | 'decisions'
+type WorkspaceTab = 'clarify' | 'prd' | 'architecture' | 'history' | 'decisions' | 'team'
 
 const ProjectMetadataResponseSchema = z.object({
   phase: z.string().optional(),
@@ -270,6 +271,10 @@ export function ProjectWorkspace({
               <GitBranch className="h-4 w-4" />
               {t('workspace.tabDecisions')}
             </TabsTrigger>
+            <TabsTrigger value="team" className="gap-2">
+              <Users className="h-4 w-4" />
+              {t('workspace.tabTeam')}
+            </TabsTrigger>
           </TabsList>
           </div>
           {!loadingPhase && <WorkspaceScorePanel projectId={projectId} />}
@@ -312,6 +317,10 @@ export function ProjectWorkspace({
             isTabActive={activeTab === 'history'}
             onOpenRefinement={openRefinement}
           />
+        </TabsContent>
+
+        <TabsContent value="team" className="mt-4">
+          <TeamPanel projectId={projectId} />
         </TabsContent>
 
         <TabsContent value="decisions" className="mt-4">
