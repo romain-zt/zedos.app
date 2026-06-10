@@ -24,3 +24,4 @@ export * from './delivery';
 export * from './github';
 export * from './linear';
 export * from './templates';
+export * from './team';

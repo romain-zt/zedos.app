@@ -127,6 +127,13 @@
       "when": 1781000000000,
       "tag": "0017_plan_tier_subscriptions_red_team_data_room",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1781095099318,
+      "tag": "0018_futuristic_moira_mactaggert",
+      "breakpoints": true
     }
   ]
 }

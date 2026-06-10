@@ -1,7 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const packageRoot = resolve(import.meta.dirname, '..');
+// drizzle-kit bundles this file to CJS where `import.meta` is empty —
+// fall back to cwd (drizzle-kit runs from packages/db).
+const packageRoot = import.meta.dirname ? resolve(import.meta.dirname, '..') : process.cwd();
 
 /**
  * @param {string} filePath
