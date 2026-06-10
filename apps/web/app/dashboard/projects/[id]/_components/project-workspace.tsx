@@ -239,7 +239,8 @@ export function ProjectWorkspace({
           })
         }}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
           <TabsList>
             <TabsTrigger value="clarify" className="gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -270,6 +271,7 @@ export function ProjectWorkspace({
               {t('workspace.tabDecisions')}
             </TabsTrigger>
           </TabsList>
+          </div>
           {!loadingPhase && <WorkspaceScorePanel projectId={projectId} />}
         </div>
 
