@@ -58,6 +58,14 @@ export default function ProjectsPage() {
     importOpen && (importPaste.trim().length > 0 || importFile != null)
   const templateActive = selectedTemplate !== null
 
+  // `/dashboard/projects?new=1` (home hero CTA) opens the create dialog directly.
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setShowCreate(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const fetchProjects = useCallback(async () => {
     setLoading(true)
     setListError(null)

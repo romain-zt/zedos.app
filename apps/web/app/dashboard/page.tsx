@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useI18n } from '@/src/i18n'
 import { DEFERRED_ROADMAP_PLACEHOLDERS } from './_lib/deferred-roadmap-placeholders'
+import { AGENT_ROSTER } from '@domain/team/agent-roster'
 import { FolderOpen, Plus, FileText, ArrowRight, Sparkles, Construction, Info, AlertTriangle, RefreshCw } from 'lucide-react'
 import { FadeIn, SlideIn, Stagger, StaggerItem } from '@/components/ui/animate'
 
@@ -63,6 +64,44 @@ export default function DashboardPage() {
           <p className="mt-1 text-muted-foreground">
             {t('dashboard.homeBaseDescription')}
           </p>
+        </div>
+      </FadeIn>
+
+      <FadeIn>
+        <div className="rounded-2xl border bg-gradient-to-br from-primary/5 via-card to-card p-6 sm:p-8 space-y-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1.5">
+              <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight">
+                {t('home.heroTitle')}
+              </h2>
+              <p className="text-sm text-muted-foreground max-w-xl">{t('home.heroSubtitle')}</p>
+            </div>
+            <Button
+              size="lg"
+              className="shrink-0"
+              onClick={() => router.push('/dashboard/projects?new=1')}
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              {t('projects.createProject')}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {Object.values(AGENT_ROSTER).map((agent) => (
+              <span
+                key={agent.role}
+                className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs"
+                title={t(`team.role.${agent.role}`)}
+              >
+                <span
+                  className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] text-primary-foreground ${agent.colorClass}`}
+                  aria-hidden
+                >
+                  {agent.emoji}
+                </span>
+                {agent.name}
+              </span>
+            ))}
+          </div>
         </div>
       </FadeIn>
 

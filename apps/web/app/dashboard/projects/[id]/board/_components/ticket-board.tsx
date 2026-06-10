@@ -20,6 +20,7 @@ import { TicketDetailDialog } from './ticket-detail-dialog'
 import { FadeIn } from '@/components/ui/animate'
 import { useOptimisticMutation } from '@/hooks/use-optimistic-mutation'
 import { useAgentJob } from '@/hooks/use-agent-job'
+import { JourneyStepper } from '../../_components/journey-stepper'
 
 const TicketResponseSchema = z.object({ ticket: z.unknown() })
 
@@ -200,6 +201,7 @@ export function TicketBoard({
 
   return (
     <div className="space-y-4">
+      <JourneyStepper projectId={projectId} />
       <FadeIn>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

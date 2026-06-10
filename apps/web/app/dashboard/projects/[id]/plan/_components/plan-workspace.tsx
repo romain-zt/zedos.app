@@ -33,6 +33,7 @@ import { FadeIn } from '@/components/ui/animate'
 import { useOptimisticMutation } from '@/hooks/use-optimistic-mutation'
 import { useAgentJob } from '@/hooks/use-agent-job'
 import { useRef } from 'react'
+import { JourneyStepper } from '../../_components/journey-stepper'
 
 const MILESTONE_BORDERS: Record<string, string> = {
   violet: 'border-l-violet-500',
@@ -204,6 +205,7 @@ export function PlanWorkspace({
 
   return (
     <div className="space-y-4">
+      <JourneyStepper projectId={projectId} />
       <FadeIn>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

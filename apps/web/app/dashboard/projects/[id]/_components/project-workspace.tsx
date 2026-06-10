@@ -13,6 +13,7 @@ import { ContextualRefinementPanel } from './contextual-refinement-panel'
 import { NextActionBanner } from './next-action-banner'
 import { MessageSquare, FileText, History, Settings, Layers, GitBranch, Users } from 'lucide-react'
 import { TeamPanel } from './team-panel'
+import { JourneyStepper } from './journey-stepper'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -216,6 +217,8 @@ export function ProjectWorkspace({
           </div>
         </div>
       </FadeIn>
+
+      <JourneyStepper projectId={projectId} />
 
       <NextActionBanner
         projectId={projectId}
