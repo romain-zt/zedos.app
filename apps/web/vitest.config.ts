@@ -8,7 +8,13 @@ export default mergeConfig(
   defineConfig({
     plugins: [react()],
     test: {
-      include: ["src/**/*.test.ts", "app/**/*.test.ts", "app/**/*.test.tsx"],
+      include: [
+        "src/**/*.test.ts",
+        "app/**/*.test.ts",
+        "app/**/*.test.tsx",
+        "hooks/**/*.test.ts",
+        "hooks/**/*.test.tsx",
+      ],
       setupFiles: ["./src/test-helpers/i18n-test-setup.ts"],
     },
     resolve: {

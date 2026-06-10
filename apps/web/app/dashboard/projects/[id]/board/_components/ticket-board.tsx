@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -18,6 +18,8 @@ import { Plus, Sparkles, Loader2 } from 'lucide-react'
 import { TicketCard } from './ticket-card'
 import { TicketDetailDialog } from './ticket-detail-dialog'
 import { FadeIn } from '@/components/ui/animate'
+import { useOptimisticMutation } from '@/hooks/use-optimistic-mutation'
+import { useAgentJob } from '@/hooks/use-agent-job'
 
 const TicketResponseSchema = z.object({ ticket: z.unknown() })
 
@@ -38,8 +40,9 @@ export function TicketBoard({
 }) {
   const { t } = useI18n()
   const [tickets, setTickets] = useState<TicketDTO[]>([])
+  const ticketsRef = useRef<TicketDTO[]>([])
+  ticketsRef.current = tickets
   const [loading, setLoading] = useState(true)
-  const [generating, setGenerating] = useState(false)
   const [selected, setSelected] = useState<TicketDTO | null>(null)
   const [creating, setCreating] = useState(false)
   const [dragOverStatus, setDragOverStatus] = useState<TicketStatus | null>(null)
@@ -68,59 +71,54 @@ export function TicketBoard({
     }
   }, [fetchTickets])
 
-  /** Optimistic single-ticket patch with rollback on failure. */
+  /** Shared optimistic mutation: instant apply, rollback + toast on failure, refetch on commit. */
+  const errorMessageRef = useRef(t('board.updateFailed'))
+  const { mutate } = useOptimisticMutation<TicketDTO[]>({
+    getState: () => ticketsRef.current,
+    setState: setTickets,
+    onError: () => toast.error(errorMessageRef.current),
+    onCommitted: () => void fetchTickets(),
+  })
+
   const patchTicket = useCallback(
     async (ticketId: string, patch: UpdateTicketRequest) => {
-      const snapshot = tickets
-      setTickets((prev) =>
-        prev.map((ticket) =>
-          ticket.id === ticketId ? ({ ...ticket, ...patch } as TicketDTO) : ticket
-        )
-      )
+      errorMessageRef.current = t('board.updateFailed')
       setSelected((prev) =>
         prev && prev.id === ticketId ? ({ ...prev, ...patch } as TicketDTO) : prev
       )
-      try {
-        const res = await fetch(`/api/projects/${projectId}/tickets/${ticketId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patch),
-        })
-        if (!res.ok) {
-          setTickets(snapshot)
-          toast.error(t('board.updateFailed'))
-          return false
-        }
-        void fetchTickets()
-        return true
-      } catch {
-        setTickets(snapshot)
-        toast.error(t('board.updateFailed'))
-        return false
-      }
+      return mutate({
+        optimistic: (current) =>
+          current.map((ticket) =>
+            ticket.id === ticketId ? ({ ...ticket, ...patch } as TicketDTO) : ticket
+          ),
+        request: async () => {
+          const res = await fetch(`/api/projects/${projectId}/tickets/${ticketId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patch),
+          })
+          return { ok: res.ok }
+        },
+      })
     },
-    [projectId, tickets, fetchTickets, t]
+    [projectId, mutate, t]
   )
 
   const deleteTicket = useCallback(
     async (ticketId: string) => {
-      const snapshot = tickets
-      setTickets((prev) => prev.filter((ticket) => ticket.id !== ticketId))
+      errorMessageRef.current = t('board.deleteFailed')
       setSelected(null)
-      try {
-        const res = await fetch(`/api/projects/${projectId}/tickets/${ticketId}`, {
-          method: 'DELETE',
-        })
-        if (!res.ok) {
-          setTickets(snapshot)
-          toast.error(t('board.deleteFailed'))
-        }
-      } catch {
-        setTickets(snapshot)
-        toast.error(t('board.deleteFailed'))
-      }
+      await mutate({
+        optimistic: (current) => current.filter((ticket) => ticket.id !== ticketId),
+        request: async () => {
+          const res = await fetch(`/api/projects/${projectId}/tickets/${ticketId}`, {
+            method: 'DELETE',
+          })
+          return { ok: res.ok }
+        },
+      })
     },
-    [projectId, tickets, t]
+    [projectId, mutate, t]
   )
 
   const createTicket = useCallback(
@@ -147,31 +145,36 @@ export function TicketBoard({
     [projectId, fetchTickets, t]
   )
 
-  const generateTickets = useCallback(async () => {
-    setGenerating(true)
-    try {
-      const res = await fetch(`/api/projects/${projectId}/tickets/generate`, { method: 'POST' })
-      const body = await res.json().catch(() => null)
-      if (!res.ok) {
-        const message = (body as { error?: string } | null)?.error
-        toast.error(message ?? t('board.generateFailed'))
-        return
-      }
-      const parsed = GenerateTicketsResponseSchema.safeParse(body)
-      if (parsed.success) {
-        await fetchTickets()
+  /** Milo's ticket generation as an agent job: optimistic skeletons → commit or reset. */
+  const generateJob = useAgentJob<{ created: number; skipped: number }>()
+  const generating = generateJob.isRunning
+
+  const generateTickets = useCallback(() => {
+    void generateJob.run({
+      request: async (signal) => {
+        const res = await fetch(`/api/projects/${projectId}/tickets/generate`, {
+          method: 'POST',
+          signal,
+        })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) {
+          return { ok: false, errorMessage: (body as { error?: string } | null)?.error ?? null }
+        }
+        const parsed = GenerateTicketsResponseSchema.safeParse(body)
+        if (!parsed.success) return { ok: false }
+        return { ok: true, value: { created: parsed.data.created, skipped: parsed.data.skipped } }
+      },
+      onCommitted: (value) => {
+        void fetchTickets()
         toast.success(
           t('board.generated')
-            .replace('{created}', String(parsed.data.created))
-            .replace('{skipped}', String(parsed.data.skipped))
+            .replace('{created}', String(value.created))
+            .replace('{skipped}', String(value.skipped))
         )
-      }
-    } catch {
-      toast.error(t('board.generateFailed'))
-    } finally {
-      setGenerating(false)
-    }
-  }, [projectId, fetchTickets, t])
+      },
+      onFailed: (message) => toast.error(message ?? t('board.generateFailed')),
+    })
+  }, [projectId, generateJob, fetchTickets, t])
 
   const columns = useMemo(
     () =>
@@ -207,7 +210,7 @@ export function TicketBoard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => void generateTickets()}
+              onClick={() => generateTickets()}
               disabled={generating}
             >
               {generating ? (
@@ -238,7 +241,7 @@ export function TicketBoard({
         <div className="rounded-xl border border-dashed p-10 text-center space-y-3">
           <p className="font-medium">{t('board.emptyTitle')}</p>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">{t('board.emptyBody')}</p>
-          <Button onClick={() => void generateTickets()} disabled={generating}>
+          <Button onClick={() => generateTickets()} disabled={generating}>
             <Sparkles className="h-4 w-4 mr-1.5" />
             {t('board.generateCta')}
           </Button>

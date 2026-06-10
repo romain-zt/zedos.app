@@ -17,6 +17,7 @@ import {
 import { AGENT_ROSTER } from '@domain/team/agent-roster'
 import { Loader2, Sparkles, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 import { z } from 'zod'
+import { useAgentJob } from '@/hooks/use-agent-job'
 
 const TeamPlanResponseSchema = z.object({ teamPlan: TeamPlanDTOSchema.nullable() })
 
@@ -53,7 +54,8 @@ export function TeamPanel({ projectId }: { projectId: string }) {
   const [activities, setActivities] = useState<AgentActivityDTO[]>([])
   const [teamPlan, setTeamPlan] = useState<TeamPlanDTO | null>(null)
   const [loading, setLoading] = useState(true)
-  const [generatingPlan, setGeneratingPlan] = useState(false)
+  const planJob = useAgentJob<TeamPlanDTO>()
+  const generatingPlan = planJob.isRunning
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchActivities = useCallback(async () => {
@@ -100,26 +102,28 @@ export function TeamPanel({ projectId }: { projectId: string }) {
     }
   }, [fetchActivities, hasRunning])
 
-  const handleGeneratePlan = async () => {
-    setGeneratingPlan(true)
-    try {
-      const res = await fetch(`/api/projects/${projectId}/team-plan`, { method: 'POST' })
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null
-        toast.error(body?.error ?? t('team.planFailed'))
-        return
-      }
-      const parsed = TeamPlanResponseSchema.safeParse(await res.json())
-      if (parsed.success && parsed.data.teamPlan) {
-        setTeamPlan(parsed.data.teamPlan)
+  const handleGeneratePlan = () => {
+    void planJob.run({
+      request: async (signal) => {
+        const res = await fetch(`/api/projects/${projectId}/team-plan`, {
+          method: 'POST',
+          signal,
+        })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) {
+          return { ok: false, errorMessage: (body as { error?: string } | null)?.error ?? null }
+        }
+        const parsed = TeamPlanResponseSchema.safeParse(body)
+        if (!parsed.success || !parsed.data.teamPlan) return { ok: false }
+        return { ok: true, value: parsed.data.teamPlan }
+      },
+      onCommitted: (plan) => {
+        setTeamPlan(plan)
         toast.success(t('team.planReady'))
-      }
-      void fetchActivities()
-    } catch {
-      toast.error(t('team.planFailed'))
-    } finally {
-      setGeneratingPlan(false)
-    }
+        void fetchActivities()
+      },
+      onFailed: (message) => toast.error(message ?? t('team.planFailed')),
+    })
   }
 
   const roster = useMemo(() => Object.values(AGENT_ROSTER), [])
@@ -205,7 +209,7 @@ export function TeamPanel({ projectId }: { projectId: string }) {
           <Button
             size="sm"
             variant={teamPlan ? 'outline' : 'default'}
-            onClick={() => void handleGeneratePlan()}
+            onClick={() => handleGeneratePlan()}
             disabled={generatingPlan}
             className="shrink-0"
           >

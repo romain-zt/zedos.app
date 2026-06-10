@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
@@ -29,6 +30,9 @@ import {
 } from 'date-fns'
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Sparkles, Trash2 } from 'lucide-react'
 import { FadeIn } from '@/components/ui/animate'
+import { useOptimisticMutation } from '@/hooks/use-optimistic-mutation'
+import { useAgentJob } from '@/hooks/use-agent-job'
+import { useRef } from 'react'
 
 const MILESTONE_BORDERS: Record<string, string> = {
   violet: 'border-l-violet-500',
@@ -49,9 +53,10 @@ export function PlanWorkspace({
   const { t, locale } = useI18n()
   const router = useRouter()
   const [milestones, setMilestones] = useState<MilestoneDTO[]>([])
+  const milestonesRef = useRef<MilestoneDTO[]>([])
+  milestonesRef.current = milestones
   const [tickets, setTickets] = useState<TicketDTO[]>([])
   const [loading, setLoading] = useState(true)
-  const [planning, setPlanning] = useState(false)
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
 
   const fetchAll = useCallback(async () => {
@@ -83,76 +88,82 @@ export function PlanWorkspace({
     }
   }, [fetchAll])
 
-  const generatePlan = useCallback(async () => {
-    setPlanning(true)
-    try {
-      const res = await fetch(`/api/projects/${projectId}/plan/generate`, { method: 'POST' })
-      const body = await res.json().catch(() => null)
-      if (!res.ok) {
-        toast.error((body as { error?: string } | null)?.error ?? t('plan.generateFailed'))
-        return
-      }
-      const parsed = GeneratePlanResponseSchema.safeParse(body)
-      if (parsed.success) {
-        setMilestones((prev) => [...prev, ...parsed.data.milestones])
-        setTickets(parsed.data.tickets)
-        const firstStart = parsed.data.milestones[0]?.startsOn
-        if (firstStart) setMonth(startOfMonth(parseISO(firstStart)))
-        toast.success(t('plan.generated'))
-      }
-      void fetchAll()
-    } catch {
-      toast.error(t('plan.generateFailed'))
-    } finally {
-      setPlanning(false)
-    }
-  }, [projectId, fetchAll, t])
+  /** Milo's planning as an agent job: optimistic placeholder → commit or reset. */
+  const planJob = useAgentJob<z.infer<typeof GeneratePlanResponseSchema>>()
+  const planning = planJob.isRunning
 
-  /** Optimistic milestone patch with rollback. */
+  const generatePlan = useCallback(() => {
+    void planJob.run({
+      request: async (signal) => {
+        const res = await fetch(`/api/projects/${projectId}/plan/generate`, {
+          method: 'POST',
+          signal,
+        })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) {
+          return { ok: false, errorMessage: (body as { error?: string } | null)?.error ?? null }
+        }
+        const parsed = GeneratePlanResponseSchema.safeParse(body)
+        if (!parsed.success) return { ok: false }
+        return { ok: true, value: parsed.data }
+      },
+      onCommitted: (value) => {
+        const parsed = GeneratePlanResponseSchema.safeParse(value)
+        if (parsed.success) {
+          setMilestones((prev) => [...prev, ...parsed.data.milestones])
+          setTickets(parsed.data.tickets)
+          const firstStart = parsed.data.milestones[0]?.startsOn
+          if (firstStart) setMonth(startOfMonth(parseISO(firstStart)))
+        }
+        toast.success(t('plan.generated'))
+        void fetchAll()
+      },
+      onFailed: (message) => toast.error(message ?? t('plan.generateFailed')),
+    })
+  }, [projectId, planJob, fetchAll, t])
+
+  /** Shared optimistic mutation for milestone edits/deletes. */
+  const errorMessageRef = useRef(t('plan.updateFailed'))
+  const { mutate } = useOptimisticMutation<MilestoneDTO[]>({
+    getState: () => milestonesRef.current,
+    setState: setMilestones,
+    onError: () => toast.error(errorMessageRef.current),
+  })
+
   const patchMilestone = useCallback(
     async (milestoneId: string, patch: UpdateMilestoneRequest) => {
-      const snapshot = milestones
-      setMilestones((prev) =>
-        prev.map((m) => (m.id === milestoneId ? ({ ...m, ...patch } as MilestoneDTO) : m))
-      )
-      try {
-        const res = await fetch(`/api/projects/${projectId}/milestones/${milestoneId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patch),
-        })
-        if (!res.ok) {
-          setMilestones(snapshot)
-          toast.error(t('plan.updateFailed'))
-        }
-      } catch {
-        setMilestones(snapshot)
-        toast.error(t('plan.updateFailed'))
-      }
+      errorMessageRef.current = t('plan.updateFailed')
+      await mutate({
+        optimistic: (current) =>
+          current.map((m) => (m.id === milestoneId ? ({ ...m, ...patch } as MilestoneDTO) : m)),
+        request: async () => {
+          const res = await fetch(`/api/projects/${projectId}/milestones/${milestoneId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patch),
+          })
+          return { ok: res.ok }
+        },
+      })
     },
-    [projectId, milestones, t]
+    [projectId, mutate, t]
   )
 
   const deleteMilestone = useCallback(
     async (milestoneId: string) => {
-      const snapshot = milestones
-      setMilestones((prev) => prev.filter((m) => m.id !== milestoneId))
-      try {
-        const res = await fetch(`/api/projects/${projectId}/milestones/${milestoneId}`, {
-          method: 'DELETE',
-        })
-        if (!res.ok) {
-          setMilestones(snapshot)
-          toast.error(t('plan.deleteFailed'))
-        } else {
-          void fetchAll()
-        }
-      } catch {
-        setMilestones(snapshot)
-        toast.error(t('plan.deleteFailed'))
-      }
+      errorMessageRef.current = t('plan.deleteFailed')
+      const ok = await mutate({
+        optimistic: (current) => current.filter((m) => m.id !== milestoneId),
+        request: async () => {
+          const res = await fetch(`/api/projects/${projectId}/milestones/${milestoneId}`, {
+            method: 'DELETE',
+          })
+          return { ok: res.ok }
+        },
+      })
+      if (ok) void fetchAll()
     },
-    [projectId, milestones, fetchAll, t]
+    [projectId, mutate, fetchAll, t]
   )
 
   const ticketsByMilestone = useMemo(() => {
@@ -199,7 +210,7 @@ export function PlanWorkspace({
             <h1 className="font-display text-2xl font-bold tracking-tight">{t('plan.title')}</h1>
             <p className="text-sm text-muted-foreground">{projectName}</p>
           </div>
-          <Button size="sm" onClick={() => void generatePlan()} disabled={planning}>
+          <Button size="sm" onClick={() => generatePlan()} disabled={planning}>
             {planning ? (
               <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
             ) : (
@@ -227,7 +238,7 @@ export function PlanWorkspace({
             <Button variant="outline" onClick={goToBoard}>
               {t('plan.goToBoard')}
             </Button>
-            <Button onClick={() => void generatePlan()} disabled={planning}>
+            <Button onClick={() => generatePlan()} disabled={planning}>
               <Sparkles className="h-4 w-4 mr-1.5" />
               {t('plan.generateCta')}
             </Button>
