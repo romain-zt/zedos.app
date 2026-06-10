@@ -6,6 +6,8 @@ export const EXPRESS_BLOCKED_POST_PRD_SEGMENTS = [
   'feature-split',
   'user-stories',
   'task-split',
+  'board',
+  'plan',
   'delivery',
 ] as const
 

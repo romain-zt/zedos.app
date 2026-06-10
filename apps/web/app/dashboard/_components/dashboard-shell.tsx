@@ -27,6 +27,8 @@ import {
   Package,
   Receipt,
   LayoutGrid,
+  Kanban,
+  CalendarDays,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useI18n } from '@/src/i18n'
@@ -144,6 +146,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   { href: `/dashboard/projects/${workspaceProjectId}/feature-split`, labelKey: 'projectNav.featureSplit', icon: Layers },
                   { href: `/dashboard/projects/${workspaceProjectId}/user-stories`, labelKey: 'projectNav.userStories', icon: GitBranch },
                   { href: `/dashboard/projects/${workspaceProjectId}/task-split`, labelKey: 'projectNav.taskSplit', icon: BarChart3 },
+                  { href: `/dashboard/projects/${workspaceProjectId}/board`, labelKey: 'projectNav.board', icon: Kanban },
+                  { href: `/dashboard/projects/${workspaceProjectId}/plan`, labelKey: 'projectNav.plan', icon: CalendarDays },
                   { href: `/dashboard/projects/${workspaceProjectId}/delivery`, labelKey: 'projectNav.delivery', icon: Package },
                 ] as const).map((sub) => {
                   const isSubActive = pathWithoutLocale === sub.href
