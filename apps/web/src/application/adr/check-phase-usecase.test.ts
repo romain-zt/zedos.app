@@ -63,6 +63,7 @@ const makePrdRepo = (prd: PrdVersion | null = null): IPrdRepository => ({
   getShareLinkGateByToken: vi.fn(),
   verifyShareLinkPassword: vi.fn(),
   findVersionByIdForOwner: vi.fn(),
+  insertNextVersion: vi.fn(),
 });
 
 describe('CheckPhaseUseCase', () => {

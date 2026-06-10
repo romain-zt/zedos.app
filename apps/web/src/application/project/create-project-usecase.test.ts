@@ -26,6 +26,7 @@ const makeMockPrdRepo = (): Mocked<IPrdRepository> => ({
   getShareLinkGateByToken: vi.fn(),
   verifyShareLinkPassword: vi.fn(),
   findVersionByIdForOwner: vi.fn(),
+  insertNextVersion: vi.fn(),
 });
 
 const makeMockCatalog = (): Mocked<ITemplateCatalogPort> => ({

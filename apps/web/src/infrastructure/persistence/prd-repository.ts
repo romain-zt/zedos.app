@@ -241,6 +241,48 @@ export class DrizzlePrdRepository implements IPrdRepository {
     }
   }
 
+  async insertNextVersion(input: {
+    projectId: string;
+    content: PrdVersionContent;
+    status: PrdVersion['status'];
+    deliverableKind: PrdVersion['deliverableKind'];
+  }): Promise<Result<PrdVersion, ApplicationError>> {
+    try {
+      const latestResult = await this.findLatestByProjectId(input.projectId);
+      if (latestResult.isErr()) return err(latestResult.error);
+      const nextVersionNumber = (latestResult.unwrap()?.versionNumber ?? 0) + 1;
+
+      const [inserted] = await db
+        .insert(prdVersions)
+        .values({
+          projectId: input.projectId,
+          versionNumber: nextVersionNumber,
+          content: input.content,
+          status: input.status,
+          deliverableKind: input.deliverableKind,
+          updatedAt: new Date(),
+        } as NewPrdVersion)
+        .returning();
+      if (!inserted) {
+        return err(new DatabaseError('Failed to insert PRD version'));
+      }
+
+      return ok({
+        id: inserted.id,
+        projectId: inserted.projectId,
+        versionNumber: inserted.versionNumber,
+        content: parsePrdVersionContent(inserted.content),
+        status: inserted.status as PrdStatus,
+        deliverableKind: mapDeliverableKind(inserted.deliverableKind),
+        createdAt: inserted.createdAt,
+        updatedAt: inserted.updatedAt,
+      }) as Result<PrdVersion, ApplicationError>;
+    } catch (error) {
+      logger.error('Failed to insert next PRD version', error);
+      return err(new DatabaseError('Failed to insert PRD version'));
+    }
+  }
+
   private mapMintedShareLink(row: typeof shareLinks.$inferSelect): MintedShareLink {
     return {
       id: row.id,

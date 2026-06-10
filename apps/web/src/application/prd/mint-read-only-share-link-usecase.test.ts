@@ -26,6 +26,7 @@ describe('MintReadOnlyShareLinkUseCase', () => {
       getShareLinkGateByToken: vi.fn(),
       verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
+  insertNextVersion: vi.fn(),
     };
     const useCase = new MintReadOnlyShareLinkUseCase(repo);
     const result = await useCase.execute('pv-1', 'user-1');
@@ -45,6 +46,7 @@ describe('MintReadOnlyShareLinkUseCase', () => {
       getShareLinkGateByToken: vi.fn(),
       verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
+  insertNextVersion: vi.fn(),
     };
     const useCase = new MintReadOnlyShareLinkUseCase(repo);
     const result = await useCase.execute('bad', 'user-1');

@@ -23,6 +23,7 @@ describe('GetAnonymousSharedPrdUseCase', () => {
       getShareLinkGateByToken: vi.fn(),
       verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
+  insertNextVersion: vi.fn(),
     };
     const uc = new GetAnonymousSharedPrdUseCase(repo);
     const result = await uc.execute('tok');
@@ -42,6 +43,7 @@ describe('GetAnonymousSharedPrdUseCase', () => {
       getShareLinkGateByToken: vi.fn(),
       verifyShareLinkPassword: vi.fn(),
       findVersionByIdForOwner: vi.fn(),
+  insertNextVersion: vi.fn(),
     };
     const uc = new GetAnonymousSharedPrdUseCase(repo);
     const result = await uc.execute('x');

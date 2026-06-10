@@ -27,6 +27,17 @@ export interface IPrdRepository {
   ): Promise<Result<{ created: boolean; version: PrdVersion }, ApplicationError>>;
 
   /**
+   * Inserts the next PRD version for the project (versionNumber = latest + 1).
+   * Used by human edits — history stays immutable.
+   */
+  insertNextVersion(input: {
+    projectId: string;
+    content: PrdVersionContent;
+    status: PrdVersion['status'];
+    deliverableKind: PrdVersion['deliverableKind'];
+  }): Promise<Result<PrdVersion, ApplicationError>>;
+
+  /**
    * Ensures an active read-only share link exists for the PRD version.
    * Returns the existing enabled link or creates one; 404-equivalent when the version is missing
    * or not owned by the user.

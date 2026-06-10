@@ -69,6 +69,7 @@ const makeMockPrdRepo = (): IPrdRepository => ({
   revokeReadOnlyShareLink: vi.fn(),
   getAnonymousPrdVersionByShareToken: vi.fn(),
   findVersionByIdForOwner: vi.fn(),
+  insertNextVersion: vi.fn(),
 });
 
 const makeMockSplitRepo = (): IFeatureSplitRepository => ({

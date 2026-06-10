@@ -8,7 +8,7 @@
 import type { PrdVersionContent } from '@repo/contracts/prd';
 import type { PrdDeliverableKind } from '@repo/contracts/prd';
 
-export type PrdStatus = 'draft' | 'final' | 'generated';
+export type PrdStatus = 'draft' | 'final' | 'generated' | 'edited';
 
 export interface PrdVersion {
   id: string;

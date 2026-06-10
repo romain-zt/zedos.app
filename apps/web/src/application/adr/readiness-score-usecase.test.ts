@@ -61,6 +61,7 @@ const makePrdRepo = (prd: PrdVersion | null): IPrdRepository => ({
   getShareLinkGateByToken: vi.fn(),
   verifyShareLinkPassword: vi.fn(),
   findVersionByIdForOwner: vi.fn(),
+  insertNextVersion: vi.fn(),
 });
 
 const makeAdrRepo = (counts: { total: number; complete: number }): IAdrRepository => ({

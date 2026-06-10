@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   FileText, Share2, Copy, Check, XCircle, Download,
-  AlertCircle, CheckCircle2, CircleDot, MessageSquare, GitBranch,
+  AlertCircle, CheckCircle2, CircleDot, MessageSquare, GitBranch, Pencil,
 } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
 import { formatPrdContentForAi } from '@/lib/prd-content-for-ai'
 import { toast } from 'sonner'
 import { ShareOutcomeModal } from '@/components/share-outcome-modal'
@@ -66,6 +67,53 @@ export function PrdViewer({
   const [copied, setCopied] = useState(false)
   const [showOutcomePrompt, setShowOutcomePrompt] = useState(false)
   const [sectionDecisionCounts, setSectionDecisionCounts] = useState<Record<string, number>>({})
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState('')
+  /** Optimistic per-section content overrides while the edited version persists. */
+  const [sectionOverrides, setSectionOverrides] = useState<Record<string, string>>({})
+
+  // New version selected → server truth replaces optimistic overrides.
+  useEffect(() => {
+    setSectionOverrides({})
+    setEditingSectionId(null)
+  }, [selectedVersion?.id])
+
+  const saveSectionEdit = async (section: GeneratePrdSection) => {
+    const nextContent = editDraft.trim()
+    if (!nextContent || nextContent === section.content) {
+      setEditingSectionId(null)
+      return
+    }
+    // Optimistic: swap the section content immediately, commit/rollback on response.
+    setSectionOverrides((prev) => ({ ...prev, [section.id]: nextContent }))
+    setEditingSectionId(null)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/prd`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sectionId: section.id, content: nextContent }),
+      })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        setSectionOverrides((prev) => {
+          const next = { ...prev }
+          delete next[section.id]
+          return next
+        })
+        toast.error(body?.error ?? t('prd.editFailed'))
+        return
+      }
+      toast.success(t('prd.editSaved'))
+      onRefresh()
+    } catch {
+      setSectionOverrides((prev) => {
+        const next = { ...prev }
+        delete next[section.id]
+        return next
+      })
+      toast.error(t('prd.editFailed'))
+    }
+  }
 
   // Check for existing share link
   useEffect(() => {
@@ -458,6 +506,22 @@ export function PrdViewer({
                         }
                         return null
                       })()}
+                      {section?.id ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11 sm:h-9 sm:w-9 text-muted-foreground hover:text-foreground"
+                          aria-label={`${t('prd.edit')} ${section?.title ?? t('prd.section')}`}
+                          data-testid={`prd-edit-${section.id}`}
+                          onClick={() => {
+                            setEditingSectionId(section.id)
+                            setEditDraft(sectionOverrides[section.id] ?? section.content ?? '')
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      ) : null}
                       {onOpenRefinement ? (
                         <Button
                           type="button"
@@ -489,9 +553,49 @@ export function PrdViewer({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                    {section?.content ?? t('shareToken.noContent')}
-                  </div>
+                  {editingSectionId === section?.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editDraft}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                          setEditDraft(e.target.value)
+                        }
+                        rows={Math.min(16, Math.max(5, editDraft.split('\n').length + 2))}
+                        className="text-sm leading-relaxed"
+                        autoFocus
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">{t('prd.editHint')}</p>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingSectionId(null)}
+                          >
+                            {t('common.cancel')}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={!editDraft.trim()}
+                            onClick={() => void saveSectionEdit(section)}
+                          >
+                            {t('prd.saveEdit')}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                      {sectionOverrides[section?.id ?? ''] ?? section?.content ?? t('shareToken.noContent')}
+                      {sectionOverrides[section?.id ?? ''] !== undefined && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary align-middle">
+                          {t('prd.editPending')}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {(section?.open_questions?.length ?? 0) > 0 && (
                     <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3">
                       <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">{t('prd.openQuestions')}</p>
