@@ -35,7 +35,6 @@ export type LandingCopy = {
     earlyAccess: string;
     earlyAccessMobile: string;
     apply: string;
-    existingPilot: string;
     switchLanguage: string;
   };
   hero: {
@@ -234,7 +233,6 @@ export type LandingCopy = {
     terms: string;
     contact: string;
     status: string;
-    existingPilot: string;
   };
   seo: {
     title: string;

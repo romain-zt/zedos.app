@@ -39,13 +39,6 @@ export function SiteHeader({
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <TrackedLink
-            href={`/${locale}/sign-in`}
-            placement="header_sign_in"
-            className="hidden min-h-11 items-center px-3 text-sm font-medium text-studio-muted hover:text-studio-ink focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-clay xl:inline-flex"
-          >
-            {copy.navigation.existingPilot}
-          </TrackedLink>
           <a
             href={`/${alternateLocale}`}
             hrefLang={alternateLocale}

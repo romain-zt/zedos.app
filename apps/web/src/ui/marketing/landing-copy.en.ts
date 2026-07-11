@@ -12,18 +12,17 @@ export const landingCopyEn = {
     earlyAccess: 'Early access',
     earlyAccessMobile: 'Early access',
     apply: 'Apply for early access',
-    existingPilot: 'Existing pilot? Sign in',
     switchLanguage: 'View the site in French',
   },
   hero: {
-    eyebrow: 'Private pilot · Built for wellness',
-    titleStart: 'Your website and booking experience. ',
-    titleEmphasis: 'Built to grow',
-    titleEnd: ' with your studio.',
+    eyebrow: 'Private pilot · Built for appointment-based businesses',
+    titleStart: 'Your digital business. ',
+    titleEmphasis: 'Built to evolve',
+    titleEnd: ' with you.',
     mobileBody:
-      'Website, booking, and future custom features on one flexible foundation—without giving up your code or data.',
+      'Website, bookings, payments, content, and future custom features on one flexible foundation—without giving up your code or data.',
     desktopBody:
-      'Zedos brings your site, booking journey, and future custom features onto one flexible foundation—without giving up your code, your data, or your choice of developer.',
+      'Zedos brings your website, bookings, payments, content, and future custom workflows onto one flexible foundation—without giving up your code, your data, or your choice of developer.',
     primaryCta: 'Apply for early access',
     secondaryCta: 'See how it works',
     trustPoints: [
@@ -92,7 +91,7 @@ export const landingCopyEn = {
     eyebrow: 'Designed as one journey',
     title: 'From first visit to the next booking.',
     body:
-      'Zedos is being built around how reservation-led wellness businesses actually work—not around the limits of a page template or booking widget.',
+      'Zedos is being built around how businesses that run on appointments actually work—not around the limits of a page template or booking widget.',
     steps: [
       { step: '01', label: 'Discover', detail: 'A site that feels like your business' },
       { step: '02', label: 'Choose', detail: 'The right service and practitioner' },
@@ -165,7 +164,7 @@ export const landingCopyEn = {
         tone: 'blue',
       },
     ],
-    scenarioAriaLabel: 'Wellness business change scenarios',
+    scenarioAriaLabel: 'Appointment-based business change scenarios',
     requestLabel: 'A real business request',
     executionRouteLabel: 'Execution route',
     proposedNextStep: 'Proposed next step',
@@ -202,7 +201,7 @@ export const landingCopyEn = {
   },
   ownership: {
     eyebrow: 'No dead end',
-    title: 'Start simple. Keep every option open.',
+    title: 'Businesses evolve. Their software should too.',
     body:
       'Most easy tools become restrictive when your business no longer fits their template. Zedos is built on a real codebase and database that your business can keep, extend, or hand to another team.',
     quote:
@@ -260,7 +259,7 @@ export const landingCopyEn = {
       },
       {
         name: 'Zedos',
-        strength: 'Simple start with an ownable path to custom software',
+        strength: 'One business platform with an ownable path to custom software',
         tradeoff:
           'Earlier than established platforms; every pilot is scoped carefully',
         featured: true,
@@ -277,7 +276,8 @@ export const landingCopyEn = {
     initials: 'LB',
     label: 'Founding pilot',
     name: 'L*****.******',
-    shortDescription: 'A real wellness business shaping the first workflows with us.',
+    shortDescription:
+      'A real wellness business shaping the first appointment-led workflows with us.',
     eyebrow: 'Built with a real business, not a demo brief',
     title: 'The first pilot starts with L*****.******.',
     body:
@@ -295,11 +295,11 @@ export const landingCopyEn = {
     eyebrow: 'Founder-led early access',
     title: 'Bring us the stack you want to stop managing.',
     body:
-      'Apply for a practical review of your website and booking setup. If there is a fit for the current pilot, we will map what Zedos could unify now, what should stay in place, and what can come later.',
+      'Apply for a practical review of your digital setup. If there is a fit for the current pilot, we will map what Zedos could unify now, what should stay in place, and what can come later.',
     value: [
-      'A founder-led review of your current site and booking journey',
+      'A founder-led review of your current customer journey',
       'A clear keep, connect, replace-later recommendation',
-      'Direct influence on the booking roadmap',
+      'Direct influence on the product roadmap',
       'Pilot scope and terms shared before any commitment',
     ],
     bestFitTitle: 'Best fit',
@@ -337,10 +337,14 @@ export const landingCopyEn = {
         { value: 'personal-training', label: 'Personal trainer' },
         { value: 'massage', label: 'Massage practice' },
         { value: 'wellness-centre', label: 'Wellness centre' },
-        { value: 'beauty-care', label: 'Beauty or care professional' },
+        { value: 'beauty-care', label: 'Beauty salon or care professional' },
+        { value: 'healthcare', label: 'Clinic or healthcare practice' },
+        { value: 'creative-services', label: 'Creative service business' },
+        { value: 'professional-services', label: 'Professional services firm' },
+        { value: 'education', label: 'Education or tutoring business' },
         {
           value: 'other-booking-business',
-          label: 'Other booking-based business',
+          label: 'Other appointment-based business',
         },
       ],
       website: 'Website or social profile',
@@ -473,7 +477,7 @@ export const landingCopyEn = {
         id: 'only-website',
         question: 'Is Zedos only a website?',
         answer:
-          'It can start there, but the foundation is intended to support a richer booking journey, member experiences, custom operations, and integrations. The point is to evolve the same project instead of migrating each time.',
+          'No. It is a business platform that can start with your website, then support booking, payments, communication, content, automation, custom operations, and integrations. The point is to evolve the same project instead of migrating each time.',
       },
       {
         id: 'pricing',
@@ -484,7 +488,7 @@ export const landingCopyEn = {
     ],
   },
   footer: {
-    tagline: 'A flexible digital foundation for reservation-led wellness businesses.',
+    tagline: 'A flexible business platform for companies that run on appointments.',
     navigationLabel: 'Footer navigation',
     explore: 'Explore',
     detailsLabel: 'Legal and contact',
@@ -493,16 +497,15 @@ export const landingCopyEn = {
     terms: 'Terms',
     contact: 'Contact',
     status: 'Private pilot · Paris, France.',
-    existingPilot: 'Existing pilot? Sign in',
   },
   seo: {
-    title: 'Website & Booking Platform for Wellness Studios | Zedos',
+    title: 'Business Platform for Appointment-Based Companies | Zedos',
     description:
-      'Launch a branded website and booking experience that can evolve with your wellness business. Keep control of your code, data, and future.',
-    socialTitle: 'A better foundation for your wellness business',
+      'Build and evolve your website, bookings, payments, content, and customer journey on one flexible platform. Keep control of your code, data, and future.',
+    socialTitle: 'Built for businesses that run on appointments',
     socialDescription:
-      'Website, booking, and room to grow—without a closed platform or another rebuild. Apply for founder-led early access to Zedos.',
+      'One platform for your digital business, with room to grow—without a closed system or another rebuild. Apply for founder-led early access to Zedos.',
     twitterDescription:
-      'Website, booking, and room to grow—without a closed platform or another rebuild.',
+      'One platform for your digital business, with room to grow—without a closed system or another rebuild.',
   },
 } satisfies LandingCopy;

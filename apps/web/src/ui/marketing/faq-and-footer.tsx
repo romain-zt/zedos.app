@@ -1,11 +1,10 @@
-import { ArrowUpRight, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { FaqList } from './faq-list';
 import {
   MarketingContainer,
   SectionIntro,
   ZedosLogo,
 } from './landing-primitives';
-import { TrackedLink } from './landing-analytics';
 import type { LandingCopy, MarketingLocale } from './landing-copy';
 
 export function FaqSection({ copy }: { copy: LandingCopy['faq'] }) {
@@ -107,18 +106,10 @@ export function SiteFooter({
             </ul>
           </nav>
         </div>
-        <div className="flex flex-col gap-5 pt-7 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
+        <div className="pt-7 text-xs text-white/45">
           <p>
             © {new Date().getFullYear()} Zedos. {footerCopy.status}
           </p>
-          <TrackedLink
-            href={`/${locale}/sign-in`}
-            placement="footer_sign_in"
-            className="inline-flex min-h-11 w-fit items-center gap-2 text-white/60 hover:text-white focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-sage"
-          >
-            {footerCopy.existingPilot}
-            <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-          </TrackedLink>
         </div>
       </MarketingContainer>
     </footer>

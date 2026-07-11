@@ -12,18 +12,17 @@ export const landingCopyFr = {
     earlyAccess: 'Accès anticipé',
     earlyAccessMobile: 'Accès pilote',
     apply: 'Demander un accès anticipé',
-    existingPilot: 'Déjà pilote ? Se connecter',
     switchLanguage: 'Afficher le site en anglais',
   },
   hero: {
-    eyebrow: 'Pilote privé · Conçu pour le bien-être',
-    titleStart: 'Votre site et votre parcours de réservation. ',
-    titleEmphasis: 'Conçus pour évoluer',
-    titleEnd: ' avec votre studio.',
+    eyebrow: 'Pilote privé · Pour les entreprises qui vivent des rendez-vous',
+    titleStart: 'Votre activité numérique. ',
+    titleEmphasis: 'Conçue pour évoluer',
+    titleEnd: ' avec vous.',
     mobileBody:
-      'Site, réservation et futures fonctions sur une base flexible — sans renoncer à votre code ni à vos données.',
+      'Site, réservations, paiements, contenu et futures fonctions sur une base flexible — sans renoncer à votre code ni à vos données.',
     desktopBody:
-      'Zedos réunit votre site, votre parcours de réservation et vos futures fonctions sur une base flexible — sans renoncer à votre code, à vos données ni au développeur de votre choix.',
+      'Zedos réunit votre site, vos réservations, vos paiements, votre contenu et vos futurs parcours sur mesure sur une base flexible — sans renoncer à votre code, à vos données ni au développeur de votre choix.',
     primaryCta: 'Demander un accès anticipé',
     secondaryCta: 'Voir comment ça marche',
     trustPoints: [
@@ -96,7 +95,7 @@ export const landingCopyFr = {
     eyebrow: 'Pensé comme un seul parcours',
     title: 'De la première visite à la prochaine réservation.',
     body:
-      'Zedos se construit autour du fonctionnement réel des activités bien-être sur réservation — pas autour des limites d’un modèle de page ou d’un widget.',
+      'Zedos se construit autour du fonctionnement réel des entreprises qui vivent des rendez-vous — pas autour des limites d’un modèle de page ou d’un widget.',
     steps: [
       { step: '01', label: 'Découvrir', detail: 'Un site fidèle à votre activité' },
       {
@@ -174,7 +173,7 @@ export const landingCopyFr = {
         tone: 'blue',
       },
     ],
-    scenarioAriaLabel: 'Scénarios de changement pour une activité bien-être',
+    scenarioAriaLabel: 'Scénarios de changement pour une activité sur rendez-vous',
     requestLabel: 'Une demande métier réelle',
     executionRouteLabel: 'Mode d’exécution',
     proposedNextStep: 'Prochaine étape proposée',
@@ -212,7 +211,7 @@ export const landingCopyFr = {
   },
   ownership: {
     eyebrow: 'Pas de cul-de-sac',
-    title: 'Commencez simplement. Gardez toutes vos options.',
+    title: 'Les entreprises évoluent. Leurs logiciels aussi.',
     body:
       'La plupart des outils simples deviennent contraignants dès que votre activité sort du modèle prévu. Zedos repose sur un vrai code source et une vraie base de données que votre entreprise peut conserver, étendre ou confier à une autre équipe.',
     quote:
@@ -274,7 +273,7 @@ export const landingCopyFr = {
       {
         name: 'Zedos',
         strength:
-          'Un départ simple avec une voie vers un logiciel sur mesure qui vous appartient',
+          'Une seule plateforme avec une voie vers un logiciel sur mesure qui vous appartient',
         tradeoff:
           'Plus jeune que les plateformes établies ; chaque pilote est cadré avec soin',
         featured: true,
@@ -292,7 +291,7 @@ export const landingCopyFr = {
     label: 'Premier pilote',
     name: 'L*****.******',
     shortDescription:
-      'Une vraie activité bien-être qui façonne avec nous les premiers parcours.',
+      'Une vraie activité bien-être qui façonne avec nous les premiers parcours centrés sur les rendez-vous.',
     eyebrow: 'Construit avec une vraie entreprise, pas un brief fictif',
     title: 'Le premier pilote commence avec L*****.******.',
     body:
@@ -310,11 +309,11 @@ export const landingCopyFr = {
     eyebrow: 'Accès anticipé avec le fondateur',
     title: 'Montrez-nous les outils que vous ne voulez plus gérer.',
     body:
-      'Demandez une analyse concrète de votre site et de votre système de réservation. Si votre activité correspond au pilote actuel, nous préciserons ce que Zedos peut réunir maintenant, ce qui doit rester en place et ce qui pourra venir ensuite.',
+      'Demandez une analyse concrète de votre environnement numérique. Si votre activité correspond au pilote actuel, nous préciserons ce que Zedos peut réunir maintenant, ce qui doit rester en place et ce qui pourra venir ensuite.',
     value: [
-      'Une analyse de votre site et de votre parcours de réservation avec le fondateur',
+      'Une analyse de votre parcours client avec le fondateur',
       'Une recommandation claire : garder, connecter ou remplacer plus tard',
-      'Une influence directe sur la feuille de route de la réservation',
+      'Une influence directe sur la feuille de route du produit',
       'Un périmètre et des conditions présentés avant tout engagement',
     ],
     bestFitTitle: 'Bon profil',
@@ -353,10 +352,14 @@ export const landingCopyFr = {
         { value: 'personal-training', label: 'Coach sportif' },
         { value: 'massage', label: 'Cabinet de massage' },
         { value: 'wellness-centre', label: 'Centre de bien-être' },
-        { value: 'beauty-care', label: 'Professionnel de la beauté ou du soin' },
+        { value: 'beauty-care', label: 'Salon de beauté ou professionnel du soin' },
+        { value: 'healthcare', label: 'Cabinet médical ou paramédical' },
+        { value: 'creative-services', label: 'Activité de services créatifs' },
+        { value: 'professional-services', label: 'Cabinet de services professionnels' },
+        { value: 'education', label: 'Enseignement ou soutien scolaire' },
         {
           value: 'other-booking-business',
-          label: 'Autre activité sur réservation',
+          label: 'Autre activité fondée sur les rendez-vous',
         },
       ],
       website: 'Site web ou profil social',
@@ -502,7 +505,7 @@ export const landingCopyFr = {
         id: 'only-website',
         question: 'Zedos est-il seulement un site web ?',
         answer:
-          'Le projet peut commencer par là, mais sa base est conçue pour accueillir un parcours de réservation plus riche, un espace membre, des opérations sur mesure et des intégrations. L’objectif est de faire évoluer le même projet au lieu de migrer à chaque étape.',
+          'Non. C’est une plateforme métier qui peut commencer par votre site, puis accueillir les réservations, les paiements, la communication, le contenu, l’automatisation, les opérations sur mesure et les intégrations. L’objectif est de faire évoluer le même projet au lieu de migrer à chaque étape.',
       },
       {
         id: 'pricing',
@@ -514,7 +517,7 @@ export const landingCopyFr = {
   },
   footer: {
     tagline:
-      'Une base numérique flexible pour les activités bien-être qui vivent des réservations.',
+      'Une plateforme flexible pour les entreprises qui vivent des rendez-vous.',
     navigationLabel: 'Navigation du pied de page',
     explore: 'Explorer',
     detailsLabel: 'Informations légales et contact',
@@ -523,16 +526,15 @@ export const landingCopyFr = {
     terms: 'Conditions',
     contact: 'Nous contacter',
     status: 'Pilote privé · Paris, France.',
-    existingPilot: 'Déjà pilote ? Se connecter',
   },
   seo: {
-    title: 'Site web & réservation pour studios bien-être | Zedos',
+    title: 'Plateforme pour les entreprises sur rendez-vous | Zedos',
     description:
-      'Créez un site et un parcours de réservation à votre image, capables d’évoluer avec votre activité. Gardez la maîtrise de votre code, de vos données et de la suite.',
-    socialTitle: 'Une base plus solide pour votre activité bien-être',
+      'Faites évoluer votre site, vos réservations, vos paiements, votre contenu et votre parcours client sur une seule plateforme. Gardez la maîtrise de votre code, de vos données et de la suite.',
+    socialTitle: 'Conçu pour les entreprises qui vivent des rendez-vous',
     socialDescription:
-      'Site web, réservation et liberté d’évoluer — sans plateforme fermée ni nouvelle refonte. Demandez un accès anticipé avec le fondateur de Zedos.',
+      'Une plateforme pour votre activité numérique, avec la liberté d’évoluer — sans système fermé ni nouvelle refonte. Demandez un accès anticipé à Zedos.',
     twitterDescription:
-      'Site web, réservation et liberté d’évoluer — sans plateforme fermée ni nouvelle refonte.',
+      'Une plateforme pour votre activité numérique, avec la liberté d’évoluer — sans système fermé ni nouvelle refonte.',
   },
 } satisfies LandingCopy;
