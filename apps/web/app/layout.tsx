@@ -1,4 +1,5 @@
 import { DM_Sans, Plus_Jakarta_Sans, JetBrains_Mono, Newsreader } from 'next/font/google'
+import { headers } from 'next/headers'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
@@ -33,13 +34,15 @@ export function generateMetadata() {
   }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const locale = (await headers()).get('x-zedos-locale') === 'en' ? 'en' : 'fr'
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className={`${dmSans.variable} ${jakartaSans.variable} ${jetbrainsMono.variable} ${newsreader.variable} font-sans`}>
         <ThemeProvider
           attribute="class"
@@ -47,7 +50,7 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <Providers>
+          <Providers initialLocale={locale}>
             {children}
             <Toaster />
             <ChunkLoadErrorHandler />

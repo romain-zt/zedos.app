@@ -6,25 +6,25 @@ import {
   Globe2,
   PlugZap,
 } from 'lucide-react';
-import { bookingJourney, fragmentedStack } from './landing-content';
 import { MarketingContainer, SectionIntro } from './landing-primitives';
+import type { LandingCopy } from './landing-copy';
 
 const stackIcons = [Globe2, CalendarRange, CreditCard, PlugZap] as const;
 
-export function ProblemSection() {
+export function ProblemSection({ copy }: { copy: LandingCopy['problem'] }) {
   return (
     <section className="bg-studio-ink py-20 sm:py-28 lg:py-32" aria-labelledby="problem-title">
       <MarketingContainer>
         <SectionIntro
-          eyebrow="One client journey. Too many systems."
-          title="Your customers feel every gap between your tools."
+          eyebrow={copy.eyebrow}
+          title={copy.title}
           titleId="problem-title"
-          body="They discover you on one site, book in another, pay through a third, and receive reminders from somewhere else. You manage every handoff—and wait on a plugin, provider, or agency whenever the business changes."
+          body={copy.body}
           inverse
         />
 
         <ol className="mt-14 grid gap-3 lg:grid-cols-4">
-          {fragmentedStack.map((item, index) => {
+          {copy.stack.map((item, index) => {
             const Icon = stackIcons[index] ?? Globe2;
             return (
               <li key={item.title} className="relative">
@@ -41,7 +41,7 @@ export function ProblemSection() {
                     {item.friction}
                   </p>
                 </article>
-                {index < fragmentedStack.length - 1 ? (
+                {index < copy.stack.length - 1 ? (
                   <>
                     <ArrowDown
                       className="mx-auto my-1 h-5 w-5 text-white/30 lg:hidden"
@@ -59,15 +59,18 @@ export function ProblemSection() {
         </ol>
 
         <p className="mx-auto mt-12 max-w-3xl text-center font-editorial text-2xl leading-snug text-white/85 sm:text-3xl">
-          The problem is not one bad tool. It is a customer experience no one system
-          truly owns.
+          {copy.closing}
         </p>
       </MarketingContainer>
     </section>
   );
 }
 
-export function BookingJourneySection() {
+export function BookingJourneySection({
+  copy,
+}: {
+  copy: LandingCopy['journey'];
+}) {
   return (
     <section
       id="how-it-works"
@@ -76,10 +79,10 @@ export function BookingJourneySection() {
     >
       <MarketingContainer>
         <SectionIntro
-          eyebrow="Designed as one journey"
-          title="From first visit to the next booking."
+          eyebrow={copy.eyebrow}
+          title={copy.title}
           titleId="journey-title"
-          body="Zedos is being built around how reservation-led wellness businesses actually work—not around the limits of a page template or booking widget."
+          body={copy.body}
         />
 
         <ol className="relative mt-14 grid gap-3 sm:grid-cols-5">
@@ -87,7 +90,7 @@ export function BookingJourneySection() {
             className="absolute left-8 right-8 top-7 hidden h-px bg-studio-ink/15 sm:block"
             aria-hidden="true"
           />
-          {bookingJourney.map((item) => (
+          {copy.steps.map((item) => (
             <li
               key={item.step}
               className="relative grid grid-cols-[3.5rem_1fr] items-center gap-3 rounded-2xl border border-studio-ink/10 bg-studio-canvas p-4 sm:block sm:border-0 sm:bg-transparent sm:p-0"
@@ -108,10 +111,9 @@ export function BookingJourneySection() {
         </ol>
 
         <aside className="mt-12 rounded-2xl border border-studio-forest/20 bg-studio-sage/20 p-5 text-sm leading-6 text-studio-ink sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-6">
-          <p className="font-semibold">Early-access scope is agreed with each pilot.</p>
+          <p className="font-semibold">{copy.statusTitle}</p>
           <p className="mt-2 max-w-2xl text-studio-muted sm:mt-0">
-            We keep proven tools in place until a Zedos workflow is ready for the way
-            your business actually operates.
+            {copy.statusBody}
           </p>
         </aside>
       </MarketingContainer>

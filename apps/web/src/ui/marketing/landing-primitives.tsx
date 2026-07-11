@@ -15,15 +15,23 @@ export function MarketingContainer({
   );
 }
 
-export function ZedosLogo({ inverse = false }: { inverse?: boolean }) {
+export function ZedosLogo({
+  inverse = false,
+  href,
+  ariaLabel,
+}: {
+  inverse?: boolean;
+  href: string;
+  ariaLabel: string;
+}) {
   return (
     <Link
-      href="/"
+      href={href}
       className={classNames(
         'inline-flex min-h-11 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-clay focus-visible:ring-offset-4',
         inverse && 'focus-visible:ring-offset-studio-ink'
       )}
-      aria-label="Zedos home"
+      aria-label={ariaLabel}
     >
       <span
         aria-hidden="true"

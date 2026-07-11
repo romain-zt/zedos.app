@@ -5,8 +5,15 @@ import { Check } from 'lucide-react';
 import { useWaitlistForm } from './use-waitlist-form';
 import { WaitlistContactStep } from './waitlist-contact-step';
 import { WaitlistQualificationStep } from './waitlist-qualification-step';
+import type { LandingCopy, MarketingLocale } from './landing-copy';
 
-export function WaitlistForm() {
+export function WaitlistForm({
+  locale,
+  copy,
+}: {
+  locale: MarketingLocale;
+  copy: LandingCopy['waitlist'];
+}) {
   const {
     stage,
     isSubmitting,
@@ -14,7 +21,7 @@ export function WaitlistForm() {
     submitContact,
     submitQualification,
     skipQualification,
-  } = useWaitlistForm();
+  } = useWaitlistForm(copy.errors);
   const stageHeadingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -31,6 +38,8 @@ export function WaitlistForm() {
           isSubmitting={isSubmitting}
           error={error}
           onSubmit={submitContact}
+          locale={locale}
+          copy={copy}
         />
       ) : null}
       {stage === 'qualification' ? (
@@ -40,10 +49,11 @@ export function WaitlistForm() {
           error={error}
           onSubmit={submitQualification}
           onSkip={skipQualification}
+          copy={copy}
         />
       ) : null}
       {stage === 'complete' ? (
-        <CompleteStep headingRef={stageHeadingRef} />
+        <CompleteStep headingRef={stageHeadingRef} copy={copy.complete} />
       ) : null}
     </div>
   );
@@ -51,8 +61,10 @@ export function WaitlistForm() {
 
 function CompleteStep({
   headingRef,
+  copy,
 }: {
   headingRef: React.RefObject<HTMLHeadingElement>;
+  copy: LandingCopy['waitlist']['complete'];
 }) {
   return (
     <section className="flex min-h-[30rem] flex-col items-center justify-center text-center">
@@ -60,19 +72,17 @@ function CompleteStep({
         <Check className="h-7 w-7" aria-hidden="true" />
       </span>
       <p className="mt-7 text-xs font-semibold uppercase tracking-widest text-studio-forest">
-        Application complete
+        {copy.eyebrow}
       </p>
       <h3
         ref={headingRef}
         tabIndex={-1}
         className="mt-3 font-editorial text-4xl font-medium text-studio-ink outline-none"
       >
-        Thanks. You are on the list.
+        {copy.title}
       </h3>
       <p className="mt-5 max-w-md text-base leading-7 text-studio-muted">
-        We review every application ourselves. If your setup fits the current pilot,
-        the founder will email you with next steps. We will not add you to a generic
-        newsletter.
+        {copy.body}
       </p>
     </section>
   );

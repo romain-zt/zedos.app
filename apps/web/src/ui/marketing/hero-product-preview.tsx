@@ -5,8 +5,13 @@ import {
   Clock3,
   MoreHorizontal,
 } from 'lucide-react';
+import type { LandingCopy } from './landing-copy';
 
-export function HeroProductPreview() {
+export function HeroProductPreview({
+  copy,
+}: {
+  copy: LandingCopy['hero']['preview'];
+}) {
   return (
     <figure
       className="relative mx-auto w-full max-w-2xl pb-12 pt-3 sm:pb-16 lg:pt-0"
@@ -17,7 +22,7 @@ export function HeroProductPreview() {
         className="mb-3 flex items-center justify-center gap-2 text-xs font-medium text-studio-muted lg:justify-start"
       >
         <span className="h-2 w-2 rounded-full bg-studio-clay" aria-hidden="true" />
-        Illustrative early product concept
+        {copy.caption}
       </figcaption>
 
       <div className="overflow-hidden rounded-3xl border border-studio-ink/15 bg-white shadow-studio-xl">
@@ -37,20 +42,19 @@ export function HeroProductPreview() {
           <article className="flex flex-col justify-between p-6 sm:p-8">
             <div>
               <p className="mb-8 font-display text-xs font-semibold uppercase tracking-[0.2em] text-studio-forest">
-                Studio Juniper · Paris 11
+                {copy.studioName}
               </p>
               <h3 className="max-w-sm font-editorial text-4xl font-medium leading-none text-studio-ink sm:text-5xl">
-                Move well.
+                {copy.headlineFirst}
                 <br />
-                Feel stronger.
+                {copy.headlineSecond}
               </h3>
               <p className="mt-5 max-w-sm text-sm leading-6 text-studio-muted">
-                Reformer Pilates in small groups, with thoughtful coaching for every
-                body.
+                {copy.description}
               </p>
             </div>
             <span className="mt-10 inline-flex min-h-11 w-fit items-center gap-2 rounded-full bg-studio-ink px-5 text-sm font-semibold text-white">
-              Find a class
+              {copy.findClass}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </span>
           </article>
@@ -58,27 +62,24 @@ export function HeroProductPreview() {
           <aside className="m-3 rounded-2xl border border-studio-ink/10 bg-white p-4 shadow-studio-sm sm:m-5 sm:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-studio-muted">Saturday, 18 July</p>
+                <p className="text-xs font-medium text-studio-muted">
+                  {copy.date}
+                </p>
                 <p className="mt-1 font-display text-lg font-semibold text-studio-ink">
-                  Choose your class
+                  {copy.chooseClass}
                 </p>
               </div>
               <CalendarDays className="h-5 w-5 text-studio-forest" aria-hidden="true" />
             </div>
 
             <ul className="mt-5 space-y-2.5">
-              <BookingSlot time="09:00" title="Reformer flow" detail="Maya · 3 places" />
-              <BookingSlot
-                time="10:30"
-                title="Foundations"
-                detail="Ana · 5 places"
-                selected
-              />
-              <BookingSlot time="12:00" title="Power reformer" detail="Maya · Waitlist" />
+              {copy.slots.map((slot) => (
+                <BookingSlot key={slot.time} {...slot} />
+              ))}
             </ul>
 
             <span className="mt-4 flex min-h-11 items-center justify-between rounded-xl bg-studio-ink px-4 text-sm font-semibold text-white">
-              Continue with Foundations
+              {copy.continueWith}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </span>
           </aside>
@@ -91,9 +92,11 @@ export function HeroProductPreview() {
             <Check className="h-4 w-4" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-sm font-semibold text-studio-ink">Weekend workshop ready</p>
+            <p className="text-sm font-semibold text-studio-ink">
+              {copy.workshopReady}
+            </p>
             <p className="mt-1 text-xs leading-5 text-studio-muted">
-              Page, booking details, and confirmation copy are waiting for review.
+              {copy.workshopDetail}
             </p>
           </div>
           <Clock3 className="ml-auto h-4 w-4 shrink-0 text-studio-muted" aria-hidden="true" />

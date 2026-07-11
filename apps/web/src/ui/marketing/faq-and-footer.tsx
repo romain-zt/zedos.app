@@ -6,8 +6,9 @@ import {
   ZedosLogo,
 } from './landing-primitives';
 import { TrackedLink } from './landing-analytics';
+import type { LandingCopy, MarketingLocale } from './landing-copy';
 
-export function FaqSection() {
+export function FaqSection({ copy }: { copy: LandingCopy['faq'] }) {
   return (
     <section
       className="bg-studio-canvas py-20 sm:py-28 lg:py-32"
@@ -16,39 +17,52 @@ export function FaqSection() {
       <MarketingContainer>
         <div className="grid gap-12 lg:grid-cols-[0.65fr_1.35fr] lg:gap-20">
           <SectionIntro
-            eyebrow="Questions, answered plainly"
-            title="Know what you are joining."
+            eyebrow={copy.eyebrow}
+            title={copy.title}
             titleId="faq-title"
-            body="Zedos is early. These answers separate the product direction from what each pilot can use today."
+            body={copy.body}
           />
-          <FaqList />
+          <FaqList items={copy.items} />
         </div>
       </MarketingContainer>
     </section>
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({
+  locale,
+  copy,
+}: {
+  locale: MarketingLocale;
+  copy: LandingCopy;
+}) {
+  const footerCopy = copy.footer;
+  const footerLinks = [
+    ['#how-it-works', copy.navigation.howItWorks],
+    ['#why-zedos', copy.navigation.whyZedos],
+    ['#early-access', copy.navigation.earlyAccess],
+  ];
+
   return (
     <footer className="bg-studio-ink py-12 text-white">
       <MarketingContainer>
         <div className="grid gap-10 border-b border-white/10 pb-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
           <div>
-            <ZedosLogo inverse />
+            <ZedosLogo
+              inverse
+              href={`/${locale}`}
+              ariaLabel={copy.accessibility.logoHome}
+            />
             <p className="mt-5 max-w-sm text-sm leading-6 text-white/55">
-              A flexible digital foundation for reservation-led wellness businesses.
+              {footerCopy.tagline}
             </p>
           </div>
-          <nav aria-label="Footer navigation">
+          <nav aria-label={footerCopy.navigationLabel}>
             <p className="text-xs font-semibold uppercase tracking-widest text-studio-sage">
-              Explore
+              {footerCopy.explore}
             </p>
             <ul className="mt-4 space-y-1">
-              {[
-                ['#how-it-works', 'How it works'],
-                ['#why-zedos', 'Why Zedos'],
-                ['#early-access', 'Early access'],
-              ].map(([href, label]) => (
+              {footerLinks.map(([href, label]) => (
                 <li key={href}>
                   <a
                     href={href}
@@ -60,25 +74,25 @@ export function SiteFooter() {
               ))}
             </ul>
           </nav>
-          <nav aria-label="Legal and contact">
+          <nav aria-label={footerCopy.detailsLabel}>
             <p className="text-xs font-semibold uppercase tracking-widest text-studio-sage">
-              Details
+              {footerCopy.details}
             </p>
             <ul className="mt-4 space-y-1">
               <li>
                 <a
-                  href="/legal/privacy"
+                  href={`/${locale}/legal/privacy`}
                   className="inline-flex min-h-11 items-center px-1 text-sm text-white/60 hover:text-white focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-sage"
                 >
-                  Privacy
+                  {footerCopy.privacy}
                 </a>
               </li>
               <li>
                 <a
-                  href="/legal/terms"
+                  href={`/${locale}/legal/terms`}
                   className="inline-flex min-h-11 items-center px-1 text-sm text-white/60 hover:text-white focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-sage"
                 >
-                  Terms
+                  {footerCopy.terms}
                 </a>
               </li>
               <li>
@@ -87,20 +101,22 @@ export function SiteFooter() {
                   className="inline-flex min-h-11 items-center gap-2 px-1 text-sm text-white/60 hover:text-white focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-sage"
                 >
                   <Mail className="h-4 w-4" aria-hidden="true" />
-                  Contact
+                  {footerCopy.contact}
                 </a>
               </li>
             </ul>
           </nav>
         </div>
         <div className="flex flex-col gap-5 pt-7 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Zedos. Private pilot · Paris, France.</p>
+          <p>
+            © {new Date().getFullYear()} Zedos. {footerCopy.status}
+          </p>
           <TrackedLink
-            href="/sign-in"
+            href={`/${locale}/sign-in`}
             placement="footer_sign_in"
             className="inline-flex min-h-11 w-fit items-center gap-2 text-white/60 hover:text-white focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-sage"
           >
-            Existing pilot? Sign in
+            {footerCopy.existingPilot}
             <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </TrackedLink>
         </div>

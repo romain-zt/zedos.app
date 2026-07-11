@@ -1,16 +1,16 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { faqItems } from './landing-content';
 import {
   MarketingAnalyticsEvents,
   trackMarketingEvent,
 } from './marketing-analytics';
+import type { LandingCopy } from './landing-copy';
 
-export function FaqList() {
+export function FaqList({ items }: { items: LandingCopy['faq']['items'] }) {
   return (
     <div className="divide-y divide-studio-ink/10 border-y border-studio-ink/10">
-      {faqItems.map((item, index) => (
+      {items.map((item, index) => (
         <details
           key={item.id}
           className="group"

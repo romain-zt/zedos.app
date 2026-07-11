@@ -6,9 +6,11 @@ const SUPPORTED_LOCALES = ['fr', 'en'] as const;
 type Locale = (typeof SUPPORTED_LOCALES)[number];
 const DEFAULT_LOCALE: Locale = 'fr';
 const LOCALE_COOKIE = 'zedos_locale';
+const LOCALE_HEADER = 'x-zedos-locale';
 
 function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith('/api/auth')) return true;
+  if (pathname === '/api/waitlist') return true;
   // Stripe webhook must bypass session auth, signature is the guard.
   if (pathname === '/api/stripe/webhook') return true;
   if (pathname.startsWith('/_next')) return true;
@@ -20,7 +22,9 @@ function isPublicPath(pathname: string): boolean {
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname === '/forgot-password' ||
-    pathname === '/reset-password'
+    pathname === '/reset-password' ||
+    pathname === '/legal/privacy' ||
+    pathname === '/legal/terms'
   ) {
     return true;
   }
@@ -60,6 +64,26 @@ function stripLocalePrefix(pathname: string): {
   };
 }
 
+function rewriteWithLocale(
+  request: NextRequest,
+  pathname: string,
+  locale: Locale
+): NextResponse {
+  const rewriteUrl = request.nextUrl.clone();
+  rewriteUrl.pathname = pathname;
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(LOCALE_HEADER, locale);
+  const response = NextResponse.rewrite(rewriteUrl, {
+    request: { headers: requestHeaders },
+  });
+  response.cookies.set(LOCALE_COOKIE, locale, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: 'lax',
+  });
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const { locale, unlocalizedPathname } = stripLocalePrefix(pathname);
@@ -85,15 +109,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    const rewriteUrl = request.nextUrl.clone();
-    rewriteUrl.pathname = unlocalizedPathname;
-    const response = NextResponse.rewrite(rewriteUrl);
-    response.cookies.set(LOCALE_COOKIE, locale, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: 'lax',
-    });
-    return response;
+    return rewriteWithLocale(request, unlocalizedPathname, locale);
   }
 
   const sessionResult = await requireSession(request);
@@ -109,15 +125,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (locale) {
-    const rewriteUrl = request.nextUrl.clone();
-    rewriteUrl.pathname = unlocalizedPathname;
-    const response = NextResponse.rewrite(rewriteUrl);
-    response.cookies.set(LOCALE_COOKIE, locale, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: 'lax',
-    });
-    return response;
+    return rewriteWithLocale(request, unlocalizedPathname, locale);
   }
 
   return NextResponse.next();

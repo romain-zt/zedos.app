@@ -1,9 +1,17 @@
 import { Check, X } from 'lucide-react';
-import { bestFit, earlyAccessValue } from './landing-content';
 import { MarketingContainer } from './landing-primitives';
 import { WaitlistForm } from './waitlist-form';
+import type { LandingCopy, MarketingLocale } from './landing-copy';
 
-export function EarlyAccessSection() {
+export function EarlyAccessSection({
+  locale,
+  copy,
+}: {
+  locale: MarketingLocale;
+  copy: LandingCopy;
+}) {
+  const sectionCopy = copy.earlyAccess;
+
   return (
     <section
       id="early-access"
@@ -14,22 +22,20 @@ export function EarlyAccessSection() {
         <div className="grid items-start gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-studio-sage">
-              Founder-led early access
+              {sectionCopy.eyebrow}
             </p>
             <h2
               id="early-access-title"
               className="mt-4 text-balance font-editorial text-5xl font-medium leading-none text-white sm:text-6xl"
             >
-              Bring us the stack you want to stop managing.
+              {sectionCopy.title}
             </h2>
             <p className="mt-6 max-w-xl text-base leading-7 text-white/65 sm:text-lg">
-              Apply for a practical review of your website and booking setup. If there
-              is a fit for the current pilot, we will map what Zedos could unify now,
-              what should stay in place, and what can come later.
+              {sectionCopy.body}
             </p>
 
             <ul className="mt-8 space-y-3">
-              {earlyAccessValue.map((item) => (
+              {sectionCopy.value.map((item) => (
                 <li key={item} className="flex items-start gap-3 text-sm leading-6 text-white/80">
                   <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-studio-sage/20 text-studio-sage">
                     <Check className="h-3 w-3" aria-hidden="true" />
@@ -40,19 +46,18 @@ export function EarlyAccessSection() {
             </ul>
 
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              <FitCard title="Best fit" items={bestFit} />
               <FitCard
-                title="Probably too early"
-                items={[
-                  'You only need a free template site',
-                  'A large product catalogue is the core business',
-                  'You need an instant self-serve launch today',
-                ]}
+                title={sectionCopy.bestFitTitle}
+                items={sectionCopy.bestFit}
+              />
+              <FitCard
+                title={sectionCopy.tooEarlyTitle}
+                items={sectionCopy.tooEarly}
                 negative
               />
             </div>
           </div>
-          <WaitlistForm />
+          <WaitlistForm locale={locale} copy={copy.waitlist} />
         </div>
       </MarketingContainer>
     </section>

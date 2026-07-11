@@ -8,12 +8,12 @@ import {
   MessageSquareText,
   ShieldCheck,
 } from 'lucide-react';
-import { scenarios } from './landing-content';
 import { classNames } from './class-names';
 import {
   MarketingAnalyticsEvents,
   trackMarketingEvent,
 } from './marketing-analytics';
+import type { LandingCopy } from './landing-copy';
 
 const toneClasses = {
   sage: 'bg-studio-sage/30 text-studio-forest',
@@ -21,13 +21,18 @@ const toneClasses = {
   blue: 'bg-studio-blue/15 text-studio-blue-dark',
 } as const;
 
-export function ScenarioExplorer() {
+export function ScenarioExplorer({
+  copy,
+}: {
+  copy: LandingCopy['execution'];
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const active = scenarios[activeIndex] ?? scenarios[0];
+  const active = copy.scenarios[activeIndex] ?? copy.scenarios[0];
 
   function selectScenario(index: number) {
-    const scenario = scenarios[index] ?? scenarios[0];
+    const scenario = copy.scenarios[index] ?? copy.scenarios[0];
+    if (!scenario) return;
     setActiveIndex(index);
     trackMarketingEvent(MarketingAnalyticsEvents.LANDING_SCENARIO_SELECTED, {
       scenario: scenario.id,
@@ -41,7 +46,7 @@ export function ScenarioExplorer() {
     if (![previousKey, nextKey, 'Home', 'End'].includes(event.key)) return;
 
     event.preventDefault();
-    const last = scenarios.length - 1;
+    const last = copy.scenarios.length - 1;
     const nextIndex =
       event.key === 'Home'
         ? 0
@@ -59,16 +64,18 @@ export function ScenarioExplorer() {
     tabRefs.current[nextIndex]?.focus();
   }
 
+  if (!active) return null;
+
   return (
     <div className="mt-12 overflow-hidden rounded-3xl border border-studio-ink/10 bg-white shadow-studio-lg">
       <div className="grid md:grid-cols-[15rem_1fr] lg:grid-cols-[18rem_1fr]">
         <div
           role="tablist"
-          aria-label="Wellness business change scenarios"
+          aria-label={copy.scenarioAriaLabel}
           aria-orientation="vertical"
           className="scrollbar-none flex gap-2 overflow-x-auto border-b border-studio-ink/10 bg-studio-paper p-3 md:flex-col md:border-b-0 md:border-r md:p-4"
         >
-          {scenarios.map((scenario, index) => (
+          {copy.scenarios.map((scenario, index) => (
             <button
               key={scenario.id}
               ref={(element) => {
@@ -106,7 +113,7 @@ export function ScenarioExplorer() {
             <div>
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-studio-muted">
                 <MessageSquareText className="h-4 w-4" aria-hidden="true" />
-                A real business request
+                {copy.requestLabel}
               </p>
               <blockquote className="mt-8 font-editorial text-3xl leading-tight text-studio-ink sm:text-4xl">
                 “{active.request}”
@@ -115,7 +122,9 @@ export function ScenarioExplorer() {
             <div className="mt-10 flex items-center gap-3 rounded-2xl border border-studio-ink/10 bg-studio-paper p-4">
               <ShieldCheck className="h-5 w-5 text-studio-forest" aria-hidden="true" />
               <div>
-                <p className="text-xs text-studio-muted">Execution route</p>
+                <p className="text-xs text-studio-muted">
+                  {copy.executionRouteLabel}
+                </p>
                 <p className="text-sm font-semibold text-studio-ink">
                   {active.route} <span className="text-studio-muted">· {active.routeDetail}</span>
                 </p>
@@ -132,7 +141,7 @@ export function ScenarioExplorer() {
                   toneClasses[active.tone]
                 )}
               >
-                Proposed next step
+                {copy.proposedNextStep}
               </span>
               <p className="mt-6 text-base leading-7 text-studio-muted">{active.result}</p>
               <ul className="mt-7 space-y-3">
@@ -148,14 +157,13 @@ export function ScenarioExplorer() {
             </div>
             <p className="mt-10 flex items-center gap-2 border-t border-studio-ink/10 pt-5 text-xs leading-5 text-studio-muted">
               <GitBranch className="h-4 w-4 shrink-0" aria-hidden="true" />
-              Same project, whether the work is handled by you, Zedos, or your
-              developer.
+              {copy.sameProject}
             </p>
           </section>
         </article>
       </div>
       <p className="border-t border-studio-ink/10 bg-studio-paper px-5 py-3 text-center text-xs text-studio-muted">
-        Illustrative workflow. Exact pilot capabilities depend on agreed scope.
+        {copy.disclaimer}
       </p>
     </div>
   );

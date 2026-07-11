@@ -8,6 +8,7 @@ import {
   WaitlistSubmitButton,
   waitlistInputClassName,
 } from './waitlist-form-controls';
+import type { LandingCopy } from './landing-copy';
 
 export function WaitlistQualificationStep({
   headingRef,
@@ -15,99 +16,83 @@ export function WaitlistQualificationStep({
   error,
   onSubmit,
   onSkip,
+  copy,
 }: {
   headingRef: React.RefObject<HTMLHeadingElement>;
   isSubmitting: boolean;
   error: string | null;
   onSubmit: React.FormEventHandler<HTMLFormElement>;
   onSkip: () => void;
+  copy: LandingCopy['waitlist'];
 }) {
   return (
     <>
       <WaitlistFormHeader
         headingRef={headingRef}
-        step="Application saved"
-        title="Help us review the fit."
-        body="A little context helps us understand your setup. Every field below is optional."
+        step={copy.qualification.step}
+        title={copy.qualification.title}
+        body={copy.qualification.body}
         saved
       />
       <form className="mt-7 space-y-5" onSubmit={onSubmit}>
         <div className="grid gap-5 sm:grid-cols-2">
           <WaitlistSelectField
             id="practitionerRange"
-            label="Practitioners"
-            options={[
-              ['solo', 'Just me'],
-              ['2-5', '2–5'],
-              ['6-15', '6–15'],
-              ['16-plus', '16+'],
-            ]}
+            label={copy.qualification.practitioners}
+            options={copy.qualification.practitionerOptions}
+            optionalLabel={copy.optional}
+            placeholder={copy.selectOne}
           />
           <WaitlistSelectField
             id="locationRange"
-            label="Locations"
-            options={[
-              ['online', 'Online only'],
-              ['1', 'One'],
-              ['2-3', '2–3'],
-              ['4-plus', '4+'],
-            ]}
+            label={copy.qualification.locations}
+            options={copy.qualification.locationOptions}
+            optionalLabel={copy.optional}
+            placeholder={copy.selectOne}
           />
         </div>
         <WaitlistSelectField
           id="bookingPlatform"
-          label="Current booking platform"
-          options={[
-            ['none', 'None'],
-            ['calendly', 'Calendly'],
-            ['planity', 'Planity'],
-            ['mindbody', 'Mindbody'],
-            ['fresha', 'Fresha'],
-            ['booksy', 'Booksy'],
-            ['momence', 'Momence'],
-            ['other', 'Other'],
-          ]}
+          label={copy.qualification.bookingPlatform}
+          options={copy.qualification.bookingPlatformOptions}
+          optionalLabel={copy.optional}
+          placeholder={copy.selectOne}
         />
         <WaitlistSelectField
           id="mainChallenge"
-          label="Main frustration"
-          options={[
-            ['fragmented-tools', 'Too many disconnected tools'],
-            ['booking-experience', 'The booking experience'],
-            ['slow-changes', 'Changes take too long'],
-            ['brand-limitations', 'Brand or design limitations'],
-            ['custom-workflow', 'A custom workflow I cannot build'],
-            ['replace-platform', 'Replacing the current platform'],
-          ]}
+          label={copy.qualification.mainChallenge}
+          options={copy.qualification.challengeOptions}
+          optionalLabel={copy.optional}
+          placeholder={copy.selectOne}
         />
         <WaitlistSelectField
           id="launchTimeframe"
-          label="When would you like to make a change?"
-          options={[
-            ['0-3-months', 'Within 3 months'],
-            ['3-6-months', '3–6 months'],
-            ['6-12-months', '6–12 months'],
-            ['exploring', 'Just exploring'],
-          ]}
+          label={copy.qualification.timeframe}
+          options={copy.qualification.timeframeOptions}
+          optionalLabel={copy.optional}
+          placeholder={copy.selectOne}
         />
         <WaitlistFormField
-          label="What would you most like to change?"
+          label={copy.qualification.desiredChange}
           htmlFor="desiredChange"
-          hint="Optional"
+          hint={copy.optional}
         >
           <textarea
             id="desiredChange"
             name="desiredChange"
             rows={4}
             maxLength={600}
-            placeholder="A short description is enough."
+            placeholder={copy.qualification.desiredChangePlaceholder}
             className={`${waitlistInputClassName} resize-y py-3`}
           />
         </WaitlistFormField>
-        <WaitlistFormError error={error} />
+        <WaitlistFormError error={error} noErrors={copy.noErrors} />
         <div className="flex flex-col gap-3 sm:flex-row">
-          <WaitlistSubmitButton loading={isSubmitting}>
-            Share my setup
+          <WaitlistSubmitButton
+            loading={isSubmitting}
+            loadingLabel={copy.saving}
+          >
+            {copy.qualification.submit}
           </WaitlistSubmitButton>
           <button
             type="button"
@@ -115,7 +100,7 @@ export function WaitlistQualificationStep({
             disabled={isSubmitting}
             className="min-h-12 rounded-full px-6 text-sm font-semibold text-studio-muted hover:bg-studio-paper hover:text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-clay disabled:opacity-50"
           >
-            Skip for now
+            {copy.qualification.skip}
           </button>
         </div>
       </form>

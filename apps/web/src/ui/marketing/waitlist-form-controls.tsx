@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowRight, Check, LoaderCircle } from 'lucide-react';
+import type { CopyOption } from './landing-copy.types';
 
 export const waitlistInputClassName =
   'mt-2 min-h-12 w-full rounded-xl border border-studio-ink/15 bg-white px-4 text-base text-studio-ink outline-none transition placeholder:text-studio-muted/60 focus:border-studio-forest focus:ring-2 focus:ring-studio-sage/40';
@@ -66,18 +67,22 @@ export function WaitlistSelectField({
   id,
   label,
   options,
+  optionalLabel,
+  placeholder,
 }: {
   id: string;
   label: string;
-  options: ReadonlyArray<readonly [string, string]>;
+  options: readonly CopyOption[];
+  optionalLabel: string;
+  placeholder: string;
 }) {
   return (
-    <WaitlistFormField label={label} htmlFor={id} hint="Optional">
+    <WaitlistFormField label={label} htmlFor={id} hint={optionalLabel}>
       <select id={id} name={id} defaultValue="" className={waitlistInputClassName}>
-        <option value="">Select one</option>
-        {options.map(([value, optionLabel]) => (
-          <option key={value} value={value}>
-            {optionLabel}
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -85,23 +90,31 @@ export function WaitlistSelectField({
   );
 }
 
-export function WaitlistFormError({ error }: { error: string | null }) {
+export function WaitlistFormError({
+  error,
+  noErrors,
+}: {
+  error: string | null;
+  noErrors: string;
+}) {
   return (
     <p
       role={error ? 'alert' : undefined}
       aria-live="polite"
       className={error ? 'rounded-xl bg-red-50 p-3 text-sm text-red-800' : 'sr-only'}
     >
-      {error ?? 'No form errors'}
+      {error ?? noErrors}
     </p>
   );
 }
 
 export function WaitlistSubmitButton({
   loading,
+  loadingLabel,
   children,
 }: {
   loading: boolean;
+  loadingLabel: string;
   children: React.ReactNode;
 }) {
   return (
@@ -116,7 +129,7 @@ export function WaitlistSubmitButton({
       ) : (
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
       )}
-      {loading ? 'Saving…' : children}
+      {loading ? loadingLabel : children}
     </button>
   );
 }

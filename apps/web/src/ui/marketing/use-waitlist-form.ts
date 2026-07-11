@@ -10,21 +10,23 @@ import {
   MarketingAnalyticsEvents,
   trackMarketingEvent,
 } from './marketing-analytics';
+import type { LandingCopy } from './landing-copy';
 
 export type WaitlistFormStage = 'contact' | 'qualification' | 'complete';
 
-type ApiErrorBody = { error?: string };
-
-async function postWaitlist(body: WaitlistContactRequest | WaitlistQualificationRequest) {
+async function postWaitlist(
+  body: WaitlistContactRequest | WaitlistQualificationRequest,
+  fallbackError: string
+) {
   const response = await fetch('/api/waitlist', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
-  const result = (await response.json().catch(() => ({}))) as ApiErrorBody;
+  const result = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(result.error || 'We could not save your application.');
+    throw new Error(fallbackError);
   }
   return result;
 }
@@ -36,7 +38,9 @@ function optionalValue(formData: FormData, key: string): string | undefined {
   return trimmed || undefined;
 }
 
-export function useWaitlistForm() {
+export function useWaitlistForm(
+  errors: LandingCopy['waitlist']['errors']
+) {
   const [stage, setStage] = useState<WaitlistFormStage>('contact');
   const [leadId, setLeadId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,7 +53,7 @@ export function useWaitlistForm() {
     const formData = new FormData(event.currentTarget);
     const hasConsent = formData.get('consentToContact') === 'on';
     if (!hasConsent) {
-      setError('Please confirm that we may contact you about early access.');
+      setError(errors.consent);
       setIsSubmitting(false);
       return;
     }
@@ -65,7 +69,10 @@ export function useWaitlistForm() {
     };
 
     try {
-      const result = (await postWaitlist(body)) as WaitlistContactResponse;
+      const result = (await postWaitlist(
+        body,
+        errors.saveApplication
+      )) as WaitlistContactResponse;
       setLeadId(result.leadId);
       setStage('qualification');
       trackMarketingEvent(MarketingAnalyticsEvents.WAITLIST_QUALIFICATION_VIEWED, {
@@ -75,7 +82,7 @@ export function useWaitlistForm() {
       setError(
         submissionError instanceof Error
           ? submissionError.message
-          : 'We could not save your application.'
+          : errors.saveApplication
       );
       trackMarketingEvent(MarketingAnalyticsEvents.WAITLIST_CONTACT_FAILED, {
         error_code: 'request_failed',
@@ -88,7 +95,7 @@ export function useWaitlistForm() {
   async function submitQualification(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!leadId) {
-      setError('Your application reference is missing. Please start again.');
+      setError(errors.missingReference);
       setStage('contact');
       return;
     }
@@ -123,13 +130,13 @@ export function useWaitlistForm() {
     };
 
     try {
-      await postWaitlist(body);
+      await postWaitlist(body, errors.saveDetails);
       setStage('complete');
     } catch (submissionError) {
       setError(
         submissionError instanceof Error
           ? submissionError.message
-          : 'We could not save these details.'
+          : errors.saveDetails
       );
     } finally {
       setIsSubmitting(false);
