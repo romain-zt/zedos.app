@@ -13,7 +13,7 @@ export const landingCopyEn = {
     earlyAccessMobile: 'Early access',
     apply: 'Apply for early access',
     existingPilot: 'Existing pilot? Sign in',
-    switchLanguage: 'Voir le site en français',
+    switchLanguage: 'View the site in French',
   },
   hero: {
     eyebrow: 'Private pilot · Built for wellness',
