@@ -17,7 +17,7 @@
     "db:migrate": "pnpm run check:migration-dupes && node ./scripts/run-migrate.mjs",
     "db:studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit",
-    "test": "node --test scripts/database-url.test.mjs scripts/run-migrate.test.mjs src/migrations/better-auth-migration.node-test.mjs"
+    "test": "node --test scripts/database-url.test.mjs scripts/run-migrate.test.mjs src/migrations/better-auth-migration.node-test.mjs src/migrations/waitlist-migration.node-test.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.38.0",
