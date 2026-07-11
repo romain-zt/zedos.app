@@ -1,0 +1,24 @@
+# Tier Classifier Hook
+
+This hook is active and wired in `.cursor/hooks.json`.
+
+**Replaces:** the former inert "Deprecated PRD routing hook".
+
+## What it does
+
+**`preToolUse` (tier-classifier.sh):** fires before every `StrReplace`, `Write`, or `EditNotebook` call. If the target file is application code (not `.md`/`.mdc` doctrine), injects an `agent_message` advisory reminding the agent to delegate via `Task(subagent_type: "executor", model: "composer-2.5-fast")` instead of writing code inline. Fails **open** — never blocks, only advises.
+
+**`postToolUse` (tier-telemetry.sh):** fires after every `StrReplace`, `Write`, `EditNotebook`, or `Task` call. Logs `{ts, tool, path, executor_delegation}` to `.cursor/observability/turns.jsonl` (gitignored). This is the ground truth consumed by `.github/scripts/core/audit-tier-compliance.ts`.
+
+## Files
+
+- `.cursor/core/hooks/tier-classifier.sh` — `preToolUse` classifier
+- `.cursor/core/hooks/tier-telemetry.sh` — `postToolUse` telemetry logger
+- `.cursor/core/skills/tier-enforcement/SKILL.md` — doctrine the classifier enforces
+- `.cursor/observability/turns.jsonl` — runtime log (gitignored)
+- `.cursor/observability/classifications.jsonl` — classifier decisions (gitignored)
+
+## Tuning
+
+To suppress the advisory for a specific file type, edit `CODE_EXTENSIONS` in `tier-classifier.sh`.
+To add a user-level override, add `// tier: manager` to the first line of your prompt — the classifier reads this and skips the advisory.

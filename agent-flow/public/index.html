@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Flow</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+
+    <!-- ── Token gate ── -->
+    <div class="gate" id="token-gate" hidden>
+      <form class="gate-card" id="token-form">
+        <h2>Agent Flow</h2>
+        <p>Enter the access token (AUTH_TOKEN from the server .env).</p>
+        <input id="token-input" type="password" placeholder="Access token" autocomplete="off" required />
+        <button type="submit">Unlock</button>
+        <p class="gate-error" id="token-error" hidden>Invalid token — try again.</p>
+      </form>
+    </div>
+
+    <!-- ── Session picker ── -->
+    <div class="gate" id="session-gate" hidden>
+      <div class="gate-card wide">
+        <h2>Sessions</h2>
+        <form class="session-create" id="session-create-form">
+          <input id="session-name" type="text" placeholder="New session name…" autocomplete="off" />
+          <button type="submit">Create</button>
+        </form>
+        <ul class="session-list" id="session-list"></ul>
+        <button type="button" class="ghost logout" id="logout">Change token</button>
+      </div>
+    </div>
+
+    <!-- ── App ── -->
+    <div class="app" id="app" hidden>
+
+      <header class="header">
+        <div class="header-brand">
+          <button type="button" class="ghost back" id="back-to-sessions" title="Sessions">‹</button>
+          <h1 id="session-title">Agent Flow</h1>
+          <div class="goal-bar" id="goal-bar" hidden>
+            <span class="goal-label">Goal</span>
+            <span class="goal-text" id="goal-text"></span>
+          </div>
+          <span class="phase-pill" id="phase-pill" hidden></span>
+        </div>
+        <div class="header-actions">
+          <div class="status" id="status">Connecting…</div>
+          <button type="button" class="ghost" id="review-btn" title="Vision final review">Review</button>
+          <button type="button" class="ghost" id="pause">Pause</button>
+          <button type="button" class="ghost danger" id="force-stop">Stop</button>
+        </div>
+      </header>
+
+      <div class="workspace">
+
+        <aside class="sidebar">
+          <div class="sidebar-label">Agents</div>
+          <div class="agent-list" id="agent-list" aria-label="Agent list"></div>
+
+          <details class="assets-accordion" id="assets-accordion" hidden>
+            <summary class="assets-summary">
+              <span>Assets</span>
+              <span class="badge" id="assets-count" hidden>0</span>
+            </summary>
+            <ul class="assets-list" id="assets-list"></ul>
+          </details>
+
+          <div class="stream-panel" id="stream-panel" hidden>
+            <div class="stream-hd">
+              <span class="live-dot" id="stream-pulse" aria-hidden="true" hidden></span>
+              <span class="stream-name" id="stream-name"></span>
+              <span class="stream-phase" id="stream-phase"></span>
+              <button class="stream-close" id="stream-close" aria-label="Close stream">✕</button>
+            </div>
+            <div class="stream-body" id="stream-body">
+              <p class="stream-empty">Select an agent to see its live stream.</p>
+            </div>
+          </div>
+        </aside>
+
+        <div class="main-area">
+          <div class="chat" id="chat" aria-live="polite" aria-label="Chat"></div>
+
+          <section class="questions-panel" id="questions-panel" hidden aria-label="Open questions">
+            <div class="questions-hd">
+              <span class="questions-title">Questions for you</span>
+              <span class="badge" id="questions-count">0</span>
+              <span class="questions-note">Agents keep working on unblocked tasks</span>
+            </div>
+            <ul class="questions-list" id="questions-list"></ul>
+          </section>
+
+          <form class="composer" id="form" autocomplete="off">
+            <input
+              id="topic"
+              name="topic"
+              type="text"
+              placeholder="Goal / topic (optional)"
+            />
+            <div class="composer-row">
+              <textarea
+                id="input"
+                name="message"
+                rows="2"
+                placeholder="Your message… (Enter to send)"
+                required
+              ></textarea>
+              <button type="submit" id="send">Send</button>
+            </div>
+            <p class="hint" id="hint">Failed runs escalate one model tier and retry.</p>
+          </form>
+        </div>
+
+      </div>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>

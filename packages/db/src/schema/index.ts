@@ -21,3 +21,4 @@ export * from './github-connections';
 export * from './drift-signals';
 export * from './linear-connections';
 export * from './linear-issue-links';
+export * from './waitlist';

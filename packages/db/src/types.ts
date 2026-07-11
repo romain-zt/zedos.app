@@ -454,3 +454,29 @@ export interface NewRedTeamFindingRow {
   metadata?: Record<string, string>;
   createdAt?: Date;
 }
+
+/** Explicit waitlist insert type for consumers with non-strict TypeScript settings. */
+export interface WaitlistLeadInsert {
+  id?: string;
+  email: string;
+  name: string;
+  businessName: string;
+  businessType: string;
+  website?: string | null;
+  consentToContact?: boolean;
+  source?: string;
+  status?: string;
+  practitionerRange?: string | null;
+  locationRange?: string | null;
+  bookingPlatform?: string | null;
+  mainChallenge?: string | null;
+  launchTimeframe?: string | null;
+  desiredChange?: string | null;
+  qualifiedAt?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export type WaitlistLeadUpdate = Partial<
+  Omit<WaitlistLeadInsert, 'id' | 'email' | 'createdAt'>
+>;

@@ -1,0 +1,22 @@
+{
+  "name": "starter-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "next": "catalog:"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "catalog:",
+    "typescript": "catalog:"
+  }
+}

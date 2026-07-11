@@ -1,0 +1,58 @@
+---
+description: Backend / server code quality for Node.js, Next.js (route handlers, server actions, server pages) and NestJS — thin controllers, a domain/service layer, validation at the boundary, typed errors. Applies to server-side TypeScript.
+globs:
+  - "**/app/**/route.{ts,tsx}"
+  - "**/app/**/page.{ts,tsx}"
+  - "**/app/**/layout.{ts,tsx}"
+  - "**/*.controller.ts"
+  - "**/*.service.ts"
+  - "**/actions/**/*.ts"
+  - "**/server/**/*.ts"
+  - "**/api/**/*.ts"
+alwaysApply: false
+---
+
+# Backend / Server Code
+
+Read with `50-code-quality.mdc` and the `backend` skill (`.cursor/core/skills/domains/backend/SKILL.md`).
+
+## Layering — boundary → domain → data
+
+Three responsibilities, kept separate:
+
+1. **Boundary** (route handler / server action / NestJS controller): parse + validate input, call one domain function, map result and errors to the response. No logic.
+2. **Domain / service**: the actual business logic — pure where possible, framework-agnostic, unit-testable without HTTP.
+3. **Data access**: persistence isolated behind functions/repositories (Payload local API, Prisma, etc.). Domain doesn't inline raw queries scattered everywhere.
+
+The domain layer must not import `Request`/`Response`/Next/NestJS HTTP types — it stays portable and testable.
+
+## Boundary rules
+
+- **Validate at the edge** with zod (or NestJS pipes / Payload validation) before any logic touches the input. Never trust client input.
+- **Typed, mapped errors.** Throw domain errors; the boundary maps them to stable codes + user-safe messages (per the Spec `Errors` table). No stack traces or internal details leak to the client.
+- **No blocking slow work** (> ~2s) in a request — stream or enqueue a job (see `http` / `event` skills).
+
+```ts
+// ✅ Next.js server action: thin boundary over a domain function
+"use server";
+export async function createOrderAction(raw: unknown) {
+  const input = createOrderSchema.parse(raw);
+  try {
+    return { ok: true, order: await createOrder(input) };
+  } catch (e) {
+    return mapDomainError(e); // stable code + safe message
+  }
+}
+```
+
+## Data & migrations
+
+- Schema/data changes go through the migration CLI (Payload/Prisma) — never hand-write migrations or mutate the DB manually (see `50-code-quality.mdc`).
+- Keep generated types as the single source of truth; share them across the monorepo.
+
+## Anti-patterns
+
+- Business logic, DB queries, or external calls inline in a route/controller/page.
+- Unvalidated request bodies reaching the domain.
+- Raw `Error`/string errors crossing the boundary unmapped.
+- Domain code importing HTTP/framework types.

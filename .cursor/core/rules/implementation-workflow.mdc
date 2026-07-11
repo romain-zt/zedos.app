@@ -1,0 +1,82 @@
+---
+description: Governs the Spec → Test → Implementation phase. Test-first, traced to Spec ACs, tier-routed. Enabled per project via a PD + docs/project.config.md. Applies to /implement and to code/test writing.
+globs:
+  - docs/product/tasks/**
+  - docs/product/specs/**
+  - "apps/**"
+  - "packages/**"
+  - "src/**"
+alwaysApply: false
+---
+
+# Implementation Workflow — Spec → Test → Implementation
+
+## 1. Purpose
+
+Extends governance past the Spec into **code**, without losing traceability. Code
+work is test-first, scoped to one Spec/Task, and routed to the right model tier.
+
+This rule is the sibling of `.cursor/core/rules/user-story-workflow.mdc` and
+`.cursor/core/rules/execution-loop.mdc`. It complements:
+
+- `.cursor/core/rules/30-test-strategy.mdc` — contract/integration/unit first, minimize e2e
+- `.cursor/core/rules/40-architecture-baseline.mdc` — the default stack
+- `.cursor/core/rules/20-model-routing.mdc` — Vision plans, Manager splits, Executor builds
+
+Command: `.cursor/core/commands/implement.md` · Skill: `.cursor/core/skills/implementation/implementation-builder/SKILL.md`
+
+## 2. Activation gate (hard)
+
+`/implement` and any code/test writing under this rule are allowed **only when all** hold:
+
+1. `docs/project.config.md` → "Implementation phase" → **Implementation governance enabled: yes**.
+2. A Product Decision authorizing the implementation phase exists at `status: approved` (template: `.cursor/core/templates/product-decisions/PD-implementation-phase.template.md`).
+3. The target **Spec** is `ready-for-implementation`.
+4. The grandparent **Feature Area** is `delivery-ready` (PD-006). If it regressed, stop and re-run `/feature-area clear-for-vertical`.
+5. No `NEED_HUMAN: true` anywhere on the chain.
+
+If any fails: stop, name the failing gate, recommend the unblocking command. Do **not** write code.
+
+## 3. Order of work (per Spec or Task)
+
+```
+spec → plan → tests (failing) → implement → re-test (validation) → review → ready-for-merge
+```
+
+The Spec is decomposed **on pickup** into per-part tasks delegated to specialists — see `62-feature-decomposition.mdc`. The loop below runs per part.
+
+1. **Spec/Plan** (Manager tier). Read the Spec; produce a thin implementation plan: files to touch, the contract surface, the test list traced to ACs. If the Spec needs multiple commits or parts, split via `/task` and delegate each part to its specialist.
+2. **Tests first** (Executor tier). Write the tests named in the Spec `## Tests` section **before** the implementation. They must fail for the right reason. Layer per `30-test-strategy.mdc`: unit + contract + integration; e2e only if the Spec justifies a named journey.
+3. **Implement** (Executor tier — composer). Smallest change that turns the traced tests green. Follow `40-architecture-baseline.mdc`; record any deviation in the Spec's Implementation notes.
+4. **Re-test (validation).** Re-run the part's traced tests **and** the slice's check commands; lints clean; the Spec's Contract error table is covered. The part is not done while anything is red. Record `in-review` once built + tested.
+5. **Review.** Routine review = Manager. High-risk (auth, money, data migration, external contract, security) = **Vision** (`claude-opus-4-6`). Review also asks whether the work revealed a **setup gap** (missing/weak rule, skill, agent, command, or hook) — if so, surface it (`/framework-audit propose` for framework gaps; `/btw` for product gaps), don't silently work around it. Record `validated` after re-test + review pass.
+6. **Promote.** A Task moves to `ready-for-merge` (`complete`) only via `/task promote` after validation passes and checks are CLEAR. Use `to-qa-human` when it's green but needs a human QA pass.
+
+## 4. What an Executor may / may not do
+
+**May:** create/edit `apps/**`, `packages/**`, `src/**`, tests, config, migrations named in the Spec; run the local docker-compose stack; run tests and lints.
+
+**May not:** change product scope; introduce a stack/runtime/third-party not in the baseline or a PD; touch a Spec/Story/Feature Area's product sections; promote any artifact; bypass a `NEED_HUMAN`; add an e2e test the Spec did not justify; commit secrets.
+
+## 5. Traceability invariants
+
+1. Every code change maps to a Spec section (or a Task carved from it).
+2. Every test maps to a Spec AC or a named contract.
+3. Implementation that reveals a Spec gap → stop, set `NEED_HUMAN: true` on the Spec, surface it. Do not invent the missing decision in code.
+4. Architecture deviation from baseline → record in Spec Implementation notes (or a PD for cross-cutting changes) before merging.
+
+## 6. Relationship to the execution loop
+
+When the implementation phase is enabled, `execution-loop` may select `delivery-ready`
+subtrees for implementation, but the actual code work happens **only** through
+`/implement`. `EXECUTION_LOCK.forbidden_files` is taken from
+`docs/project.config.md` (no longer a blanket ban). The loop still stops at every
+`NEED_HUMAN` and every BLOCKED checker verdict.
+
+## 7. Anti-patterns
+
+- Writing implementation before its tests.
+- Tests that assert implementation details instead of Spec behavior.
+- An e2e test where a contract + integration test would do.
+- "Quick fix" outside the Spec's scope.
+- Marking work done while traced tests are red or absent.

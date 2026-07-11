@@ -67,6 +67,13 @@ export default function PrivacyPage() {
           <li>
             <strong>{tp('s2L5Title', 'Payments (if applicable)')}</strong>: {tp('s2L5Body', 'payment-related data processed via payment providers as needed to complete transactions.')}
           </li>
+          <li>
+            <strong>{tp('s2L6Title', 'Early-access applications')}</strong>:{' '}
+            {tp(
+              's2L6Body',
+              'name, work email, business details, website, current booking setup, main challenge, and desired launch timeframe that you choose to provide.'
+            )}
+          </li>
         </ul>
       </section>
 
@@ -77,6 +84,12 @@ export default function PrivacyPage() {
           <li>{tp('s3L2', 'Manage your account and preferences.')}</li>
           <li>{tp('s3L3', 'Process your inputs to generate AI-powered outputs.')}</li>
           <li>{tp('s3L4', 'Provide customer support and respond to requests.')}</li>
+          <li>
+            {tp(
+              's3L7',
+              'Review early-access applications and contact applicants about pilot fit and next steps.'
+            )}
+          </li>
           <li>
             {tp('s3L5', 'Comply with legal obligations (for example accounting and regulatory obligations).')}
           </li>
@@ -139,6 +152,12 @@ export default function PrivacyPage() {
           </li>
           <li>
             {tp('s7L3', 'Request-related content: as needed to provide the Service and resolve disputes.')}
+          </li>
+          <li>
+            {tp(
+              's7L4',
+              'Early-access application data: while the pilot programme is active, until you withdraw consent, or until it is no longer needed for the stated purpose.'
+            )}
           </li>
         </ul>
         <p className="text-muted-foreground">

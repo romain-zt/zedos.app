@@ -1,0 +1,59 @@
+---
+description: Setup is ALWAYS the first phase. Before any feature work — pin a clean, up-to-date stack, the minimal v0 pnpm catalog, the clean-code rules, pick only the apps this project needs (keep the monorepo), and ship a visible first page. Applies at project bootstrap and as the first pipeline step.
+globs:
+  - docs/state/**
+  - docs/project.config.md
+alwaysApply: false
+---
+
+# Project Setup (always first)
+
+No feature is built before setup is done. The first pipeline step is **`setup`**, and every feature step depends on it (directly or transitively). Setup is small and fast — it is not a place to gold-plate.
+
+Read with `40-architecture-baseline.mdc` (the stack), `50-code-quality.mdc` (clean code), and `52-frontend-code.mdc` (markup quality).
+
+## 1. What setup must establish (the v0 minimum)
+
+1. **Clean-code rules are active.** `.cursor/core/rules/50-code-quality.mdc`, `51-backend-code.mdc`, `52-frontend-code.mdc` are present and loaded. Lint + typecheck + format run in CI (`quality`).
+2. **Stack pinned, up to date.** Fork `starter-monorepo`. Resolve the pnpm **catalog** (`pnpm-workspace.yaml`) to the **latest stable** of each framework/dep deliberately (`pnpm up --latest` reviewed, not blind). One catalog = one source of truth for versions; apps reference `catalog:`.
+3. **Minimal v0 catalog only.** Add a dependency to the catalog only when a v0 slice needs it. No speculative libraries. Keep the catalog small.
+4. **Apps picked (see §3).** Scaffold only the apps this project targets; keep the monorepo shape.
+5. **Local infra reproducible.** `docker compose up` + `.env` from `.env.example` runs the stack (Postgres + MinIO per baseline).
+6. **Seed data + base assets committed (see §2.5).** A seed script and the original/basic assets so the app renders real content immediately — never an empty shell.
+7. **A visible first page (see §2).** Something a human can open in a browser, deployable, on day one.
+
+## 2. First content / first paint — ASAP
+
+Ship a real, visible home page **before** deep feature work, so progress is visible immediately.
+
+- The very first delivered slice produces a deployable landing/home page that renders without a populated database (graceful empty states).
+- It uses semantic, mobile-first, accessible markup (`52-frontend-code.mdc`) — not a raw `<div>` dump.
+- Deploy target is wired (e.g. Vercel) so the page is reachable. "It builds locally" is not "it's visible".
+
+> Project rule of thumb (from `docs/project.config.md`): *get a first home page up as soon as possible so the customer sees something is moving.*
+
+## 2.5 Seed + base assets — always, when developing with PayloadCMS
+
+Developing through Payload, you must **always** ship two things so the app is never an empty shell and the first paint shows real content:
+
+1. **A seed script** that populates Payload with starter content (a few pages/products/etc.) for local dev and demos. Idempotent, run via a package script (e.g. `pnpm --filter cms seed`), and runnable in CI/preview. The first page must render meaningfully after `docker compose up` + seed — no manual admin clicking required.
+2. **Original / basic assets committed in the Next.js `public/` dir.** Logo, favicon, hero/placeholder images, and any always-present brand asset live in `apps/web/public/` (and `apps/cms/public/` where relevant) and are **committed to git** — they do **not** depend on S3/MinIO being populated. Uploaded/user media still goes to S3 per `40-architecture-baseline.mdc`; these base assets are the static, always-there set.
+
+Net effect: a fresh clone renders real content + real assets immediately, with an empty database and an empty media bucket. Placeholder/empty states still exist for dynamic data, but the base experience is never blank.
+
+## 3. Pickable apps — don't ship 3 apps for 1
+
+The starter is a monorepo with multiple apps (`web`, `cms`, …). **Keep the monorepo template, but only scaffold the apps this project actually targets.**
+
+- The selected apps live in `docs/project.config.md` → **`## Apps`**. Only those are scaffolded and built.
+- Available apps + when to pick each are catalogued in `.cursor/core/templates/starter-monorepo/apps/CATALOG.md`.
+- Dropping an unused app = delete its `apps/<name>` folder; the pnpm workspace glob (`apps/*`) and CI adapt automatically. You can add it back later without re-architecting.
+- Do **not** wire a CMS, a separate API, or a second front-end "just in case". Pick the minimum; add apps when a slice needs them (record the addition in project.config + a PD if cross-cutting).
+
+## 4. Anti-patterns
+
+- Starting feature slices before `setup` is `complete`.
+- Scaffolding every app in the template when the project targets one surface.
+- Pinning stale versions, or blindly `pnpm up --latest` without reviewing breaking changes.
+- A "first page" that needs a seeded DB or that is just nested `<div>`s.
+- Bloating the pnpm catalog with libraries no v0 slice uses.

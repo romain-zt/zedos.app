@@ -1,0 +1,33 @@
+{
+  "name": "cms",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "generate:types": "payload generate:types",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "catalog:",
+    "@payloadcms/next": "catalog:",
+    "@payloadcms/richtext-lexical": "catalog:",
+    "@payloadcms/storage-s3": "catalog:",
+    "@payloadcms/translations": "catalog:",
+    "next": "catalog:",
+    "payload": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

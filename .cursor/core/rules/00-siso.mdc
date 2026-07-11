@@ -1,0 +1,111 @@
+---
+description: SISO — validate input quality before execution.
+alwaysApply: true
+---
+
+# SISO — Shit Input → Shit Output
+
+## Core Principle
+
+Low-quality input produces low-quality execution. Unclear, contradictory, or underspecified requests must never silently trigger planning, coding, refactoring, or architecture decisions.
+
+SISO is the highest-priority execution safety rule. It overrides speed bias, execution bias, and speculative implementation.
+
+## When SISO Applies
+
+SISO blocks **substantive execution only**: modifying files, creating architecture, scaffolding, refactoring, dependency installation, build/test execution, multi-step automation.
+
+SISO does NOT block: conversation, brainstorming, product discussion, clarification questions, lightweight inspection, or reading explicitly referenced files.
+
+## Failure Signals
+
+Block execution when any of these exist:
+
+- **Missing scope** — "fix it", "improve this", "make it scalable" without a target
+- **Missing success criteria** — no definition of "done"
+- **Hidden context dependency** — assumes undocumented rules, prior conversations, or invisible state
+- **Contradictory goals** — maximum flexibility + strict determinism, without tradeoff priority
+- **Undefined authority** — unclear whether changes to architecture, APIs, or contracts are allowed
+- **Dependency ambiguity** — unknown blockers, prerequisites, or external integrations
+- **Speculative language** — "maybe", "probably", "something like", "AI magic" in execution-critical areas
+- **Tier Mismatch** *(ORANGE)* — Executor-shaped work (file edits on `.ts`/`.tsx`/`.py`/etc.) attempted by a Manager/Vision context agent via inline `StrReplace`/`Write`/`EditNotebook` without a prior `Task(subagent_type: "executor")` delegation and without an explicit user waiver. Resolution: either fire `Task(subagent_type: "executor", model: "composer-2.5-fast")` or ask the user for an inline waiver ("just do it inline this once"). See `.cursor/core/skills/tier-enforcement/SKILL.md`.
+
+## Response Strategy
+
+When input is insufficient:
+
+1. **Stop.** Do not invent requirements or silently choose tradeoffs.
+2. **Identify the gap.** State what is missing, why it matters, what decision is blocked.
+3. **Ask targeted questions.** Minimum required to safely proceed — scope, constraints, expected output, authority.
+4. **Optional: narrow assumptions.** Only when reversible, low-risk, explicitly declared. Never to bypass critical ambiguity.
+
+## Severity Levels
+
+- **GREEN** — Clear enough to proceed safely.
+- **YELLOW** — Some ambiguity. Clarification recommended before large execution.
+- **ORANGE** — High risk of incorrect implementation. Pause until clarified.
+- **RED** — Too ambiguous or contradictory to execute responsibly.
+
+## Waiver
+
+Ambiguity is accepted only when the user explicitly validates assumptions, answers clarification questions, or says "proceed anyway" / "use your judgment." Even then, avoid irreversible decisions under uncertainty.
+
+### Standing waiver — autonomous CI decomposition
+
+When `docs/project.config.md` → **Autonomous decomposition enabled: yes** (governed by `docs/product-decisions/PD-008-autonomous-decomposition.md`), a CI cloud agent running `.github/scripts/core/prd-decomposer.ts` operates under a **standing, pre-approved SISO waiver** for the decomposition chain (PRD → Feature Area → Scope Slice → flow-map wiring). This waiver exists because the owner has explicitly authorized unattended decomposition; it is the human validation SISO requires.
+
+Under this waiver:
+
+- A **`CLEAR`** verdict from `.cursor/core/checkers/scope-readiness-checker.md` substitutes for the "approved by the user in the current conversation" gate.
+- The waiver does **not** lower input quality standards. If input is genuinely `ORANGE`/`RED` for a given Feature Area or Scope Slice — missing product truth, a blocking open question, two materially different valid interpretations — the agent must **not** invent an answer. It sets that item `blocked` with `NEED_HUMAN:` and continues with siblings.
+- The waiver covers decomposition only. It does not waive `NEED_HUMAN`, and it does not authorize editing the PRD itself.
+
+### Framework-improver waiver — NOT the decomposition waiver
+
+The `framework-improver` agent (`.cursor/core/agents/framework/framework-improver.md`) operates on framework artifacts in `core/`. Its waiver is **explicitly scoped and limited**:
+
+- The `framework-improver` may draft new files at manifest-declared paths without a per-conversation SISO approval.
+- **The decomposition waiver (above) does NOT apply to the improver.** The improver cannot self-merge, cannot edit existing artifacts, and cannot change governance rules without a Framework Decision (FD-NNN).
+- Every improver PR requires: human code review + `framework-critic` APPROVE verdict + human merge.
+- The improver's standing authorization covers only: draft-new-file + append-manifest-entry + open-PR. Nothing else.
+
+## Request Mode Classification
+
+Before applying SISO blocking, classify the request:
+
+**CHAT** — conversation, brainstorming, thinking aloud, exploring ideas. Do not block.
+
+**DISCOVERY** — clarifying product direction, PRD discussion, strategy, requirements exploration. Generating rules, skills, agents, or governance workflows counts as discovery. Do not block. Surface ambiguity as discussion points, not blockers.
+
+Architecture discussion, agent definition, PRD methodology, workflow design, governance rules, process deltas, and skill authoring are all **DISCOVERY** — unless the user explicitly requests direct file mutation, creation of execution specs, or commitment to an implementation plan.
+
+**EXECUTION** — concrete work: code changes, file edits, implementation, scaffolding, refactoring, dependency installation, spec generation for execution, architecture decisions to be acted on. Apply full SISO.
+
+SISO blocks only when `REQUEST_MODE = EXECUTION AND INPUT_QUALITY = ORANGE or RED`.
+
+The more autonomous the system, the stricter SISO must be — automation amplifies bad assumptions.
+
+## PRD Discovery Exception
+
+Any input during `/prd discover`, `/prd note`, `/prd questions`, or informal PRD discussion (product thinking, raw founder input, booking flow clarification, etc.) is always **DISCOVERY** regardless of how rough, incomplete, or ambiguous it is.
+
+- Do **not** block rough input.
+- Do **not** return `SISO_STATUS: ORANGE` or `RED`.
+- Treat the message as raw discovery material.
+- Append it to the active discovery note.
+- Update the question queue if relevant.
+- Ask one follow-up question maximum.
+
+`/prd update` is a structured PRD persistence workflow. It is not implementation, specs, tickets, architecture, dependency installation, terminal execution, or code mutation. SISO must not block `/prd update` as execution. However, `/prd update` still requires explicit persistence approval through a Patch Intent Summary + `approved`, or a full PRD Delta Proposal + `approved`. Never treat `ok` as persistence approval.
+
+SISO blocking applies in these PRD contexts **only** when the user explicitly requests:
+- implementation specs, tickets, or architecture intended for execution
+- code changes or dependency installation
+
+**UX flow and product surface statements are always DISCOVERY.** Descriptions of buyer journey, checkout interaction patterns, payment surface choices (iframe, redirect, modal), or product-level decisions stated during discovery are raw product direction — not implementation specs. Do not block them.
+
+**Discovery note and question queue writes** (`docs/prd/notes/`, `docs/prd/questions/open-questions.md`) are capture artifacts — they are always allowed during discovery and must never be blocked.
+
+## Anti-Patterns
+
+Never: simulate understanding, fake confidence, generate architecture from vague intent, infer business rules silently, confuse motion with progress, or explore repositories indefinitely instead of clarifying.

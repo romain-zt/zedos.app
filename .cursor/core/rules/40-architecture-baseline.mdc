@@ -1,0 +1,54 @@
+---
+description: Default architecture baseline — monorepo with next-forge direction + Payload CMS (always i18n + S3 media), local Postgres + MinIO via docker-compose. Applies when proposing architecture, writing Specs' Implementation notes, or scaffolding a project.
+globs:
+  - docs/product/specs/**
+  - docs/architecture/**
+alwaysApply: false
+---
+
+# Architecture Baseline
+
+The default stack for a new project. A Spec may deviate, but must **state the deviation and why** in its Implementation notes — silent divergence is forbidden.
+
+## Stack
+
+- **Monorepo**, pnpm + Turborepo, following **next-forge** structure and quality direction (typed end-to-end, shared config packages, app/per-surface separation).
+- **Payload CMS** for content/data, running Next-native (Payload 3 inside a Next.js app).
+- **i18n always on.** Payload localization enabled and Next.js i18n routing from day one — never bolted on later.
+- **Media via S3-compatible storage**, always. Use the Payload S3 storage adapter. Locally this points at MinIO; in production at the real S3 bucket. Code never assumes local disk for uploads.
+- **Postgres** as the database (`@payloadcms/db-postgres`).
+
+## Local environment — always reproducible
+
+Every project ships a **`docker-compose.yml`** that brings up:
+
+- `postgres` (the database)
+- `minio` (S3-compatible media) + a one-shot `createbuckets` init
+
+`docker compose up` + `.env` from `.env.example` must be enough to run and test locally. Integration tests (see `30-test-strategy.mdc`) run against this stack.
+
+## Starter template
+
+Do not just tell the user to "use this stack." A clonable skeleton lives at
+`.cursor/core/templates/starter-monorepo/` — fork it to start. It wires the workspace, Payload (i18n + S3), and the docker-compose (Postgres + MinIO).
+
+**Setup is the first phase** (`05-project-setup.mdc`): pin the catalog to the latest stable, keep it minimal (v0 only), and ship a visible first page early.
+
+**Apps are pickable.** The starter is a monorepo with multiple apps (`web`, `cms`, …) but you scaffold **only** the apps listed in `docs/project.config.md` → `## Apps` (catalogued in `starter-monorepo/apps/CATALOG.md`). Keep the monorepo; default to the fewest apps; add more when a slice needs them. Don't ship 3 apps for a 1-surface product.
+
+## Where architecture lives
+
+- **Project baseline** (this rule + the starter template) sets the defaults every Spec inherits.
+- **Per-Spec architecture** belongs in the Spec `## Data Model`, `## Contract`, `## Async / Event / Webhook / Cron / Stream`, and `## Implementation notes` sections — and must reference this baseline rather than re-deriving the stack.
+- **Cross-cutting decisions** (a new runtime boundary, a queue, a third-party service) are recorded as a Product Decision (`docs/product-decisions/PD-NNN.md`) before they land in a Spec.
+
+## Defaults to honor
+
+| Concern | Default |
+|---------|---------|
+| Async/long-running | Stream (SSE) or background job — never a blocking sync POST > 2s (per Spec SP-15) |
+| Media upload | Presigned/server upload to S3 (MinIO local) |
+| Seed + base assets (Payload) | Always ship a seed script **and** commit original/basic assets (logo, favicon, placeholders) in the Next `public/` dir — the app renders real content with an empty DB + empty bucket (see `05-project-setup.mdc` §2.5). Uploaded media still goes to S3. |
+| Localization | Payload locales + Next i18n routing, default + at least one secondary locale wired |
+| Config/secrets | `.env` (never committed); `.env.example` documents every key |
+| Types | Generated Payload types shared across the monorepo |

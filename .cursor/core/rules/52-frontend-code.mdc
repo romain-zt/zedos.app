@@ -1,0 +1,101 @@
+---
+description: Frontend code quality for Next.js + React + Tailwind — small composable components, logic in hooks not JSX, server/client boundary discipline, design tokens over magic values, mobile-first & accessible. Applies to React/TSX and styling.
+globs:
+  - "**/*.tsx"
+  - "**/*.jsx"
+  - "**/*.css"
+  - "**/tailwind.config.{js,ts}"
+alwaysApply: false
+---
+
+# Frontend / React Code
+
+Read with `50-code-quality.mdc` and the `design` skill (`.cursor/core/skills/domains/design/SKILL.md`).
+
+## Components stay thin; logic lives in hooks
+
+A component renders. Non-trivial logic (data fetching, derived state, side effects, event orchestration) goes into a **custom hook** or a plain function, not inline in JSX.
+
+```tsx
+// ❌ BAD — fetching, filtering, formatting all inline in the component
+function Orders() {
+  const [data, setData] = useState([]);
+  useEffect(() => { fetch("/api/orders").then(r => r.json()).then(setData); }, []);
+  const visible = data.filter(o => o.status === "open").map(o => ({ ...o, total: o.items.reduce(...) }));
+  return <ul>{visible.map(o => <li key={o.id}>{o.total}</li>)}</ul>;
+}
+
+// ✅ GOOD — logic in a hook, component just renders
+function Orders() {
+  const { orders, isLoading, error } = useOpenOrders();
+  if (isLoading) return <OrdersSkeleton />;
+  if (error) return <OrdersError error={error} />;
+  return <OrderList orders={orders} />;
+}
+```
+
+## Server vs client boundary
+
+- Default to **Server Components**; add `"use client"` only where interactivity/browser APIs are needed, as low in the tree as possible.
+- Never embed secrets or server-only logic in client components. Fetch on the server; pass typed props down.
+
+## Lists call a single-item component
+
+Rendering a collection maps to one item component — `items.map(i => <Item key={i.id} item={i} />)` — not flat per-item markup + logic inside the loop (mirrors the single-handler rule in `50-code-quality.mdc`).
+
+## Markup quality — semantic, shallow, no div soup
+
+Markup is code. "It renders" is not the bar. Concretely:
+
+- **Use semantic elements, not `<div>` for everything.** Reach for `<main> <header> <nav> <section> <article> <aside> <footer> <ul>/<li> <button> <a>` before a `<div>`. A `<div>` (or `<span>`) is only for genuinely non-semantic grouping/styling.
+- **Exactly one `<main>` per page**, and use landmarks once each (`<header>`, `<nav>`, `<footer>`). Never nest `<main>` inside `<main>`, and never wrap the whole tree in a chain of bare `<div>`s.
+- **No wrapper-div chains ("div soup in flames").** If you have `<div><div><div>…</div></div></div>` with no semantic or layout reason, collapse it. A single element should not be wrapped more than necessary.
+- **Cap nesting depth.** If JSX nests more than ~4 levels deep, extract a child component. Deep trees are a smell, not a layout requirement.
+- **Buttons vs links:** `<button>` performs an action; `<a href>` navigates. Never a `<div onClick>` for either (it loses keyboard + a11y for free).
+- **Lists are `<ul>/<ol>` + `<li>`**, not stacks of `<div>`s.
+
+```tsx
+// ❌ BAD — div soup, no semantics, action on a div
+<div className="page">
+  <div className="wrap">
+    <div className="inner">
+      <div className="title">Products</div>
+      <div className="list">
+        {items.map((i) => <div key={i.id} onClick={() => open(i)}>{i.name}</div>)}
+      </div>
+    </div>
+  </div>
+</div>
+
+// ✅ GOOD — semantic, shallow, accessible
+<main className="page">
+  <h1>Products</h1>
+  <ul className="list">
+    {items.map((i) => (
+      <li key={i.id}>
+        <button type="button" onClick={() => open(i)}>{i.name}</button>
+      </li>
+    ))}
+  </ul>
+</main>
+```
+
+## Styling — tokens, mobile-first, accessible
+
+- Use **design tokens** (Tailwind theme scale: spacing, color, type) — no magic px/hex. Extend the theme rather than sprinkling arbitrary values (`p-[13px]`, `text-[#3a3a3a]`).
+- **Mobile-first:** base styles target 320–375px, scale up with `sm: md: lg:`. Touch targets ≥ 44×44px.
+- Accessible by default: semantic HTML, labels on inputs, alt text, visible focus, WCAG AA contrast, keyboard operable.
+- **i18n:** never hardcode UI strings — externalize; expect text expansion and RTL.
+
+## Reusability
+
+- Reuse existing components before creating new ones; extract shared UI into one place.
+- Keep props typed and minimal; lift shared state deliberately, don't prop-drill deep chains.
+
+## Anti-patterns
+
+- Fat components with fetching/business logic inline in JSX.
+- `"use client"` at the top of the tree by default; secrets in client code.
+- Arbitrary Tailwind values instead of theme tokens; desktop-first then "make it responsive."
+- Hardcoded strings; missing loading/error/empty states; sub-44px touch targets.
+- **Div soup**: nested bare `<div>`s where semantic elements belong; `<div onClick>` instead of `<button>`/`<a>`; multiple/duplicated `<main>` landmarks; JSX nested deeper than ~4 levels without extracting a component.

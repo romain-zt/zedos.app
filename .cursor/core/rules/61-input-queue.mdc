@@ -1,0 +1,53 @@
+---
+description: The priority input queue (/btw) and step scheduling priority (0–5). How ad-hoc inputs get queued, prioritized, drained into the pipeline, and how priority 0 preempts. Applies to intake, planning, and orchestration scheduling.
+globs:
+  - docs/state/**
+alwaysApply: false
+---
+
+# Input Queue & Scheduling Priority
+
+You need to be able to throw an input "in the pipe" at any moment and say how urgent it is, without derailing what's running. That is the `/btw` queue. The same 0–5 priority then drives **scheduling order** in the pipeline.
+
+## 1. Priority scale (0 = most urgent)
+
+| Priority | Meaning |
+|----------|---------|
+| **0** | Pick it on the **next run, absolutely** — preempts ordering. Use for breakage / blocking issues. |
+| 1–2 | Important; jump ahead of normal backlog. |
+| 3–4 | Normal backlog. |
+| **5** | Whenever — the **default**. |
+
+Lower number = higher urgency. Ties break oldest-first.
+
+## 2. The `/btw` inbox (append-only)
+
+`/btw <text> [p0-5]` appends one line to `docs/state/inbox.ndjson` (`merge=union`, never edited — see 60-status-lifecycle). It only *queues*; it never starts work.
+
+- Add: `inbox.ts add "<text>" --priority <N>`
+- List open, priority-sorted: `inbox.ts list --open`
+- Resolve (after triage): `inbox.ts resolve <id> --note "<where it went>"`
+
+## 3. Draining the inbox
+
+A Manager/decomposer drains the queue **before** choosing new backlog work:
+
+1. Read `inbox.ts list --open`.
+2. **Any priority-0 item is handled on this run, first.** It is not optional.
+3. Triage each item into the proper workflow — a bug → bug path; a feature → `/feature-area` or a `planner-queue` step; a product idea → `/prd`; a framework chore → `/framework-audit`. Carry the item's priority onto whatever artifact it becomes (e.g. set `priority` on the planner-queue step).
+4. `resolve` the inbox item with a one-line note. Never silently drop one.
+
+## 4. Scheduling priority in the pipeline
+
+Pipeline steps and planner-queue steps may carry an optional `priority` (0–5; missing → 5). The orchestrator orders **ready** steps by priority ascending, so a priority-0 step is dispatched first. Dependencies still gate eligibility — priority orders the *ready* set, it does not skip an unmet `dependsOn`.
+
+```jsonc
+// orchestration.planner-queue.json step
+{ "id": "orch-fix-mobile-login", "priority": 0, "dependsOn": ["setup"], "workload": { "kind": "slice", … } }
+```
+
+## 5. Invariants
+
+- The inbox is append-only; resolving appends a new line (latest state wins), never edits prior lines.
+- Priority 0 is a promise: it is picked next. Don't assign 0 to non-urgent items or it loses meaning.
+- An unspecced `/btw` item is not work yet — it must be triaged into a real artifact before an agent builds it.

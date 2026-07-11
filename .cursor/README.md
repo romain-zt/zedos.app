@@ -1,160 +1,102 @@
-# `.cursor/` — Zedos AI Infrastructure
+# Cursor Workflow
 
-This directory is the workspace's AI governance layer. It covers the full lifecycle from product idea to merged PR:
+Idea → PRD → scope → architecture → spec → test → implementation, governed end to end.
 
-```
-/prd → /feature-area → /execute-prd → /plan → /implement → /review → /commit → /pr → /babysit
-```
-
-The **discovery side** (`/prd`, `/feature-area`, `/execute-prd`) was built first and is best-in-class. The **execution side** (`/plan`, `/implement`, `/review`, `/commit`, `/pr`, `/babysit`, plus `/explore`, `/fix`, `/split`, `/improve-config`) was built second and closes the seam.
-
-## Anti-governance principle
-
-> If governance overhead exceeds the product clarity gained, the governance system is failing.
-> A PRD is a coordination tool, not a ritual artifact. The goal is faster correct decisions, not more process. When the system starts feeling like work, cut a section — don't add one.
-
-(Lifted from `.cursor/skills/prd/prd-builder/SKILL.md` §11. The same principle applies to execution.)
-
----
-
-## Top-level flow
-
-### Discovery (left half)
-
-| Command | Owns | Output |
-|---------|------|--------|
-| `/prd init` | Bootstrap `docs/prd/` workspace | Scaffold files |
-| `/prd discover` / `/prd note` / `/prd questions` | Capture loop | `docs/prd/notes/`, `docs/prd/questions/open-questions.md` |
-| `/prd converge` | Synthesize discovery | Chat artifact (no writes) |
-| `/prd challenge` | Adversarial review | Chat artifact (no writes) |
-| `/prd prioritize` | ICE rerank | Chat artifact (no writes) |
-| `/prd update` | Persist PRD changes | `docs/prd/PRD.md`, `docs/prd/state.md`, `docs/prd/history.md`, `docs/prd/archive/` |
-| `/feature-area map` / `slice` | Decomposition proposals | Chat artifact |
-| `/feature-area scaffold` / `scaffold-slices` | Persist new artifacts | `docs/product/feature-areas/**`, `docs/product/scope-slices/**` |
-| `/feature-area validate` / `check` | Run scope-readiness checker | Chat artifact (verdict) |
-| `/feature-area refine-slice` | Edit product-level slice sections | Existing slice file |
-| `/feature-area promote` / `promote-slice` | Narrow status transitions | Existing FA / slice file |
-| `/execute-prd init` / `scan` / `next` / `run-one` / `loop` | Autonomous governance loop | `docs/WORK_QUEUE.md`, `docs/BLOCKERS.md`, `docs/EXECUTION_LOG.md`, `docs/EXECUTION_LOCK.md`, `docs/POINTS_OF_ATTENTION.md` |
-
-### Bridge
-
-A `ready-for-user-stories` Scope Slice is the discovery side's terminal artifact. It's the input to the execution side.
-
-The bridge is governed by `.cursor/rules/70-execution-bridge.mdc` — the single point of contact between the two halves.
-
-### Execution (right half)
-
-| Command | Owns | Output |
-|---------|------|--------|
-| `/explore <question>` | Read-only codebase research | Chat artifact (no writes) |
-| `/plan <slice-or-story-path>` | Implementation Plan proposal | `docs/execution/user-stories/**`, `docs/execution/plans/**` (after approval) |
-| `/implement <plan-path>` | Execute approved Plan | Source code under the Plan's `Touched Files` |
-| `/fix <issue>` | Focused bug-fix loop | Source code (smaller scope than `/implement`) |
-| `/review` | Adversarial diff review | Chat artifact (Review Report) |
-| `/commit` | Stage + commit with Conventional Commit | Git commit |
-| `/pr` | Open or update a PR | GitHub PR |
-| `/babysit` | Keep PR merge-ready | PR comments triaged, conflicts resolved, CI fixed |
-| `/split` | Reorganize oversized work | Multiple PRs |
-| `/evol` / `/bug` | Product evolution / bug intake | Queue + logs after approval (`80-change-policy.mdc`) |
-| `/improve-config` | Improve `.cursor/` itself | `.cursor/**` |
-
----
-
-## Directory structure
+## Layered layout
 
 ```
 .cursor/
-├── README.md                           ← this file
-├── agents/
-│   ├── prd/                            (discovery agents — Lead, Challenger, Researcher)
-│   ├── feature-area/                   (decomposition agents — Lead, Scope Critic)
-│   └── execution/                      (execution agents — Architect, Implementer, Verifier, Reviewer, …)
-├── checkers/
-│   ├── scope-readiness-checker.md      (FA + Scope Slice gates — discovery)
-│   ├── implementation-readiness-checker.md (User Story + Plan gates — execution)
-│   ├── pr-readiness-checker.md         (PR gate — execution)
-│   └── migration-readiness-checker.md  (Turborepo migration phase gates)
-├── commands/
-│   ├── prd.md, prd-init.md, prd-questions.md   (discovery commands)
-│   ├── feature-area.md, execute-prd.md         (decomposition commands)
-│   └── plan.md, implement.md, review.md, fix.md, commit.md, pr.md, babysit.md, split.md, explore.md, evol.md, bug.md, improve-config.md  (execution commands)
-├── hooks.json
-├── hooks/
-│   ├── README.md                       (hook contract documentation)
-│   ├── guard-destructive-git.sh        (refuses force-push, reset --hard, --no-verify, etc.)
-│   ├── guard-protected-paths.sh        (warns on edits to governance paths)
-│   ├── post-edit-feedback.sh           (fast tsc feedback after every TS edit)
-│   ├── pre-commit.sh                   (verifier gates invoked by /commit)
-│   └── pre-pr.sh                       (full verification + sizing invoked by /pr)
-├── rules/
-│   ├── 00-siso.mdc                     (SISO — request-quality gate)
-│   ├── 10-prd-discovery.mdc, 11-prd-question-loop.mdc, feature-area-workflow.mdc, execution-loop.mdc  (discovery rules)
-│   └── 70-execution-bridge.mdc, 71-monorepo-context.mdc, 72-hexagonal-boundaries.mdc, 73-result-rop.mdc, 74-contracts-zod.mdc, 75-drizzle.mdc, 76-better-auth.mdc, 77-nextjs.mdc, 78-testing.mdc, 79-pr-sizing.mdc, 80-change-policy.mdc, 81-critical-flow-extraction.mdc  (execution rules)
-├── skills/
-│   ├── prd/prd-builder/                (PRD construction skill — supporting docs split out)
-│   ├── feature-area/feature-area-builder/  (decomposition skill)
-│   ├── execution-loop/                 (autonomous governance loop)
-│   └── execution/                      (execution skills — add-route-handler, add-usecase, …)
-├── statusline.sh                       (CLI status line — surface PRD / FA / Slice context)
-└── templates/
-    ├── prd/                            (PRD, state, history, discovery-note, open-questions, product-decision)
-    ├── product/                        (feature-area, scope-slice)
-    └── execution/                      (user-story, implementation-plan, patch-intent-summary, verification-report, review-report)
+├── core/       ← framework source of truth (committed; treat as read-only in projects)
+│   ├── rules/        commands/    agents/    skills/
+│   ├── templates/    checkers/    hooks/
+│   └── framework.manifest.json   (M3: self-evolving verifier index)
+└── project/    ← per-project additions (gitignored on this framework repo)
+    ├── rules/  commands/  agents/  skills/  templates/  hooks/
+    └── README.md
 ```
 
----
+The Cursor IDE loads `.cursor/rules/**/*.mdc` and `.cursor/skills/**/SKILL.md` recursively, so `core/` and `project/` both load automatically.
 
-## Reading order for new contributors
+**Rule:** never edit `core/` inside a downstream project. Put project-specific additions in `project/`. If a `core/` artifact needs to change, propose a Framework Decision (FD-NNN) back to this repo.
 
-### To understand the system
+Project specifics live in **`docs/project.config.md`** — nothing project-specific is hardcoded in `core/`.
 
-1. `00-siso.mdc` — when does the system block, when does it pass
-2. `feature-area-workflow.mdc` — the discovery hierarchy
-3. `70-execution-bridge.mdc` — the seam to execution
-4. `80-change-policy.mdc` — what each command may and may not do
-5. The agent README files: `agents/prd/README.md`, `agents/feature-area/README.md`, `agents/execution/README.md`
+## The flow
 
-### To run a feature end-to-end
+```
+/intake  ── classify · SISO · setup-readiness · route ──────────────┐
+                                                                     │
+  idea ───────▶ /prd            (discover → converge → update)       │
+  scope ──────▶ /feature-area   (map → validate → slice)             │
+              ▶ /user-story      (propose → refine → promote)        │ each step
+              ▶ /spec            (propose → refine → promote)        │ gated by the
+  architecture ▶ /domain architecture  + 40-architecture-baseline   │ scope-readiness
+  build ──────▶ /implement      (plan → test → run → verify → review)│ checker
+  expertise ──▶ /domain <name>  (backend/http/event/websocket/…)     │
+                                                                     ┘
+```
 
-1. `/prd discover` — capture the idea
-2. `/prd questions` — answer one question at a time
-3. `/prd converge` → `/prd update` — persist the PRD
-4. `/feature-area map` → `/feature-area scaffold` → `/feature-area validate` → `/feature-area promote` — create + validate Feature Areas
-5. `/feature-area slice` → `/feature-area scaffold-slices` → `/feature-area refine-slice` → `/feature-area promote-slice` — create + advance Scope Slices
-6. `/explore` — read the existing code
-7. `/plan` — design the implementation
-8. `/implement` — write the code, gated by Patch Intent Summary
-9. `/review` — adversarial diff review
-10. `/commit` → `/pr` → `/babysit` — ship it
+Start anything you're unsure about with **`/intake`** — it routes you to the right command and checks the setup can handle the request first.
 
-### To improve the system itself
+Other entry points: **`/setup`** (always-first project setup), **`/btw "…" pN`** (queue an input with priority 0–5), **`/quality-sweep`** (periodic code-health pass).
 
-`/improve-config <artifact-or-path>` — meta-loop over `.cursor/`.
+## Model tiers (`rules/20-model-routing.mdc`)
 
----
+| Tier | Model | Owns |
+|------|-------|------|
+| **Vision** | `claude-opus-4-6` | big plans, strategy, architecture & business decisions, high-risk review, triage/delegation |
+| **Manager** | `claude-4.6-sonnet` | planning, scoping, splitting into bricks, routine review |
+| **Executor** | `composer-2.5-fast` | one brick — one Task / one commit, test-first code |
 
-## The five "amplify-don't-replace" patterns
+## Doctrine rules
 
-The discovery side built five high-leverage patterns. The execution side amplifies each:
+| Rule | Enforces |
+|------|----------|
+| `00-siso.mdc` | input quality before execution |
+| `05-project-setup.mdc` | setup is always first: clean stack pinned latest, minimal v0 catalog, pickable apps, visible first page |
+| `10-prd-discovery.mdc` · `11-prd-question-loop.mdc` | PRD discovery |
+| `feature-area-workflow.mdc` · `user-story-workflow.mdc` | product decomposition chain |
+| `20-model-routing.mdc` | model tier per action |
+| `30-test-strategy.mdc` | test-first; contract/integration/unit over e2e |
+| `40-architecture-baseline.mdc` | monorepo · Payload (i18n+S3) · Postgres · MinIO |
+| `50-code-quality.mdc` | thin boundaries · extract core logic · single-item handlers · tooling-first |
+| `51-backend-code.mdc` | server layering (boundary→domain→data) · validate at edge · typed errors |
+| `52-frontend-code.mdc` | thin components · logic in hooks · design tokens · mobile-first a11y |
+| `implementation-workflow.mdc` | spec → test → implementation gates |
+| `execution-loop.mdc` | autonomous queue orchestration |
+| `intake-flow.mdc` | the front-door router |
+| `60-status-lifecycle.mdc` | status lifecycle (todo→in-progress→in-review→validated→complete, +to-qa-human/blocked) + append-only status log |
+| `61-input-queue.mdc` | `/btw` priority input queue + 0–5 step scheduling (priority 0 = next, absolutely) |
+| `62-feature-decomposition.mdc` | split features on pickup; each part built by its specialist (design/backend/frontend/http/copy) |
+| `63-two-model-challenge.mdc` | every plan/decomposition challenged by a second, different model before converging |
 
-| Discovery pattern | Execution analogue |
-|-------------------|--------------------|
-| Surface Gate (`prd-builder/surface-gate.md`) — UNKNOWN is a valid answer; cap Confidence at 4 | Architecture Surface Block (`70-execution-bridge.mdc` §8) — UNKNOWN downgrades Plan to `proposed-with-open-surface`; `/implement` blocked |
-| Patch Intent Summary approval ladder (`/prd update`) | Patch Intent Summary approval ladder (`/implement`) — same `approved` / `preview` / `cancel`; same refusal of `ok` |
-| Adversarial roles factored from builders (`prd-challenger`, `scope-critic`) | `reviewer`, `domain-guardian`, `security-pii` — adversarial to `architect` and `implementer` |
-| Lead-style context-reconstruction agents (`prd-lead`, `feature-area-lead`) | `architect` Architect-Lead pre-flight (`agents/execution/architect.md`) |
-| Current truth resolution for Answered queue (PRD wins post-persistence; explicit `SUPERSEDED by` annotations) | Plan-as-authority (Plans supersede PIS authority; revisions explicit; never silent) |
+## Domain specialists (`/domain <name>`)
 
----
+Engineering: `architecture` (Vision) · `backend` · `http` · `event` · `websocket`.
+Product/brand: `design` · `copywriter` · `marketing` · `business` (Vision).
+Each has a skill (`skills/domains/<name>`) + a specialist agent (`agents/domains/`).
 
-## Models in use
+## Architecture & starter template
 
-Per the documented Cursor model slugs:
+Default stack is fixed (`40-architecture-baseline.mdc`). Don't re-litigate it per
+feature. Fork the clonable skeleton to start:
 
-- `claude-opus-4-7-thinking-xhigh` — Lead-style multi-file synthesis (`prd-lead`, `feature-area-lead`, `architect`, `implementer`, `monorepo-analyst`)
-- `claude-4.6-opus-high-thinking` — Researcher (`prd-researcher`)
-- `claude-4.6-sonnet-medium-thinking` — Domain specialists (`bugfix`, `improver`, `drizzle-persistence`, `nextjs-routes`, `auth-better-auth`, `event-contracts`, `fa-project-workspace`, `fa-prd-versioning`, `fa-guided-clarification`)
-- `gpt-4o-mini` — Adversarial pattern matchers (`prd-challenger`, `scope-critic`, `reviewer`, `domain-guardian`, `security-pii`)
-- `composer-2-fast` — Fast deterministic checks (`verifier`, `test-runner`, `monorepo-explorer`)
+```
+.cursor/core/templates/starter-monorepo/   # next-forge direction + Payload(i18n+S3) + docker-compose(Postgres+MinIO)
+```
 
-Update one place when the slug list changes.
+## Enabling implementation
+
+Implementation is **off by default**. To turn it on for a project:
+
+1. Copy `.cursor/core/templates/product-decisions/PD-implementation-phase.template.md` → `docs/product-decisions/PD-NNN-implementation-phase.md`, set `status: approved`.
+2. In `docs/project.config.md` set **Implementation governance enabled: yes** and the forbidden-paths default.
+
+Then `/implement` (spec → test → run → verify → review) is unlocked for `delivery-ready` Feature Areas.
+
+## New project bootstrap
+
+1. `/prd init` — scaffold the PRD workspace.
+2. Create `docs/project.config.md` from `.cursor/core/templates/project/project.config.template.md` (name, priority bands, v0 boundary).
+3. Fork `.cursor/core/templates/starter-monorepo/` for the code.
+4. `/intake "<your idea>"` and follow the route.

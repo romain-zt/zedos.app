@@ -1,8 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const packageRoot = resolve(import.meta.dirname, '..');
-
 /**
  * @param {string} filePath
  * @returns {string[]}
@@ -42,6 +40,9 @@ export function loadDatabaseUrl() {
     return formatResult(process.env.DATABASE_URL, 'process.env.DATABASE_URL');
   }
 
+  // Drizzle Kit bundles its TypeScript config as CommonJS, where import.meta is
+  // unavailable. Package scripts run with packages/db as their working directory.
+  const packageRoot = resolve(process.cwd());
   const localEnvPath = resolve(packageRoot, '.env');
   const webEnvPath = resolve(packageRoot, '../../apps/web/.env');
 

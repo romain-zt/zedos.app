@@ -1,0 +1,52 @@
+---
+description: Test strategy doctrine — test-first, and favor contract / integration / focused-unit tests over end-to-end. Applies during Spec test planning and all implementation work.
+globs:
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/*.contract.*"
+  - "docs/product/specs/**"
+  - "docs/product/tasks/**"
+alwaysApply: false
+---
+
+# Test Strategy
+
+Read before writing a Spec `## Tests` section or any test code. Governs `/implement` and `/task`.
+
+## Order of work
+
+**Spec → Test → Implementation.** Tests are written from the Spec's Acceptance Criteria and Contract **before** implementation. Implementation is "done" only when its tests pass and trace to a Spec AC.
+
+## Test shape — invert the pyramid away from e2e
+
+Prefer the cheapest test that proves the behavior. Push coverage **down**:
+
+| Layer | Use for | Default weight |
+|-------|---------|----------------|
+| **Unit (focused)** | Pure logic, edge cases, error mapping, validation, calculations | High |
+| **Contract** | The boundary between two units/services: API request↔response shape, event payload, webhook signature, message schema. Verify producer and consumer against the **same** contract. | High |
+| **Integration** | A vertical slice through real adapters (DB, queue, storage) with the network stubbed at the edge | Medium |
+| **E2E (browser/full-stack)** | Only the 1–3 highest-value user journeys per Feature Area ("can a user sign in and see the dashboard") | **Minimal — justify each one** |
+
+## Rules
+
+1. **Minimize e2e.** An e2e test must earn its place: it covers a revenue/critical journey no lower layer can. Default answer to "add an e2e?" is **no** — cover it with contract + integration instead.
+2. **Contract over e2e for boundaries.** When two pieces talk (HTTP route, event, webhook, WS message), write a contract test pinned to the Spec's `## Contract` and `## Async / Event / Webhook / Cron / Stream` sections. Both sides assert the same contract.
+3. **Integration over e2e for persistence/flows.** Test the slice against a real local Postgres/MinIO (see `40-architecture-baseline.mdc`), not through a browser.
+4. **Every test traces to a Spec AC** or a named contract. No orphan tests; no asserting implementation details.
+5. **Deterministic.** No sleeps for timing; no live third-party calls — stub at the adapter boundary. Use the local docker-compose stack for real infra.
+6. **Test the error table.** Each row of the Spec's Contract `Errors` table needs a test.
+
+## Spec `## Tests` section must list
+
+- Unit / behavior tests (logic + edge cases)
+- Contract tests (each boundary in the Spec)
+- Integration tests (vertical slice on real local infra)
+- E2E: name the specific journey **or** state "none — covered by contract + integration" with reason
+
+## Anti-patterns
+
+- Reaching for an e2e to test logic that a unit test covers.
+- Asserting on DOM/HTML when a contract or unit test would prove the behavior.
+- Tests that pass without the feature (no meaningful assertion).
+- Mocking the thing under test.

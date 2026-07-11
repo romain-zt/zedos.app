@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "framework.manifest.schema.json",
+  "title": "Framework Manifest",
+  "type": "object",
+  "required": ["version", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Schema version — bump when the entry shape changes (breaking)."
+    },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": ["id", "kind", "path", "purpose", "tier", "status", "since"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*$",
+          "description": "Dot-namespaced ID: <kind>.<slug>. Immutable after append-only lock."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["rule", "skill", "command", "agent", "hook", "workflow", "template", "checker"],
+          "description": "Artifact kind."
+        },
+        "path": {
+          "type": "string",
+          "description": "Repo-relative path to the artifact file."
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 10,
+          "description": "One-sentence description of what this artifact governs."
+        },
+        "stage": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Workflow stages this artifact applies to."
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["vision", "manager", "executor", "n/a"],
+          "description": "Model tier that OWNS this artifact's execution."
+        },
+        "expectedTier": {
+          "type": "string",
+          "enum": ["vision", "manager", "executor", "n/a"],
+          "description": "Expected tier for turns that invoke this artifact. Consumed by audit-tier-compliance.ts."
+        },
+        "owners": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Team or people responsible for this artifact."
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs of other manifest entries this artifact depends on."
+        },
+        "since": {
+          "type": "string",
+          "format": "date",
+          "description": "ISO date when the artifact was first added."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "deprecated"],
+          "description": "Lifecycle status."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional freeform notes."
+        }
+      }
+    }
+  }
+}

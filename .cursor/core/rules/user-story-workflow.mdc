@@ -1,0 +1,280 @@
+---
+description: Governs the Scope Slice → User Story → Spec → Task decomposition workflow. Apply whenever an agent reads a `ready-for-user-stories` Scope Slice, produces User Story / Spec / Task artifacts, or transitions any of them toward implementation. Sibling rule to feature-area-workflow.mdc, which governs PRD → Feature Area → Scope Slice.
+globs:
+  - docs/product/user-stories/**
+  - docs/product/specs/**
+  - docs/product/tasks/**
+  - .cursor/core/templates/product/user-story.template.md
+  - .cursor/core/templates/product/spec.template.md
+  - .cursor/core/templates/product/task.template.md
+  - .cursor/core/checkers/scope-readiness-checker.md
+alwaysApply: false
+---
+
+# User Story / Spec / Task Workflow
+
+## 1. Purpose
+
+This rule prevents:
+
+- Premature implementation language inside User Stories (story should stay product-readable).
+- Premature architectural commitment inside Specs (Spec is the **first** artifact where architecture lands; commitment must be minimal and traceable).
+- Gold-plated or ceremonial Tasks (Tasks are optional; the default is to implement a Spec directly without Task files).
+- Skipping levels (Scope Slice → Task without User Story or Spec).
+
+It applies to any agent turn that:
+
+- reads a Scope Slice for the purpose of writing User Stories;
+- reads a User Story for the purpose of writing a Spec;
+- reads a Spec for the purpose of writing Tasks or implementing the Spec;
+- evaluates whether any of these artifacts is ready for the next stage.
+
+It is the **sibling rule** of `.cursor/core/rules/feature-area-workflow.mdc`. Both rules govern the full chain `PRD → Feature Area → Scope Slice → User Story → Spec → Task`. Decisions about the post-Slice levels are defined in `docs/product-decisions/PD-001-post-slice-workflow.md`. The per-FA gate authorizing the start of User Story / Spec / Task / code work on a Feature Area is defined in `docs/product-decisions/PD-006-per-fa-delivery-readiness-gate.md` — pre-flight for every command in this rule must verify the grandparent Feature Area is at `delivery-ready` before any User Story / Spec / Task is created.
+
+---
+
+## 2. Required Read Order
+
+Before any User Story / Spec / Task work, read in this order:
+
+1. `docs/prd/state.md` — version, direction, last major change
+2. `docs/prd/PRD.md` — active product definition
+3. `docs/prd/questions/open-questions.md` — unresolved blockers
+4. All files in `docs/product-decisions/` — durable product decisions; **PD-001 is mandatory** because it defines this workflow
+5. Parent chain artifacts:
+   - For `/user-story`: parent Scope Slice + grandparent Feature Area
+   - For `/spec`: parent User Story + Scope Slice + Feature Area
+   - For `/task`: parent Spec + User Story + Scope Slice + Feature Area
+6. Sibling artifacts at the same level under the same parent (for awareness of duplication or contradiction)
+
+Do not read steps 3–6 as optional. Open blockers, prior decisions, and sibling artifacts constrain all downstream work.
+
+---
+
+## 3. Terminology
+
+Use the same hierarchy as `.cursor/core/rules/feature-area-workflow.mdc` §3. This rule scopes the bottom three layers:
+
+```
+Product
+  → Feature Area
+    → Scope Slice
+      → User Story        (this rule)
+        → Spec            (this rule)
+          → Task          (this rule)
+```
+
+### User Story
+
+A behavioral statement of one user-visible capability for one acceptance dimension of a Scope Slice. Written as "As an X, I do Y, so that Z." with 2–5 inline Acceptance Criteria in Given/When/Then form.
+
+A User Story must:
+
+- map to **exactly one** acceptance dimension of the parent Slice (success, error class, or edge state — see PD-001);
+- stay product-readable (no routes, schemas, frameworks, status codes);
+- cover a non-empty subset of the parent Slice's UX States;
+- be testable via observable behavior, not via code-level assertions.
+
+### Spec (Implementation Spec)
+
+An engineer-readable description of how the system implements one User Story. **Spec is the first artifact in the chain where stack, schema, framework, routes, and runtime decisions may appear.**
+
+A Spec must:
+
+- trace every parent AC to a satisfaction strategy (here or deferred to a sibling Spec);
+- carry a **mandatory Tests section** with non-empty entries per applicable layer;
+- carry a **mandatory `## Async / Event / Webhook / Cron / Stream` section** (per SP-15 and PD-007) with all six sub-questions answered and a classification line on one of four canonical options — default-REST-sync must be explicitly chosen, never inferred;
+- name observability signals tied to production questions;
+- not include behavior outside the parent User Story's Out of Scope, UX States Covered, or ACs.
+
+### Task
+
+An optional implementer-readable description of one coherent commit or short PR carved out of a Spec.
+
+A Task must:
+
+- exist only when subdivision of the parent Spec is justified per PD-001;
+- be sized for one commit / short PR;
+- enumerate changes with specificity;
+- list tests traceable to the parent Spec's test plan;
+- carry reproducible verification steps.
+
+**Default expectation: most Specs do not require Tasks.** Implement the Spec directly when subdivision is not justified.
+
+---
+
+## 4. Forbidden Actions
+
+The following are strictly forbidden at each layer:
+
+**At User Story stage:**
+
+- Creating User Story markdown under `docs/product/user-stories/` **except** via `/user-story scaffold` after user approval of a `/user-story propose` proposal, or by ordinary human/manual use of `.cursor/core/templates/product/user-story.template.md`.
+- Creating User Story markdown when the grandparent Feature Area is **not** at `delivery-ready` (per PD-006 — parent Scope Slice `ready-for-user-stories` is necessary but **not sufficient**).
+- Editing User Story body content **except** via `/user-story scaffold` (initial population from approved proposal), `/user-story refine` (allowed product-level sections only), `/user-story promote` (narrow ready-for-spec transition only), or ordinary human/manual edits.
+- Writing Specs or Tasks while the User Story has not reached `ready-for-spec`.
+- Writing implementation language (routes, schemas, frameworks, HTTP status codes) inside Acceptance Criteria or any User Story body section.
+- Bundling success + error + edge dimensions into one User Story.
+
+**At Spec stage:**
+
+- Creating Spec markdown under `docs/product/specs/` **except** via `/spec scaffold` after user approval of a `/spec propose` proposal, or by ordinary human/manual use of `.cursor/core/templates/product/spec.template.md`.
+- Editing Spec body content **except** via `/spec scaffold` (initial population), `/spec refine` (product + implementation sections), `/spec promote` (narrow ready-for-implementation transition only), or ordinary human/manual edits.
+- Promoting a Spec without a non-empty Tests section across applicable layers.
+- **Promoting a Spec without an explicit `## Async / Event / Webhook / Cron / Stream` classification per SP-15** (default-REST-sync is a choice that must be stated, not an inferred default). Governed by PD-007.
+- Committing to a stack or framework choice that is not required to satisfy the parent ACs.
+- Implementing behavior outside the parent User Story's Out of Scope, UX States Covered, or ACs.
+- Writing application code from within `/spec` modes — Spec is a description, not an implementation artifact.
+
+**At Task stage:**
+
+- Creating Task markdown under `docs/product/tasks/` **except** via `/task scaffold` after user approval of a `/task propose` proposal with `Subdivision needed: yes`, or by ordinary human/manual use of `.cursor/core/templates/product/task.template.md`.
+- Editing Task body content **except** via `/task scaffold` (initial population), `/task refine` (implementation sections), `/task promote` (narrow ready-for-merge transition only), or ordinary human/manual edits.
+- Creating Tasks when the proposal returned `Subdivision needed: no`.
+- Tasks that exceed one commit / short PR.
+- Writing application code from within `/task` modes — Tasks describe planned changes, not the changes themselves.
+
+**At all stages:**
+
+- Task slicing directly from `docs/prd/PRD.md`, Feature Areas, or Scope Slices (use User Story → Spec → Task chain).
+- Skipping levels (Scope Slice → Spec, User Story → Task, Spec → code without acknowledging absence of Task subdivision).
+- Proceeding past a known blocker without explicit user approval.
+- Operating any `/user-story`, `/spec`, or `/task` mode without PD-001 present — the workflow has no governance without it.
+
+---
+
+## 5. Readiness Gates
+
+### User Story lifecycle
+
+- New User Story files default to `exploratory` after `/user-story scaffold`.
+- Product-level sections not completed at scaffold are filled via `/user-story refine`.
+- `/user-story promote` applies the narrow **ready-for-spec** transition only after US-01–US-12 and CC-01–CC-05 from `.cursor/core/checkers/scope-readiness-checker.md` Parts 4 + 7 are **CLEAR**.
+- Spec authoring may only begin after a User Story is marked `ready-for-spec`.
+
+### Spec lifecycle
+
+- New Spec files default to `exploratory` after `/spec scaffold`.
+- Body sections (Data Model, Contract, UI Surface, Tests, Observability, Implementation notes) are filled via `/spec refine`.
+- `/spec promote` applies the narrow **ready-for-implementation** transition only after SP-01–SP-15 and CC-01–CC-05 from `.cursor/core/checkers/scope-readiness-checker.md` Parts 5 + 7 are **CLEAR** (SP-15 forces explicit Async / Event / Webhook / Cron / Stream classification per PD-007).
+- Task subdivision (if needed) or direct implementation may only begin after a Spec is marked `ready-for-implementation`.
+
+### Task lifecycle
+
+- Task files exist only when `/task propose` returned `Subdivision needed: yes` and the user approved.
+- New Task files default to `exploratory` after `/task scaffold`.
+- Body sections (Changes, Tests, Verification Steps) are filled via `/task refine`.
+- `/task promote` applies the narrow **ready-for-merge** transition only after TK-01–TK-09 and CC-01–CC-05 from `.cursor/core/checkers/scope-readiness-checker.md` Parts 6 + 7 are **CLEAR**.
+
+### Scope Slice → User Story gate
+
+A Scope Slice may produce User Stories only when **both** of the following hold:
+
+1. The Scope Slice's status is `ready-for-user-stories` (set via `/feature-area promote-slice` after **CLEAR** of SS-01–SS-10 + CC-01–CC-05, or manual equivalent).
+2. The grandparent Feature Area's status is `delivery-ready` (set via `/feature-area clear-for-vertical` after **CLEAR** of DR-01–DR-05 + CC-01–CC-05, or manual equivalent).
+
+This double gate authorizes per-FA parallel delivery: a `delivery-ready` Feature Area can run its User Story / Spec / code chain in parallel with macro elaboration of other Feature Areas. Governed by `docs/product-decisions/PD-006-per-fa-delivery-readiness-gate.md`.
+
+Pre-flight for `/user-story propose` and `/user-story scaffold` must verify both conditions and stop with a clear error if either is unmet. The same pre-flight applies transitively to `/spec propose`, `/spec scaffold`, `/task propose`, and `/task scaffold` via their parent chain — a Spec or Task cannot exist before its ancestor Feature Area is `delivery-ready`.
+
+### User Story → Spec gate
+
+A User Story may produce a Spec only when its status is `ready-for-spec` (set via `/user-story promote`).
+
+### Spec → Task or Implementation gate
+
+A Spec may produce Tasks only when its status is `ready-for-implementation` (set via `/spec promote`). Direct implementation without Tasks is also allowed only after this status.
+
+### Task → Merge gate
+
+A Task may be implemented and merged only when its status is `ready-for-merge` (set via `/task promote`).
+
+---
+
+## 6. Decomposition Rules
+
+### User Story decomposition
+
+For each `ready-for-user-stories` Scope Slice:
+
+1. Identify distinct acceptance dimensions in the Slice's UX States + Included Behavior + Acceptance-Level Outcome.
+2. Draft one User Story per dimension. Rule of thumb: 3–6 stories per Slice.
+3. Each story carries 2–5 inline Acceptance Criteria in Given/When/Then form.
+4. Each story's UX States Covered references state names exactly as they appear in the parent Slice.
+5. Cross-check every story against PRD Hard v0 exclusions and the parent Slice's Excluded Behavior.
+
+### Spec decomposition
+
+Default: **one Spec per User Story.** Multiple Specs only when distinct technical surfaces (e.g. backend job + frontend screen + shared schema) cannot land in one coherent implementation; the reason must be stated explicitly in the Spec proposal.
+
+### Task decomposition
+
+Default: **no Tasks.** Implement the Spec directly. Create Tasks only when ALL of the following hold:
+
+- The Spec touches multiple distinct technical surfaces.
+- Those surfaces cannot land in one coherent commit / short PR.
+- Each surface can be implemented and verified independently.
+- The team needs separate PR cadence per surface.
+
+### v0 boundary enforcement
+
+Apply the same v0 exclusion list as `.cursor/core/rules/feature-area-workflow.mdc` §6 to every User Story, Spec, and Task. A story / spec / task that touches a deferred surface must be marked `deferred` with a reference to the PRD exclusion.
+
+---
+
+## 7. Blocker Rules
+
+### When NEED_HUMAN=true is required
+
+Set `NEED_HUMAN=true` when any of the following exist:
+
+- An open question in `docs/prd/questions/open-questions.md` directly blocks this artifact.
+- A product or architectural decision required by this artifact is undecided.
+- A boundary in an AC, Spec contract, or Task scope cannot be drawn without a business rule not yet stated.
+- For a Spec: a non-trivial trade-off (consistency vs availability, sync vs async, etc.) lacks an explicit choice.
+- Two valid interpretations of the parent artifact produce meaningfully different artifacts at this level.
+
+Do not proceed past `NEED_HUMAN=true` without explicit user approval.
+
+`NEED_HUMAN` propagation (CC-04): a child artifact with `NEED_HUMAN=true` must have its parent artifact also carrying `NEED_HUMAN=true` until resolved.
+
+### When NEED_UPDATE=true is required
+
+Set `NEED_UPDATE=true` when any of the following exist:
+
+- This rule (`.cursor/core/rules/user-story-workflow.mdc`) does not cover the current situation.
+- A template in `.cursor/core/templates/product/` is missing or incomplete for the current artifact.
+- The checker in `.cursor/core/checkers/scope-readiness-checker.md` cannot evaluate the current artifact.
+- PD-001 does not address a load-bearing situation; consider a follow-up PD that supersedes or extends PD-001.
+
+Do not silently work around a gap. Surface it.
+
+---
+
+## 8. Artifact Locations
+
+| Artifact | Location | Template |
+|---|---|---|
+| User Story | `docs/product/user-stories/<fa-kebab>--<slice-kebab>--US-<NNN>--<short-kebab>.md` | `.cursor/core/templates/product/user-story.template.md` |
+| Spec | `docs/product/specs/<fa-kebab>--<slice-kebab>--US-<NNN>--<short-kebab>.spec.md` | `.cursor/core/templates/product/spec.template.md` |
+| Task | `docs/product/tasks/<fa-kebab>--<slice-kebab>--US-<NNN>--T-<MMM>--<short-kebab>.task.md` | `.cursor/core/templates/product/task.template.md` |
+
+`<NNN>` and `<MMM>` are three-digit zero-padded sequence numbers within their parent. When multiple Specs exist per User Story, append `--A`, `--B`, etc. before the `.spec.md` extension.
+
+---
+
+## 9. Anti-Patterns
+
+Never:
+
+- Write ACs as test cases (`assert(...)`, `expect(...)`).
+- Reference a route, endpoint, schema, or component class in a User Story body.
+- Promote a Spec with an empty Tests section.
+- Promote a Spec that introduces architecture that does not trace to a parent AC.
+- Promote a Task without reproducible Verification Steps.
+- Scaffold Tasks when the proposal returned `Subdivision needed: no`.
+- Operate any `/user-story`, `/spec`, or `/task` mode without PD-001 in `docs/product-decisions/`.
+- Use "Feature Group" language in User Story / Spec / Task narratives — that legacy term is reserved to PRD section citations only (see `.cursor/core/rules/feature-area-workflow.mdc` §3).
+- Use "story card", "ticket", "issue" interchangeably with "User Story"; use "design doc", "RFC" interchangeably with "Spec".
+- Mark any artifact as `ready-*` while it has unresolved `NEED_HUMAN` flags.
+- Treat "Spec looks done enough" as authorization to skip the checker.

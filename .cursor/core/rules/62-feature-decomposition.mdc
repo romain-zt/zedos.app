@@ -1,0 +1,61 @@
+---
+description: A feature is NOT pre-split into tasks. The Manager that picks it up decomposes it on pickup and delegates each part (design, backend, frontend, http, copy, …) to the matching specialist — never one agent for the whole feature. Defines the per-part workflow order. Applies to feature/slice implementation.
+globs:
+  - docs/product/**
+  - apps/**
+  - packages/**
+  - src/**
+alwaysApply: false
+---
+
+# Feature Decomposition — split on pickup, build per part
+
+Two changes to how features get built:
+
+1. **Don't pre-split into tasks.** A feature/slice stays whole in the backlog until an agent actually picks it up. The **Manager** that takes it owns the split — so the decomposition reflects the real code, not a guess made long before.
+2. **One agent ≠ one feature.** Each *part* of a feature is built by the *specialist* for that part. Design and backend are first-class parts, not a quick add-on to "the frontend agent".
+
+Read with `20-model-routing.mdc` (tiers), `implementation-workflow.mdc` (gates), and the domain skills under `.cursor/core/skills/domains/`.
+
+## 1. On pickup: the Manager decomposes
+
+When a Manager picks up a slice (e.g. the orchestrator worker, or `/implement`):
+
+1. Read the Scope Slice + Spec + `docs/project.config.md`.
+2. **Split the slice into parts** — only the parts this slice actually needs. Typical parts:
+
+| Part | Specialist | Owns |
+|------|-----------|------|
+| Data / domain | `backend-specialist` | schema/migrations, domain logic, server layering |
+| Contract / API | `http-specialist` | routes, request/response shapes, typed errors, edge validation |
+| UI / design | `design-specialist` + `frontend-specialist` | UX & layout & tokens & states; React components/hooks |
+| Copy | `copywriter-specialist` | user-facing strings (simple, human, i18n-ready) |
+| Async | `event-specialist` / `websocket-specialist` | jobs, streams, sockets when the slice needs them |
+
+3. Sequence the parts by dependency (data → contract → domain → API → UI → copy) and delegate each to its specialist via the `Task` tool. The Manager plans and integrates; it does **not** type the bulk itself.
+
+## 2. Per-part workflow order
+
+Each part runs the same loop:
+
+```
+spec → plan → tests (failing) → implement → re-test (validation) → review
+```
+
+- **spec/plan**: the part's contract + the test list traced to ACs (Manager).
+- **tests first**: failing tests for the part (Executor/specialist).
+- **implement**: smallest change to green (specialist, composer tier).
+- **re-test (validation)**: re-run the part's tests + the slice's checks; the part isn't done while they're red.
+- **review**: routine = Manager; high-risk (auth/money/migration/contract/security) = Vision. The review also asks: *did this reveal a setup gap?* (new rule/skill/agent/command/hook) — surface it (`/framework-audit` for framework, `/btw` for product), don't silently work around it.
+
+## 3. Status reflects the lifecycle
+
+Record the slice's status in the append-only log (60-status-lifecycle): `in-progress` while building, `in-review` once parts are built + tested and the PR is up, `validated` after re-test + review pass, `complete` when mergeable. Use `to-qa-human` when it's green but wants a human QA pass.
+
+## 4. Anti-patterns
+
+- Pre-splitting a feature into tasks before anyone is building it.
+- One agent building data + API + UI + copy as a single undifferentiated commit.
+- Treating design or backend as a "small part" of a frontend agent's job.
+- A specialist widening beyond its part instead of reporting a cross-part dependency.
+- Skipping the re-test (validation) step before review.

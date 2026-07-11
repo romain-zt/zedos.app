@@ -1,0 +1,15 @@
+{
+  "name": "brainstorm-chat",
+  "private": true,
+  "type": "module",
+  "description": "Live 3-way brainstorm: human + 2 Cursor agents (composer-2.5)",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs"
+  },
+  "dependencies": {
+    "@cursor/sdk": "1.0.12",
+    "dotenv": "^16.4.7",
+    "ws": "^8.18.0"
+  }
+}

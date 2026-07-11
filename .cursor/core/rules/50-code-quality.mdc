@@ -1,0 +1,79 @@
+---
+description: Universal code-quality doctrine — thin framework boundaries, extract the core logic, single-item handlers over flat loops, reusability, readability, tooling-first (never hand-roll what a CLI owns). Applies to all implementation work.
+alwaysApply: true
+---
+
+# Code Quality
+
+Governs every line of code, regardless of layer. Read with `30-test-strategy.mdc` and `40-architecture-baseline.mdc`.
+
+## Keep framework boundaries thin
+
+Framework entrypoints — Next.js `route.ts` / server `page.tsx` / server actions, NestJS controllers, CLI handlers — **wire, they don't think**. They parse input, call one domain function, map the result/error. No business or domain logic inline.
+
+```ts
+// ❌ BAD — logic baked into the route handler
+export async function POST(req: Request) {
+  const body = await req.json();
+  if (!body.email) return Response.json({ error: "..." }, { status: 400 });
+  const user = await db.user.create({ data: { ...body, slug: slugify(body.name) } });
+  await sendWelcome(user); // domain logic in the boundary
+  return Response.json(user);
+}
+
+// ✅ GOOD — boundary delegates to the domain
+export async function POST(req: Request) {
+  const input = registerUserSchema.parse(await req.json());
+  const user = await registerUser(input); // all logic lives here, testable in isolation
+  return Response.json(user);
+}
+```
+
+## Extract the core, impactful logic
+
+Pull the meaningful logic into named, single-purpose functions that can be unit-tested and reused. A function does one thing; its name says what.
+
+## Loops call a single-item handler
+
+A loop iterates; it does **not** carry flat per-item logic. Extract a `handleOne(item)` and call it.
+
+```ts
+// ❌ BAD — loopFuncHandlers: all logic flattened inside the loop
+for (const o of orders) { /* validate, price, tax, persist, notify... inline */ }
+
+// ✅ GOOD — loop calls a singleFuncHandler
+for (const order of orders) await processOrder(order);
+```
+
+Same for recursion: the recursive step delegates to a single-node handler.
+
+## Reusability & readability
+
+- Reuse existing utilities/components before writing new ones; factor shared logic into one place (DRY, but don't over-abstract a one-off).
+- Optimize for the reader: clear names, early returns over deep nesting, small functions. Comments explain *why*, never narrate *what*.
+
+## Concrete thresholds (smells, not hard fails)
+
+These are review heuristics — cross one and you should usually refactor, not argue:
+
+- **Function length:** > ~40 lines → extract helpers. One function, one job.
+- **Nesting depth:** > 3 levels of `if`/`for`/`try` (or JSX) → flatten with early returns / guard clauses / extracted functions/components.
+- **Parameters:** > ~4 positional params → pass an options object.
+- **File length:** > ~300 lines → split by responsibility.
+- **Naming:** names say what/why; no `data2`, `tmp`, `doStuff`, single letters outside tiny loops.
+- **No dead code, no commented-out blocks, no `console.log` left in.** Delete it; git remembers.
+- **No magic numbers/strings** repeated — name them.
+
+## Tooling-first — never hand-roll what a tool owns
+
+If a CLI/generator owns a task, use it; don't author the artifact by hand. This is true for **everything**, not just migrations.
+
+- **Migrations:** run the migration CLI (Payload/Prisma/etc.). Never hand-write or hand-edit migration files, and never mutate schema/data manually.
+- Scaffolding, codegen (types/clients), formatting, dependency installs → use the tool, commit its output.
+
+## Anti-patterns
+
+- Domain logic inside a route/controller/page/action.
+- A loop or recursive step holding flat multi-step logic instead of calling a handler.
+- Copy-pasted logic that should be one shared function.
+- Hand-written migrations or manual schema/data edits when a CLI exists.

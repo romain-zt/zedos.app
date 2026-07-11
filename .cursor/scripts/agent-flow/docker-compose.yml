@@ -1,0 +1,52 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-3900}:3900"
+    environment:
+      CURSOR_API_KEY: ${CURSOR_API_KEY}
+      AUTH_TOKEN: ${AUTH_TOKEN}
+      DATABASE_URL: postgresql://agentflow:agentflow@postgres:5432/agentflow
+      # Inside the container the target project is always /workspace
+      WORKSPACE_DIR: /workspace
+      PORT: 3900
+      MODEL_VISION: ${MODEL_VISION:-claude-fable-5}
+      MODEL_TOP_MGMT: ${MODEL_TOP_MGMT:-claude-opus-4-6}
+      MODEL_MANAGEMENT: ${MODEL_MANAGEMENT:-claude-sonnet-4-6}
+      MODEL_EXECUTION: ${MODEL_EXECUTION:-composer-2.5}
+      SYNTHESIS_EVERY_N_TURNS: ${SYNTHESIS_EVERY_N_TURNS:-8}
+      CONTEXT_WINDOW_MESSAGES: ${CONTEXT_WINDOW_MESSAGES:-30}
+      MAX_AGENT_TURNS_PER_CYCLE: ${MAX_AGENT_TURNS_PER_CYCLE:-24}
+    volumes:
+      # Bind-mount the target project the agents work on
+      - ${TARGET_PROJECT_DIR:?set TARGET_PROJECT_DIR in .env}:/workspace
+      # Persist local SDK agent state (transcripts, run store) across restarts
+      - cursor-state:/home/node/.cursor
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    # pgvector image so vector search can be enabled later without a swap
+    image: pgvector/pgvector:pg16
+    ports:
+      # Exposed on the host for native mode (npm start with docker-compose
+      # providing only Postgres). Remove if you only run the full stack.
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: agentflow
+      POSTGRES_PASSWORD: agentflow
+      POSTGRES_DB: agentflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentflow -d agentflow"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  cursor-state:

@@ -1,0 +1,4 @@
+# Committed base/static assets.
+# Per 05-project-setup.mdc §2.5: logo, favicon, hero/placeholder images and any
+# always-present brand asset live here and are committed to git, so the app
+# renders real assets with an empty media bucket. Uploaded media goes to S3.

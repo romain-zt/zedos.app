@@ -1,0 +1,51 @@
+---
+description: Every plan and decomposition is challenged by a SECOND, different model before it converges. The proposer and a different-model challenger talk until objections are resolved. Applies to PRD/feature decomposition, implementation plans, and scope splits.
+alwaysApply: true
+---
+
+# Two-Model Challenge
+
+No plan or decomposition is trusted because one model produced it. Each one is **stress-tested by a second model** — a different mind, ideally a different tier — before it is acted on. The point is to catch missing parts, wrong boundaries, and false convergence early, when they're cheap.
+
+## 1. When it applies
+
+- **PRD → Feature Area → Scope Slice** decomposition.
+- **Feature → parts** decomposition on pickup (`62-feature-decomposition.mdc`).
+- **Implementation plans** (the file list + contract + traced test list).
+- Any **scope split** or readiness claim (`validated`, `ready-for-*`, `delivery-ready`).
+
+Trivial, single-file mechanical work is exempt — there's nothing to decompose.
+
+## 2. The loop
+
+```
+proposer (model A) drafts → challenger (model B, different) objects → proposer resolves → converge
+```
+
+1. The **proposer** produces the plan/decomposition.
+2. A **challenger on a different model** reviews it and returns AGREE or CHALLENGE + concrete objections:
+   - missing parts (a hidden backend/data part, missing error/empty/loading states);
+   - wrong boundaries (a part too big for one Executor, or split where it shouldn't be);
+   - **false convergence** (claiming ready while product truth / a surface field is UNKNOWN);
+   - over-scoping beyond v0, or gold-plating;
+   - untraceable tests / behavior changes without a test.
+3. The proposer resolves every objection (or records why it's rejected) and re-runs if material.
+4. Only then does the plan converge and work starts / the artifact is promoted.
+
+## 3. Different model — how to pick the challenger
+
+The challenger MUST run on a different model than the proposer (`20-model-routing.mdc`):
+
+| Proposer | Challenger |
+|----------|-----------|
+| Vision (opus) — PRD/feature-area decomposition | `plan-challenger` (Manager / sonnet) |
+| Manager (sonnet) — implementation plan / feature split | `vision-reviewer` (Vision / opus) |
+
+In the IDE, the matching critic agents play the challenger: `prd-challenger`, `scope-critic`, `spec-critic`, `story-critic`, `framework-critic`. In CI cloud runs, the `plan-challenger` and `vision-reviewer` subagents do.
+
+## 4. Invariants
+
+- A decomposition/plan that was never challenged by a second model is **not** ready to act on.
+- The challenger is **read-only** — it objects, it doesn't rewrite.
+- Resolve or explicitly reject each objection; don't silently ignore the challenger.
+- Two passes that just rubber-stamp each other isn't a challenge — the challenger must genuinely try to break the plan.

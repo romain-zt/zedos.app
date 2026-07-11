@@ -1,0 +1,79 @@
+---
+description: The single entry point for any incoming work. Classify the input (idea / goal / feature / bug / question / chore), check the setup can handle it, then route to the right workflow. Applies whenever a request arrives without an obvious command.
+alwaysApply: true
+---
+
+# Intake Flow
+
+Every request that isn't already a specific command flows through intake:
+
+```
+input → classify → SISO gate → setup-readiness check → route → (fill gaps if any)
+```
+
+Command: `.cursor/core/commands/intake.md` · Skill: `.cursor/core/skills/intake/intake-router/SKILL.md`
+Agent: `.cursor/core/agents/intake/intake-router.md` (Vision tier — it triages and delegates)
+Checker: `.cursor/core/checkers/setup-readiness-checker.md`
+
+## 1. Classify the input
+
+| Class | Looks like | Routes to |
+|-------|-----------|-----------|
+| **Idea / product** | "what if we…", a new product/feature concept | `/prd discover` (or `/prd init` if no PRD) |
+| **Scope / planning** | "break this down", "what's next" | `/feature-area`, `/user-story`, `/spec` (at the right level) |
+| **Spec / behavior** | "define how X works" | `/spec` |
+| **Implementation** | "build / add / wire X" | `/implement` (gate-checked) |
+| **Domain task** | needs focused expertise (API, events, UI, copy, …) | `/domain <name>` |
+| **Bug** | "X is broken / wrong" | bug path (§4) |
+| **Chore / setup** | rule/skill/command/agent/config change | author via `create-rule` / `create-skill`; update config |
+| **Framework chore** | add/change rule, skill, command, agent, hook, or manifest entry in `core/` | `/framework-audit propose` first (see §7) |
+| **Question** | "how does X work / where is Y" | answer directly (no workflow) |
+
+## 2. SISO gate
+
+Apply `00-siso.mdc`. Discovery/question/chore-discussion is never blocked. Block
+substantive EXECUTION only when input quality is ORANGE/RED — ask the minimum
+clarifying questions, don't guess.
+
+## 3. Setup-readiness check (freshness)
+
+Before doing the work, run `setup-readiness-checker.md`:
+
+1. Does a rule/skill/command/agent/template already cover this? 
+2. Is `docs/project.config.md` present and filled?
+3. If the request implies code, is the implementation phase enabled (config + PD)?
+
+**Layer reading order:** `core/` is the framework source of truth; `project/` contains per-project additions. Check `core/` first for any governance artifact; check `project/` for any project-specific override. If the `core/` layer is missing or corrupt, flag SR-12 (see setup-readiness-checker §Part A).
+
+- **READY** → route (§1).
+- **GAP** → name the missing piece, propose it (path + one-line purpose). For load-bearing gaps get approval before routing; for minor gaps log `NEED_UPDATE` in `docs/POINTS_OF_ATTENTION.md` and route around.
+
+**Never invent a rule/skill/agent silently mid-task.** Surface the gap first.
+
+## 4. Bug path
+
+1. Reproduce / locate (read, don't guess).
+2. Decide scope: trivial fix vs. needs a Spec. A fix that changes behavior or contract needs a Spec (or Spec update), not a silent patch.
+3. Write a failing test that reproduces the bug (`30-test-strategy.mdc`) → fix → test green → review.
+4. Trivial, behavior-preserving fixes may skip the Spec but still get a test.
+
+## 5. Tier routing
+
+Triage + delegation is Vision (`claude-opus-4-6`). Planning/splitting is Manager.
+The smallest brick is Executor (`composer-2.5-fast`). See `20-model-routing.mdc`.
+
+## 6. Output
+
+Intake always ends with: the classification, the setup verdict (READY/GAP + gaps),
+and the single recommended next command. Don't start heavy execution until the
+route is clear and the setup is ready.
+
+## 7. Framework chores
+
+A **framework chore** is any addition or change to a `core/` artifact (rule, skill, command, agent, checker, hook, template, or manifest entry). It is NOT a product chore.
+
+Before acting on a framework chore:
+1. Run `/framework-audit` to see the current gap list.
+2. If the chore fills a declared gap, run `/framework-audit propose` — the `framework-improver` subagent drafts the file on a branch PR.
+3. If the chore renames or deletes a manifest entry, a Framework Decision (FD-NNN in `docs/framework-decisions/`) is required first (append-only invariant).
+4. NEVER edit `core/` directly to resolve a product gap — that belongs in `project/`.

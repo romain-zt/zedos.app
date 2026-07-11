@@ -1,0 +1,21 @@
+{
+  "name": "agent-flow",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Multi-agent orchestration with model tiering, Postgres persistence, and cross-session memory",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "migrate": "node src/db.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@cursor/sdk": "1.0.12",
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.1",
+    "ws": "^8.18.0"
+  }
+}

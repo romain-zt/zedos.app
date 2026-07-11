@@ -1,0 +1,41 @@
+---
+description: Model-tier doctrine — which model runs which kind of work (high-stakes vision, project-manager planning, executor implementation). Applies whenever choosing a model for an agent, subagent, or delegated task.
+alwaysApply: true
+---
+
+# Model Routing
+
+Match the model to the **responsibility level**, not the topic. Three tiers.
+
+## Tiers
+
+| Tier | Use for | Agent frontmatter `model:` | Task subagent slug | Cloud API id (+ params) |
+|------|---------|----------------------------|--------------------|--------------------------|
+| **Vision** (high-stakes) | Big plans, product/business strategy, architecture decisions, high-risk reviews, delegation/orchestration, anything irreversible or expensive to get wrong | `claude-opus-4-6` | `claude-opus-4-6-thinking-high` | `claude-opus-4-6` (+ `thinking=true, context=1m, effort=high`) |
+| **Manager** (PM) | Planning, scoping, ticket/spec breakdown, splitting scope into executor-sized bricks, routine review | `claude-4.6-sonnet` (escalate to `claude-opus-4-6` for big plans) | `claude-4.6-sonnet-medium-thinking` | `claude-sonnet-4-6` (+ `thinking=true, context=1m, effort=medium`) |
+| **Executor** | The smallest concrete unit of work: one Task / one commit / one brick, mechanical edits, scaffolding from an approved spec | `composer-2.5-fast` | `composer-2.5-fast` | `composer-2.5` (+ `fast=true`) |
+
+> **Note:** Task subagent slugs are Cursor IDE-internal identifiers used by the `Task` tool. Cloud API ids are used by `@cursor/sdk` / `.github/scripts/cursor-models.config.ts` for CI cloud agents — these are **different namespaces**. The Cloud API expects a canonical `{ id, params }` (not a compound string like `"claude-opus-4-6-thinking-high"`); passing an unknown id silently falls back to the account default model and bypasses this doctrine. Run the **Discover Cursor Models** workflow (or `tsx .github/scripts/core/discover-cursor-models.ts`) to list every valid `id` + variant for your account, then bump `vars.CURSOR_MODEL_VISION_ID` / `CURSOR_MODEL_MANAGER_ID` / `CURSOR_MODEL_EXECUTOR_ID` if you want a different version. Variant params are kept in code (next to the doctrine) and aren't overridable per repo. Never use `id: "default"` (server-picks-auto) in CI — it skips the tier doctrine. CI cloud agents also load an `executor` and `vision-reviewer` subagent (`.github/scripts/cursor-subagents.config.ts`) so the Manager parent can `Task`-delegate per the doctrine.
+
+## Routing rules
+
+1. **Default down, escalate up.** Start at the lowest tier that can safely do the work. Escalate only when stakes, ambiguity, or blast radius demand it.
+2. **Vision owns decisions, not typing.** A Vision-tier agent plans and reviews; it delegates execution to Executor-tier subagents.
+3. **Manager splits, Executor builds.** A Manager turns a plan/spec into bricks sized for one commit; each brick goes to an Executor.
+4. **High-risk review is Vision.** Security review, architecture review, business/legal-impacting review → `claude-opus-4-6`.
+5. **One brick = one Executor.** Never hand an Executor a multi-surface plan; split first (Manager).
+6. **Composer (Executor) is the default for code-typing — trigger it aggressively.** Almost all actual implementation, scaffolding, mechanical edits, test-writing, and refactors are Executor work and must run on `composer-2.5`/`composer-2.5-fast`. A Manager/Vision agent that finds itself *typing* a feature is mis-tiered: stop and delegate the brick to a composer Executor (or a per-part specialist executor — see `62-feature-decomposition.mdc`). The Manager's value is the split and the integration, not the keystrokes.
+7. **One feature = many specialists, not one generalist.** Decompose a feature into parts on pickup and route each part to its specialist Executor (design, frontend, backend, http, copy, async). See `62-feature-decomposition.mdc`.
+8. **Plans and decompositions get a second model.** Any non-trivial plan or decomposition is challenged by a *different* model before it converges — see `63-two-model-challenge.mdc`.
+9. **Match the workflow stage** (default tier):
+
+| Stage | Tier |
+|-------|------|
+| `/prd` (discover/converge/challenge), `/intake` triage+delegation, `/feature-area` map/validate | Vision |
+| `/feature-area slice`, `/user-story`, `/spec`, `/task` propose/scaffold, planning | Manager |
+| `/implement run`, `/task` implementation, code edits, scaffolding | Executor |
+| Security / architecture / business review | Vision |
+
+## When unsure
+
+If you cannot tell whether a task is Manager or Executor, it is Manager (plan it first). If you cannot tell whether it is Vision or Manager, and it is irreversible or strategic, it is Vision.

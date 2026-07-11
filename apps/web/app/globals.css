@@ -58,6 +58,25 @@
     --chart-3: 12 76% 61%;
     --chart-4: 197 37% 24%;
     --chart-5: 43 74% 66%;
+
+    --studio-canvas: 42 35% 96%;
+    --studio-paper: 39 29% 92%;
+    --studio-ink: 165 31% 14%;
+    --studio-forest: 162 28% 25%;
+    --studio-muted: 166 12% 37%;
+    --studio-sage: 130 17% 72%;
+    --studio-clay: 14 46% 53%;
+    --studio-clay-dark: 14 43% 36%;
+    --studio-clay-light: 20 50% 75%;
+    --studio-gold: 42 54% 66%;
+    --studio-rose: 16 41% 89%;
+    --studio-blue: 201 30% 76%;
+    --studio-blue-dark: 201 40% 30%;
+
+    --shadow-studio-sm: 0 1px 2px hsl(165 31% 14% / 0.05), 0 2px 8px hsl(165 31% 14% / 0.04);
+    --shadow-studio-md: 0 10px 30px hsl(165 31% 14% / 0.08);
+    --shadow-studio-lg: 0 20px 50px hsl(165 31% 14% / 0.12);
+    --shadow-studio-xl: 0 30px 80px hsl(165 31% 14% / 0.16);
   }
 
   .dark {
@@ -135,6 +154,18 @@
   .scrollbar-none::-webkit-scrollbar { display: none; }
   .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .marketing-grid {
+    background-color: hsl(var(--studio-canvas));
+    background-image:
+      linear-gradient(hsl(var(--studio-ink) / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--studio-ink) / 0.035) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+
   /* Hero background */
   .hero-gradient {
     background:
@@ -148,5 +179,19 @@
       radial-gradient(ellipse 60% 50% at 50% -10%, hsl(263 70% 50% / 0.2), transparent),
       radial-gradient(ellipse 40% 40% at 80% 0%, hsl(280 80% 60% / 0.1), transparent),
       radial-gradient(ellipse 40% 30% at 20% 10%, hsl(240 80% 60% / 0.08), transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

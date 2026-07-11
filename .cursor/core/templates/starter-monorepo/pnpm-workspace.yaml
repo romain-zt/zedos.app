@@ -1,0 +1,31 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Single source of truth for dependency versions.
+# Packages reference these with "catalog:" instead of pinning versions
+# in their own package.json. Update a version here once and it applies everywhere.
+catalog:
+  # Framework
+  next: "^15.0.0"
+  react: "^19.0.0"
+  react-dom: "^19.0.0"
+
+  # Tooling
+  turbo: "^2.1.0"
+  typescript: "^5.6.0"
+
+  # Testing
+  vitest: "^2.1.0"
+
+  # Types
+  "@types/node": "^22.0.0"
+  "@types/react": "^19.0.0"
+
+  # Payload CMS
+  payload: "^3.0.0"
+  "@payloadcms/db-postgres": "^3.0.0"
+  "@payloadcms/next": "^3.0.0"
+  "@payloadcms/richtext-lexical": "^3.0.0"
+  "@payloadcms/storage-s3": "^3.0.0"
+  "@payloadcms/translations": "^3.0.0"

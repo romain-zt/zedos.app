@@ -1,0 +1,328 @@
+---
+description: Governs the PRD → Feature Area → Scope Slice → User Story → Spec → Task decomposition workflow. Apply whenever an agent reads the PRD, decomposes product scope, produces Feature Areas or Scope Slices, or begins pre-spec work.
+globs:
+  - docs/product/**
+  - docs/prd/**
+  - .cursor/core/templates/product/**
+  - .cursor/core/checkers/**
+alwaysApply: false
+---
+
+# Feature Area Workflow
+
+## 1. Purpose
+
+This rule prevents premature decomposition, hidden architecture, and task slicing before product scope is safely bounded.
+
+It applies to any agent turn that:
+- reads `docs/prd/PRD.md` for the purpose of planning features
+- produces Feature Area or Scope Slice documents
+- evaluates whether a group is ready for user stories
+- transitions product scope toward specs or tasks
+
+---
+
+## 1a. Autonomous decomposition mode (CI)
+
+This section **overrides** the "approved by the user in the current conversation"
+precondition wherever it appears below (Forbidden Actions §4, Readiness Gates §5),
+**only** when **all** of these hold:
+
+1. `docs/project.config.md` → **Autonomous decomposition enabled: yes** (governed by `docs/product-decisions/PD-008-autonomous-decomposition.md`).
+2. The actor is the CI decomposer agent (`.github/scripts/core/prd-decomposer.ts`) or the phase orchestrator worker, not an interactive Cursor session.
+
+When active, the human-approval gate is satisfied by a **`CLEAR`** verdict from
+`.cursor/core/checkers/scope-readiness-checker.md` for the artifact being written or
+promoted. Concretely, the CI agent **may**, without a human in the conversation:
+
+- run `map` and treat its own checker-clean proposal as the approved map for `scaffold`;
+- run `slice` and treat its own checker-clean proposal as the approved proposal for `scaffold-slices`;
+- apply `promote`, `promote-slice`, and `clear-for-vertical` transitions after the relevant checker part returns `CLEAR`.
+
+Everything else is unchanged. In particular the CI agent **must still**:
+
+- run the actual checker checks and only transition on a real `CLEAR` (no self-asserted readiness — §12.3 of `execution-loop.mdc` still binds);
+- respect every `NEED_HUMAN`/`NEED_UPDATE` flag and open blocker — set the item `blocked` and move on rather than inventing product truth;
+- never edit `docs/prd/PRD.md`, never skip hierarchy levels, never name architecture during slice/scaffold.
+
+Outside this mode (interactive sessions, or flag = `no`), the in-conversation
+human-approval gates below apply in full.
+
+---
+
+## 2. Required Read Order
+
+Before any decomposition work, read in this order:
+
+1. `docs/prd/state.md` — version, direction, last major change
+2. `docs/prd/PRD.md` — active product definition
+3. `docs/prd/questions/open-questions.md` — unresolved blockers
+4. `docs/product-decisions/README.md` — durable product decisions if any exist
+5. `docs/product/feature-areas/` — existing Feature Area files if any
+6. `docs/product/scope-slices/` — existing Scope Slice files if any
+
+Do not read step 3–6 as optional. Open blockers and prior decisions constrain all downstream work.
+
+---
+
+## 3. Terminology
+
+Use this hierarchy exactly. Do not invent alternative terms.
+
+```
+Product
+→ Feature Area
+→ Scope Slice
+→ User Story
+→ Spec
+→ Task
+```
+
+### Feature Area
+
+A durable product capability cluster. Maps to a named user-facing concern, not a technical boundary.
+
+Examples for Zedos v0:
+- Auth & Account
+- Project Workspace
+- PRD Versioning
+- Clarification Loop
+- Dynamic Decision UI
+- Question History
+- Credit System
+- Payments
+- Sharing
+- Feedback
+- Dashboard Shell
+
+A Feature Area has: product intent, business objects, user journeys, candidate Scope Slices, and readiness status.
+
+### Scope Slice
+
+A constrained, deliverable cut inside a Feature Area.
+
+A Scope Slice must:
+- deliver recognizable user value on its own
+- have a clear boundary (explicit in/out)
+- be small enough to produce user stories and specs
+- not require architecture decisions to define
+
+If a Scope Slice cannot be fully described without naming technical layers, it is not ready.
+
+### Terminology Compatibility
+
+**"Feature Group" is legacy PRD language** produced by the PRD Builder skill during discovery and convergence.
+
+When transitioning from PRD to execution:
+
+- Convert each broad PRD Feature Group into one or more Feature Areas using this workflow.
+- Do not carry "Feature Group" naming into `docs/product/` artifacts **except** **PRD Source** (or equivalent) citations where `docs/prd/PRD.md` section title is literally *Feature Groups* — cite the § only.
+- A single PRD Feature Group may map to multiple Feature Areas — split before decomposing.
+- Do not create Scope Slices directly from a PRD Feature Group without first creating and validating a Feature Area.
+- New documents under `docs/product/` must use Feature Area / Scope Slice terminology exclusively in narrative, names, and tables.
+
+### PRD-allowed product-level terms
+
+Use **only** as **product** behavior or constraints grounded in **`docs/prd/PRD.md`** — not as architecture. Canonical list and rules: **Allowed product-level terms (PRD)** in `.cursor/core/checkers/scope-readiness-checker.md`.
+
+### Service
+
+A runtime or deployment boundary. Only use "service" when architecture has explicitly drawn runtime separation. Do not call a Feature Area a service.
+
+### Spec
+
+A behavioral specification. Produced from a validated Scope Slice. Describes observable behavior, not implementation.
+
+### Task
+
+A concrete unit of work derived from a Spec. Never derived directly from a Feature Area or the global PRD.
+
+---
+
+## 4. Forbidden Actions
+
+The following are strictly forbidden at each layer:
+
+**At Feature Area stage:**
+- Creating tasks or user stories from a Feature Area before Scope Slices are defined
+- Creating Feature Area markdown under `docs/product/feature-areas/` **except** via `/feature-area scaffold` after user approval — forbidden
+- Editing Feature Area markdown **except** via `/feature-area scaffold` (creation/population from an approved map), `/feature-area promote <name>` (only the narrow `validated` transition defined in `.cursor/core/commands/feature-area.md`), `/feature-area clear-for-vertical <name>` (only the narrow `delivery-ready` transition defined in `.cursor/core/commands/feature-area.md`), or ordinary human/manual edits — forbidden for agents/commands
+- Naming architecture, services, or runtime boundaries
+- Treating a Feature Area as implementation-ready
+
+**At Scope Slice stage:**
+- Creating tasks before Scope Slices are marked `ready-for-user-stories`
+- Writing implementation specs before user stories
+- Inventing data models, API designs, or service boundaries
+- Naming third-party integrations as **implementation** (product-level constraints named in the PRD, including terms in **Allowed product-level terms (PRD)** in `.cursor/core/checkers/scope-readiness-checker.md`, are allowed when grounded in the PRD)
+- **Creating** Scope Slice markdown under `docs/product/scope-slices/` **except** via `/feature-area scaffold-slices` after user approval of the `/feature-area slice` proposal (with parent Feature Area `validated` and `NEED_HUMAN: false`), **or** ordinary human/manual use of the template — forbidden for agents/commands
+- **Editing** Scope Slice body content **except** via `/feature-area refine-slice` (allowed product-level sections only), **`/feature-area scaffold-slices`** (initial fill from approved proposal), **`/feature-area promote-slice`** (narrow transition only), or ordinary human/manual edits — forbidden for agents/commands
+
+**At all stages:**
+- Task slicing directly from `docs/prd/PRD.md`
+- Calling a product Feature Area a "service," "module," or "microservice"
+- Merging or skipping levels in the hierarchy
+- Proceeding past a known blocker without explicit user approval
+
+---
+
+## 5. Readiness Gates
+
+### Feature Area lifecycle
+
+- Valid Feature Area statuses are: `exploratory`, `validated`, `delivery-ready`, `blocked`, `deferred`.
+- A Feature Area in `exploratory` status **may** list candidate Scope Slices in its Candidate Scope Slices section (names + one-line descriptions only).
+- After `/feature-area validate <name>` returns **CLEAR**, **`/feature-area promote <name>`** may apply the predefined file updates (status, readiness checklist, verdict, changelog row) so the artifact matches `validated`; manual edits remain valid.
+- After `/feature-area clear-for-vertical <name>` returns **CLEAR** against Part 8 (DR-01..DR-05) + Part 7 (CC-01..CC-05) of `.cursor/core/checkers/scope-readiness-checker.md`, the same command may apply the predefined file updates (status, readiness verdict, changelog row) so the artifact transitions from `validated` to `delivery-ready`. Governed by `docs/product-decisions/PD-006-per-fa-delivery-readiness-gate.md`.
+- A Feature Area at `delivery-ready` authorizes the start of User Story / Spec / Task / code work on its Scope Slices, in parallel with the macro elaboration of other Feature Areas.
+- **Drift handling.** If a `delivery-ready` Feature Area's dependency situation regresses (a direct dependency moves to `blocked`, or a previously `approved` governing PD is reopened to `provisional`, or any `NEED_HUMAN=true` is introduced on this FA or any direct dependency), the FA **must** be reverted to `validated` and Part 8 of the checker must be re-run before any further downstream work proceeds.
+
+### Scope Slice lifecycle
+
+- Formal Scope Slice documents (files under `docs/product/scope-slices/`) **may only be created** after the Feature Area is marked `validated`, via `/feature-area scaffold-slices <name>` after an approved `/feature-area slice` proposal, or by manually instantiating `.cursor/core/templates/product/scope-slice.template.md`. New files default to **`exploratory`** and are **not** story-ready until refined.
+- Scope Slice **product-level** sections not completed at scaffold (`UX States`, `Data Touched`, etc.) are completed with **`/feature-area refine-slice`**; **`/feature-area promote-slice`** applies the narrow **ready-for-user-stories** transition only after SS-01–SS-10 and CC-01–CC-05 are **CLEAR** per `.cursor/core/commands/feature-area.md`.
+- User stories may only be written after a Scope Slice is marked `ready-for-user-stories`.
+
+### Feature Area → Scope Slices
+
+A Feature Area may be decomposed into Scope Slices only when:
+
+- [ ] PRD section(s) that ground this area have been read
+- [ ] Product intent is stated in user-value terms (not technical terms)
+- [ ] Business objects touched are enumerated
+- [ ] User journeys affected are identified
+- [ ] In-scope and out-of-scope behaviors are separated
+- [ ] No open PRD blockers affect this area (`open-questions.md` checked)
+- [ ] Deferred behaviors are listed explicitly
+- [ ] Status is `validated` or `delivery-ready` (not `exploratory`, `blocked`, or `deferred`)
+
+### Feature Area `validated` → `delivery-ready`
+
+A Feature Area may be promoted from `validated` to `delivery-ready` only when **all five** of the following hold (DR-01..DR-05 per `.cursor/core/checkers/scope-readiness-checker.md` Part 8):
+
+- [ ] DR-01 — Status is currently `validated` (not `exploratory`, not already `delivery-ready`, not `blocked`/`deferred`)
+- [ ] DR-02 — Every Feature Area listed in `Dependencies` has an existing file in `docs/product/feature-areas/` (the dependency may be in any status, but its file must exist)
+- [ ] DR-03 — Every governing Product Decision is at `status: approved` (not `provisional`, not `proposed`)
+- [ ] DR-04 — No `NEED_HUMAN=true` on this FA or on any direct dependency FA
+- [ ] DR-05 — At least one child Scope Slice is at `ready-for-user-stories`
+- [ ] CC-01..CC-05 all PASS
+
+User Story / Spec / Task / code work on this Feature Area's Scope Slices is gated on this transition. Governed by `docs/product-decisions/PD-006-per-fa-delivery-readiness-gate.md`.
+
+### Scope Slice → User Stories
+
+A Scope Slice may produce user stories only when:
+
+- [ ] Status is `ready-for-user-stories` (set via **`/feature-area promote-slice`** after **CLEAR**, or manual equivalent — not by `refine-slice` or `scaffold-slices` alone)
+
+- [ ] User value is stated without implementation language
+- [ ] Exact boundary is defined (included + excluded behaviors)
+- [ ] UX states are enumerated (empty, loading, error, success, edge cases)
+- [ ] Business objects touched are named
+- [ ] Credit / payment impact is assessed (even if "none")
+- [ ] Sharing / privacy surface is assessed
+- [ ] All dependencies are named and their readiness status is known
+- [ ] All blockers are either resolved or carry explicit `NEED_HUMAN=true`
+- [ ] Acceptance-level outcome is described (observable behavior, not code)
+
+### User Stories → Specs
+
+Only after the above Scope Slice gate passes. Specs must be behavioral — what the system does — not how it is built.
+
+### Specs → Tasks
+
+Only after specs are reviewed and accepted. Tasks must reference a spec. Tasks must never reference only a Feature Area or the PRD.
+
+---
+
+## 6. Decomposition Rules
+
+### Feature Area decomposition
+
+When the PRD implies a single Feature Group that is too broad:
+
+1. List the distinct user-value clusters hidden inside it.
+2. Name each as a Feature Area using the terminology above.
+3. Do not create sub-areas or sub-groups — flatten to one level below Feature Area = Scope Slice.
+4. A Feature Area with more than ~5 candidate Scope Slices may itself be too broad — reconsider naming.
+
+### Scope Slice decomposition
+
+Each Scope Slice must answer:
+
+- What value does this deliver to the user?
+- Where does it stop? (explicit exclusions required)
+- What does it touch? (business objects, journeys, credit, sharing, feedback)
+- What must exist before this can be built? (dependencies)
+- What is unknown? (blockers requiring human decision)
+
+If a Scope Slice answers: "it depends on architecture decisions not yet made" → set status `blocked` and `NEED_HUMAN=true`.
+
+### v0 boundary enforcement
+
+Do not include in v0 Feature Areas or Scope Slices:
+- Multi-user collaboration / invites / roles
+- PDF export as a required "done" criteria
+- Subscription billing
+- Advanced share controls (password, expiry)
+- BYOK
+- Anonymous share viewer feedback prompts
+- Any surface described as "under construction" in the PRD
+
+If a Scope Slice candidate touches a deferred surface, mark it as `deferred` with a reference to the PRD exclusion.
+
+---
+
+## 7. Blocker Rules
+
+### When NEED_HUMAN=true is required
+
+Set `NEED_HUMAN=true` when any of the following exist:
+
+- A product decision that would materially change scope is undecided
+- An open question in `docs/prd/questions/open-questions.md` directly blocks this area or slice
+- A Scope Slice boundary cannot be drawn without a business rule that hasn't been stated
+- An assumption is load-bearing and unvalidated (e.g., credit burn rates assumed but not confirmed)
+- Two valid interpretations of the PRD produce meaningfully different slices
+- Implementation choices (if made) would alter product scope or user value
+
+Do not proceed past `NEED_HUMAN=true` without explicit user approval.
+
+### When NEED_UPDATE=true is required
+
+Set `NEED_UPDATE=true` when any of the following exist:
+
+- This rule (`.cursor/core/rules/feature-area-workflow.mdc`) does not cover the current situation
+- A template in `.cursor/core/templates/product/` is missing or incomplete for the current task
+- The checker in `.cursor/core/checkers/scope-readiness-checker.md` cannot evaluate the current artifact
+- The PRD state or direction has changed since the current Feature Area or Scope Slice was created
+
+Do not silently work around a gap. Surface it.
+
+---
+
+## 8. Artifact Locations
+
+| Artifact | Location | Template |
+|---|---|---|
+| Feature Area | `docs/product/feature-areas/<kebab-name>.md` | `.cursor/core/templates/product/feature-area.template.md` |
+| Scope Slice | `docs/product/scope-slices/<fa-kebab>--<slice-kebab>.md` | `.cursor/core/templates/product/scope-slice.template.md` |
+| PRD | `docs/prd/PRD.md` | `.cursor/core/templates/prd/PRD.template.md` |
+| Product Decisions | `docs/product-decisions/PD-NNN.md` | `.cursor/core/templates/prd/product-decision.template.md` |
+
+File naming convention for Scope Slices: `<feature-area-kebab>--<slice-description-kebab>.md`
+
+Example: `clarification-loop--v0-single-question-flow.md`
+
+---
+
+## 9. Anti-Patterns
+
+Never:
+- Infer business rules not stated in the PRD
+- Call a Feature Area a "service," "module," or "system" unless architecture has said so
+- Produce architecture diagrams, data models, or API designs during Feature Area / Scope Slice work
+- Skip levels in the hierarchy (PRD → Task, Feature Area → Spec)
+- Use "we should probably" or speculative language in a Scope Slice boundary definition
+- Mark a Scope Slice as `ready-for-user-stories` while it has unresolved `NEED_HUMAN` flags
+- Treat "PRD READY ENOUGH" as authorization for task slicing

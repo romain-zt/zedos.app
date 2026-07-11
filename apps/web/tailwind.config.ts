@@ -6,12 +6,17 @@ const config: Config = {
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
+      screens: {
+        xs: '375px',
+      },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'var(--font-sans)', 'sans-serif'],
+        editorial: ['var(--font-editorial)', 'Georgia', 'serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       backgroundImage: {
@@ -65,6 +70,31 @@ const config: Config = {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        studio: {
+          canvas: 'hsl(var(--studio-canvas))',
+          paper: 'hsl(var(--studio-paper))',
+          ink: 'hsl(var(--studio-ink))',
+          forest: 'hsl(var(--studio-forest))',
+          muted: 'hsl(var(--studio-muted))',
+          sage: 'hsl(var(--studio-sage))',
+          clay: {
+            DEFAULT: 'hsl(var(--studio-clay))',
+            dark: 'hsl(var(--studio-clay-dark))',
+            light: 'hsl(var(--studio-clay-light))',
+          },
+          gold: 'hsl(var(--studio-gold))',
+          rose: 'hsl(var(--studio-rose))',
+          blue: {
+            DEFAULT: 'hsl(var(--studio-blue))',
+            dark: 'hsl(var(--studio-blue-dark))',
+          },
+        },
+      },
+      boxShadow: {
+        'studio-sm': 'var(--shadow-studio-sm)',
+        'studio-md': 'var(--shadow-studio-md)',
+        'studio-lg': 'var(--shadow-studio-lg)',
+        'studio-xl': 'var(--shadow-studio-xl)',
       },
       keyframes: {
         'accordion-down': {

@@ -1,0 +1,8 @@
+node_modules/
+.next/
+dist/
+.turbo/
+.env
+*.log
+# Payload generated types are committed by convention; remove the next line to ignore them.
+# apps/cms/src/payload-types.ts
