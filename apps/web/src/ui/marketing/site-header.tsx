@@ -1,5 +1,4 @@
 import { ArrowUpRight } from 'lucide-react';
-import Link from 'next/link';
 import { MarketingContainer, ZedosLogo } from './landing-primitives';
 import { TrackedLink } from './landing-analytics';
 import type { LandingCopy, MarketingLocale } from './landing-copy';
@@ -47,7 +46,7 @@ export function SiteHeader({
           >
             {copy.navigation.existingPilot}
           </TrackedLink>
-          <Link
+          <a
             href={`/${alternateLocale}`}
             hrefLang={alternateLocale}
             lang={alternateLocale}
@@ -55,7 +54,7 @@ export function SiteHeader({
             className="inline-flex h-11 w-11 items-center justify-center rounded-full text-xs font-bold uppercase tracking-wider text-studio-muted hover:bg-white/70 hover:text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-clay"
           >
             {alternateLocale}
-          </Link>
+          </a>
           <TrackedLink
             href="#early-access"
             placement="header"
