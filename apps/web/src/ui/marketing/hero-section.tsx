@@ -14,7 +14,7 @@ export function HeroSection() {
         aria-hidden="true"
         className="absolute -left-28 bottom-12 h-64 w-64 rounded-full bg-studio-clay/10 blur-3xl"
       />
-      <MarketingContainer className="relative grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
+      <MarketingContainer className="relative grid items-center gap-14 xl:grid-cols-[1.05fr_0.95fr] xl:gap-12">
         <div>
           <p className="mb-6 inline-flex min-h-8 items-center gap-2 rounded-full border border-studio-ink/10 bg-white/70 px-3 text-xs font-semibold uppercase tracking-widest text-studio-forest shadow-studio-sm">
             <span className="h-2 w-2 rounded-full bg-studio-clay" aria-hidden="true" />

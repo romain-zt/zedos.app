@@ -11,7 +11,7 @@ const navItems = [
 export function SiteHeader() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-studio-ink/10 bg-studio-canvas/90 backdrop-blur-xl">
-      <MarketingContainer className="flex h-16 items-center justify-between sm:h-18">
+      <MarketingContainer className="flex h-16 items-center justify-between">
         <ZedosLogo />
         <nav aria-label="Primary navigation" className="hidden items-center gap-1 md:flex">
           {navItems.map((item) => (

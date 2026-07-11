@@ -59,7 +59,7 @@ The retention promise is convenience and execution quality, not technical lock-i
 3. **Daily experience:** edit directly, ask for a routine change, or route complex work to a person.
 4. **Strategic freedom:** keep control of code, data, and developer choice.
 5. **Long-term value:** evolve into member experiences, custom workflows, and deeper integrations without starting over.
-6. **Trust:** private pilot, real founder involvement, honest capability boundaries, and Little Biceps as the founding pilot.
+6. **Trust:** private pilot, real founder involvement, honest capability boundaries, and L***** ****** as the founding pilot.
 7. **Conversion:** apply for a founder-led platform review and pilot, not a generic mailing list.
 
 Booking leads the narrative because it is the urgent, recognisable business job. Ownership appears after the reader understands the practical value. AI is supporting evidence, not the headline.
@@ -287,7 +287,7 @@ Eyebrow:
 
 Headline:
 
-**The first pilot starts with Little Biceps.**
+**The first pilot starts with L***** ******.**
 
 Body:
 
@@ -556,7 +556,7 @@ Preserve first-touch UTM source, medium, campaign, and referrer with the lead re
 
 ## 20. Evidence, assets, and screenshots still needed
 
-- Written permission to name Little Biceps and use its logo
+- Written permission to name L***** ****** and use its logo
 - A factual founding-pilot scope and current status
 - Founder name, portrait, signature, and short biography
 - Real product screenshots and a 45–90 second demonstration
@@ -581,7 +581,7 @@ Preserve first-touch UTM source, medium, campaign, and referrer with the lead re
 - Guaranteed cost savings or fewer fees
 - Enterprise-grade security, uptime, GDPR compliance, or regulatory compliance
 - Data and code can be exported “at any time” before the process is tested and contractual
-- Any outcome, testimonial, performance gain, or endorsement from Little Biceps
+- Any outcome, testimonial, performance gain, or endorsement from L***** ******
 - Any customer, revenue, waitlist, partner, or adoption count
 - “Works with any developer” without stating the standard-stack skill requirement
 - Founding discounts, fixed pricing, or permanent terms not yet approved
@@ -597,7 +597,7 @@ Prioritise only after enough qualified traffic exists:
 4. **Form friction:** five contact fields versus email, business name, and category only.
 5. **Narrative order:** execution model before ownership versus ownership before execution.
 6. **Niche:** Pilates/yoga/fitness language versus broader reservation-led wellness language.
-7. **Trust:** Little Biceps pilot block before comparison versus after comparison.
+7. **Trust:** L***** ****** pilot block before comparison versus after comparison.
 
 Primary test metric: qualified applications, not raw form conversion. Secondary metrics: step-two completion and founder-accepted pilot rate.
 

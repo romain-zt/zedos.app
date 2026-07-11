@@ -96,6 +96,12 @@ const config: Config = {
         'studio-lg': 'var(--shadow-studio-lg)',
         'studio-xl': 'var(--shadow-studio-xl)',
       },
+      minHeight: {
+        11: '2.75rem',
+        12: '3rem',
+        14: '3.5rem',
+        16: '4rem',
+      },
       keyframes: {
         'accordion-down': {
           from: {

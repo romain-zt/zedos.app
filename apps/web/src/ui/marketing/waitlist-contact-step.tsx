@@ -99,7 +99,7 @@ export function WaitlistContactStep({
             className={waitlistInputClassName}
           />
         </WaitlistFormField>
-        <div className="absolute -left-[9999px]" aria-hidden="true">
+        <div hidden aria-hidden="true">
           <label htmlFor="waitlist-website-trap">Company website</label>
           <input
             id="waitlist-website-trap"
@@ -120,7 +120,7 @@ export function WaitlistContactStep({
             I agree to be contacted about Zedos early access. Read the{' '}
             <a
               href="/legal/privacy"
-              className="font-semibold text-studio-ink underline decoration-studio-ink/30 underline-offset-2 hover:decoration-studio-ink"
+              className="inline-flex min-h-11 items-center font-semibold text-studio-ink underline decoration-studio-ink/30 underline-offset-2 hover:decoration-studio-ink"
             >
               privacy policy
             </a>

@@ -98,7 +98,7 @@ export function PilotTrustSection() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-white/65">
                   Founding pilot
                 </p>
-                <p className="mt-3 font-editorial text-4xl font-medium">Little Biceps</p>
+                <p className="mt-3 font-editorial text-4xl font-medium">L***** ******</p>
                 <p className="mt-3 max-w-sm text-sm leading-6 text-white/70">
                   A real wellness business shaping the first workflows with us.
                 </p>
@@ -113,7 +113,7 @@ export function PilotTrustSection() {
                 id="pilot-title"
                 className="mt-5 max-w-2xl font-editorial text-4xl font-medium leading-none text-studio-ink sm:text-5xl"
               >
-                The first pilot starts with Little Biceps.
+                The first pilot starts with L***** ******.
               </h2>
               <p className="mt-6 max-w-2xl text-base leading-7 text-studio-muted">
                 We are shaping Zedos against the decisions, constraints, and daily
