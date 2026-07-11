@@ -276,10 +276,10 @@ export const landingCopyEn = {
   pilot: {
     initials: 'LB',
     label: 'Founding pilot',
-    name: 'Little Biceps',
+    name: 'L*****.******',
     shortDescription: 'A real wellness business shaping the first workflows with us.',
     eyebrow: 'Built with a real business, not a demo brief',
-    title: 'The first pilot starts with Little Biceps.',
+    title: 'The first pilot starts with L*****.******.',
     body:
       'We are shaping Zedos against the decisions, constraints, and daily changes of a real wellness business. Early partners receive the same founder-led approach: we map the current stack, identify what can move safely, and say plainly what is not ready yet.',
     points: [

@@ -290,11 +290,11 @@ export const landingCopyFr = {
   pilot: {
     initials: 'LB',
     label: 'Premier pilote',
-    name: 'Little Biceps',
+    name: 'L*****.******',
     shortDescription:
       'Une vraie activité bien-être qui façonne avec nous les premiers parcours.',
     eyebrow: 'Construit avec une vraie entreprise, pas un brief fictif',
-    title: 'Le premier pilote commence avec Little Biceps.',
+    title: 'Le premier pilote commence avec L*****.******.',
     body:
       'Nous confrontons Zedos aux décisions, contraintes et changements quotidiens d’une vraie activité bien-être. Les premiers partenaires bénéficient de la même approche directe avec le fondateur : cartographier les outils actuels, identifier ce qui peut évoluer sans risque et dire clairement ce qui n’est pas encore prêt.',
     points: [
