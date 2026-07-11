@@ -75,13 +75,13 @@ function FitCard({
 }) {
   const Icon = negative ? X : Check;
   return (
-    <aside className="rounded-2xl border border-white/10 bg-white/5 p-5">
+    <aside className="rounded-2xl border border-white/10 bg-white/[0.08] p-5">
       <h3 className="text-sm font-semibold text-white">{title}</h3>
       <ul className="mt-4 space-y-2.5">
         {items.map((item) => (
-          <li key={item} className="flex items-start gap-2 text-xs leading-5 text-white/55">
+          <li key={item} className="flex items-start gap-2 text-sm leading-6 text-white/80">
             <Icon
-              className={negative ? 'mt-0.5 h-3.5 w-3.5 text-white/35' : 'mt-0.5 h-3.5 w-3.5 text-studio-sage'}
+              className={negative ? 'mt-0.5 h-4 w-4 shrink-0 text-studio-clay-light' : 'mt-0.5 h-4 w-4 shrink-0 text-studio-sage'}
               aria-hidden="true"
             />
             {item}
