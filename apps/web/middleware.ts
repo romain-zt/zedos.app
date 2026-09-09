@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireSession } from '@repo/auth/guards-middleware';
+import {
+  isPublicSiteGateAuthorized,
+  isPublicSiteGateEnabled,
+  isPublicSiteGatedPath,
+  unauthorizedPublicSiteGateResponse,
+} from './lib/public-site-gate';
 
 const SUPPORTED_LOCALES = ['fr', 'en'] as const;
 type Locale = (typeof SUPPORTED_LOCALES)[number];
@@ -84,9 +90,33 @@ function rewriteWithLocale(
   return response;
 }
 
+function publicSiteGateEnv() {
+  return {
+    disabled: process.env.PUBLIC_SITE_GATE_DISABLED,
+    e2eMode: process.env.E2E_MODE,
+    user: process.env.PUBLIC_SITE_GATE_USER,
+    password: process.env.PUBLIC_SITE_GATE_PASSWORD,
+  };
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const { locale, unlocalizedPathname } = stripLocalePrefix(pathname);
+
+  const gateEnv = publicSiteGateEnv();
+  if (
+    isPublicSiteGateEnabled(gateEnv) &&
+    isPublicSiteGatedPath(unlocalizedPathname)
+  ) {
+    if (
+      !isPublicSiteGateAuthorized(
+        request.headers.get('authorization'),
+        gateEnv
+      )
+    ) {
+      return unauthorizedPublicSiteGateResponse();
+    }
+  }
 
   const isInternalOrAssetPath =
     unlocalizedPathname.startsWith('/_next') ||

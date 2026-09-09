@@ -8,6 +8,10 @@ import {
   getLandingCopy,
   type MarketingLocale,
 } from '@/src/ui/marketing/landing-copy'
+import {
+  isPublicSiteGateEnabled,
+  readPublicSiteGateEnv,
+} from '@/lib/public-site-gate'
 
 function localeFromHeaders(requestHeaders: Headers): MarketingLocale {
   return requestHeaders.get('x-zedos-locale') === 'en' ? 'en' : 'fr'
@@ -42,10 +46,9 @@ export async function generateMetadata(): Promise<Metadata> {
       title: copy.seo.socialTitle,
       description: copy.seo.twitterDescription,
     },
-    robots: {
-      index: true,
-      follow: true,
-    },
+    robots: isPublicSiteGateEnabled(readPublicSiteGateEnv())
+      ? { index: false, follow: false }
+      : { index: true, follow: true },
   }
 }
 
